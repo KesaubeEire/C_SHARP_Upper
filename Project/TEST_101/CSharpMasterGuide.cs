@@ -1613,9 +1613,13 @@ namespace TEST_101
             // ── 11.6 集合初始化器 ──
             SubTitle("11.6 集合初始化器与展开运算符");
 
-            // C# 12 集合表达式
-            List<int> numbers = [1, 2, 3, 4, 5];  // 新语法
-            int[] moreNumbers = [.. numbers, 6, 7, 8];  // 展开 + 追加
+            // C# 12 集合表达式（需要 .NET 8+）
+            // List<int> numbers = [1, 2, 3, 4, 5];  // 新语法
+            // int[] moreNumbers = [.. numbers, 6, 7, 8];  // 展开 + 追加
+
+            // 使用传统语法
+            List<int> numbers = new List<int> { 1, 2, 3, 4, 5 };
+            int[] moreNumbers = numbers.Concat(new[] { 6, 7, 8 }).ToArray();
             Console.WriteLine($"  展开后: [{string.Join(", ", moreNumbers)}]");
         }
 

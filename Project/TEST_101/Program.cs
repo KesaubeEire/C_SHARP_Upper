@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using TEST_101.Forms;
 
 namespace TEST_101
 {
@@ -26,7 +27,9 @@ namespace TEST_101
                 ShowWindow(handle, 0); // SW_HIDE
 
             ApplicationConfiguration.Initialize();
-            Application.Run(new ModbusForm());
+
+            // 启动主界面（带 TabControl 的监控系统）
+            Application.Run(new MainForm());
         }
     }
 }
