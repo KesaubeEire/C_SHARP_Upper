@@ -19,7 +19,6 @@ namespace TEST_101.Chart
         private readonly FormsPlot _formsPlot;
         private readonly ConcurrentDictionary<int, ChannelData> _channels = new();
         private readonly System.Windows.Forms.Timer _refreshTimer;
-        private readonly List<ScottPlot.Plottables.Scatter> _scatterPlots = new();
         private int _maxPoints = 500;
         private bool _isPaused;
 
@@ -192,6 +191,7 @@ namespace TEST_101.Chart
             {
                 _refreshTimer?.Stop();
                 _refreshTimer?.Dispose();
+                _formsPlot?.Dispose();
             }
             base.Dispose(disposing);
         }

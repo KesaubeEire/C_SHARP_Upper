@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
 using System.Windows.Forms;
+using TEST_101.Core;
 
 namespace TEST_101
 {
@@ -17,6 +18,10 @@ namespace TEST_101
         private InputHistoryManager _history = null!;
 
         private bool _isTcpMode = false;
+
+        // ★ 最近一次请求参数（用于 EventBus 桥接）
+        private string _lastDeviceId = "1";
+        private ushort _lastStartAddr = 0;
 
         // ★ 当前打开的历史下拉面板（用于切换和 ESC 关闭）
         private HistoryDropDown? _currentDropdown;
@@ -256,6 +261,18 @@ namespace TEST_101
             // 3. 解析
             var result = ModbusProtocol.ParseResponse(pduBuf);
             FillGrid(result);
+
+            // 4. 桥接到 EventBus → 图表 / 报警 / 报表都能收到数据
+            if (!result.IsError && result.Registers.Count > 0)
+            {
+                var values = result.Registers.Select(r => r.Value).ToArray();
+                EventBus.Instance.Publish(new DataUpdatedEvent(
+                    DeviceId: _lastDeviceId,
+                    StartAddress: _lastStartAddr,
+                    Values: values,
+                    Timestamp: DateTime.Now
+                ));
+            }
         }
 
         private void OnError(string msg)
@@ -276,6 +293,13 @@ namespace TEST_101
                 btn_open.Text = _isTcpMode ? "连接" : "打开串口";
                 btn_open.BackColor = Color.FromArgb(60, 140, 60);
             }
+
+            // 桥接到 EventBus → MainForm 状态栏同步更新
+            EventBus.Instance.Publish(new ConnectionChangedEvent(
+                DeviceId: _lastDeviceId,
+                IsConnected: connected,
+                StatusMessage: statusText
+            ));
         }
 
         // ========== 填充 DataGridView ==========
@@ -416,6 +440,10 @@ namespace TEST_101
                 ushort startAddr = addrText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
                     ? Convert.ToUInt16(addrText.Substring(2), 16)
                     : ushort.Parse(addrText);
+
+                // 记录请求参数，用于收到响应后桥接到 EventBus
+                _lastDeviceId = devAddr.ToString();
+                _lastStartAddr = startAddr;
 
                 ushort count = ushort.Parse(box_count.Text.Trim());
 

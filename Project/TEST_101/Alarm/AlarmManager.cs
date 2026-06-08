@@ -156,6 +156,9 @@ namespace TEST_101.Alarm
         {
             if (_disposed) return;
             _disposed = true;
+
+            // 取消 EventBus 订阅，防止 dispose 后回调仍在触发
+            EventBus.Instance.Unsubscribe<DataUpdatedEvent>(OnDataUpdated);
         }
     }
 }

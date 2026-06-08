@@ -1,4 +1,7 @@
+using System;
 using System.Drawing;
+using System.IO.Ports;
+using System.Linq;
 using System.Windows.Forms;
 using TEST_101.Alarm;
 using TEST_101.Chart;
@@ -12,7 +15,8 @@ namespace TEST_101.Forms
     /// <summary>
     /// 主界面 —— TabControl 容器
     ///
-    /// 整合所有模块：通讯监控、实时曲线、报警系统、配方管理、生产报表
+    /// 控件布局 → MainForm.Designer.cs（设计器可编辑）
+    /// 事件绑定 + 动态数据 → 本文件
     /// </summary>
     public partial class MainForm : Form
     {
@@ -23,97 +27,707 @@ namespace TEST_101.Forms
         private ReportGenerator? _reportGenerator;
         private ChartDataManager? _chartDataManager;
 
-        // UI 控件
-        private TabControl _tabControl = null!;
-        private StatusStrip _statusStrip = null!;
-        private ToolStripStatusLabel _lbConnectionStatus = null!;
-        private ToolStripStatusLabel _lbAlarmCount = null!;
-        private ToolStripStatusLabel _lbTime = null!;
+        // ──── Modbus 模块核心组件 ────
+        private ModbusTransport _mb_transport = null!;
+        private InputHistoryManager _mb_history = null!;
+        private bool _mb_isTcpMode = false;
+        private string _mb_lastDeviceId = "1";
+        private ushort _mb_lastStartAddr = 0;
+        private HistoryDropDown? _mb_currentDropdown;
 
         public MainForm()
         {
-            InitializeComponent();
-            InitializeServices();
+            InitializeComponent();   // Designer 生成的控件布局
+            BindEvents();            // 事件绑定
+            InitDynamicControls();   // 运行时动态创建的控件（如 ScottPlot）
+            InitializeServices();    // 后端服务
         }
 
-        private void InitializeComponent()
+        // ========== 事件绑定 ==========
+
+        private void BindEvents()
         {
-            // 窗体设置
-            Text = "🏭 工业监控系统 v1.0";
-            Size = new Size(1400, 900);
-            StartPosition = FormStartPosition.CenterScreen;
-            Font = new Font("Microsoft YaHei", 9F);
-
-            // 状态栏
-            _statusStrip = new StatusStrip();
-            _lbConnectionStatus = new ToolStripStatusLabel("📡 设备: 未连接");
-            _lbAlarmCount = new ToolStripStatusLabel("⚠️ 报警: 0");
-            _lbTime = new ToolStripStatusLabel("🕐 " + DateTime.Now.ToString("HH:mm:ss"));
-            _statusStrip.Items.AddRange(new ToolStripItem[]
-            {
-                _lbConnectionStatus,
-                new ToolStripStatusLabel { Spring = true },
-                _lbAlarmCount,
-                _lbTime
-            });
-            Controls.Add(_statusStrip);
-
-            // Tab 控件
-            _tabControl = new TabControl
-            {
-                Dock = DockStyle.Fill,
-                Font = new Font("Microsoft YaHei", 10F)
-            };
-
-            // 添加 Tab 页
-            _tabControl.TabPages.Add(CreateMonitorTab());
-            _tabControl.TabPages.Add(CreateChartTab());
-            _tabControl.TabPages.Add(CreateAlarmTab());
-            _tabControl.TabPages.Add(CreateRecipeTab());
-            _tabControl.TabPages.Add(CreateReportTab());
-
-            Controls.Add(_tabControl);
-
-            // 定时器更新时间
+            // 时间更新
             var timer = new System.Windows.Forms.Timer { Interval = 1000 };
             timer.Tick += (s, e) => _lbTime.Text = "🕐 " + DateTime.Now.ToString("HH:mm:ss");
             timer.Start();
+
+            // Modbus 事件绑定
+            BindModbusEvents();
         }
+
+        /// <summary>绑定所有 Modbus 控件的事件处理器</summary>
+        private void BindModbusEvents()
+        {
+            _mb_btn_refresh.Click += mb_btn_refresh_Click;
+            _mb_btn_open.Click += mb_btn_open_Click;
+            _mb_btn_read.Click += mb_btn_read_Click;
+            _mb_btn_clear.Click += mb_btn_clear_Click;
+            _mb_drop_mode.SelectedIndexChanged += mb_drop_mode_SelectedIndexChanged;
+            _mb_btn_learn.Click += (s, e) => ShowLearnDialog();
+        }
+
+        // ========== 动态控件（设计器做不了的） ==========
+
+        private void InitDynamicControls()
+        {
+            // 初始化 Modbus 模块
+            InitModbusModule();
+
+            // ScottPlot 曲线控件（自定义 UserControl，无法在设计器中拖放）
+            var chartControl = new RealtimeChartControl { Dock = DockStyle.Fill };
+            _panelChartArea.Controls.Add(chartControl);
+
+            // 初始化图表数据管理器
+            _chartDataManager = new ChartDataManager(chartControl);
+
+            // 报警规则示例数据
+            _gridAlarmRules.Rows.Add("伺服过速", "PLC-1", "D100", "> 1500", "故障", true);
+            _gridAlarmRules.Rows.Add("变频器过流", "PLC-1", "D202", "> 10.0", "警告", true);
+            _gridAlarmRules.Rows.Add("温度过高", "PLC-2", "D300", "> 80.0", "紧急", true);
+
+            // 配方示例数据
+            _gridRecipes.Rows.Add("产品A-标准", "2024-01-15 10:30", "12", "v1.2");
+            _gridRecipes.Rows.Add("产品A-快速", "2024-01-15 11:00", "12", "v1.0");
+            _gridRecipes.Rows.Add("产品B-标准", "2024-01-16 09:00", "15", "v2.1");
+
+            // 配方参数示例数据
+            _gridRecipeParams.Rows.Add("1", "伺服转速", "D100", "1000", "1200", "rpm");
+            _gridRecipeParams.Rows.Add("2", "伺服转矩限制", "D102", "100", "100", "%");
+            _gridRecipeParams.Rows.Add("3", "变频器频率", "D200", "50", "50", "Hz");
+            _gridRecipeParams.Rows.Add("4", "加速时间", "D204", "1000", "1000", "ms");
+
+            // 报表示例数据
+            _gridReport.Rows.Add("08:00-09:00", "125", "123", "2", "3.1s", "正常");
+            _gridReport.Rows.Add("09:00-10:00", "130", "128", "2", "3.0s", "正常");
+            _gridReport.Rows.Add("10:00-11:00", "128", "125", "3", "3.3s", "正常");
+            _gridReport.Rows.Add("11:00-12:00", "135", "133", "2", "2.9s", "正常");
+        }
+
+        // ========== Modbus 模块初始化 ==========
+
+        /// <summary>初始化 Modbus 核心组件和 UI 默认值（原 ModbusForm_Load + InitUI）</summary>
+        private void InitModbusModule()
+        {
+            // 初始化核心组件
+            _mb_transport = new ModbusTransport(this, () => _mb_isTcpMode);
+            _mb_transport.FrameReceived += OnFrameReceived;
+            _mb_transport.ErrorOccurred += OnError;
+            _mb_transport.ConnectionChanged += OnConnectionChanged;
+
+            _mb_history = new InputHistoryManager();
+
+            InitModbusDefaults();
+            RefreshComPorts();
+        }
+
+        /// <summary>设置 Modbus UI 默认值（原 InitUI）</summary>
+        private void InitModbusDefaults()
+        {
+            _mb_drop_baud.Text = "9600";
+
+            // 模式
+            _mb_drop_mode.SelectedIndex = 0;
+            _mb_isTcpMode = false;
+            ShowTcpControls(false);
+
+            // 功能码
+            _mb_drop_func.Items.Clear();
+            _mb_drop_func.Items.Add("01 读线圈");
+            _mb_drop_func.Items.Add("02 读离散输入");
+            _mb_drop_func.Items.Add("03 读保持寄存器");
+            _mb_drop_func.Items.Add("04 读输入寄存器");
+            _mb_drop_func.Items.Add("05 写单线圈");
+            _mb_drop_func.Items.Add("06 写单寄存器");
+            _mb_drop_func.Items.Add("15 写多线圈");
+            _mb_drop_func.Items.Add("16 写多寄存器");
+            _mb_drop_func.SelectedIndex = 2;
+
+            // 默认值
+            _mb_box_dev.Text = "1";
+            _mb_box_addr.Text = "0";
+            _mb_box_count.Text = "10";
+
+            _mb_drop_stop.SelectedIndex = 0;
+            _mb_drop_parity.SelectedIndex = 0;
+
+            // DataGridView 初始列
+            SetupGridColumns(false);
+
+            // 为每个输入框添加历史下拉按钮
+            AddHistoryButton(_mb_box_dev, "dev_addr");
+            AddHistoryButton(_mb_box_addr, "start_addr");
+            AddHistoryButton(_mb_box_count, "count");
+            AddHistoryButton(_mb_box_ip, "tcp_ip");
+            AddHistoryButton(_mb_box_port, "tcp_port");
+        }
+
+        /// <summary>弹出学习对话框</summary>
+        private void ShowLearnDialog()
+        {
+            var output = new System.Text.StringBuilder();
+
+            var originalOut = Console.Out;
+            using var writer = new System.IO.StringWriter();
+            Console.SetOut(writer);
+
+            CSharpConceptsDemo.CurrentIsTcpMode = () => _mb_isTcpMode;
+
+            CSharpConceptsDemo.Demo01_Delegates_FuncAndAction();
+            output.AppendLine(writer.GetStringBuilder().ToString());
+            writer.GetStringBuilder().Clear();
+
+            output.AppendLine(new string('─', 55));
+            CSharpConceptsDemo.Demo02_Lambda_ThreeWays();
+            output.AppendLine(writer.GetStringBuilder().ToString());
+            writer.GetStringBuilder().Clear();
+
+            output.AppendLine(new string('─', 55));
+            CSharpConceptsDemo.Demo03_Events_PubSub();
+            output.AppendLine(writer.GetStringBuilder().ToString());
+            writer.GetStringBuilder().Clear();
+
+            output.AppendLine(new string('─', 55));
+            output.AppendLine(CSharpConceptsDemo.Demo04_Reflection_ScanOurProtocol());
+            writer.GetStringBuilder().Clear();
+
+            output.AppendLine(new string('─', 55));
+            CSharpConceptsDemo.Demo05_AllTogether();
+            output.AppendLine(writer.GetStringBuilder().ToString());
+            writer.GetStringBuilder().Clear();
+
+            output.AppendLine(new string('─', 55));
+            output.AppendLine(CSharpConceptsDemo.GetQuickReference());
+
+            Console.SetOut(originalOut);
+
+            var form = new Form
+            {
+                Text = "🔬 C# 高级语法 — 基于本项目代码的学习演示",
+                Size = new Size(900, 650),
+                StartPosition = FormStartPosition.CenterParent,
+                Font = new Font("Consolas", 10F)
+            };
+
+            var textBox = new TextBox
+            {
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.FromArgb(0, 255, 0),
+                Font = new Font("Consolas", 10F),
+                Text = output.ToString(),
+                WordWrap = false,
+                TabStop = false
+            };
+            textBox.Select(0, 0);
+            form.Controls.Add(textBox);
+            form.ShowDialog();
+        }
+
+        /// <summary>在文本框右侧动态添加历史下拉按钮（不碰 Designer）</summary>
+        private void AddHistoryButton(TextBox target, string fieldKey)
+        {
+            var btn = new Button
+            {
+                Text = "▾",
+                Width = 12,
+                Height = target.Height,
+                Font = new Font("Microsoft YaHei", 8F),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(230, 230, 230),
+                Cursor = Cursors.Hand,
+                TabStop = false
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Location = new Point(target.Right + 2, target.Top);
+            btn.Click += (s, e) =>
+            {
+                if (_mb_currentDropdown != null && !_mb_currentDropdown.IsDisposed)
+                {
+                    _mb_currentDropdown.Close();
+                    _mb_currentDropdown = null;
+                    return;
+                }
+
+                var dropdown = new HistoryDropDown(_mb_history, target, fieldKey);
+                dropdown.FormClosed += (_, _) => _mb_currentDropdown = null;
+                _mb_currentDropdown = dropdown;
+                dropdown.ShowDropdown();
+            };
+            target.Parent!.Controls.Add(btn);
+        }
+
+        // ========== 刷新 COM 口 ==========
+        private void RefreshComPorts()
+        {
+            string currentCom = _mb_drop_com.Text ?? string.Empty;
+            _mb_drop_com.Items.Clear();
+            _mb_drop_com.Text = "";
+
+            string[] ports = _mb_transport.GetPortNames().Distinct().ToArray();
+
+            if (ports.Length == 0)
+            {
+                _mb_lb_status.Text = "未检测到可用 COM 口";
+                return;
+            }
+
+            foreach (string port in ports)
+                _mb_drop_com.Items.Add(port);
+
+            if (_mb_drop_com.Items.Contains(currentCom))
+                _mb_drop_com.Text = currentCom;
+            else
+                _mb_drop_com.SelectedIndex = 0;
+
+            _mb_lb_status.Text = $"检测到 {ports.Length} 个 COM 口";
+        }
+
+        // ========== Transport 事件回调（已在 UI 线程）==========
+
+        private void OnFrameReceived(byte[] buffer, bool isTcp)
+        {
+            // 1. 着色显示原始帧
+            byte funcCode = buffer.Length >= 2 ? buffer[1] : (byte)0;
+            string hex = BitConverter.ToString(buffer).Replace("-", " ");
+            ColorizeHexFrame(_mb_box_recv_hex, hex, funcCode, isTcp);
+            _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] 接收 → {hex}\r\n");
+
+            // 2. 如果是 TCP，跳过 MBAP 头再解析
+            byte[] pduBuf = isTcp && buffer.Length > ModbusProtocol.MBAP_HEADER_SIZE
+                ? buffer.Skip(ModbusProtocol.MBAP_HEADER_SIZE).ToArray()
+                : buffer;
+
+            // 3. 解析
+            var result = ModbusProtocol.ParseResponse(pduBuf);
+            FillGrid(result);
+
+            // 4. 桥接到 EventBus → 图表 / 报警 / 报表都能收到数据
+            if (!result.IsError && result.Registers.Count > 0)
+            {
+                var values = result.Registers.Select(r => r.Value).ToArray();
+                EventBus.Instance.Publish(new DataUpdatedEvent(
+                    DeviceId: _mb_lastDeviceId,
+                    StartAddress: _mb_lastStartAddr,
+                    Values: values,
+                    Timestamp: DateTime.Now
+                ));
+            }
+        }
+
+        private void OnError(string msg)
+        {
+            _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\r\n");
+        }
+
+        private void OnConnectionChanged(bool connected, string statusText)
+        {
+            _mb_lb_status.Text = statusText;
+            if (connected)
+            {
+                _mb_btn_open.Text = _mb_isTcpMode ? "断开" : "关闭串口";
+                _mb_btn_open.BackColor = Color.FromArgb(220, 80, 80);
+            }
+            else
+            {
+                _mb_btn_open.Text = _mb_isTcpMode ? "连接" : "打开串口";
+                _mb_btn_open.BackColor = Color.FromArgb(60, 140, 60);
+            }
+
+            // 桥接到 EventBus → MainForm 状态栏同步更新
+            EventBus.Instance.Publish(new ConnectionChangedEvent(
+                DeviceId: _mb_lastDeviceId,
+                IsConnected: connected,
+                StatusMessage: statusText
+            ));
+        }
+
+        // ========== 填充 DataGridView ==========
+
+        private void FillGrid(ModbusParseResult result)
+        {
+            if (result.IsError)
+            {
+                SetupGridColumns(false);
+                _mb_grid_result.Rows.Add("—", $"❌ {result.ErrorMessage}", "", "", "", "");
+                return;
+            }
+
+            if (result.Bits.Count > 0)
+            {
+                SetupGridColumns(true);
+                foreach (var bit in result.Bits)
+                    _mb_grid_result.Rows.Add(bit.Index.ToString(), bit.IsOn ? "ON" : "OFF", $"0x{bit.RawByte:X2}");
+            }
+            else if (result.Registers.Count > 0)
+            {
+                SetupGridColumns(false);
+                foreach (var reg in result.Registers)
+                {
+                    string dec = reg.Value.ToString();
+                    string hex = $"0x{reg.Value:X4}";
+                    string bin = FormatBinary(reg.Value);
+                    string oct = Convert.ToString(reg.Value, 8);
+                    string signed = ((short)reg.Value).ToString();
+                    _mb_grid_result.Rows.Add(reg.Index.ToString(), dec, hex, bin, oct, signed);
+                }
+            }
+            else
+            {
+                // 其他功能码（无数据）
+            }
+        }
+
+        // ========== 模式切换 ==========
+        private void mb_drop_mode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _mb_isTcpMode = _mb_drop_mode.SelectedIndex == 1;
+
+            if (!_mb_isTcpMode)
+                _mb_transport.DisconnectTcp();
+            else if (_mb_transport.IsSerialOpen)
+            {
+                _mb_transport.CloseSerial();
+                _mb_btn_open.Text = "打开串口";
+                _mb_btn_open.BackColor = Color.FromArgb(60, 140, 60);
+            }
+
+            ShowTcpControls(_mb_isTcpMode);
+            _mb_lb_legend.Text = _mb_isTcpMode
+                ? "TCP图例：MBAP头=钢蓝  单元ID=灰  功能码(01=蓝 02=绿 03=紫 04=黄 错误=红)  数据=黄"
+                : "RTU图例：地址=灰  功能码(01=蓝 02=绿 03=紫 04=黄 错误=红)  数据=黄  CRC=橙";
+            _mb_lb_status.Text = "已断开";
+        }
+
+        private void ShowTcpControls(bool showTcp)
+        {
+            _mb_lb_ip.Visible = showTcp;
+            _mb_box_ip.Visible = showTcp;
+            _mb_lb_port.Visible = showTcp;
+            _mb_box_port.Visible = showTcp;
+
+            _mb_lb_com.Visible = !showTcp;
+            _mb_drop_com.Visible = !showTcp;
+            _mb_lb_baud.Visible = !showTcp;
+            _mb_drop_baud.Visible = !showTcp;
+            _mb_lb_stop.Visible = !showTcp;
+            _mb_drop_stop.Visible = !showTcp;
+            _mb_lb_parity.Visible = !showTcp;
+            _mb_drop_parity.Visible = !showTcp;
+            _mb_btn_refresh.Visible = !showTcp;
+
+            _mb_btn_open.Text = showTcp ? "连接" : "打开串口";
+        }
+
+        // ========== 打开/关闭连接 ==========
+        private void mb_btn_open_Click(object sender, EventArgs e)
+        {
+            if (_mb_isTcpMode)
+            {
+                if (_mb_transport.IsTcpConnected)
+                    _mb_transport.DisconnectTcp();
+                else
+                    _mb_transport.ConnectTcp(_mb_box_ip.Text.Trim(), int.Parse(_mb_box_port.Text.Trim()));
+                return;
+            }
+
+            if (!_mb_transport.IsSerialOpen)
+            {
+                if (string.IsNullOrWhiteSpace(_mb_drop_com.Text))
+                {
+                    MessageBox.Show("请先选择一个 COM 口");
+                    return;
+                }
+                try
+                {
+                    _mb_transport.OpenSerial(_mb_drop_com.Text, int.Parse(_mb_drop_baud.Text),
+                        ParseStopBits(_mb_drop_stop.Text), ParseParity(_mb_drop_parity.Text));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("打开串口失败：" + ex.Message);
+                }
+            }
+            else
+            {
+                _mb_transport.CloseSerial();
+            }
+        }
+
+        // ========== 发送按钮 ==========
+        private void mb_btn_read_Click(object sender, EventArgs e)
+        {
+            // 连接检查
+            if (_mb_isTcpMode && !_mb_transport.IsTcpConnected)
+            {
+                MessageBox.Show("请先连接 TCP");
+                return;
+            }
+            if (!_mb_isTcpMode && !_mb_transport.IsSerialOpen)
+            {
+                MessageBox.Show("请先打开串口");
+                return;
+            }
+
+            try
+            {
+                byte devAddr = byte.Parse(_mb_box_dev.Text.Trim());
+                string funcStr = _mb_drop_func.Text.Substring(0, 2);
+                byte funcCode = byte.Parse(funcStr);
+
+                string addrText = _mb_box_addr.Text.Trim();
+                ushort startAddr = addrText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                    ? Convert.ToUInt16(addrText.Substring(2), 16)
+                    : ushort.Parse(addrText);
+
+                // 记录请求参数，用于收到响应后桥接到 EventBus
+                _mb_lastDeviceId = devAddr.ToString();
+                _mb_lastStartAddr = startAddr;
+
+                ushort count = ushort.Parse(_mb_box_count.Text.Trim());
+
+                // 协议数量校验
+                int maxCount = ModbusProtocol.GetMaxCount(funcCode);
+                if (maxCount > 0 && count > maxCount)
+                {
+                    MessageBox.Show(
+                        $"功能码 {funcStr} 单次最多读 {maxCount} 个，\n" +
+                        $"当前填写了 {count} 个，超出协议限制。\n\n" +
+                        $"建议：分多次读取，每次不超过 {maxCount}。",
+                        "数量超限", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 写功能码检查
+                if (funcCode == 0x05 || funcCode == 0x06 || funcCode == 0x0F || funcCode == 0x10)
+                {
+                    MessageBox.Show(
+                        $"功能码 {funcStr}（{_mb_drop_func.Text.Substring(3)}）的写入功能暂未实现。\n\n" +
+                        "当前仅支持读取功能码：01 读线圈、02 读离散输入、03 读保持寄存器、04 读输入寄存器。",
+                        "功能未实现", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 记录历史
+                _mb_history.Add("dev_addr", _mb_box_dev.Text.Trim());
+                _mb_history.Add("start_addr", addrText);
+                _mb_history.Add("count", _mb_box_count.Text.Trim());
+                if (_mb_isTcpMode)
+                {
+                    _mb_history.Add("tcp_ip", _mb_box_ip.Text.Trim());
+                    _mb_history.Add("tcp_port", _mb_box_port.Text.Trim());
+                }
+
+                // 发送
+                var (frame, fc) = _mb_transport.SendReadRequest(devAddr, funcCode, startAddr, count);
+                ColorizeHexFrame(_mb_box_send_hex, BitConverter.ToString(frame).Replace("-", " "), fc, _mb_isTcpMode);
+                _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] 发送 → {_mb_box_send_hex.Text}\r\n");
+            }
+            catch (FormatException)
+            {
+                MessageBox.Show("参数格式错误，请检查设备地址、起始地址、数量的输入");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("生成指令失败：" + ex.Message);
+            }
+        }
+
+        // ========== DataGridView 列初始化 ==========
+        private void SetupGridColumns(bool isBit)
+        {
+            _mb_grid_result.Columns.Clear();
+            _mb_grid_result.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
+            _mb_grid_result.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
+            if (isBit)
+            {
+                var colIdx = _mb_grid_result.Columns.Add("Col_Index", "序号");
+                _mb_grid_result.Columns[colIdx].Width = 50;
+                _mb_grid_result.Columns[colIdx].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+                var colState = _mb_grid_result.Columns.Add("Col_State", "状态");
+                _mb_grid_result.Columns[colState].Width = 65;
+                _mb_grid_result.Columns[colState].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+                var colRaw = _mb_grid_result.Columns.Add("Col_RawByte", "原始字节");
+                _mb_grid_result.Columns[colRaw].Width = 90;
+                _mb_grid_result.Columns[colRaw].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            }
+            else
+            {
+                var colIdx = _mb_grid_result.Columns.Add("Col_Index", "序号");
+                _mb_grid_result.Columns[colIdx].Width = 50;
+                _mb_grid_result.Columns[colIdx].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+                var colDEC = _mb_grid_result.Columns.Add("Col_DEC", "DEC");
+                _mb_grid_result.Columns[colDEC].Width = 65;
+                _mb_grid_result.Columns[colDEC].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+                var colHEX = _mb_grid_result.Columns.Add("Col_HEX", "HEX");
+                _mb_grid_result.Columns[colHEX].Width = 70;
+                _mb_grid_result.Columns[colHEX].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                _mb_grid_result.Columns[colHEX].DefaultCellStyle.Font = new Font("Consolas", 10F);
+
+                var colBIN = _mb_grid_result.Columns.Add("Col_BIN", "BIN");
+                _mb_grid_result.Columns[colBIN].Width = 170;
+                _mb_grid_result.Columns[colBIN].DefaultCellStyle.Font = new Font("Consolas", 10F);
+
+                var colOCT = _mb_grid_result.Columns.Add("Col_OCT", "OCT");
+                _mb_grid_result.Columns[colOCT].Width = 70;
+                _mb_grid_result.Columns[colOCT].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                _mb_grid_result.Columns[colOCT].DefaultCellStyle.Font = new Font("Consolas", 10F);
+
+                var colSigned = _mb_grid_result.Columns.Add("Col_Signed", "有符号");
+                _mb_grid_result.Columns[colSigned].Width = 70;
+                _mb_grid_result.Columns[colSigned].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            }
+        }
+
+        // ========== 逐字段着色（UI 层 — 依赖 RichTextBox）==========
+        private static void ColorizeHexFrame(RichTextBox rtb, string hexText, byte funcCode, bool isTcp = false)
+        {
+            rtb.Clear();
+            rtb.AppendText(hexText);
+
+            string[] bytes = hexText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            int totalBytes = bytes.Length;
+            if (totalBytes < 3) return;
+
+            int pos = 0;
+            for (int i = 0; i < totalBytes; i++)
+            {
+                Color color;
+                if (isTcp && i < 6)
+                    color = Color.FromArgb(210, 225, 240);       // MBAP头 → 浅钢蓝
+                else if (isTcp && i == 6)
+                    color = Color.FromArgb(225, 225, 225);       // 单元ID → 浅灰
+                else if (!isTcp && i == 0)
+                    color = Color.FromArgb(225, 225, 225);       // 地址 → 浅灰
+                else if ((isTcp && i == 7) || (!isTcp && i == 1))
+                    color = GetFuncCodeColor(funcCode);           // 功能码 → 按类型
+                else if (!isTcp && i >= totalBytes - 2)
+                    color = Color.FromArgb(255, 225, 190);        // CRC → 浅橙
+                else
+                    color = Color.FromArgb(255, 255, 210);        // 数据 → 浅黄
+
+                rtb.Select(pos, 2);
+                rtb.SelectionBackColor = color;
+                pos += 2;
+                if (i < totalBytes - 1) pos++;
+            }
+            rtb.Select(0, 0);
+        }
+
+        private static Color GetFuncCodeColor(byte funcCode)
+        {
+            if ((funcCode & 0x80) != 0)
+                return Color.FromArgb(255, 215, 215);
+
+            return funcCode switch
+            {
+                0x01 => Color.FromArgb(220, 238, 255),
+                0x02 => Color.FromArgb(220, 255, 225),
+                0x03 => Color.FromArgb(240, 225, 255),
+                0x04 => Color.FromArgb(255, 248, 200),
+                0x05 or 0x06 or 0x0F or 0x10 => Color.FromArgb(255, 225, 225),
+                _ => Color.FromArgb(245, 245, 245)
+            };
+        }
+
+        // ========== 二进制格式化 ==========
+        private static string FormatBinary(ushort value)
+        {
+            string bin = Convert.ToString(value, 2).PadLeft(16, '0');
+            return $"{bin.Substring(0, 4)} {bin.Substring(4, 4)} {bin.Substring(8, 4)} {bin.Substring(12, 4)}";
+        }
+
+        // ========== 停止位 / 校验位解析 ==========
+        private static StopBits ParseStopBits(string text) => text switch
+        {
+            "1.5" => StopBits.OnePointFive,
+            "2" => StopBits.Two,
+            _ => StopBits.One
+        };
+
+        private static Parity ParseParity(string text) => text switch
+        {
+            "奇校验" => Parity.Odd,
+            "偶校验" => Parity.Even,
+            "Mark" => Parity.Mark,
+            "Space" => Parity.Space,
+            _ => Parity.None
+        };
+
+        // ========== Modbus 控件事件 ==========
+        private void mb_btn_refresh_Click(object sender, EventArgs e) => RefreshComPorts();
+
+        private void mb_btn_clear_Click(object sender, EventArgs e)
+        {
+            _mb_box_recv.Clear();
+            _mb_box_send_hex.Clear();
+            _mb_box_recv_hex.Clear();
+            _mb_grid_result.Rows.Clear();
+        }
+
+        // ========== ESC 关闭下拉面板 ==========
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Escape && _mb_currentDropdown != null && !_mb_currentDropdown.IsDisposed)
+            {
+                _mb_currentDropdown.Close();
+                _mb_currentDropdown = null;
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        // ========== 后端服务初始化 ==========
 
         private void InitializeServices()
         {
             try
             {
-                // 初始化数据库（默认 SQLite，可在配置中切换为 SQL Server）
                 _database = DatabaseManager.CreateSQLite("monitor.db");
-                // 如果要用 SQL Server，改为：
-                // _database = DatabaseManager.CreateSqlServer("localhost", "MonitorDB", "sa", "YourPassword123");
 
-                // 初始化各模块
                 _alarmManager = new AlarmManager(_database);
                 _recipeManager = new RecipeManager(_database);
                 _reportGenerator = new ReportGenerator(_database);
 
-                // 订阅报警事件
+                // 报警事件 → UI 更新
                 _alarmManager.OnAlarmTriggered += alarm =>
                 {
-                    Invoke(() =>
+                    if (IsDisposed || !IsHandleCreated) return;
+                    try
                     {
-                        _lbAlarmCount.Text = $"⚠️ 报警: {_alarmManager.GetUnconfirmedAlarms().Count}";
-                        MessageBox.Show($"报警: {alarm.RuleName}\n设备: {alarm.DeviceId}\n当前值: {alarm.CurrentValue:F2}",
-                            "报警提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    });
+                        Invoke(() =>
+                        {
+                            _lbAlarmCount.Text = $"⚠️ 报警: {_alarmManager.GetUnconfirmedAlarms().Count}";
+                            MessageBox.Show(
+                                $"报警: {alarm.RuleName}\n设备: {alarm.DeviceId}\n当前值: {alarm.CurrentValue:F2}",
+                                "报警提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        });
+                    }
+                    catch (ObjectDisposedException) { }
                 };
 
-                // 订阅连接状态事件
+                // 连接状态事件 → 状态栏
                 EventBus.Instance.Subscribe<ConnectionChangedEvent>(e =>
                 {
-                    Invoke(() =>
+                    if (IsDisposed || !IsHandleCreated) return;
+                    try
                     {
-                        _lbConnectionStatus.Text = e.IsConnected
-                            ? $"📡 设备: {e.DeviceId} 已连接"
-                            : "📡 设备: 未连接";
-                    });
+                        Invoke(() =>
+                        {
+                            _lbConnectionStatus.Text = e.IsConnected
+                                ? $"📡 设备: {e.DeviceId} 已连接"
+                                : "📡 设备: 未连接";
+                        });
+                    }
+                    catch (ObjectDisposedException) { }
                 });
             }
             catch (Exception ex)
@@ -123,503 +737,12 @@ namespace TEST_101.Forms
             }
         }
 
-        #region Tab 页创建
-
-        /// <summary>
-        /// 创建通讯监控 Tab
-        /// </summary>
-        private TabPage CreateMonitorTab()
-        {
-            var tab = new TabPage("📡 通讯监控");
-
-            // 这里可以嵌入原有的 ModbusForm 内容
-            // 或者创建一个新的监控面板
-            var panel = new Panel { Dock = DockStyle.Fill };
-
-            var label = new Label
-            {
-                Text = "通讯监控模块\n\n" +
-                       "功能：\n" +
-                       "• Modbus RTU/TCP 通讯\n" +
-                       "• 串口配置与管理\n" +
-                       "• 数据读写操作\n" +
-                       "• 通信日志记录\n\n" +
-                       "点击下方按钮打开完整的 Modbus 调试工具",
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Microsoft YaHei", 12F)
-            };
-            panel.Controls.Add(label);
-
-            var btnOpen = new Button
-            {
-                Text = "打开 Modbus 调试工具",
-                Size = new Size(200, 40),
-                Location = new Point(600, 400),
-                BackColor = Color.FromArgb(60, 140, 60),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat
-            };
-            btnOpen.Click += (s, e) =>
-            {
-                var modbusForm = new ModbusForm();
-                modbusForm.Show();
-            };
-            panel.Controls.Add(btnOpen);
-
-            tab.Controls.Add(panel);
-            return tab;
-        }
-
-        /// <summary>
-        /// 创建实时曲线 Tab
-        /// </summary>
-        private TabPage CreateChartTab()
-        {
-            var tab = new TabPage("📈 实时曲线");
-
-            var splitContainer = new SplitContainer
-            {
-                Dock = DockStyle.Fill,
-                SplitterDistance = 250,
-                Orientation = Orientation.Vertical
-            };
-
-            // 左侧：通道配置
-            var configPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(10)
-            };
-
-            var configLabel = new Label
-            {
-                Text = "通道配置",
-                Dock = DockStyle.Top,
-                Font = new Font("Microsoft YaHei", 10F, FontStyle.Bold),
-                Height = 30
-            };
-            configPanel.Controls.Add(configLabel);
-
-            // 通道列表
-            var channelList = new ListBox
-            {
-                Dock = DockStyle.Fill,
-                Font = new Font("Consolas", 9F)
-            };
-            channelList.Items.AddRange(new object[]
-            {
-                "CH1: 伺服转速 (D100) 🔴",
-                "CH2: 伺服转矩 (D102) 🔵",
-                "CH3: 变频器频率 (D200) 🟢",
-                "CH4: 电流 (D202) 🟡"
-            });
-            configPanel.Controls.Add(channelList);
-
-            // 按钮面板
-            var btnPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 40,
-                FlowDirection = FlowDirection.LeftToRight
-            };
-
-            var btnStart = new Button { Text = "▶ 开始", Width = 80 };
-            var btnPause = new Button { Text = "⏸ 暂停", Width = 80 };
-            var btnClear = new Button { Text = "🗑️ 清空", Width = 80 };
-            var btnExport = new Button { Text = "💾 导出", Width = 80 };
-
-            btnPanel.Controls.AddRange(new Control[] { btnStart, btnPause, btnClear, btnExport });
-            configPanel.Controls.Add(btnPanel);
-
-            splitContainer.Panel1.Controls.Add(configPanel);
-
-            // 右侧：曲线图表
-            var chartControl = new RealtimeChartControl { Dock = DockStyle.Fill };
-            splitContainer.Panel2.Controls.Add(chartControl);
-
-            // 初始化数据管理器
-            _chartDataManager = new ChartDataManager(chartControl);
-
-            tab.Controls.Add(splitContainer);
-            return tab;
-        }
-
-        /// <summary>
-        /// 创建报警系统 Tab
-        /// </summary>
-        private TabPage CreateAlarmTab()
-        {
-            var tab = new TabPage("⚠️ 报警系统");
-
-            var splitContainer = new SplitContainer
-            {
-                Dock = DockStyle.Fill,
-                SplitterDistance = 300,
-                Orientation = Orientation.Vertical
-            };
-
-            // 左侧：报警规则
-            var rulesPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(10)
-            };
-
-            var rulesLabel = new Label
-            {
-                Text = "报警规则",
-                Dock = DockStyle.Top,
-                Font = new Font("Microsoft YaHei", 10F, FontStyle.Bold),
-                Height = 30
-            };
-            rulesPanel.Controls.Add(rulesLabel);
-
-            var rulesGrid = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                AllowUserToAddRows = false,
-                ReadOnly = true,
-                BackgroundColor = Color.White,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-            rulesGrid.Columns.AddRange(new DataGridViewColumn[]
-            {
-                new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "规则名称" },
-                new DataGridViewTextBoxColumn { Name = "Device", HeaderText = "设备" },
-                new DataGridViewTextBoxColumn { Name = "Address", HeaderText = "地址" },
-                new DataGridViewTextBoxColumn { Name = "Condition", HeaderText = "条件" },
-                new DataGridViewTextBoxColumn { Name = "Level", HeaderText = "等级" },
-                new DataGridViewCheckBoxColumn { Name = "Enabled", HeaderText = "启用" }
-            });
-            rulesGrid.Rows.Add("伺服过速", "PLC-1", "D100", "> 1500", "故障", true);
-            rulesGrid.Rows.Add("变频器过流", "PLC-1", "D202", "> 10.0", "警告", true);
-            rulesGrid.Rows.Add("温度过高", "PLC-2", "D300", "> 80.0", "紧急", true);
-            rulesPanel.Controls.Add(rulesGrid);
-
-            // 规则操作按钮
-            var rulesBtnPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 40
-            };
-            var btnAddRule = new Button { Text = "➕ 添加", Width = 80 };
-            var btnEditRule = new Button { Text = "✏️ 编辑", Width = 80 };
-            var btnDeleteRule = new Button { Text = "🗑️ 删除", Width = 80 };
-            rulesBtnPanel.Controls.AddRange(new Control[] { btnAddRule, btnEditRule, btnDeleteRule });
-            rulesPanel.Controls.Add(rulesBtnPanel);
-
-            splitContainer.Panel1.Controls.Add(rulesPanel);
-
-            // 右侧：报警列表
-            var alarmPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(10)
-            };
-
-            var alarmLabel = new Label
-            {
-                Text = "实时报警",
-                Dock = DockStyle.Top,
-                Font = new Font("Microsoft YaHei", 10F, FontStyle.Bold),
-                Height = 30
-            };
-            alarmPanel.Controls.Add(alarmLabel);
-
-            var alarmGrid = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                AllowUserToAddRows = false,
-                ReadOnly = true,
-                BackgroundColor = Color.White,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-            alarmGrid.Columns.AddRange(new DataGridViewColumn[]
-            {
-                new DataGridViewTextBoxColumn { Name = "Time", HeaderText = "时间" },
-                new DataGridViewTextBoxColumn { Name = "Level", HeaderText = "等级" },
-                new DataGridViewTextBoxColumn { Name = "Device", HeaderText = "设备" },
-                new DataGridViewTextBoxColumn { Name = "Description", HeaderText = "描述" },
-                new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "状态" },
-                new DataGridViewButtonColumn { Name = "Action", HeaderText = "操作" }
-            });
-            alarmPanel.Controls.Add(alarmGrid);
-
-            // 报警操作按钮
-            var alarmBtnPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 40
-            };
-            var btnConfirm = new Button { Text = "✅ 确认", Width = 80 };
-            var btnReset = new Button { Text = "🔄 复位", Width = 80 };
-            var btnExportAlarm = new Button { Text = "📤 导出", Width = 80 };
-            alarmBtnPanel.Controls.AddRange(new Control[] { btnConfirm, btnReset, btnExportAlarm });
-            alarmPanel.Controls.Add(alarmBtnPanel);
-
-            splitContainer.Panel2.Controls.Add(alarmPanel);
-
-            tab.Controls.Add(splitContainer);
-            return tab;
-        }
-
-        /// <summary>
-        /// 创建配方管理 Tab
-        /// </summary>
-        private TabPage CreateRecipeTab()
-        {
-            var tab = new TabPage("📋 配方管理");
-
-            var splitContainer = new SplitContainer
-            {
-                Dock = DockStyle.Fill,
-                SplitterDistance = 350,
-                Orientation = Orientation.Vertical
-            };
-
-            // 左侧：配方列表
-            var listPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(10)
-            };
-
-            var listLabel = new Label
-            {
-                Text = "配方列表",
-                Dock = DockStyle.Top,
-                Font = new Font("Microsoft YaHei", 10F, FontStyle.Bold),
-                Height = 30
-            };
-            listPanel.Controls.Add(listLabel);
-
-            var recipeList = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                AllowUserToAddRows = false,
-                ReadOnly = true,
-                BackgroundColor = Color.White,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-            recipeList.Columns.AddRange(new DataGridViewColumn[]
-            {
-                new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "名称" },
-                new DataGridViewTextBoxColumn { Name = "Time", HeaderText = "创建时间" },
-                new DataGridViewTextBoxColumn { Name = "Params", HeaderText = "参数数量" },
-                new DataGridViewTextBoxColumn { Name = "Version", HeaderText = "版本" },
-                new DataGridViewButtonColumn { Name = "Action", HeaderText = "操作" }
-            });
-            recipeList.Rows.Add("产品A-标准", "2024-01-15 10:30", "12", "v1.2", "加载");
-            recipeList.Rows.Add("产品A-快速", "2024-01-15 11:00", "12", "v1.0", "加载");
-            recipeList.Rows.Add("产品B-标准", "2024-01-16 09:00", "15", "v2.1", "加载");
-            listPanel.Controls.Add(recipeList);
-
-            // 配方操作按钮
-            var listBtnPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 40
-            };
-            var btnNewRecipe = new Button { Text = "➕ 新建", Width = 80 };
-            var btnCopyRecipe = new Button { Text = "📋 复制", Width = 80 };
-            var btnDeleteRecipe = new Button { Text = "🗑️ 删除", Width = 80 };
-            var btnImport = new Button { Text = "📥 导入", Width = 80 };
-            var btnExport = new Button { Text = "📤 导出", Width = 80 };
-            listBtnPanel.Controls.AddRange(new Control[] { btnNewRecipe, btnCopyRecipe, btnDeleteRecipe, btnImport, btnExport });
-            listPanel.Controls.Add(listBtnPanel);
-
-            splitContainer.Panel1.Controls.Add(listPanel);
-
-            // 右侧：配方参数编辑
-            var editPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(10)
-            };
-
-            var editLabel = new Label
-            {
-                Text = "配方参数（当前: 产品A-标准 v1.2）",
-                Dock = DockStyle.Top,
-                Font = new Font("Microsoft YaHei", 10F, FontStyle.Bold),
-                Height = 30
-            };
-            editPanel.Controls.Add(editLabel);
-
-            var paramGrid = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                AllowUserToAddRows = false,
-                BackgroundColor = Color.White,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-            paramGrid.Columns.AddRange(new DataGridViewColumn[]
-            {
-                new DataGridViewTextBoxColumn { Name = "Index", HeaderText = "序号", ReadOnly = true },
-                new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "参数名称" },
-                new DataGridViewTextBoxColumn { Name = "Address", HeaderText = "PLC地址", ReadOnly = true },
-                new DataGridViewTextBoxColumn { Name = "Current", HeaderText = "当前值", ReadOnly = true },
-                new DataGridViewTextBoxColumn { Name = "New", HeaderText = "新值" },
-                new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "单位", ReadOnly = true }
-            });
-            paramGrid.Rows.Add("1", "伺服转速", "D100", "1000", "1200", "rpm");
-            paramGrid.Rows.Add("2", "伺服转矩限制", "D102", "100", "100", "%");
-            paramGrid.Rows.Add("3", "变频器频率", "D200", "50", "50", "Hz");
-            paramGrid.Rows.Add("4", "加速时间", "D204", "1000", "1000", "ms");
-            editPanel.Controls.Add(paramGrid);
-
-            // 参数操作按钮
-            var editBtnPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 40
-            };
-            var btnReadPlc = new Button { Text = "📥 从PLC读取", Width = 100 };
-            var btnDownload = new Button { Text = "📤 下发到PLC", Width = 100 };
-            var btnSave = new Button { Text = "💾 保存", Width = 80 };
-            editBtnPanel.Controls.AddRange(new Control[] { btnReadPlc, btnDownload, btnSave });
-            editPanel.Controls.Add(editBtnPanel);
-
-            splitContainer.Panel2.Controls.Add(editPanel);
-
-            tab.Controls.Add(splitContainer);
-            return tab;
-        }
-
-        /// <summary>
-        /// 创建生产报表 Tab
-        /// </summary>
-        private TabPage CreateReportTab()
-        {
-            var tab = new TabPage("📊 生产报表");
-
-            var panel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(10)
-            };
-
-            // 顶部筛选区
-            var filterPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 50,
-                FlowDirection = FlowDirection.LeftToRight
-            };
-
-            filterPanel.Controls.Add(new Label { Text = "报表类型:", AutoSize = true, Padding = new Padding(0, 8, 0, 0) });
-            var reportType = new ComboBox { Width = 100, DropDownStyle = ComboBoxStyle.DropDownList };
-            reportType.Items.AddRange(new[] { "日报", "周报", "月报" });
-            reportType.SelectedIndex = 0;
-            filterPanel.Controls.Add(reportType);
-
-            filterPanel.Controls.Add(new Label { Text = "日期:", AutoSize = true, Padding = new Padding(10, 8, 0, 0) });
-            var datePicker = new DateTimePicker { Width = 150 };
-            filterPanel.Controls.Add(datePicker);
-
-            var btnGenerate = new Button
-            {
-                Text = "📊 生成报表",
-                Width = 100,
-                BackColor = Color.FromArgb(60, 140, 60),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat
-            };
-            filterPanel.Controls.Add(btnGenerate);
-
-            panel.Controls.Add(filterPanel);
-
-            // 统计概览
-            var statsPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 100,
-                FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(0, 10, 0, 0)
-            };
-
-            var stats = new[]
-            {
-                ("总产量", "1,250"),
-                ("合格率", "98.5%"),
-                ("平均节拍", "3.2s"),
-                ("报警次数", "5")
-            };
-
-            foreach (var (title, value) in stats)
-            {
-                var card = new Panel
-                {
-                    Size = new Size(150, 70),
-                    BackColor = Color.FromArgb(240, 248, 255),
-                    Margin = new Padding(10)
-                };
-                card.Controls.Add(new Label
-                {
-                    Text = title,
-                    Dock = DockStyle.Top,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Font = new Font("Microsoft YaHei", 9F)
-                });
-                card.Controls.Add(new Label
-                {
-                    Text = value,
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Font = new Font("Microsoft YaHei", 16F, FontStyle.Bold)
-                });
-                statsPanel.Controls.Add(card);
-            }
-
-            panel.Controls.Add(statsPanel);
-
-            // 详细数据表格
-            var dataGrid = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                AllowUserToAddRows = false,
-                ReadOnly = true,
-                BackgroundColor = Color.White,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-            dataGrid.Columns.AddRange(new DataGridViewColumn[]
-            {
-                new DataGridViewTextBoxColumn { Name = "Time", HeaderText = "时间" },
-                new DataGridViewTextBoxColumn { Name = "Count", HeaderText = "产量" },
-                new DataGridViewTextBoxColumn { Name = "Good", HeaderText = "合格" },
-                new DataGridViewTextBoxColumn { Name = "Defect", HeaderText = "不合格" },
-                new DataGridViewTextBoxColumn { Name = "Cycle", HeaderText = "节拍" },
-                new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "状态" }
-            });
-            dataGrid.Rows.Add("08:00-09:00", "125", "123", "2", "3.1s", "正常");
-            dataGrid.Rows.Add("09:00-10:00", "130", "128", "2", "3.0s", "正常");
-            dataGrid.Rows.Add("10:00-11:00", "128", "125", "3", "3.3s", "正常");
-            dataGrid.Rows.Add("11:00-12:00", "135", "133", "2", "2.9s", "正常");
-            panel.Controls.Add(dataGrid);
-
-            // 底部操作按钮
-            var btnPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 40
-            };
-            var btnExportExcel = new Button { Text = "📊 导出 Excel", Width = 100 };
-            var btnPrint = new Button { Text = "🖨️ 打印", Width = 80 };
-            btnPanel.Controls.AddRange(new Control[] { btnExportExcel, btnPrint });
-            panel.Controls.Add(btnPanel);
-
-            tab.Controls.Add(panel);
-            return tab;
-        }
-
-        #endregion
+        // ========== 窗口关闭 ==========
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
-
-            // 释放资源
+            _mb_transport?.Dispose();
             _chartDataManager?.Dispose();
             _reportGenerator?.Dispose();
             _recipeManager?.Dispose();

@@ -16,8 +16,9 @@ namespace TEST_101.Core
         public static EventBus Instance => _instance.Value;
 
         // 线程安全的事件订阅表
-        // Key: 事件类型, Value: 处理程序列表
-        private readonly ConcurrentDictionary<Type, ConcurrentBag<Delegate>> _handlers = new();
+        // Key: 事件类型, Value: 处理程序列表（用锁保护，支持移除）
+        private readonly ConcurrentDictionary<Type, List<Delegate>> _handlers = new();
+        private readonly object _lock = new();
 
         // 私有构造函数
         private EventBus() { }
@@ -29,8 +30,11 @@ namespace TEST_101.Core
         /// <param name="handler">事件处理程序</param>
         public void Subscribe<T>(Action<T> handler)
         {
-            var handlers = _handlers.GetOrAdd(typeof(T), _ => new ConcurrentBag<Delegate>());
-            handlers.Add(handler);
+            var handlers = _handlers.GetOrAdd(typeof(T), _ => new List<Delegate>());
+            lock (_lock)
+            {
+                handlers.Add(handler);
+            }
         }
 
         /// <summary>
@@ -40,8 +44,10 @@ namespace TEST_101.Core
         {
             if (_handlers.TryGetValue(typeof(T), out var handlers))
             {
-                // ConcurrentBag 不支持直接移除，这里简化处理
-                // 实际项目中可以用 ConcurrentDictionary + HashSet 替代
+                lock (_lock)
+                {
+                    handlers.Remove(handler);
+                }
             }
         }
 
@@ -52,7 +58,12 @@ namespace TEST_101.Core
         {
             if (_handlers.TryGetValue(typeof(T), out var handlers))
             {
-                foreach (var handler in handlers)
+                Delegate[] snapshot;
+                lock (_lock)
+                {
+                    snapshot = handlers.ToArray();
+                }
+                foreach (var handler in snapshot)
                 {
                     try
                     {

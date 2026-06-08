@@ -14,6 +14,7 @@ namespace TEST_101.Chart
     {
         private readonly RealtimeChartControl _chart;
         private readonly List<ChannelConfig> _channels = new();
+        private readonly object _channelLock = new();
         private bool _disposed;
 
         public ChartDataManager(RealtimeChartControl chart)
@@ -29,18 +30,21 @@ namespace TEST_101.Chart
         /// </summary>
         public void ConfigureChannels(List<ChannelConfig> channels)
         {
-            // 清除旧通道
-            foreach (var oldChannel in _channels)
+            lock (_channelLock)
             {
-                _chart.RemoveChannel(oldChannel.ChannelId);
-            }
-            _channels.Clear();
+                // 清除旧通道
+                foreach (var oldChannel in _channels)
+                {
+                    _chart.RemoveChannel(oldChannel.ChannelId);
+                }
+                _channels.Clear();
 
-            // 添加新通道
-            foreach (var channel in channels.Where(c => c.IsEnabled))
-            {
-                _channels.Add(channel);
-                _chart.AddChannel(channel);
+                // 添加新通道
+                foreach (var channel in channels.Where(c => c.IsEnabled))
+                {
+                    _channels.Add(channel);
+                    _chart.AddChannel(channel);
+                }
             }
         }
 
@@ -49,8 +53,11 @@ namespace TEST_101.Chart
         /// </summary>
         public void AddChannel(ChannelConfig channel)
         {
-            _channels.Add(channel);
-            _chart.AddChannel(channel);
+            lock (_channelLock)
+            {
+                _channels.Add(channel);
+                _chart.AddChannel(channel);
+            }
         }
 
         /// <summary>
@@ -58,7 +65,13 @@ namespace TEST_101.Chart
         /// </summary>
         private void OnDataUpdated(DataUpdatedEvent e)
         {
-            foreach (var channel in _channels)
+            ChannelConfig[] snapshot;
+            lock (_channelLock)
+            {
+                snapshot = _channels.ToArray();
+            }
+
+            foreach (var channel in snapshot)
             {
                 if (channel.DeviceId == e.DeviceId)
                 {
@@ -81,13 +94,19 @@ namespace TEST_101.Chart
         /// </summary>
         public List<ChannelConfig> GetChannels()
         {
-            return _channels.ToList();
+            lock (_channelLock)
+            {
+                return _channels.ToList();
+            }
         }
 
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
+
+            // 取消 EventBus 订阅
+            EventBus.Instance.Unsubscribe<DataUpdatedEvent>(OnDataUpdated);
         }
     }
 }
