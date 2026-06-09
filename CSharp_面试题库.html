@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C# 面试题库 — 上位机开发方向</title>
+    <style>
+        :root {
+            --bg: #1a1a2e; --card: #16213e; --accent: #0f3460;
+            --text: #eee; --muted: #a0a0b0; --green: #4ecca3;
+            --blue: #48bfe3; --yellow: #f0c040; --orange: #f77f00;
+            --red: #e94560;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text);
+            line-height: 1.8; padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { text-align: center; font-size: 2em; margin: 30px 0 10px; color: var(--red); }
+        .subtitle { text-align: center; color: var(--muted); margin-bottom: 40px; }
+        .part-title {
+            font-size: 1.4em; color: var(--green);
+            margin: 40px 0 20px; padding: 10px 15px;
+            background: var(--accent); border-left: 4px solid var(--green);
+            border-radius: 4px;
+        }
+        .q-card {
+            background: var(--card); border-radius: 8px;
+            margin: 15px 0; padding: 20px;
+            border-left: 4px solid var(--blue);
+            transition: transform 0.2s;
+        }
+        .q-card:hover { transform: translateX(5px); }
+        .q-num {
+            display: inline-block; background: var(--red); color: #fff;
+            padding: 2px 10px; border-radius: 12px; font-size: 0.85em;
+            font-weight: bold; margin-right: 8px;
+        }
+        .q-title {
+            font-size: 1.15em; font-weight: bold; color: var(--yellow);
+            margin-bottom: 12px;
+        }
+        .answer { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; margin-top: 10px; }
+        .answer p { margin: 6px 0; }
+        pre {
+            background: #0d1117; padding: 15px; border-radius: 6px;
+            overflow-x: auto; font-size: 0.9em; line-height: 1.6;
+            margin: 10px 0; border: 1px solid #30363d;
+        }
+        code { font-family: 'Consolas', 'Courier New', monospace; color: var(--green); }
+        table {
+            width: 100%; border-collapse: collapse; margin: 10px 0;
+        }
+        th, td { border: 1px solid #30363d; padding: 8px 12px; text-align: left; }
+        th { background: var(--accent); color: var(--green); }
+        tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+        .highlight { color: var(--red); font-weight: bold; }
+        .green { color: var(--green); }
+        .blue { color: var(--blue); }
+        .tag {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.8em; margin-right: 5px;
+        }
+        .tag-must { background: var(--red); color: #fff; }
+        .tag-common { background: var(--blue); color: #000; }
+        .tag-plus { background: var(--green); color: #000; }
+        .toc {
+            background: var(--card); padding: 20px; border-radius: 8px; margin: 20px 0;
+        }
+        .toc a { color: var(--blue); text-decoration: none; display: block; padding: 3px 0; }
+        .toc a:hover { color: var(--red); }
+        .footer { text-align: center; color: var(--muted); margin-top: 60px; padding: 20px; border-top: 1px solid #30363d; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>💻 C# 面试题库</h1>
+<p class="subtitle">上位机开发方向 · 高频考点 · 标准答案可直接背诵</p>
+
+<div class="toc">
+<strong style="color:var(--green)">📋 目录</strong>
+<a href="#part1">第一部分：基础概念（Q1~Q7）</a>
+<a href="#part2">第二部分：面向对象（Q8~Q13）</a>
+<a href="#part3">第三部分：进阶语法（Q14~Q20）</a>
+<a href="#part4">第四部分：上位机场景（Q21~Q25）</a>
+<a href="#part5">第五部分：C# vs 其他语言（Q26~Q28）</a>
+</div>
+
+<!-- ==================== 第一部分 ==================== -->
+<h2 class="part-title" id="part1">第一部分：基础概念 <span class="tag tag-must">必考</span></h2>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q1</span>int 在 C# 里多少位？PLC 里多少位？</div>
+    <div class="answer">
+        <p><span class="green">C#：</span><code>int</code> = 32 位（-21 亿 ~ 21 亿）</p>
+        <p><span class="blue">PLC（博途/STEP 7）：</span><code>INT</code> = 16 位（-32768 ~ 32767），<code>DINT</code> = 32 位</p>
+        <p><span class="highlight">原因：</span>PLC 的 INT 是 IEC 61131-3 标准规定的 16 位历史产物；C# 的 int 是跟 CPU 字长对齐的 32 位设计选择。上位机开发时要手动做类型映射。</p>
+        <pre>C# 接 PLC 数据：
+    ushort rawValue = register.Value;      // PLC WORD → C# ushort（16位）
+    short signed = (short)rawValue;         // PLC INT → C# short（16位）
+    int dint = (regHigh << 16) | regLow;   // PLC DINT → C# int（32位）
+    double actual = rawValue * 0.1;         // 计算时转 double 防溢出</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q2</span>字段（field）和属性（property）有什么区别？</div>
+    <div class="answer">
+        <p><span class="green">字段</span> = 变量，直接存数据，裸奔</p>
+        <p><span class="blue">属性</span> = 带 get/set 门卫的字段，可以在访问时加逻辑</p>
+<pre>// 字段 — 直接公开，没有任何保护
+public int age;
+
+// 属性 — get/set 可以加校验、触发事件、计算
+private int _age;
+public int Age
+{
+    get => _age;
+    set
+    {
+        if (value < 0 || value > 150)
+            throw new ArgumentException("年龄不合法");
+        _age = value;
+    }
+}
+
+// 自动属性（C# 3.0+） — 编译器生成隐藏字段
+public string Name { get; set; }
+</pre>
+        <p><span class="highlight">设计原则：</span>字段永远 private，对外暴露用属性。纯数据用自动属性 <code>{ get; set; }</code>，需要逻辑时改成完整属性。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q3</span>值类型和引用类型的区别？</div>
+    <div class="answer">
+        <table>
+            <tr><th>维度</th><th>值类型</th><th>引用类型</th></tr>
+            <tr><td>存哪里</td><td>栈上</td><td>堆上</td></tr>
+            <tr><td>赋值行为</td><td>复制值（两个独立副本）</td><td>复制引用（指向同一对象）</td></tr>
+            <tr><td>默认值</td><td>0 / false</td><td>null</td></tr>
+            <tr><td>例子</td><td>int, double, bool, struct, enum</td><td>string, class, array, object</td></tr>
+        </table>
+<pre>// 值类型：改一个不影响另一个
+int a = 10;
+int b = a;
+b = 20;  // a 还是 10
+
+// 引用类型：改一个两个都变
+int[] arr1 = { 1, 2, 3 };
+int[] arr2 = arr1;
+arr2[0] = 999;  // arr1[0] 也变成 999
+
+// 字符串例外：虽然是引用类型，但行为像值类型（不可变性）
+string s1 = "hello";
+string s2 = s1;
+s2 = "world";  // s1 还是 "hello"（s2 指向了新字符串）</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q4</span>装箱和拆箱是什么？</div>
+    <div class="answer">
+        <p><span class="green">装箱：</span>值类型 → object 引用类型（栈→堆）</p>
+        <p><span class="blue">拆箱：</span>object 引用类型 → 值类型（堆→栈）</p>
+<pre>int score = 100;
+object obj = score;        // 装箱：栈上的 int 的拷贝到堆上
+int value = (int)obj;      // 拆箱：堆上的 object 转回 int
+
+// 性能影响：装箱拆箱有性能开销，大批量数据时要注意
+// 上位机场景：Modbus 寄存器值是 ushort，频繁装箱会影响性能</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q5</span>StringBuilder 和 string 拼接的区别？</div>
+    <div class="answer">
+        <p><span class="highlight">string 是不可变的！</span>每次 <code>+=</code> 都会创建一个新字符串，旧的等着 GC 回收。</p>
+<pre>// ❌ 低效：每次循环都创建新字符串
+string s = "";
+for (int i = 0; i < 1000; i++)
+    s += i + ",";  // 创建了 1000 个临时字符串
+
+// ✅ 高效：StringBuilder 内部用可变缓冲区
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 1000; i++)
+    sb.Append(i).Append(",");
+string result = sb.ToString();</pre>
+        <p><span class="green">什么时候用 StringBuilder：</span>循环拼接、大量拼接、不知道最终长度的拼接。</p>
+        <p><span class="green">什么时候直接用 +：</span>拼接次数固定且很少（3-5 次），编译器会优化成 <code>string.Concat</code>。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q6</span>const 和 readonly 的区别？</div>
+    <div class="answer">
+        <table>
+            <tr><th></th><th>const</th><th>readonly</th></tr>
+            <tr><td>赋值时机</td><td>编译时</td><td>运行时（构造时）</td></tr>
+            <tr><td>存储</td><td>编译期嵌入代码</td><td>运行期普通字段</td></tr>
+            <tr><td>数据类型</td><td>仅基本类型（int、double、string）</td><td>任何类型</td></tr>
+            <tr><td>每个程序集副本</td><td>是（引用的地方各有一份）</td><td>否（只存一份）</td></tr>
+        </table>
+<pre>const double PI = 3.14;      // 编译期常量
+readonly string Name;          // 运行时常量（可以在构造函数里赋值）
+
+class Config
+{
+    public readonly int MaxRetries;
+    public Config(int maxRetries) { MaxRetries = maxRetries; }  // 构造时赋值
+}</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q7</span>虚方法（virtual）和抽象方法（abstract）的区别？</div>
+    <div class="answer">
+<pre>abstract class Animal
+{
+    public abstract void Speak();     // 抽象方法：子类必须实现，不能有方法体
+    public virtual void Sleep()       // 虚方法：子类可以选择重写，有默认实现
+    {
+        Console.WriteLine("动物睡觉");
+    }
+}
+
+class Dog : Animal
+{
+    public override void Speak()     // 必须重写
+    {
+        Console.WriteLine("汪汪");
+    }
+    // Sleep 可以不重写，用默认实现
+}</pre>
+        <table>
+            <tr><th></th><th>abstract</th><th>virtual</th></tr>
+            <tr><td>方法体</td><td>没有方法体</td><td>有默认方法体</td></tr>
+            <tr><td>子类必须重写？</td><td>是</td><td>否（可选）</td></tr>
+            <tr><td>能否 new 实例</td><td>不能（类也是 abstract）</td><td>能</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ==================== 第二部分 ==================== -->
+<h2 class="part-title" id="part2">第二部分：面向对象 <span class="tag tag-must">必考</span></h2>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q8</span>面向对象的三大特性是什么？</div>
+    <div class="answer">
+        <table>
+            <tr><th>特性</th><th>含义</th><th>你的项目体现</th></tr>
+            <tr><td><strong>封装</strong></td><td>隐藏内部实现，暴露接口</td><td>ModbusProtocol 内部的 CRC 计算对外部不可见</td></tr>
+            <tr><td><strong>继承</strong></td><td>子类复用父类，扩展功能</td><td>DatabaseManager 可以派生出 SqliteManager 和 SqlServerManager</td></tr>
+            <tr><td><strong>多态</strong></td><td>同一接口不同实现</td><td>ModbusForm 只调 transport.Send()，不管下面是串口还是 TCP</td></tr>
+        </table>
+        <p><span class="highlight">面试加分：</span>"OOP 没有过时，现在趋势是多范式混合。用 OOP 组织架构，用函数式处理数据，用过程式写简单逻辑。比如 C# 的 LINQ 就是函数式的体现。"</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q9</span>接口（interface）和抽象类（abstract class）的区别？</div>
+    <div class="answer">
+        <table>
+            <tr><th></th><th>接口</th><th>抽象类</th></tr>
+            <tr><td>关键词</td><td>interface</td><td>abstract class</td></tr>
+            <tr><td>多继承</td><td>一个类可以实现多个接口</td><td>一个类只能继承一个抽象类</td></tr>
+            <tr><td>字段</td><td>不能有字段</td><td>可以有字段</td></tr>
+            <tr><td>方法实现</td><td>传统不能有实现（C# 8.0+ 可以有默认实现）</td><td>可以有完全实现的方法</td></tr>
+            <tr><td>构造</td><td>不能有构造函数</td><td>可以有构造函数</td></tr>
+            <tr><td>修饰符</td><td>成员默认 public</td><td>成员可以用各种访问修饰符</td></tr>
+        </table>
+<pre>// 接口：定义"能做什么"
+interface IConnectable
+{
+    void Connect();
+    void Disconnect();
+    bool IsConnected { get; }
+}
+
+// 抽象类：定义"是什么"
+abstract class Device
+{
+    public string Name { get; set; }
+    public abstract void Read();
+    public virtual void Print() => Console.WriteLine(Name);
+}
+
+class ModbusDevice : Device, IConnectable  // 继承一个类，实现多个接口
+{
+    public override void Read() { }
+    public void Connect() { }
+    public void Disconnect() { }
+    public bool IsConnected => true;
+}</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q10</span>重载（overload）和重写（override）的区别？</div>
+    <div class="answer">
+<pre>// 重载：同名不同参，编译时决定
+class Calc
+{
+    public int Add(int a, int b) => a + b;              // 两个 int
+    public double Add(double a, double b) => a + b;     // 两个 double
+}
+
+// 重写：子类修改父类方法，运行时决定
+class Base
+{
+    public virtual void Show() => Console.WriteLine("Base");
+}
+class Derived : Base
+{
+    public override void Show() => Console.WriteLine("Derived");
+}</pre>
+        <table>
+            <tr><th></th><th>重载（overload）</th><th>重写（override）</th></tr>
+            <tr><td>什么时候</td><td>编译时（早绑定）</td><td>运行时（晚绑定）</td></tr>
+            <tr><td>参数</td><td>必须不同（个数/类型）</td><td>必须相同</td></tr>
+            <tr><td>关键词</td><td>不需要</td><td>virtual / override</td></tr>
+            <tr><td>继承</td><td>不需要继承</td><td>必须在继承关系中</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q11</span>new 关键字有哪几种作用？</div>
+    <div class="answer">
+<pre>// 1. 创建对象
+var form = new ModbusForm();
+
+// 2. 隐藏父类成员（new 修饰符）
+class Base { public void Show() => Console.WriteLine("Base"); }
+class Derived : Base { public new void Show() => Console.WriteLine("Derived"); }
+
+// 3. 泛型约束
+class Storage where T : new() { }  // T 必须有无参构造函数
+
+// 4. 匿名类型（C# 3.0+）
+var obj = new { Name = "张三", Age = 20 };</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q12</span>什么是委托？</div>
+    <div class="answer">
+        <p><span class="green">委托</span> = 方法的"指针"，可以把方法当作参数传递</p>
+<pre>// 定义一个委托类型
+delegate void LogHandler(string message);
+
+// 符合委托签名的方法
+void WriteToFile(string msg) => File.WriteAllText("log.txt", msg);
+void WriteToConsole(string msg) => Console.WriteLine(msg);
+
+// 使用
+LogHandler logger = WriteToFile;  // 指向方法
+logger("这行写入了文件");          // 调用
+
+logger = WriteToConsole;          // 切换实现
+logger("这行打印到控制台");
+
+// 多播委托：一个委托指向多个方法
+logger += WriteToFile;
+logger("两处都会记录");
+
+// 框架预定义的委托
+Func<int, bool> predicate;    // 有返回值，最后一个是返回类型
+Action<string> action;        // 无返回值</pre>
+        <p><span class="blue">你项目里的体现：</span><code>_transport.FrameReceived += OnFrameReceived</code> 就是委托 + 事件。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q13</span>事件（event）和委托（delegate）的区别？</div>
+    <div class="answer">
+        <table>
+            <tr><th></th><th>delegate</th><th>event</th></tr>
+            <tr><td>外部赋值</td><td>可以被 =(直接赋值)</td><td>只能用 += 和 -=</td></tr>
+            <tr><td>外部调用</td><td>外部可以随意调用</td><td>只能在声明类内部调用</td></tr>
+            <tr><td>安全</td><td>低（外部可以覆盖/清空所有订阅）</td><td>高（外部只能添加/移除自己的）</td></tr>
+            <tr><td>用途</td><td>回调、方法参数</td><td>发布-订阅模式</td></tr>
+        </table>
+<pre>// 你的项目：ModbusTransport 用事件
+public event Action&lt;byte[], bool&gt; FrameReceived;
+
+// UI 层订阅事件
+_transport.FrameReceived += OnFrameReceived;  // ✅ 只能用 +=
+_transport.FrameReceived = MyMethod;           // ❌ 编译错误（事件保护）</pre>
+    </div>
+</div>
+
+<!-- ==================== 第三部分 ==================== -->
+<h2 class="part-title" id="part3">第三部分：进阶语法 <span class="tag tag-common">常考</span></h2>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q14</span>?? 和 || 在 C# 里和 JS/TS 里有什么区别？</div>
+    <div class="answer">
+        <p><span class="highlight">核心区别：</span></p>
+        <table>
+            <tr><th>表达式</th><th>C#</th><th>JS/TS</th><th>原因</th></tr>
+            <tr><td><code>0 || 1</code></td><td>❌ 编译错误</td><td>✅ 返回 1</td><td>C# 只看 bool，JS 看 truthy</td></tr>
+            <tr><td><code>"" || "默认"</code></td><td>❌ 编译错误</td><td>✅ 返回 "默认"</td><td>同上</td></tr>
+            <tr><td><code>null || "默认"</code></td><td>❌ 编译错误</td><td>✅ 返回 "默认"</td><td>C# 不认 null 为 bool</td></tr>
+            <tr><td><code>null ?? "默认"</code></td><td>✅ 返回 "默认"</td><td>✅ 返回 "默认"</td><td>一致，只认 null</td></tr>
+            <tr><td><code>0 ?? 100</code></td><td>✅ 返回 0</td><td>✅ 返回 0</td><td>一致，不认 falsy</td></tr>
+        </table>
+<pre>// C#：|| 只用于 bool，?? 只认 null
+bool result = true || false;     // OK
+int num = GetValue() ?? 100;     // 如果返回 null 则用 100
+
+// JS：|| 返回第一个真值（会吃掉 0 和 ""）
+let count = input || 10;         // 如果 input=0，会变成 10（bug！）
+let safe = input ?? 10;          // 只有 null/undefined 才替换（正确）</pre>
+        <p><span class="green">面试结论：</span>C# 类型严格，不容易踩坑；JS 的 <code>||</code> 把 0 和 "" 当 falsy 吃掉，推荐用 <code>??</code> 代替。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q15</span>LINQ 是什么？常用的 LINQ 方法有哪些？</div>
+    <div class="answer">
+        <p><span class="green">LINQ</span> = Language Integrated Query，C# 内置的函数式数据处理工具，链式操作。</p>
+<pre>int[] scores = { 67, 89, 78, 80, 75 };
+
+// 基础操作
+int sum = scores.Sum();                    // 总和
+double avg = scores.Average();             // 平均
+int max = scores.Max();                    // 最大
+
+// 过滤 + 排序
+var above80 = scores.Where(s => s >= 80)
+                    .OrderByDescending(s => s)
+                    .ToList();             // [89, 80]
+
+// 分组
+var grouped = scores.GroupBy(s => s >= 80 ? "及格" : "不及格");
+
+// 选择
+var names = devices.Select(d => d.Name).ToList();</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q16</span>async/await 是什么？上位机里怎么用？</div>
+    <div class="answer">
+        <p><span class="green">async/await</span> = C# 5.0 的异步编程模型，让异步代码看起来像同步代码。</p>
+<pre>// 上位机场景：读取数据时不能卡界面
+private async void btn_read_Click(object sender, EventArgs e)
+{
+    btn_read.Enabled = false;  // 防止重复点击
+
+    try
+    {
+        var result = await Task.Run(() => _transport.SendReadRequest(...));
+        FillGrid(result);
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"读取失败：{ex.Message}");
+    }
+    finally
+    {
+        btn_read.Enabled = true;
+    }
+}
+
+// 原理：await 会释放 UI 线程，等操作完成后自动切回来
+// 不需要手动写 BackgroundWorker 或 Thread</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q17</span>try-catch-finally 和 using 的关系？</div>
+    <div class="answer">
+<pre>// 传统写法：手动释放资源
+SqlConnection conn = null;
+try
+{
+    conn = new SqlConnection(connStr);
+    conn.Open();
+    // 操作
+}
+finally
+{
+    conn?.Close();  // 确保释放
+    conn?.Dispose();
+}
+
+// using 写法：自动释放
+using (var conn = new SqlConnection(connStr))
+{
+    conn.Open();
+    // 操作
+}  // 自动调用 Dispose()
+
+// C# 8.0+：using 声明
+using var conn = new SqlConnection(connStr);
+conn.Open();
+// 作用域结束时自动释放</pre>
+        <p><span class="green">你的项目：</span><code>ModbusTransport</code> 实现了 <code>IDisposable</code>，在 <code>OnFormClosing</code> 里手动 <code>Dispose()</code>。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q18</span>var 和 dynamic 有什么区别？</div>
+    <div class="answer">
+<pre>var x = "hello";   // 编译时确定类型为 string（强类型）
+x = 123;           // ❌ 编译错误，var 一旦确定类型不能变
+
+dynamic y = "hello"; // 运行时确定类型（弱类型）
+y = 123;            // ✅ 可以，但运行时可能出错
+y.SomeMethod();     // ✅ 编译通过，但运行时可能抛 RuntimeBinderException</pre>
+        <table>
+            <tr><th></th><th>var</th><th>dynamic</th></tr>
+            <tr><td>类型检查</td><td>编译时</td><td>运行时</td></tr>
+            <tr><td>IntelliSense</td><td>有</td><td>没有</td></tr>
+            <tr><td>性能</td><td>好</td><td>略差（需要 DLR 开销）</td></tr>
+            <tr><td>推荐</td><td>始终优先用 var</td><td>除非必要（如 COM 互操作）</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q19</span>反射是什么？你的项目里哪里用了反射？</div>
+    <div class="answer">
+        <p><span class="green">反射</span> = 运行时获取类型信息，动态创建对象、调用方法、获取属性。</p>
+<pre>// 你项目里 CSharpConceptsDemo 的 Demo04
+Type type = typeof(ModbusProtocol);
+var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static);
+foreach (var method in methods)
+    Console.WriteLine(method.Name);
+
+// 动态调用方法
+MethodInfo calcCrc = typeof(ModbusProtocol).GetMethod("CalcCRC");
+byte[] result = (byte[])calcCrc.Invoke(null, new object[] { data });</pre>
+        <p><span class="blue">使用场景：</span>插件系统、ORM（EF Core 就是反射）、序列化、依赖注入。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q20</span>模式匹配（pattern matching）有几种？</div>
+    <div class="answer">
+<pre>// C# 7.0 类型模式
+if (obj is int number)
+    Console.WriteLine($"整数：{number}");
+
+// C# 8.0 switch 表达式
+string result = score switch
+{
+    >= 90 => "优秀",
+    >= 60 => "及格",
+    _     => "不及格"
+};
+
+// C# 9.0 关系模式 + 逻辑模式
+string level = score switch
+{
+    < 0 or > 100 => "无效",
+    >= 90 => "优秀",
+    _     => "其他"
+};
+
+// C# 10 嵌套模式
+if (obj is (int x, string y))  // 对元组使用模式匹配
+    Console.WriteLine($"{x}: {y}");</pre>
+    </div>
+</div>
+
+<!-- ==================== 第四部分 ==================== -->
+<h2 class="part-title" id="part4">第四部分：上位机场景 <span class="tag tag-must">重点准备</span></h2>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q21</span>怎么防止跨线程操作 UI 控件？</div>
+    <div class="answer">
+        <p><span class="highlight">WinForms 规则：</span>只能在 UI 线程上操作控件。串口/网络回调在后台线程。</p>
+<pre>// 你的项目代码：SafeInvoke
+private void SafeInvoke(Action action)
+{
+    if (_disposed) return;
+    if (_uiControl.IsDisposed) return;
+
+    if (_uiControl.InvokeRequired)
+        _uiControl.Invoke(action);   // 封送到 UI 线程
+    else
+        action();                    // 已经在 UI 线程
+}
+
+// 另一种写法（C# 3.0+）
+box_recv.InvokeIfRequired(() =>
+{
+    box_recv.AppendText("收到数据\r\n");
+});
+
+// 扩展方法（你项目里可以这样写）
+public static void InvokeIfRequired(this Control control, Action action)
+{
+    if (control.InvokeRequired)
+        control.Invoke(action);
+    else
+        action();
+}</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q22</span>为什么 Modbus 数据要分三层架构？</div>
+    <div class="answer">
+        <p><span class="green">你的项目架构：</span></p>
+<pre>ModbusProtocol  →  纯协议逻辑（组帧/解析/CRC），不碰 IO
+ModbusTransport →  传输层（串口/TCP），不关心协议内容
+ModbusForm      →  UI 层，只做展示和交互</pre>
+        <p><span class="highlight">面试回答：</span>"用关注点分离原则。协议层是纯函数可独立测试；传输层屏蔽串口/TCP 差异；UI 层只做展示。任何一层修改不影响其他层。这体现了 OOP 的封装和多态。"</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q23</span>上位机中高频数据怎么存？怎么避免数据库写入太频繁？</div>
+    <div class="answer">
+<pre>private readonly ConcurrentQueue&lt;DataPoint&gt; _buffer = new();
+
+public void OnDataReceived(DataPoint dp)
+{
+    _buffer.Enqueue(dp);
+    if (_buffer.Count >= 100)
+        FlushToDatabase();  // 攒够 100 条批量写入
+}
+
+private void FlushToDatabase()
+{
+    var batch = new List&lt;DataPoint&gt;();
+    while (_buffer.TryDequeue(out var r))
+        batch.Add(r);
+
+    using var conn = new SqlConnection(connStr);
+    conn.Open();
+    // 批量插入（比逐条快 10-100 倍）
+    // 或者用 SqlBulkCopy
+}</pre>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q24</span>你项目里的 EventBus 是做什么的？</div>
+    <div class="answer">
+        <p><span class="green">EventBus</span> = 全局事件总线，解耦模块间通信。</p>
+<pre>// 发布者（ModbusForm 收到数据后）
+EventBus.Instance.Publish(new DataUpdatedEvent(
+    DeviceId: "PLC-1",
+    StartAddress: 0,
+    Values: registerValues,
+    Timestamp: DateTime.Now
+));
+
+// 订阅者（图表模块监听）
+EventBus.Instance.Subscribe&lt;DataUpdatedEvent&gt;(e =>
+{
+    // 更新图表
+});
+
+// 订阅者（报警模块监听）
+EventBus.Instance.Subscribe&lt;DataUpdatedEvent&gt;(e =>
+{
+    // 检查是否触发报警
+});</pre>
+        <p><span class="highlight">设计模式：</span>观察者模式（Pub/Sub），三个模块不需要互相引用。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q25</span>SerialPort 的 DataReceived 事件在哪个线程？要注意什么？</div>
+    <div class="answer">
+        <p><span class="highlight">在后台线程触发！</span>三件事必须注意：</p>
+        <p>① <span class="green">不能直接操作 UI</span> — 要用 <code>Invoke</code> 封送</p>
+        <p>② <span class="green">一次事件可能没收到完整数据</span> — 要 <code>Sleep(50)</code> 等待</p>
+        <p>③ <span class="green">必须实现 IDisposable</span> — 程序崩溃后串口可能被锁死</p>
+<pre>private void Sp_DataReceived(object sender, SerialDataReceivedEventArgs e)
+{
+    Thread.Sleep(50);  // 等数据收完
+    int count = _sp.BytesToRead;
+    if (count <= 0) return;
+
+    byte[] buf = new byte[count];
+    _sp.Read(buf, 0, count);
+    SafeInvoke(() => FrameReceived?.Invoke(buf, false));
+}</pre>
+    </div>
+</div>
+
+<!-- ==================== 第五部分 ==================== -->
+<h2 class="part-title" id="part5">第五部分：C# vs 其他语言 <span class="tag tag-plus">加分</span></h2>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q26</span>CD 和 BS 架构有什么区别？你的项目属于哪种？</div>
+    <div class="answer">
+        <table>
+            <tr><th></th><th>CS（Client/Server）</th><th>BS（Browser/Server）</th></tr>
+            <tr><td>安装</td><td>要装客户端</td><td>浏览器就行</td></tr>
+            <tr><td>硬件访问</td><td>能（串口、摄像头）</td><td>不能（浏览器沙箱限制）</td></tr>
+            <tr><td>更新</td><td>每台机器都要更新</td><td>只改服务器</td></tr>
+            <tr><td>上位机</td><td>✅ 必须用 CS</td><td>❌ 访问不了串口</td></tr>
+        </table>
+        <p><span class="green">你的项目是 CS 架构。</span>因为需要直接操作串口和 TCP 连接硬件设备，浏览器做不到。</p>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q27</span>C#、Java、C++ 的 int 分别是多少位？</div>
+    <div class="answer">
+        <table>
+            <tr><th>语言</th><th>int 位数</th><th>范围</th><th>备注</th></tr>
+            <tr><td>C#</td><td>32 位</td><td>±21 亿</td><td>固定 32 位</td></tr>
+            <tr><td>Java</td><td>32 位</td><td>±21 亿</td><td>固定 32 位</td></tr>
+            <tr><td>C++</td><td>16 或 32 位</td><td>取决于平台</td><td>跟 CPU 字长走，不固定</td></tr>
+            <tr><td>PLC（IEC 61131-3）</td><td>16 位（INT）</td><td>±32767</td><td>32 位叫 DINT</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q28</span>C# 8.0 ~ 13.0 有哪些重要新特性？</div>
+    <div class="answer">
+        <table>
+            <tr><th>版本</th><th>重要特性</th></tr>
+            <tr><td>C# 8.0</td><td>可空引用类型、switch 表达式、using 声明、索引/范围</td></tr>
+            <tr><td>C# 9.0</td><td>record、关系模式、目标类型 new、init-only 属性</td></tr>
+            <tr><td>C# 10.0</td><td>全局 using、文件范围命名空间、record struct</td></tr>
+            <tr><td>C# 11.0</td><td>原始字符串字面量、list 模式、required 成员</td></tr>
+            <tr><td>C# 12.0</td><td>主构造函数、集合字面量、别名任意类型</td></tr>
+            <tr><td>C# 13.0</td><td>锁对象改进、ref struct 支持接口、集合迭代增强</td></tr>
+        </table>
+        <p><span class="highlight">你的项目用的 .NET 10 = C# 13，以上所有特性都支持。</span></p>
+    </div>
+</div>
+
+<div class="footer">
+    <p>C# 面试题库 · 上位机开发方向</p>
+    <p>最后更新：2026-06-09 · 共 28 题</p>
+</div>
+
+</div>
+</body>
+</html>

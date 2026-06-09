@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C# 教程逐节精讲与审核报告 — 喜科堂 csharpbase</title>
+    <style>
+        :root {
+            --bg: #1a1a2e; --card: #16213e; --accent: #0f3460;
+            --text: #eee; --muted: #a0a0b0; --green: #4ecca3;
+            --blue: #48bfe3; --yellow: #f0c040; --orange: #f77f00;
+            --red: #e94560;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text);
+            line-height: 1.8; padding: 20px;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 { text-align: center; font-size: 2em; margin: 30px 0 5px; color: var(--red); }
+        .subtitle { text-align: center; color: var(--muted); margin-bottom: 10px; }
+        .toc { background: var(--card); padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .toc a { color: var(--blue); text-decoration: none; display: block; padding: 2px 0; font-size: 0.95em; }
+        .toc a:hover { color: var(--highlight); }
+        .chapter {
+            background: var(--card); border-radius: 8px; margin: 20px 0;
+            padding: 20px; border-left: 4px solid var(--green);
+        }
+        .chapter.wrong { border-left-color: var(--red); }
+        .chapter.outdated { border-left-color: var(--orange); }
+        .chapter-title {
+            font-size: 1.2em; font-weight: bold; color: var(--yellow);
+            margin-bottom: 10px;
+        }
+        .chapter-title .ch-num {
+            display: inline-block; background: var(--accent); color: var(--green);
+            padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-right: 8px;
+        }
+        .tag {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.8em; margin-left: 6px; font-weight: bold;
+        }
+        .tag-ok { background: var(--green); color: #000; }
+        .tag-wrong { background: var(--red); color: #fff; }
+        .tag-outdated { background: var(--orange); color: #000; }
+        .tag-add { background: var(--blue); color: #000; }
+        .taught { margin: 8px 0 8px 0; color: var(--muted); }
+        .taught span { color: var(--text); }
+        pre {
+            background: #0d1117; padding: 12px; border-radius: 6px;
+            overflow-x: auto; font-size: 0.9em; margin: 10px 0;
+            border: 1px solid #30363d;
+        }
+        code { font-family: 'Consolas', 'Courier New', monospace; }
+        .summary-box {
+            background: linear-gradient(135deg, #1a2a3a, #0f3460);
+            border: 1px solid var(--green); border-radius: 8px;
+            padding: 20px; margin: 30px 0;
+        }
+        .summary-box h3 { color: var(--green); margin-bottom: 10px; }
+        .method-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .method-table th, .method-table td { border: 1px solid #30363d; padding: 6px 10px; text-align: left; }
+        .method-table th { background: var(--accent); color: var(--green); }
+        .method-table tr td:first-child { color: var(--yellow); font-weight: bold; }
+        ul { margin: 8px 0 8px 20px; }
+        ul li { margin: 4px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>📖 C# 入门教程 — 逐节精讲与审核</h1>
+<p class="subtitle">喜科堂上位机 VIP 班 · csharpbase · 共 24 节 · 43 个 Test 方法</p>
+<p class="subtitle" style="font-size:0.9em">✅ = 教得正确&ensp;|&ensp;🔴 = 有错误&ensp;|&ensp;🟡 = 有更好写法&ensp;|&ensp;🔵 = 可补充</p>
+
+<!-- ==================== 目录 ==================== -->
+<div class="toc">
+<strong style="color:var(--green)">📋 目录</strong>
+<a href="#ch01">第 01 节：变量基础使用</a>
+<a href="#ch02">第 02 节：控制台 I/O & 字符串格式化</a>
+<a href="#ch03">第 03 节：运算符</a>
+<a href="#ch04">第 04 节：基础练习</a>
+<a href="#ch05">第 05 节：比较运算符</a>
+<a href="#ch06">第 06 节：自动类型转换</a>
+<a href="#ch07">第 07 节：强制类型转换</a>
+<a href="#ch08">第 08 节：Parse 字符串转值类型</a>
+<a href="#ch09">第 09 节：Convert 万能转换器</a>
+<a href="#ch10">第 10 节：if 条件与逻辑运算符</a>
+<a href="#ch11">第 11 节：综合条件判断</a>
+<a href="#ch12">第 12 节：if-else 与三元运算符</a>
+<a href="#ch13">第 13 节：else-if 与选择嵌套</a>
+<a href="#ch14">第 14 节：switch 分支</a>
+<a href="#ch15">第 15 节：for 循环</a>
+<a href="#ch16">第 16 节：while 循环</a>
+<a href="#ch17">第 17 节：do-while 循环</a>
+<a href="#ch18">第 18 节：字符串处理方法</a>
+<a href="#ch19">第 19 节：StringBuilder</a>
+<a href="#ch20">第 20 节：数组 Array</a>
+<a href="#ch21">第 21 节：字符串分隔与连接</a>
+<a href="#ch22">第 22 节：值类型 vs 引用类型</a>
+<a href="#ch23">第 23 节：const + enum</a>
+<a href="#ch24">第 24 节：调试技巧</a>
+<a href="#summary">总结与补充清单</a>
+</div>
+
+<!-- ==================== 逐节精讲 ==================== -->
+
+<!-- 第 01 节 -->
+<div class="chapter" id="ch01">
+<div class="chapter-title"><span class="ch-num">01</span>变量的基础使用 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test1、Add</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① 声明变量（<code>int score;</code>），② 赋值（<code>score = 98;</code>），③ 声明同时赋值（<code>string subject = "C#基础语法"</code>），④ 变量拼接输出（<code>Console.WriteLine</code>），⑤ 方法定义与返回（<code>static int Add(int a, int b)</code>）。</span>
+</div>
+<p><strong>评价：</strong>正确。从声明→赋值→输出，三步走很清晰，零基础能跟上。<code>Add</code> 方法的 XML 注释（<code>///</code>）也正确演示了文档注释的写法。</p>
+</div>
+
+<!-- 第 02 节 -->
+<div class="chapter" id="ch02">
+<div class="chapter-title"><span class="ch-num">02</span>控制台 I/O &amp; 字符串格式化 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test2、Test3</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>Console.Write</code> 和 <code>Console.ReadLine</code> 基础输入输出，② <code>string.Format</code> 占位符格式化（<code>{0} {1} {2}</code>），③ <code>$""</code> 字符串插值（C# 6.0+）。</span>
+</div>
+<p><strong>评价：</strong>正确。特别值得表扬的是 <span class="tag tag-ok">教程主动教了最新的 $"" 插值语法</span>，还把它跟传统 <code>+</code> 拼接、<code>string.Format</code> 做了对比，让学生知道三种写法都能用，推荐用最新的。这很好。</p>
+</div>
+
+<!-- 第 03 节 -->
+<div class="chapter" id="ch03">
+<div class="chapter-title"><span class="ch-num">03</span>运算符 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test4</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① 四则运算 <code>+ - * / %</code>，② 整数除法的截断行为（<code>10/20=0</code> ✅ 提到了），③ 复合赋值 <code>+= -= *=</code>，④ 自增自减 <code>++ --</code>，⑤ 前后置区别（<code>i++</code> vs <code>++i</code>）。</span>
+</div>
+<p><strong>评价：</strong>正确。前后置区别的演示很关键，用了对比输出让学生直观看到差异。</p>
+</div>
+
+<!-- 第 04 节 -->
+<div class="chapter" id="ch04">
+<div class="chapter-title"><span class="ch-num">04</span>本阶段练习 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test5、Test6</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① 综合练习：五次输入 + 计算平均分（<code>sum / 5</code>），② 三种字符串拼接方式对比（<code>+</code> / <code>string.Format</code> / <code>$""</code>）。</span>
+</div>
+<p><strong>评价：</strong>正确。练习设计贴近实际，让学生综合运用前面学的变量、输入、运算符、格式化。</p>
+</div>
+
+<!-- 第 05 节 -->
+<div class="chapter" id="ch05">
+<div class="chapter-title"><span class="ch-num">05</span>比较运算符 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test7</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>== !=</code> 判断字符串相等，② <code>&gt; &lt; &lt;=</code> 数字比较。</span>
+</div>
+<p><strong>评价：</strong>正确。内容基础但必要。</p>
+</div>
+
+<!-- 第 06 节 -->
+<div class="chapter" id="ch06">
+<div class="chapter-title"><span class="ch-num">06</span>自动类型转换 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test8</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>int + double → double</code>（自动提升到精度更高的类型），② 注释掉的 Test9 展示了反过来会编译错误。</span>
+</div>
+<p><strong>评价：</strong>正确。用注释对比的方式展示了"哪些可以自动转、哪些不行"，直觉教学法有效。</p>
+</div>
+
+<!-- 第 07 节 -->
+<div class="chapter" id="ch07">
+<div class="chapter-title"><span class="ch-num">07</span>强制类型转换 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test9、Test10</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>(int)doubleValue</code> 强制转换（会损失精度），② 精度丢失演示（100.5→100），③ object 类型的强制转换需要拆两层（<code>(int)(double)obj</code>）。</span>
+</div>
+<p><strong>评价：</strong>正确。Test10 的 object 拆箱演示很实用，新手在这个地方很容易犯错。</p>
+</div>
+
+<!-- 第 08 节 -->
+<div class="chapter" id="ch08">
+<div class="chapter-title"><span class="ch-num">08</span>Parse 方法 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test11</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>double.Parse("100.5")</code> 等把字符串转成值类型，② 值类型转字符串用 <code>.ToString()</code>，③ 用 <code>(int)double.Parse("19.56")</code> 先转换再取整。</span>
+</div>
+<p><strong>评价：</strong>正确。总结句式"目标类型.Parse(字符串)"很简洁，便于记忆。</p>
+</div>
+
+<!-- 第 09 节 -->
+<div class="chapter" id="ch09">
+<div class="chapter-title"><span class="ch-num">09</span>Convert 万能转换器 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test12</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>Convert.ToDouble()</code> <code>Convert.ToInt32()</code> <code>Convert.ToSingle()</code> <code>Convert.ToDateTime()</code>，② 对比 Parse 和 Convert 哪个更方便。</span>
+</div>
+<p><strong>评价：</strong>正确。<code>Convert</code> 确实是比 <code>Parse</code> 更常用的方式，教了 <code>ToDateTime</code> 也扩展了好感度。</p>
+</div>
+
+<!-- 第 10 节 -->
+<div class="chapter" id="ch10">
+<div class="chapter-title"><span class="ch-num">10</span>if 条件与逻辑运算符 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test13、Test14、Test15、Test16</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>if</code> 基本结构，② 判断字符串是否为空的三种方式（<code>== "" / == string.Empty / .Length == 0</code>），③ <code>||</code> 和 <code>&amp;&amp;</code> 逻辑运算符，④ 短路求值，⑤ <code>!</code> 非运算符，⑥ <code>Convert.ToBoolean()</code>。</span>
+</div>
+<p><strong>评价：</strong>正确。Test13 演示三种判空方式非常实用；Test14 提到"短路"概念（虽然没深入展开），方向正确。</p>
+</div>
+
+<!-- 第 11 节 -->
+<div class="chapter" id="ch11">
+<div class="chapter-title"><span class="ch-num">11</span>综合条件判断 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test17</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① 笔试+机试成绩的综合判断（<code>write &gt;= 80 &amp;&amp; lab &gt;= 90</code>），② 组合条件 <code>&amp;&amp;</code> 与 <code>||</code> 同时使用。</span>
+</div>
+<p><strong>评价：</strong>正确。</p>
+</div>
+
+<!-- 第 12 节 -->
+<div class="chapter" id="ch12">
+<div class="chapter-title"><span class="ch-num">12</span>if-else 与三元运算符 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test18、Test19</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>if-else</code> 双分支结构，② 三元运算符 <code>条件 ? 值1 : 值2</code>。</span>
+</div>
+<p><strong>评价：</strong>正确。三元运算符的<a href="#ch12-add">可补充</a> 提到可以用 switch 表达式代替更复杂的条件赋值。</p>
+</div>
+
+<!-- 第 13 节 -->
+<div class="chapter" id="ch13">
+<div class="chapter-title"><span class="ch-num">13</span>else-if 与选择嵌套 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test20、Test21、Test22</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① 用多个 <code>if</code> 实现多条件，② 用 <code>else-if</code> 实现更高效的多条件，③ <code>if</code> 内部嵌套 <code>if</code>（会员类型判断）。</span>
+</div>
+<p><strong>评价：</strong>正确。Test20 vs Test21 的对比非常好——用两个几乎一样的功能演示了"为什么用 else-if 而不是多个 if"，这是很好的教学设计。</p>
+</div>
+
+<!-- 第 14 节 -->
+<div class="chapter" id="ch14">
+<div class="chapter-title"><span class="ch-num">14</span>switch 分支 <span class="tag tag-outdated">🟡 有过时写法</span></div>
+<p><strong>对应方法：</strong>Test23</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>switch</code> 语句的基本结构，② <code>case</code> 和 <code>break</code> 的用法，③ <code>default</code> 分支。</span>
+</div>
+<p><strong>评价：</strong>写法正确但过时。C# 8.0+ 有 <span class="tag tag-add">switch 表达式</span> 更简洁：</p>
+<pre>string result = type switch
+{
+    "A" => "手机",
+    "B" => "平板",
+    _  => "不能参与"
+};
+</pre>
+<p>另外 C# 7.0+ 的 switch 还支持模式匹配（类型匹配、范围匹配等），建议补充。</p>
+</div>
+
+<!-- 第 15 节 -->
+<div class="chapter" id="ch15">
+<div class="chapter-title"><span class="ch-num">15</span>for 循环 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test24、Test25</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>for</code> 基本结构（<code>for (int i = 0; i &lt; 3; i++)</code>），② 嵌套 <code>for</code> 循环（温度采集：外层3次显示，内层3次采集）。</span>
+</div>
+<p><strong>评价：</strong>正确。Test25 的温度采集例子非常贴近工控场景，学生能理解"为什么学这个"。</p>
+</div>
+
+<!-- 第 16 节 -->
+<div class="chapter" id="ch16">
+<div class="chapter-title"><span class="ch-num">16</span>while 循环 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test26、Test27</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>while</code> 基本结构，② <code>continue</code> 跳过当前迭代，③ <code>break</code> 退出整个循环，④ <code>while(true)</code> 无限循环 + break 退出模式。</span>
+</div>
+<p><strong>评价：</strong>正确。Test27 用包装饮料的例子演示 continue 和 break，场景化教学很生动。continue 比 break 少用但教了，合适。</p>
+</div>
+
+<!-- 第 17 节 -->
+<div class="chapter" id="ch17">
+<div class="chapter-title"><span class="ch-num">17</span>do-while 循环 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test28、Test29</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>do-while</code> 至少执行一次的特性，② 跟 <code>while</code> 的对比（对 Test26 改用 do-while），③ <code>do-while(true) + break</code> 做网络测试轮询。</span>
+</div>
+<p><strong>评价：</strong>正确。do-while 在实际中用到的不多，但教了基本概念且跟 while 做了对比，到位了。Test29 用网络测试的例子很好——这正是工控中"等待设备响应"的标准模式。</p>
+</div>
+
+<!-- 第 18 节 -->
+<div class="chapter" id="ch18">
+<div class="chapter-title"><span class="ch-num">18</span>字符串处理方法 <span class="tag tag-wrong">🔴 有错误</span></div>
+<p><strong>对应方法：</strong>Test30~Test35</p>
+
+<p><strong style="color:var(--green)">✅ 教得正确的内容：</strong></p>
+<ul>
+<li><code>IndexOf</code> 查找字符/字符串位置（找不到返回 -1）</li>
+<li><code>Length</code> 属性获取字符串长度</li>
+<li><code>Substring</code> 截取字符串（<code>str.Substring(0, 7)</code>）</li>
+<li><code>ToLower / ToUpper</code> 大小写转换</li>
+<li><code>string.Format</code> 数值格式化（<code>{0:C}</code> 货币格式）</li>
+<li><code>string.Empty</code> 和 <code>""</code> 关系</li>
+<li><code>null</code> 与空串的区别（<code>null</code> 无法调用 .Length）</li>
+<li><code>.Trim()</code> 去两端空格</li>
+<li><code>.LastIndexOf()</code> 反向查找</li>
+</ul>
+
+<p><strong style="color:var(--red)">🔴 错误：Test32 的注解</strong></p>
+<pre>// 原文：==或Equals方法默认只能比较值类型或字符串类型。
+//       对象类型（引用类型）是不能使用这种方式比较的。</pre>
+<p><strong>错误原因：</strong>引用类型可以用 <code>==</code> 和 <code>Equals</code>，只是含义不同——<code>==</code> 默认比较引用地址，<code>Equals</code> 默认也比较引用，但可以被重写为值比较。</p>
+<p><strong style="color:var(--orange)">🟡 可改进：缺少 StringComparison</strong></p>
+<p>字符串比较应该使用 <code>StringComparison.OrdinalIgnoreCase</code> 而不是 <code>.ToLower()</code>（后者创建临时字符串且容易遇到土耳其语 i 问题）。</p>
+<pre>// ✅ 推荐：
+bool eq = string.Equals(name3, name4, StringComparison.OrdinalIgnoreCase);
+
+// ❌ 不建议：
+bool eq = name3.ToLower() == name4.ToLower();</pre>
+</div>
+
+<!-- 第 19 节 -->
+<div class="chapter" id="ch19">
+<div class="chapter-title"><span class="ch-num">19</span>StringBuilder <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test36</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>StringBuilder</code> 比字符串 <code>+=</code> 拼接更高效，② <code>Append</code> 追加，③ <code>AppendFormat</code> 格式化追加，④ <code>Insert</code> 插入，⑤ <code>Remove</code> 删除，⑥ <code>Clear</code> 清空，⑦ <code>ToString</code> 输出。</span>
+</div>
+<p><strong>评价：</strong>正确。把 StringBuilder 的增删改查全部演示了一遍，很全面。</p>
+</div>
+
+<!-- 第 20 节 -->
+<div class="chapter" id="ch20">
+<div class="chapter-title"><span class="ch-num">20</span>数组 Array <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test37</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① 声明→分配空间→赋值三步走，② 三种初始化方式（<code>new int[5]{...}</code> / <code>new int[]{...}</code> / <code>{...}</code>），③ <code>for</code> 遍历数组，④ <code>foreach</code> 遍历数组，⑤ 对比 for 和 foreach 的适用场景。</span>
+</div>
+<p><strong>评价：</strong>正确。三种初始化方式的对比很有价值。foreach 提到"要求循环对象有固定次数"，这个区分很对——while 不需要固定次数。</p>
+</div>
+
+<!-- 第 21 节 -->
+<div class="chapter" id="ch21">
+<div class="chapter-title"><span class="ch-num">21</span>字符串分隔与连接 <span class="tag tag-wrong">🔴 有错误</span></div>
+<p><strong>对应方法：</strong>Test38</p>
+<p><strong style="color:var(--green)">✅ 教得正确的内容：</strong></p>
+<ul>
+<li><code>Split()</code> 无参分割空格字符串</li>
+<li><code>Split(',')</code> 带分隔符分割</li>
+<li><code>string.Join("_", array)</code> 连接数组为字符串</li>
+<li><code>Replace(',', '-')</code> 字符替换</li>
+<li><code>string.Replace</code> 字符串替换</li>
+<li>数组越界的 <code>IndexOutOfRangeException</code> 概念</li>
+</ul>
+<p><strong style="color:var(--red)">🔴 错误：越界代码直接执行</strong></p>
+<pre>int[] netScore2 = new int[3] { 90, 56, 78 };
+int myScore = netScore2[3];  // 这里会直接抛异常导致程序崩溃！
+</pre>
+<p>这段用于演示越界的代码没有被注释或 try-catch 包住，运行到此处会直接崩溃。建议：</p>
+<pre>try
+{
+    int myScore = netScore2[3];  // 故意越界
+}
+catch (IndexOutOfRangeException ex)
+{
+    Console.WriteLine($"越界了：{ex.Message}");
+}</pre>
+</div>
+
+<!-- 第 22 节 -->
+<div class="chapter" id="ch22">
+<div class="chapter-title"><span class="ch-num">22</span>值类型 vs 引用类型 <span class="tag tag-outdated">🟡 说法不准确</span></div>
+<p><strong>对应方法：</strong>Test39、Test40、TestString</p>
+<p><strong style="color:var(--green)">✅ 教得正确的内容：</strong></p>
+<ul>
+<li>值类型赋值是<span class="tag tag-ok">复制值</span>（改一个不影响另一个）</li>
+<li>引用类型赋值是<span class="tag tag-ok">复制引用</span>（两个变量指向同一内存，改一个两个都变）</li>
+<li>字符串的特殊性：虽然是引用类型，但行为像值类型（不可变性）</li>
+</ul>
+<p><strong style="color:var(--orange)">🟡 关于 Equals/== 的注解不妥（同第18节）</strong></p>
+</div>
+
+<!-- 第 23 节 -->
+<div class="chapter" id="ch23">
+<div class="chapter-title"><span class="ch-num">23</span>const + enum <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>Test41、Test42、Test43</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>const double PAI = 3.14</code> 常量定义与使用（常量不可修改），② 自定义枚举 <code>enum Gender</code>，③ 枚举值转整数 <code>(int)Gender.Female</code>，④ 系统枚举 <code>DayOfWeek</code> 结合 switch 使用。</span>
+</div>
+<p><strong>评价：</strong>正确。从自定义枚举到系统枚举的过渡很好，让学生知道"枚举不光自己可以定义，系统也有现成的"。</p>
+</div>
+
+<!-- 第 24 节 -->
+<div class="chapter" id="ch24">
+<div class="chapter-title"><span class="ch-num">24</span>debug 调试 <span class="tag tag-ok">✅ 正确</span></div>
+<p><strong>对应方法：</strong>debugTest</p>
+<div class="taught"><strong>教了什么：</strong>
+<span>① <code>F9</code> 打断点，② <code>F10</code> 逐过程，③ <code>F11</code> 逐语句，④ <code>F5</code> 跳到下一个断点，⑤ <code>NullReferenceException</code> 的调试方法。</span>
+</div>
+<p><strong>评价：</strong>正确。调试是教学中必不可少的一环，教程以最后一节收尾调试技巧，合适。</p>
+</div>
+
+<!-- ==================== 总结与补充 ==================== -->
+<div class="summary-box" id="summary">
+<h3>📌 总体评价</h3>
+<p>这是一套面向零基础的 C# 入门教程，<span class="tag tag-ok">24 节课覆盖了变量、类型转换、分支、循环、字符串、数组、枚举、调试</span>等核心知识点。整体教学设计循序渐进、示例贴近工控场景，适合入门。</p>
+</div>
+
+<div class="chapter" style="border-left-color:var(--blue);">
+<div class="chapter-title" id="supplement"><span class="ch-num">📌</span>遗漏的重要特性汇总（建议自学补充）</div>
+<p>以下特性在 C# 面试和实战中高频出现，但教程未覆盖。建议依序学习：</p>
+
+<table class="method-table">
+<tr><th>优先级</th><th>特性</th><th>C# 版本</th><th>一句话说明</th><th>示例</th></tr>
+<tr>
+    <td>⭐⭐⭐</td><td><code>var</code></td><td>3.0</td>
+    <td>类型推断，简化声明</td>
+    <td><code>var list = new List&lt;int&gt;();</code></td>
+</tr>
+<tr>
+    <td>⭐⭐⭐</td><td><code>TryParse</code></td><td>2.0</td>
+    <td>安全转换，不抛异常</td>
+    <td><code>int.TryParse(input, out int result)</code></td>
+</tr>
+<tr>
+    <td>⭐⭐⭐</td><td>LINQ</td><td>3.0</td>
+    <td>集合查询，链式操作</td>
+    <td><code>arr.Where(x =&gt; x &gt; 0).OrderBy(x =&gt; x)</code></td>
+</tr>
+<tr>
+    <td>⭐⭐⭐</td><td><code>?. ??</code></td><td>6.0</td>
+    <td>空安全访问与合并</td>
+    <td><code>name?.Length ?? 0</code></td>
+</tr>
+<tr>
+    <td>⭐⭐⭐</td><td>try-catch-finally</td><td>1.0</td>
+    <td>异常处理</td>
+    <td><code>try { ... } catch (Exception ex) { ... }</code></td>
+</tr>
+<tr>
+    <td>⭐⭐⭐</td><td><code>List&lt;T&gt;</code></td><td>2.0</td>
+    <td>泛型集合，动态扩容</td>
+    <td><code>var list = new List&lt;int&gt;(); list.Add(1);</code></td>
+</tr>
+<tr>
+    <td>⭐⭐</td><td>模式匹配</td><td>7.0+</td>
+    <td>灵活的匹配语法</td>
+    <td><code>obj is int i</code> / <code>score switch { &gt;= 60 =&gt; "及格" }</code></td>
+</tr>
+<tr>
+    <td>⭐⭐</td><td>async/await</td><td>5.0</td>
+    <td>异步编程</td>
+    <td><code>await Task.Delay(1000)</code></td>
+</tr>
+<tr>
+    <td>⭐⭐</td><td>元组与解构</td><td>7.0</td>
+    <td>多返回值</td>
+    <td><code>(int sum, int count) = Calculate();</code></td>
+</tr>
+<tr>
+    <td>⭐⭐</td><td>switch 表达式</td><td>8.0</td>
+    <td>switch 当表达式用</td>
+    <td><code>type switch { "A" =&gt; "手机", _ =&gt; "其他" }</code></td>
+</tr>
+<tr>
+    <td>⭐</td><td>out 变量内联</td><td>7.0</td>
+    <td>声明即用</td>
+    <td><code>TryParse(s, out int n)</code></td>
+</tr>
+<tr>
+    <td>⭐</td><td>using 声明</td><td>8.0</td>
+    <td>简化资源释放</td>
+    <td><code>using var conn = new SqlConnection(...);</code></td>
+</tr>
+<tr>
+    <td>⭐</td><td>全局 using / ImplicitUsings</td><td>10</td>
+    <td>自动导入命名空间</td>
+    <td><code>csproj</code> 中启用即可</td>
+</tr>
+<tr>
+    <td>⭐</td><td>表达式体成员</td><td>6.0</td>
+    <td>一行方法/属性</td>
+    <td><code>int Add(int a, int b) =&gt; a + b;</code></td>
+</tr>
+<tr>
+    <td>⭐</td><td>Nullable 可空值类型</td><td>2.0</td>
+    <td>值类型允许 null</td>
+    <td><code>int? age = null;</code></td>
+</tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>
