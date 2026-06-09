@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Server & MySQL 面试题库 — 上位机开发方向</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --text: #eee;
+            --muted: #a0a0b0;
+            --green: #4ecca3;
+            --blue: #48bfe3;
+            --yellow: #f0c040;
+            --orange: #f77f00;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin: 30px 0 10px;
+            color: var(--highlight);
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 40px;
+            font-size: 0.95em;
+        }
+        .part-title {
+            font-size: 1.4em;
+            color: var(--green);
+            margin: 40px 0 20px;
+            padding: 10px 15px;
+            background: var(--accent);
+            border-left: 4px solid var(--green);
+            border-radius: 4px;
+        }
+        .q-card {
+            background: var(--card);
+            border-radius: 8px;
+            margin: 15px 0;
+            padding: 20px;
+            border-left: 4px solid var(--blue);
+            transition: transform 0.2s;
+        }
+        .q-card:hover { transform: translateX(5px); }
+        .q-num {
+            display: inline-block;
+            background: var(--highlight);
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .q-title {
+            font-size: 1.15em;
+            font-weight: bold;
+            color: var(--yellow);
+            margin-bottom: 12px;
+        }
+        .answer {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .answer p { margin: 6px 0; }
+        pre {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin: 10px 0;
+            border: 1px solid #30363d;
+        }
+        code {
+            font-family: 'Consolas', 'Courier New', monospace;
+            color: var(--green);
+        }
+        .highlight-text { color: var(--highlight); font-weight: bold; }
+        .green-text { color: var(--green); }
+        .blue-text { color: var(--blue); }
+        .yellow-text { color: var(--yellow); }
+        .orange-text { color: var(--orange); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #30363d;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background: var(--accent);
+            color: var(--green);
+        }
+        tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-right: 5px;
+        }
+        .tag-must { background: var(--highlight); color: #fff; }
+        .tag-important { background: var(--orange); color: #fff; }
+        .tag-plus { background: var(--blue); color: #000; }
+        .oral-box {
+            background: linear-gradient(135deg, #1a2a3a, #0f3460);
+            border: 1px solid var(--green);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .oral-box h3 { color: var(--green); margin-bottom: 10px; }
+        .toc {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .toc a {
+            color: var(--blue);
+            text-decoration: none;
+            display: block;
+            padding: 4px 0;
+        }
+        .toc a:hover { color: var(--highlight); }
+        .footer {
+            text-align: center;
+            color: var(--muted);
+            margin-top: 60px;
+            padding: 20px;
+            border-top: 1px solid #30363d;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>🗄️ SQL Server & MySQL 面试题库</h1>
+<p class="subtitle">上位机开发方向 · 高频考点 · 标准答案可直接背诵</p>
+
+<!-- 目录 -->
+<div class="toc">
+    <strong style="color:var(--green)">📋 目录</strong>
+    <a href="#part1">第一部分：基础概念（必考）— Q1~Q5</a>
+    <a href="#part2">第二部分：SQL 语句（必考）— Q6~Q10</a>
+    <a href="#part3">第三部分：上位机场景题（重点）— Q11~Q15</a>
+    <a href="#part4">第四部分：高级题（加分）— Q16~Q18</a>
+    <a href="#oral">附录：面试口述模板</a>
+    <a href="#compare">附录：SQL Server vs MySQL 速查表</a>
+</div>
+
+<!-- ==================== 第一部分 ==================== -->
+<h2 class="part-title" id="part1">第一部分：基础概念 <span class="tag tag-must">必考</span></h2>
+
+<!-- Q1 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q1</span>SQL Server 和 MySQL 的区别？</div>
+    <div class="answer">
+        <table>
+            <tr><th>对比项</th><th>SQL Server</th><th>MySQL</th></tr>
+            <tr><td>厂商</td><td>微软</td><td>Oracle（开源）</td></tr>
+            <tr><td>平台</td><td>主要 Windows</td><td>跨平台</td></tr>
+            <tr><td>自增</td><td><code>IDENTITY(1,1)</code></td><td><code>AUTO_INCREMENT</code></td></tr>
+            <tr><td>取前N条</td><td><code>TOP N</code></td><td><code>LIMIT N</code></td></tr>
+            <tr><td>字符串</td><td><code>NVARCHAR</code></td><td><code>VARCHAR</code>（默认 UTF-8）</td></tr>
+            <tr><td>当前时间</td><td><code>GETDATE()</code></td><td><code>NOW()</code></td></tr>
+            <tr><td>日期加减</td><td><code>DATEADD(HOUR, -1, ...)</code></td><td><code>DATE_SUB(NOW(), INTERVAL 1 HOUR)</code></td></tr>
+            <tr><td>字符串拼接</td><td><code>+</code></td><td><code>CONCAT()</code></td></tr>
+            <tr><td>判空</td><td><code>ISNULL(col, default)</code></td><td><code>IFNULL(col, default)</code></td></tr>
+            <tr><td>工具</td><td>SSMS</td><td>Workbench / Navicat</td></tr>
+            <tr><td>免费版</td><td>Express（10GB 限制）</td><td>Community（无限制）</td></tr>
+            <tr><td>C# 驱动</td><td><code>System.Data.SqlClient</code></td><td><code>MySqlConnector</code></td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- Q2 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q2</span>什么是主键？什么是外键？</div>
+    <div class="answer">
+        <p><span class="green-text">主键（Primary Key）</span>：表中唯一标识每一行的字段，<span class="highlight-text">不能重复，不能为 NULL</span></p>
+<pre><code>id BIGINT PRIMARY KEY IDENTITY(1,1)  -- SQL Server 自增主键</code></pre>
+        <p><span class="green-text">外键（Foreign Key）</span>：一个表中引用另一个表主键的字段，用于建立表之间的关联</p>
+<pre><code>FOREIGN KEY (user_id) REFERENCES users(id)  -- 订单表引用用户表</code></pre>
+    </div>
+</div>
+
+<!-- Q3 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q3</span>CHAR 和 VARCHAR 的区别？</div>
+    <div class="answer">
+        <table>
+            <tr><th></th><th>CHAR(10)</th><th>VARCHAR(10)</th></tr>
+            <tr><td>长度</td><td>固定 10 字符</td><td>可变，最长 10 字符</td></tr>
+            <tr><td>存 "abc"</td><td>占 10 字节</td><td>占 4 字节（3+1）</td></tr>
+            <tr><td>速度</td><td>快（固定长度好计算）</td><td>稍慢（需要记录长度）</td></tr>
+            <tr><td>适用</td><td>设备 ID（固定长度）</td><td>备注、名称（可变长度）</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- Q4 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q4</span>什么是事务？什么是 ACID？</div>
+    <div class="answer">
+        <p><span class="green-text">事务</span> = 一组操作，要么<span class="highlight-text">全部成功</span>，要么<span class="highlight-text">全部失败</span></p>
+        <table>
+            <tr><th>特性</th><th>含义</th><th>例子</th></tr>
+            <tr><td><strong>A</strong> 原子性</td><td>要么全做，要么全不做</td><td>写3个寄存器，1个失败全部回滚</td></tr>
+            <tr><td><strong>C</strong> 一致性</td><td>事务前后数据状态一致</td><td>转账前后总金额不变</td></tr>
+            <tr><td><strong>I</strong> 隔离性</td><td>多个事务互不干扰</td><td>两个上位机同时写不会冲突</td></tr>
+            <tr><td><strong>D</strong> 持久性</td><td>提交后数据永久保存</td><td>断电重启数据还在</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- Q5 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q5</span>什么是索引？什么时候建索引？</div>
+    <div class="answer">
+        <p><span class="green-text">索引</span>就像书的目录，让数据库不用全表扫描就能找到数据</p>
+        <p><span class="green-text">应该建索引：</span></p>
+        <p>① WHERE 后面经常出现的字段（<code>device_id</code>, <code>timestamp</code>）</p>
+        <p>② ORDER BY 后面的字段</p>
+        <p>③ JOIN 连接用的字段</p>
+        <p><span class="highlight-text">不应该建索引：</span></p>
+        <p>① 数据量很小的表</p>
+        <p>② 经常写入很少查询的表（索引会拖慢写入）</p>
+        <p>③ 区分度低的字段（如"性别"只有男/女）</p>
+        <p style="margin-top:10px;"><span class="yellow-text">上位机场景：</span><code>timestamp</code> 和 <code>device_id</code> 应该建索引，因为查询经常按时间和设备筛选</p>
+    </div>
+</div>
+
+<!-- ==================== 第二部分 ==================== -->
+<h2 class="part-title" id="part2">第二部分：SQL 语句 <span class="tag tag-must">必考</span></h2>
+
+<!-- Q6 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q6</span>写一个建表语句</div>
+    <div class="answer">
+        <p><span class="blue-text">SQL Server 写法：</span></p>
+<pre><code>CREATE TABLE production_data (
+    id           BIGINT PRIMARY KEY IDENTITY(1,1),
+    timestamp    DATETIME NOT NULL,
+    device_id    NVARCHAR(50) NOT NULL,
+    address      INT NOT NULL,
+    raw_value    INT NOT NULL,
+    actual_value FLOAT,
+    name         NVARCHAR(100)
+);
+
+-- 建索引
+CREATE INDEX idx_timestamp ON production_data(timestamp);
+CREATE INDEX idx_device ON production_data(device_id);</code></pre>
+        <p><span class="orange-text">MySQL 区别：</span><code>IDENTITY(1,1)</code> → <code>AUTO_INCREMENT</code>，<code>NVARCHAR</code> → <code>VARCHAR</code>，<code>FLOAT</code> → <code>DOUBLE</code></p>
+    </div>
+</div>
+
+<!-- Q7 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q7</span>增删改查各写一条</div>
+    <div class="answer">
+        <p><span class="green-text">增 INSERT：</span></p>
+<pre><code>INSERT INTO production_data (timestamp, device_id, address, raw_value, actual_value)
+VALUES (GETDATE(), 'PLC-1', 100, 1200, 120.0);</code></pre>
+        <p><span class="highlight-text">删 DELETE — 删除 30 天前的数据：</span></p>
+<pre><code>-- SQL Server
+DELETE FROM production_data
+WHERE timestamp < DATEADD(DAY, -30, GETDATE());
+
+-- MySQL
+DELETE FROM production_data
+WHERE timestamp < DATE_SUB(NOW(), INTERVAL 30 DAY);</code></pre>
+        <p><span class="yellow-text">改 UPDATE — 确认报警：</span></p>
+<pre><code>UPDATE alarm_history
+SET status = '已确认', confirmed_at = GETDATE(), confirmed_by = '操作员'
+WHERE id = 42;</code></pre>
+        <p><span class="blue-text">查 SELECT — 按设备统计最近 1 小时数据量：</span></p>
+<pre><code>SELECT device_id, COUNT(*) AS cnt
+FROM production_data
+WHERE timestamp >= DATEADD(HOUR, -1, GETDATE())  -- SQL Server
+-- WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)  -- MySQL
+GROUP BY device_id
+ORDER BY cnt DESC;</code></pre>
+    </div>
+</div>
+
+<!-- Q8 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q8</span>什么是参数化查询？为什么要用？</div>
+    <div class="answer">
+        <p><span class="highlight-text">❌ 错误：字符串拼接（有 SQL 注入风险）</span></p>
+<pre><code>string sql = "SELECT * FROM users WHERE name = '" + userName + "'";
+-- 如果 userName = "' OR 1=1 --"，就能查出所有数据</code></pre>
+        <p><span class="green-text">✅ 正确：参数化查询</span></p>
+<pre><code>string sql = "SELECT * FROM users WHERE name = @name";
+cmd.Parameters.AddWithValue("@name", userName);</code></pre>
+        <p style="margin-top:10px;">用参数化查询的三个原因：</p>
+        <p>① <span class="highlight-text">防止 SQL 注入</span>攻击</p>
+        <p>② 数据库可以缓存执行计划，<span class="green-text">重复查询更快</span></p>
+        <p>③ 不用手动处理特殊字符（单引号等）</p>
+    </div>
+</div>
+
+<!-- Q9 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q9</span>GROUP BY 和 HAVING 的区别？</div>
+    <div class="answer">
+<pre><code>-- GROUP BY：分组
+SELECT device_id, COUNT(*) AS cnt
+FROM alarm_history
+GROUP BY device_id;
+
+-- HAVING：对分组结果过滤
+SELECT device_id, COUNT(*) AS cnt
+FROM alarm_history
+GROUP BY device_id
+HAVING COUNT(*) > 10;  -- 只看报警超过 10 次的设备</code></pre>
+        <p style="margin-top:10px;">
+            <code>WHERE</code> → <span class="yellow-text">分组前过滤</span>（过滤原始行）<br>
+            <code>HAVING</code> → <span class="green-text">分组后过滤</span>（过滤分组结果，可用于聚合函数）
+        </p>
+    </div>
+</div>
+
+<!-- Q10 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q10</span>LEFT JOIN 和 INNER JOIN 的区别？</div>
+    <div class="answer">
+<pre><code>-- INNER JOIN：只返回两表都匹配的行（交集）
+SELECT o.*, u.name
+FROM orders o INNER JOIN users u ON o.user_id = u.id;
+-- 用户被删了 → 订单也查不出来
+
+-- LEFT JOIN：左表全要 + 右表能匹配就匹配
+SELECT o.*, u.name
+FROM orders o LEFT JOIN users u ON o.user_id = u.id;
+-- 用户被删了 → 订单也能查出来，name 显示 NULL</code></pre>
+        <table>
+            <tr><th>类型</th><th>含义</th><th>记忆口诀</th></tr>
+            <tr><td>INNER JOIN</td><td>交集（只要匹配的）</td><td>"两表都有才要"</td></tr>
+            <tr><td>LEFT JOIN</td><td>左表全要 + 右表匹配</td><td>"左边为主，右边凑"</td></tr>
+            <tr><td>RIGHT JOIN</td><td>右表全要 + 左表匹配</td><td>"右边为主，左边凑"</td></tr>
+            <tr><td>FULL JOIN</td><td>并集（两边都要）</td><td>"全都要"</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ==================== 第三部分 ==================== -->
+<h2 class="part-title" id="part3">第三部分：上位机场景题 <span class="tag tag-important">重点准备</span></h2>
+
+<!-- Q11 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q11</span>上位机高频采集数据，怎么存？</div>
+    <div class="answer">
+        <p><span class="highlight-text">不能每条数据都直接写数据库</span>（太频繁，数据库扛不住）</p>
+        <p>方案：<span class="green-text">内存缓冲 + 批量写入</span></p>
+        <p>① 用 <code>ConcurrentQueue</code> 先把数据存内存</p>
+        <p>② 攒够 100 条或每 5 秒批量写入一次</p>
+        <p>③ 用 <code>SqlBulkCopy</code>（SQL Server）批量插入</p>
+        <p>④ 定期清理 30 天前的历史数据</p>
+<pre><code>private readonly ConcurrentQueue&lt;DataPoint&gt; _buffer = new();
+
+public void OnData(DataPoint dp)
+{
+    _buffer.Enqueue(dp);
+    if (_buffer.Count >= 100) FlushToDb();
+}
+
+private void FlushToDb()
+{
+    var batch = new List&lt;DataPoint&gt;();
+    while (_buffer.TryDequeue(out var r))
+        batch.Add(r);
+    BulkInsert(batch);  // 比逐条插入快 10-100 倍
+}</code></pre>
+    </div>
+</div>
+
+<!-- Q12 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q12</span>SQLite、SQL Server、MySQL 分别适合什么场景？</div>
+    <div class="answer">
+        <table>
+            <tr><th></th><th>SQLite</th><th>SQL Server</th><th>MySQL</th></tr>
+            <tr><td>配置</td><td>零配置，单文件</td><td>需要安装</td><td>需要安装</td></tr>
+            <tr><td>并发</td><td>弱（单写锁）</td><td>强</td><td>强</td></tr>
+            <tr><td>适合</td><td>单台上位机、数据量小</td><td>企业级、Windows 生态、MES/ERP 对接</td><td>跨平台、Web 展示</td></tr>
+            <tr><td>优点</td><td>简单、轻量</td><td>功能强大、.NET 集成好</td><td>开源免费、跨平台</td></tr>
+        </table>
+        <p style="margin-top:10px;"><span class="yellow-text">面试加分回答：</span>"我的项目用 SQLite 做本地存储，预留了 SQL Server 接口，数据库层做了抽象，切换只需要改连接字符串。"</p>
+    </div>
+</div>
+
+<!-- Q13 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q13</span>怎么防止数据库连接泄漏？</div>
+    <div class="answer">
+        <p>① 用 <code>using</code> 语句自动释放连接：</p>
+<pre><code>using (var conn = new SqlConnection(connStr))
+{
+    conn.Open();
+    // 操作
+}  // 自动调用 Dispose，释放连接</code></pre>
+        <p>② <span class="green-text">连接池</span>：ADO.NET 默认启用连接池，用完的连接不会真的关闭，放回池里复用</p>
+        <p>③ 不要在循环里反复 Open/Close，应该复用同一个连接</p>
+        <p>④ 异常时也要关闭：<code>using</code> 会自动处理，<code>try/finally</code> 也行</p>
+    </div>
+</div>
+
+<!-- Q14 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q14</span>什么是 SQL 注入？举个例子</div>
+    <div class="answer">
+        <p><span class="green-text">SQL 注入</span> = 攻击者通过输入框注入恶意 SQL 语句，操纵数据库</p>
+        <p>登录验证例子：</p>
+<pre><code>原始 SQL: "SELECT * FROM users WHERE name='" + input + "' AND pwd='" + pwd + "'"
+
+正常输入: name="admin", pwd="123"
+→ SELECT * FROM users WHERE name='admin' AND pwd='123'  ✅
+
+攻击输入: name="' OR 1=1 --", pwd="随便"
+→ SELECT * FROM users WHERE name='' OR 1=1 --' AND pwd='随便'
+→ OR 1=1 永远真，-- 注释掉后面  ❌ 绕过密码验证</code></pre>
+        <p style="margin-top:10px;"><span class="highlight-text">防御：参数化查询，永远不要拼接 SQL</span></p>
+    </div>
+</div>
+
+<!-- Q15 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q15</span>怎么优化慢查询？</div>
+    <div class="answer">
+        <p>① <span class="green-text">建索引</span>：WHERE / ORDER BY / GROUP BY 涉及的字段</p>
+        <p>② <span class="green-text">避免 SELECT *</span>：只查需要的字段</p>
+        <p>③ <span class="green-text">避免在 WHERE 里对字段做函数</span>：</p>
+<pre><code>-- ❌ 慢：WHERE YEAR(timestamp) = 2026
+-- ✅ 快：WHERE timestamp >= '2026-01-01' AND timestamp < '2027-01-01'</code></pre>
+        <p>④ <span class="green-text">分页查询</span>：不要一次查几万条，用 LIMIT / TOP 分页</p>
+        <p>⑤ <span class="green-text">批量操作</span>：用 SqlBulkCopy 代替逐条 INSERT</p>
+        <p>⑥ <span class="green-text">查看执行计划</span>：SSMS 里按 Ctrl+L 看 SQL 怎么执行的</p>
+        <p style="margin-top:10px;"><span class="yellow-text">面试加分：</span>"我项目里 timestamp 和 device_id 建了索引，查询最近 1 小时某设备的数据从 2 秒优化到 0.01 秒。"</p>
+    </div>
+</div>
+
+<!-- ==================== 第四部分 ==================== -->
+<h2 class="part-title" id="part4">第四部分：高级题 <span class="tag tag-plus">加分</span></h2>
+
+<!-- Q16 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q16</span>存储过程是什么？</div>
+    <div class="answer">
+        <p><span class="green-text">存储过程</span> = 存在数据库里的预编译 SQL 函数，可以有参数、有逻辑</p>
+<pre><code>CREATE PROCEDURE GetAlarmSummary
+    @startDate DATETIME,
+    @endDate DATETIME
+AS
+BEGIN
+    SELECT level, COUNT(*) AS cnt
+    FROM alarm_history
+    WHERE timestamp BETWEEN @startDate AND @endDate
+    GROUP BY level;
+END;
+
+-- 调用
+EXEC GetAlarmSummary '2026-01-01', '2026-12-31';</code></pre>
+        <p style="margin-top:10px;">
+            <span class="green-text">优点：</span>预编译执行更快、减少网络传输、集中管理业务逻辑<br>
+            <span class="highlight-text">缺点：</span>调试困难、移植性差（SQL Server 和 MySQL 语法不同）
+        </p>
+    </div>
+</div>
+
+<!-- Q17 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q17</span>什么是死锁？怎么避免？</div>
+    <div class="answer">
+        <p><span class="green-text">死锁</span> = 两个事务互相等待对方释放资源，谁也执行不了</p>
+<pre><code>事务A：锁了表1 → 想锁表2
+事务B：锁了表2 → 想锁表1
+→ 互相等待 → 死锁 → 数据库自动回滚其中一个</code></pre>
+        <p style="margin-top:10px;"><span class="green-text">避免方法：</span></p>
+        <p>① 按固定顺序访问表（都先锁表1再锁表2）</p>
+        <p>② 减少事务时间（事务里不要做耗时操作）</p>
+        <p>③ 使用较低的隔离级别（READ COMMITTED）</p>
+        <p>④ 设置锁超时（<code>SET LOCK_TIMEOUT 5000</code>）</p>
+    </div>
+</div>
+
+<!-- Q18 -->
+<div class="q-card">
+    <div class="q-title"><span class="q-num">Q18</span>数据库备份怎么做？</div>
+    <div class="answer">
+<pre><code>-- SQL Server 备份
+BACKUP DATABASE MonitorDB TO DISK = 'D:\backup\MonitorDB.bak';
+
+-- MySQL 备份
+mysqldump -u root -p MonitorDB > backup.sql;</code></pre>
+        <p style="margin-top:10px;">上位机场景：</p>
+        <p>① 每天凌晨自动备份一次</p>
+        <p>② 保留最近 7 天的备份</p>
+        <p>③ 备份文件压缩存储</p>
+        <p>④ <span class="highlight-text">定期验证备份能恢复</span>（备份不验证等于没备）</p>
+    </div>
+</div>
+
+<!-- ==================== 口述模板 ==================== -->
+<h2 class="part-title" id="oral">附录：面试口述模板</h2>
+
+<div class="oral-box">
+    <h3>🎤 问：你项目里的数据库是怎么用的？</h3>
+    <p>"我的上位机项目用 <span class="green-text">SQLite</span> 做本地数据存储，设计了 <span class="green-text">Repository 模式</span>封装 CRUD 操作，支持 SQLite 和 SQL Server <span class="green-text">双模式切换</span>。高频采集数据先缓存在 <span class="green-text">ConcurrentQueue</span> 里，攒够批量写入减少数据库压力。timestamp 和 device_id 建了<span class="green-text">索引</span>优化查询。定期清理 30 天前的历史数据防止数据库膨胀。报警记录、配方参数、生产统计都存在数据库里。"</p>
+</div>
+
+<div class="oral-box">
+    <h3>🎤 问：SQL Server 和 MySQL 怎么选？</h3>
+    <p>"新项目我选 <span class="green-text">SQL Server</span>，因为跟 .NET 生态集成好，企业级功能强。如果是跨平台需求或者 Web 项目，选 <span class="green-text">MySQL</span>，开源免费。SQLite 适合单机上位机，零配置，但并发写入弱。我的项目做了数据库抽象层，三种都能支持。"</p>
+</div>
+
+<div class="oral-box">
+    <h3>🎤 问：数据量大了怎么办？</h3>
+    <p>"我做了三层优化：① <span class="green-text">批量写入</span>，用 ConcurrentQueue 缓存 + SqlBulkCopy 批量插入，减少数据库压力；② <span class="green-text">建索引</span>，timestamp 和 device_id 字段建索引加速查询；③ <span class="green-text">定期归档</span>，30 天前的数据自动清理或移到历史表。如果数据量再大，可以按月分表。"</p>
+</div>
+
+<!-- ==================== 速查表 ==================== -->
+<h2 class="part-title" id="compare">附录：SQL Server vs MySQL 速查表</h2>
+
+<div class="q-card">
+    <div class="answer">
+        <table>
+            <tr><th>操作</th><th>SQL Server</th><th>MySQL</th></tr>
+            <tr><td>自增主键</td><td><code>IDENTITY(1,1)</code></td><td><code>AUTO_INCREMENT</code></td></tr>
+            <tr><td>取前N条</td><td><code>SELECT TOP 10 *</code></td><td><code>SELECT * LIMIT 10</code></td></tr>
+            <tr><td>当前时间</td><td><code>GETDATE()</code></td><td><code>NOW()</code></td></tr>
+            <tr><td>日期加减</td><td><code>DATEADD(DAY, -1, GETDATE())</code></td><td><code>DATE_SUB(NOW(), INTERVAL 1 DAY)</code></td></tr>
+            <tr><td>字符串拼接</td><td><code>'a' + 'b'</code></td><td><code>CONCAT('a', 'b')</code></td></tr>
+            <tr><td>判空</td><td><code>ISNULL(col, 'default')</code></td><td><code>IFNULL(col, 'default')</code></td></tr>
+            <tr><td>字符串类型</td><td><code>NVARCHAR(50)</code></td><td><code>VARCHAR(50)</code></td></tr>
+            <tr><td>浮点类型</td><td><code>FLOAT</code></td><td><code>DOUBLE</code></td></tr>
+            <tr><td>是否为空</td><td><code>col IS NULL</code></td><td><code>col IS NULL</code>（一样）</td></tr>
+            <tr><td>批量插入</td><td><code>SqlBulkCopy</code></td><td><code>LOAD DATA INFILE</code></td></tr>
+            <tr><td>C# 驱动</td><td><code>System.Data.SqlClient</code></td><td><code>MySqlConnector</code></td></tr>
+            <tr><td>连接字符串</td><td><code>Server=.\SQLEXPRESS;Database=DB;...;</code></td><td><code>Server=localhost;Port=3306;Database=DB;...;</code></td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="footer">
+    <p>SQL Server & MySQL 面试题库 · 上位机开发方向</p>
+    <p>最后更新：2026-06-08</p>
+</div>
+
+</div>
+</body>
+</html>
