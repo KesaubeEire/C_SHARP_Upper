@@ -87,6 +87,7 @@
 <a href="#part3">第三部分：进阶语法（Q14~Q20）</a>
 <a href="#part4">第四部分：上位机场景（Q21~Q25）</a>
 <a href="#part5">第五部分：C# vs 其他语言（Q26~Q28）</a>
+<a href="#q29">第六部分：安全实践（Q29）</a>
 </div>
 
 <!-- ==================== 第一部分 ==================== -->
@@ -735,9 +736,82 @@ EventBus.Instance.Subscribe&lt;DataUpdatedEvent&gt;(e =>
     </div>
 </div>
 
+<!-- ==================== Q29：客户端密码存储 ==================== -->
+<!-- ==================== 第六部分 ==================== -->
+<h2 class="part-title" id="part6">第六部分：安全实践 <span class="tag tag-plus">加分</span></h2>
+
+<div class="q-card" id="q29">
+    <div class="q-title"><span class="q-num">Q29</span>WinForms 客户端怎么安全地保存用户密码/Token？直接存明文有什么问题？</div>
+    <div class="answer">
+        <p><span class="highlight">问题：</span>明文存密码在本地文件（JSON/XML/txt），任何能访问你电脑的人或者恶意软件都能直接读取，等于账号裸奔。</p>
+        <p><span class="green">生产环境四种方案（从常用到进阶）：</span></p>
+
+        <p><strong>方案一：Windows Credential Manager（推荐 WinForms）</strong></p>
+        <p>调用 Windows 内置凭据管理 API，系统级加密存储，当前用户隔离。</p>
+<pre>// 需添加引用：Target Framework 自带，无需 NuGet
+// 核心 API：CredWrite / CredRead（P/Invoke 或使用第三方封装）
+
+// 伪代码示意
+public static void SaveCredential(string target, string userName, string password)
+{
+    // 调用 Windows CredWrite API → 存入"凭据管理器"
+    // 其他进程看不到，只有当前用户能读
+}
+public static (string userName, string password)? LoadCredential(string target)
+{
+    // 调用 Windows CredRead API → 从"凭据管理器"读取
+}</pre>
+        <p><span class="blue">优点：</span>操作系统加密，用户可通过"控制面板 → 凭据管理器"管理，无需自己管密钥。</p>
+        <p><span class="red">缺点：</span>Windows Only，跨平台项目不适用。</p>
+
+        <p><strong>方案二：DPAPI 加密（Data Protection API，.NET 内置）</strong></p>
+<pre>using System.Security.Cryptography;
+
+public static byte[] Encrypt(string plainText)
+{
+    byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+    // DataProtectionScope.CurrentUser → 只有当前用户能解密
+    return ProtectedData.Protect(plainBytes, null,
+        DataProtectionScope.CurrentUser);
+}
+
+public static string Decrypt(byte[] cipherBytes)
+{
+    byte[] plainBytes = ProtectedData.Unprotect(cipherBytes, null,
+        DataProtectionScope.CurrentUser);
+    return Encoding.UTF8.GetString(plainBytes);
+}</pre>
+        <p><span class="blue">优点：</span>零配置，密钥由操作系统派生和管理，代码改动极小。</p>
+        <p><span class="red">注意：</span>同一台机器同一用户才能解密，重装系统后数据作废。</p>
+
+        <p><strong>方案三：Token + Refresh Token（最主流、最安全）</strong></p>
+<pre>// 第一次登录
+POST /api/login  { username, password }
+← 返回 { access_token: "eyJ...", refresh_token: "xxx", expires_in: 3600 }
+
+// 客户端只存 refresh_token（用 DPAPI 加密存文件）
+// access_token 内存中持有，程序关闭即消失
+
+// access_token 过期
+POST /api/refresh  { refresh_token: "xxx" }
+← 返回新的 { access_token: "eyJ...", expires_in: 3600 }
+// 密码只在登录那一刻用过，后面全是 token</pre>
+        <p><span class="blue">优点：</span>密码不进客户端，refresh_token 有效期短且可撤销，服务器可踢人下线。</p>
+
+        <p><strong>方案四：OAuth 2.0 + 系统 Web 登录（SSO）</strong></p>
+        <p>客户端弹出系统浏览器 → 用户在认证页输入密码 → 授权码回传到客户端 → 换 token。客户端完全接触不到密码。</p>
+        <p><span class="blue">典型场景：</span>"使用 Microsoft 账号登录"、"使用微信扫码登录"。</p>
+
+        <hr style="border-color:#30363d; margin:15px 0;">
+
+        <p><span class="highlight">面试回答要点：</span></p>
+        <p>"WinForms 客户端保存凭据，<span class="green">最稳妥的方案是 Windows Credential Manager + Refresh Token</span>。密码只在首次登录时使用，后续用 token 认证。token 需要持久化时，存入凭据管理器而非文件。DPAPI 是纯 .NET 项目的最简替代方案，加密粒度限于当前 Windows 用户。明文存密码在任何生产环境都属于安全漏洞，不能上线。"</p>
+    </div>
+</div>
+
 <div class="footer">
     <p>C# 面试题库 · 上位机开发方向</p>
-    <p>最后更新：2026-06-09 · 共 28 题</p>
+    <p>最后更新：2026-06-11 · 共 29 题</p>
 </div>
 
 </div>
