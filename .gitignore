@@ -1,0 +1,24 @@
+## Visual Studio
+.vs/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Oo]bj/
+[Bb]in/
+*.user
+*.suo
+*.rsuser
+
+## .NET
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+
+## OS
+Thumbs.db
+*.DS_Store
+
+## IDE
+.ionide/
+.localhistory/
