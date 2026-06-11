@@ -32,7 +32,7 @@ namespace BasicUISystem
             pnlTitle.Controls.Add(lblTitle);
             pnlTitle.Controls.Add(btnClose);
             pnlTitle.Dock = DockStyle.Top;
-            pnlTitle.Font = new Font("浪漫雅圆", 11.9999981F);
+            pnlTitle.Font = new Font("浪漫雅圆", 12);
             pnlTitle.Location = new Point(0, 0);
             pnlTitle.Name = "pnlTitle";
             pnlTitle.Size = new Size(393, 34);
@@ -45,7 +45,7 @@ namespace BasicUISystem
             // 
             lblTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblTitle.BackColor = Color.Transparent;
-            lblTitle.Font = new Font("浪漫雅圆", 11.9999981F);
+            lblTitle.Font = new Font("浪漫雅圆", 12);
             lblTitle.ForeColor = Color.White;
             lblTitle.Location = new Point(127, 0);
             lblTitle.Name = "lblTitle";
@@ -64,7 +64,7 @@ namespace BasicUISystem
             btnClose.FlatAppearance.BorderSize = 0;
             btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(220, 53, 69);
             btnClose.FlatStyle = FlatStyle.Flat;
-            btnClose.Font = new Font("浪漫雅圆", 11.9999981F);
+            btnClose.Font = new Font("浪漫雅圆", 12);
             btnClose.ForeColor = Color.White;
             btnClose.Location = new Point(355, 0);
             btnClose.Margin = new Padding(0);
@@ -78,7 +78,7 @@ namespace BasicUISystem
             // lblAccount
             // 
             lblAccount.AutoSize = true;
-            lblAccount.Font = new Font("浪漫雅圆", 11.9999981F);
+            lblAccount.Font = new Font("浪漫雅圆", 12);
             lblAccount.ForeColor = Color.FromArgb(200, 200, 210);
             lblAccount.Location = new Point(45, 105);
             lblAccount.Name = "lblAccount";
@@ -89,7 +89,7 @@ namespace BasicUISystem
             // lblPassword
             // 
             lblPassword.AutoSize = true;
-            lblPassword.Font = new Font("浪漫雅圆", 11.9999981F);
+            lblPassword.Font = new Font("浪漫雅圆", 12);
             lblPassword.ForeColor = Color.FromArgb(200, 200, 210);
             lblPassword.Location = new Point(45, 145);
             lblPassword.Name = "lblPassword";
@@ -101,7 +101,7 @@ namespace BasicUISystem
             // 
             txtAccount.BackColor = Color.FromArgb(50, 50, 58);
             txtAccount.BorderStyle = BorderStyle.FixedSingle;
-            txtAccount.Font = new Font("浪漫雅圆", 11.9999981F);
+            txtAccount.Font = new Font("浪漫雅圆", 12);
             txtAccount.ForeColor = Color.White;
             txtAccount.Location = new Point(156, 101);
             txtAccount.Name = "txtAccount";
@@ -112,7 +112,7 @@ namespace BasicUISystem
             // 
             txtPassword.BackColor = Color.FromArgb(50, 50, 58);
             txtPassword.BorderStyle = BorderStyle.FixedSingle;
-            txtPassword.Font = new Font("浪漫雅圆", 11.9999981F);
+            txtPassword.Font = new Font("浪漫雅圆", 12);
             txtPassword.ForeColor = Color.White;
             txtPassword.Location = new Point(156, 141);
             txtPassword.Name = "txtPassword";
@@ -123,7 +123,7 @@ namespace BasicUISystem
             // chkRemember
             // 
             chkRemember.AutoSize = true;
-            chkRemember.Font = new Font("浪漫雅圆", 11.9999981F);
+            chkRemember.Font = new Font("浪漫雅圆", 12);
             chkRemember.ForeColor = Color.FromArgb(160, 160, 170);
             chkRemember.Location = new Point(45, 199);
             chkRemember.Name = "chkRemember";
@@ -138,7 +138,7 @@ namespace BasicUISystem
             btnLogin.FlatAppearance.BorderSize = 0;
             btnLogin.FlatAppearance.MouseOverBackColor = Color.FromArgb(90, 150, 200);
             btnLogin.FlatStyle = FlatStyle.Flat;
-            btnLogin.Font = new Font("浪漫雅圆", 11.9999981F);
+            btnLogin.Font = new Font("浪漫雅圆", 12);
             btnLogin.ForeColor = Color.White;
             btnLogin.Location = new Point(191, 191);
             btnLogin.Name = "btnLogin";
@@ -152,7 +152,7 @@ namespace BasicUISystem
             // 
             // lblStatus
             // 
-            lblStatus.Font = new Font("浪漫雅圆", 11.9999981F);
+            lblStatus.Font = new Font("浪漫雅圆", 12);
             lblStatus.ForeColor = Color.OrangeRed;
             lblStatus.Location = new Point(0, 60);
             lblStatus.Name = "lblStatus";

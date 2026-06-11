@@ -4,8 +4,11 @@ namespace BasicUISystem
 {
     public partial class FrmAdminLogin : Form
     {
+        // 拖动窗口相关字段
         private bool _dragging = false;
         private Point _startPoint = Point.Empty;
+
+        // 登录凭据文件路径
         private static readonly string CredFile = Path.Combine(
             Application.LocalUserAppDataPath, "login_cred.json");
 
@@ -92,6 +95,7 @@ namespace BasicUISystem
         }
 
         // =====  登录  =====
+        // TODO: 实际项目中应使用安全的密码存储和验证方式
 
         private void btnLogin_Click(object? sender, EventArgs e)
         {
@@ -104,7 +108,6 @@ namespace BasicUISystem
                 lblStatus.Visible = true;
                 return;
             }
-
             if (account == "admin" && password == "123456")
             {
                 if (chkRemember.Checked)
@@ -135,7 +138,6 @@ namespace BasicUISystem
         }
 
         // =====  标题栏拖拽  =====
-
         private void pnlTitle_MouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)

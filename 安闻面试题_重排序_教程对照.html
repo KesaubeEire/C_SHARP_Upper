@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>安闻面试题 — 重要性重排 + 喜科堂教程对照</title>
+<style>
+  :root { --bg: #0b1120; --card: #111b2e; --text: #e2e8f0; --accent: #38bdf8; --green: #4ade80;
+    --yellow: #fbbf24; --red: #f87171; --muted: #94a3b8; --border: #1e293b; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.75; padding: 20px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 1.7em; padding: 16px 0 4px; color: var(--accent); }
+  .subtitle { text-align: center; color: var(--muted); margin-bottom: 8px; font-size: 0.9em; }
+  .hr-note { text-align: center; background: #1e3a5f; border-radius: 8px; padding: 12px 18px; margin: 12px 0 20px; font-size: 0.9em; border: 1px solid #2563eb; }
+
+  .legend { display: flex; gap: 14px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .legend span { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .leg-found { background: #052e16; color: var(--green); }
+  .leg-partial { background: #2d2410; color: var(--yellow); }
+  .leg-notfound { background: #2d1b1b; color: var(--red); }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin: 16px 0; }
+  .stat { text-align: center; padding: 14px; background: var(--card); border-radius: 8px; }
+  .stat .num { font-size: 2.1em; font-weight: 800; }
+  .stat .label { font-size: 0.78em; color: var(--muted); }
+
+  .priority-section { margin: 28px 0 10px; }
+  .priority-head { font-size: 1.2em; padding: 10px 16px; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px; }
+  .priority-head.p0 { background: #7f1d1d; color: #fff; }
+  .priority-head.p1 { background: #713f12; color: #fff; }
+  .priority-head.p2 { background: #1e3a5f; color: #fff; }
+  .priority-head .rank { background: #fff2; padding: 2px 10px; border-radius: 12px; font-size: 0.8em; }
+
+  .card { background: var(--card); padding: 14px 18px; border-left: 5px solid var(--border); margin-bottom: 1px; }
+  .card.p0 { border-left-color: var(--red); }
+  .card.p1 { border-left-color: var(--yellow); }
+  .card.p2 { border-left-color: var(--accent); }
+
+  .card.found .q-line::after { content: " ✅教程"; color: var(--green); font-size: 12px; font-weight: 700; margin-left: 6px; }
+  .card.notfound .q-line::after { content: " ❌无教程"; color: var(--red); font-size: 12px; font-weight: 700; margin-left: 6px; }
+  .card.partial .q-line::after { content: " ⚠️部分"; color: var(--yellow); font-size: 12px; font-weight: 700; margin-left: 6px; }
+
+  .q-line { font-weight: 700; font-size: 0.98em; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .q-tag { font-size: 11px; padding: 1px 7px; border-radius: 8px; white-space: nowrap; }
+  .tag-cs { background: #7c3aed33; color: #a78bfa; }
+  .tag-proto { background: #05966933; color: #34d399; }
+  .tag-data { background: #ea580c33; color: #fb923c; }
+  .tag-test { background: #db277733; color: #f472b6; }
+  .tag-misc { background: #64748b33; color: var(--muted); }
+
+  .detail { margin-top: 8px; padding: 10px 14px; border-radius: 6px; font-size: 0.85em; line-height: 1.65; }
+  .detail.found { background: #052e16; border: 1px solid #166534; }
+  .detail.partial { background: #2d2410; border: 1px solid #854d0e; }
+  .detail.notfound { background: #2d1b1b; border: 1px solid #7f1d1d; }
+  .detail .path { color: var(--accent); font-family: Consolas, monospace; font-size: 0.84em; word-break: break-all; margin: 3px 0; }
+  .detail .note { color: var(--muted); font-size: 0.85em; margin-top: 3px; }
+
+  .toc { background: var(--card); border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+  .toc h3 { color: var(--accent); margin-bottom: 8px; font-size: 0.95em; }
+  .toc a { color: var(--accent); text-decoration: none; display: block; padding: 2px 0; font-size: 0.9em; }
+  .footer { text-align: center; color: var(--muted); margin: 40px 0 20px; font-size: 0.8em; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🎯 安闻面试题 · 重要性重排 + 喜科堂教程对照表</h1>
+<div class="subtitle">43 题（31原 + 12 Claude补充）—— 按 HR 反馈的岗位核心职责重新排序</div>
+
+<div class="hr-note">
+  <strong>📢 HR 最新岗位描述：</strong>"这个岗位主要是承担 <strong style="color:#fbbf24;">上位机软件的程序编程</strong>，
+  还有一些 <strong style="color:#fbbf24;">产线的测试程序开发</strong> 和 <strong style="color:#fbbf24;">数据抓取工作</strong> 为主。"<br>
+  → 据此重新划定三个优先级：<strong style="color:#f87171;">P0 必问（上位机编程+数据通信）</strong> |
+  <strong style="color:#fbbf24;">P1 常问（产线测试+数据库）</strong> |
+  <strong style="color:#38bdf8;">P2 加分（行业体系+软技能）</strong>
+</div>
+
+<div class="legend">
+  <span class="leg-found">✅ 有教程</span>
+  <span class="leg-partial">⚠️ 部分覆盖</span>
+  <span class="leg-notfound">❌ 暂无教程</span>
+</div>
+
+<div class="stats-grid">
+  <div class="stat"><div class="num" style="color:var(--green)">26</div><div class="label">✅ 有教程</div></div>
+  <div class="stat"><div class="num" style="color:var(--yellow)">9</div><div class="label">⚠️ 部分覆盖</div></div>
+  <div class="stat"><div class="num" style="color:var(--red)">8</div><div class="label">❌ 暂无教程</div></div>
+  <div class="stat"><div class="num" style="color:var(--accent)">43</div><div class="label">总题数</div></div>
+  <div class="stat"><div class="num" style="color:var(--red)">16</div><div class="label">P0 必问</div></div>
+  <div class="stat"><div class="num" style="color:var(--yellow)">17</div><div class="label">P1 常问</div></div>
+  <div class="stat"><div class="num" style="color:var(--accent)">10</div><div class="label">P2 加分</div></div>
+</div>
+
+<div class="toc">
+<h3>📑 快速导航</h3>
+<a href="#p0">🔴 P0 必问（上位机编程 + 通信 + 数据采集）— 16题</a>
+<a href="#p1">🟡 P1 常问（产线测试 + 数据库 + PLC）— 17题</a>
+<a href="#p2">🔵 P2 加分（行业体系 + 软技能）— 10题</a>
+</div>
+
+<!-- ============================================================ -->
+<!-- P0 -->
+<!-- ============================================================ -->
+<div class="priority-section" id="p0">
+<div class="priority-head p0">
+  <span class="rank">P0</span> 上位机编程 + 通信协议 + 数据采集 —— 16题（核心必问）
+</div>
+
+<!-- Q1 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> Q1. 上位机多PLC数据采集架构 + UI卡顿解决</div>
+<div class="detail found">
+<strong>✅ 有教程 — 多层覆盖</strong>
+<div class="path">▸ 5.0录播 第05章【串口通信】→ 串口采集基础<br>
+▸ 5.0录播 第08章【通信协议剖析】→ 通信框架设计<br>
+▸ 5.0直播 第16~22次课 → Modbus TCP 完整项目<br>
+▸ 高级进阶 第24~29次课 → 多线程/Task/async/await 全套</div>
+<div class="note">生产者-消费者模式在多线程章(24-26次课)讲；async/await 在第29次课专门讲</div>
+</div>
+</div>
+
+<!-- Q5 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> Q5. async/await vs Task.Wait() —— UI线程阻塞</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 高级进阶 第29次课 → async/await 专题<br>
+▸ 高级进阶 第27次课 → Task 阻塞/延续<br>
+▸ 高级进阶 第26次课 → Thread 与 Debug/Release 性能</div>
+</div>
+</div>
+
+<!-- Q8 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> Q8. Modbus RTU 和 TCP 的区别</div>
+<div class="detail found">
+<strong>✅ 有教程 — 完整覆盖</strong>
+<div class="path">▸ C#运动控制 第01章 ModbusRTU → 19节<br>
+▸ C#运动控制 第02章 ModbusTCP → 18节<br>
+▸ 5.0直播 第16~22次课 → Modbus 理论+通信库+实战<br>
+▸ 5.0直播 第26次课 → ModbusRTU 项目应用</div>
+</div>
+</div>
+
+<!-- Q11 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> Q11. C# 实现 Modbus 通信，用过什么库</div>
+<div class="detail found">
+<strong>✅ 有教程 — 手写 Modbus 通信库</strong>
+<div class="path">▸ 5.0直播 第17~18次课 → Modbus协议分析及通信库编写<br>
+▸ C#运动控制 第01~02章 → 完整 ModbusRTU/TCP 通信库<br>
+▸ 5.0录播 第08章 → 通信协议剖析、封装与集成</div>
+<div class="note">喜科堂是手写通信库教学（不从 NModbus4 开始），对面试更有利——能讲底层原理</div>
+</div>
+</div>
+
+<!-- Q14 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> Q14. 设备断线，上位机怎么处理</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第08章【通信协议剖析】→ 通信异常处理<br>
+▸ 运动控制 第02章【07】→ 界面优化及日志<br>
+▸ 5.0录播 第05章【串口通信】→ 串口断线重连</div>
+</div>
+</div>
+
+<!-- Q6 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-data">数据</span> Q6. 程序崩溃怎么保证采集数据不丢</div>
+<div class="detail found">
+<strong>✅ 有教程 — 多层覆盖</strong>
+<div class="path">▸ C#运动控制 第06章【工控APP】→ SQLite 本地缓存<br>
+▸ 5.0录播 第09章【通信框架】→ 数据缓存层设计<br>
+▸ 高级进阶 第24~29次课 → 多线程+异常处理<br>
+▸ .NET全栈 第19次课【程序中的异常处理】</div>
+</div>
+</div>
+
+<!-- Q12 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> Q12. 大小端问题</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0直播 第15次课【上位机数据类型分析及通用数据类型转换】<br>
+▸ 运动控制 第01章【13】、第02章【12】→ 各种数据类型读取含字节序</div>
+</div>
+</div>
+
+<!-- S5 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> S5. Modbus 功能码全表（01~16）</div>
+<div class="detail found">
+<strong>✅ 有教程 — 逐功能码讲解</strong>
+<div class="path">▸ C#运动控制 第01章 ModbusRTU → 每节一个功能码：<br>
+  01H(8) · 02H(11) · 03H(12) · 04H(14) · 05H(15) · 0FH(16) · 06H(17) · 10H(18)<br>
+▸ 第02章 ModbusTCP → 同样按功能码逐节<br>
+▸ 5.0直播 第16次课【Modbus协议基础知识及应用分析】</div>
+</div>
+</div>
+
+<!-- S6 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> S6. Modbus RTU 帧格式 + CRC</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ C#运动控制 第01章【2~5】→ Modbus 协议细节含 CRC<br>
+▸ 5.0直播 第16~17次课【Modbus协议分析及通信库编写】<br>
+▸ 5.0录播 第08章【通信协议剖析】</div>
+</div>
+</div>
+
+<!-- S7 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> S7. TCP 粘包/半包 + MBAP 头解决</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第06章【网络通信】→ TCP 基础<br>
+▸ 运动控制 第02章 ModbusTCP → MBAP 头天然解决粘包<br>
+▸ 高级进阶 第73次课【Socket搭建Web服务器】→ TCP流处理</div>
+</div>
+</div>
+
+<!-- S1 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> S1. IDisposable / using —— 资源释放</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第01章 第10~12节【OOP：构造方法、析构函数】→ 释放基础<br>
+▸ 5.0录播 第04章【选学技能】→ 异常处理 + 资源管理<br>
+▸ 高级进阶 第22~23次课【AOP/IoC】→ IDisposable 在 DI 中的实践</div>
+</div>
+</div>
+
+<!-- S2 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> S2. 装箱拆箱 + 泛型集合避免</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第01章 第05节【数据类型转换】→ 装箱拆箱<br>
+▸ 高级进阶 第11次课【高级泛型】→ 泛型消除装箱</div>
+</div>
+</div>
+
+<!-- S10 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-data">数据</span> S10. 上位机和 MES 对接</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 运动控制 第06章【工控APP】→ 云端数据上传/读取<br>
+▸ 5.0直播 第25次课【MQTT实现西门子PLC数据上云】<br>
+▸ 高级进阶 第30~32次课【WebAPI 2.0】→ REST API 完整教程</div>
+<div class="note">MES = 数据上报 API，WebAPI 章节覆盖 POST/JSON/Token，思想完全通用</div>
+</div>
+</div>
+
+<!-- Q9 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> Q9. RS232/RS422/RS485 区别</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第05章【串口通信】→ 串口基础含 RS232/485<br>
+▸ 运动控制 第01章 ModbusRTU → RS485 实验环境<br>
+▸ 5.0录播 第08章【通信协议剖析】</div>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="card p0 found">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> Q3. 委托和事件的区别</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 高级进阶 第09次课【delegate委托和Event事件原理和应用】<br>
+▸ .NET全栈 第47次课【接口与多态】→ 委托基础</div>
+</div>
+</div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- P1 -->
+<!-- ============================================================ -->
+<div class="priority-section" id="p1">
+<div class="priority-head p1">
+  <span class="rank">P1</span> 产线测试程序开发 + 数据库 + PLC 基础 —— 17题（常问）
+</div>
+
+<!-- Q24 -->
+<div class="card p1 partial">
+<div class="q-line"><span class="q-tag tag-test">测试</span> Q24. EOL 出厂测试项目设计</div>
+<div class="detail partial">
+<strong>⚠️ 部分覆盖 — 技能已全但场景需自组装</strong>
+<div class="path">▸ 5.0录播 第05~11章 → 各类设备测试流程实战<br>
+▸ C#运动控制 第05章 → 机械手搬运+检测流程<br>
+▸ C#运动控制 第06章 → 工控APP数据测试流程</div>
+<div class="note">EOL = C#上位机 + PLC通信 + 传感器采集 + 判定逻辑 + 数据上报。所有子技能课程都覆盖了，需翻译成"冰箱测试"场景</div>
+</div>
+</div>
+
+<!-- S11 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-data">数据</span> S11. SQLite vs SQL Server 选型</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 运动控制 第06章【07】→ SQLite 部署<br>
+▸ 5.0直播 第23次课【SqlSugar】→ ORM 框架<br>
+▸ .NET全栈 第10~14次课【SQL必备】→ SQL Server 基础<br>
+▸ 高级进阶 第82次课【SQL Server 主从同步】</div>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="card p1 partial">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> Q2. 做过什么C#上位机项目？遇到过什么坑</div>
+<div class="detail partial">
+<strong>⚠️ 部分覆盖 — 项目素材充足，需自己跑通讲出来</strong>
+<div class="path">▸ 5.0录播 第03/07/10/11章 → MIS/姿态传感器/BMS/空压机共5个完整项目<br>
+▸ C#运动控制 第05/06章 → 机械手+工控APP<br>
+▸ 5.0直播 第20~29次课 → ModbusTCP/RTU/Fins 实战</div>
+<div class="note">"遇到什么坑"需要自己实际练习中积累。建议挑 BMS 或三轴机械手项目跑一遍，自然就有坑可讲</div>
+</div>
+</div>
+
+<!-- Q15 -->
+<div class="card p1 partial">
+<div class="q-line"><span class="q-tag tag-cs">PLC</span> Q15. 西门子 vs 三菱 PLC</div>
+<div class="detail partial">
+<strong>⚠️ 部分覆盖 — 有通信教程无编程对比</strong>
+<div class="path">▸ 5.0直播 第19/23~24次课【西门子S7协议】<br>
+▸ 5.0直播 第27~29次课【三菱FinsTCP协议+OPC通信】<br>
+▸ 5.0直播 第29次课【三菱PLC项目应用】</div>
+<div class="note">课程讲"S7协议/三菱通信对接"而非 PLC 编程本身。品牌对比需自己查，但通信部分已全覆盖</div>
+</div>
+</div>
+
+<!-- Q16 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-cs">PLC</span> Q16. 梯形图/ST/SFC 各用在哪</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0直播 第19次课【西门子博图】→ LAD/SCL 演示<br>
+▸ 5.0录播 第08章 → PLC 编程语言基础</div>
+</div>
+</div>
+
+<!-- S8 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-cs">PLC</span> S8. PLC 扫描周期 + 上位机通信注意事项</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第08章【通信协议剖析】→ PLC 工作原理解析<br>
+▸ 5.0直播 第19次课【西门子博图】→ 扫描周期演示</div>
+</div>
+</div>
+
+<!-- Q17 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-cs">PLC</span> Q17. 伺服电机控制 vs 脉冲方向/EtherCAT</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 运动控制 第05章【三轴自动搬运加工机械手】→ 伺服脉冲控制<br>
+▸ 运动控制 第01~02章 → Modbus 步进/伺服参数读写</div>
+<div class="note">脉冲方向控制有完整实战。EtherCAT 总线涉及较少</div>
+</div>
+</div>
+
+<!-- Q18 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-cs">PLC</span> Q18. 变频器在产线中的应用</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 运动控制 第01~02章 → Modbus 控制变频器<br>
+▸ 5.0录播 第05章【串口通信】</div>
+</div>
+</div>
+
+<!-- Q13 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> Q13. 上位机与变频器/伺服通信</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 运动控制 第01章 ModbusRTU → RS485 多站轮询<br>
+▸ 运动控制 第05章【三轴机械手】→ 伺服通信</div>
+</div>
+</div>
+
+<!-- Q10 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> Q10. CAN 总线</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第08章【通信协议剖析】→ CAN 在汽车电子中的基础<br>
+▸ 运动控制 第01章 第2~5节 → CAN/CANopen 与 Modbus 对比<br>
+▸ 5.0录播 第14章【必备技能】</div>
+<div class="note">CAN 在课程中属于协议对比内容，不是专题。面试知道"冰箱和整车走 CAN"就够了</div>
+</div>
+</div>
+
+<!-- Q7 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> Q7. 工业上位机图表库</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第12章【基于GDI+开发自定义控件】→ 图表绘制<br>
+▸ 运动控制 第04章【C#自定义控件开发】→ 10节控件课<br>
+▸ ScottPlot/LightningChart 第三方库需自行查文档</div>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> Q4. 泛型在上位机中的应用</div>
+<div class="detail found">
+<strong>✅ 有教程</strong>
+<div class="path">▸ 5.0录播 第01章 第13节【泛型集合List和Dictionary】→ 已升级到 .NET 10<br>
+▸ 高级进阶 第11次课【高级泛型类、泛型方法、泛型缓存】<br>
+▸ 5.0直播 第04次课【泛型集合】</div>
+</div>
+</div>
+
+<!-- S4 -->
+<div class="card p1 partial">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> S4. Span&lt;T&gt; / Memory&lt;T&gt; 在协议解析中的应用</div>
+<div class="detail partial">
+<strong>⚠️ 课程未覆盖 — .NET 5+ 特性</strong>
+<div class="note">喜科堂基于 .NET Framework 4.8，Span&lt;T&gt; 是 .NET Core 2.1+ 才有的。作为"加分项"自行查阅 Microsoft Learn 即可</div>
+</div>
+</div>
+
+<!-- S3 -->
+<div class="card p1 partial">
+<div class="q-line"><span class="q-tag tag-cs">C#</span> S3. record vs class</div>
+<div class="detail partial">
+<strong>⚠️ 课程未覆盖 — C# 9+ 新特性</strong>
+<div class="note">课程基于 .NET Framework 4.8，record 是 C# 9.0+。可自行查阅 Microsoft Learn</div>
+</div>
+</div>
+
+<!-- Q19 -->
+<div class="card p1 notfound">
+<div class="q-line"><span class="q-tag tag-test">测试</span> Q19. 产线控制系统从0到1规划</div>
+<div class="detail notfound">
+<strong>❌ 无专项教程 — 需自行总结</strong>
+<div class="note">各子模块教程齐全（通信/PLC/UI/数据库/安全），把学过的串起来按 设备层→控制层→数据层→管理层 自己总结一段话</div>
+</div>
+</div>
+
+<!-- Q29 -->
+<div class="card p1 found">
+<div class="q-line"><span class="q-tag tag-misc">综合</span> Q29. 和设备供应商怎么配合</div>
+<div class="detail found">
+<strong>✅ 有教程 — 间接覆盖</strong>
+<div class="path">▸ 5.0录播 第09章【通信框架CMSPro】→ 标准化通信接口<br>
+▸ 高级进阶 第63~66次课【企业框架搭建】→ 接口规范与协作</div>
+<div class="note">通信协议标准化、接口文档化的工程实践 = 和供应商配合的基础</div>
+</div>
+</div>
+
+<!-- Q30 -->
+<div class="card p1 partial">
+<div class="q-line"><span class="q-tag tag-misc">综合</span> Q30. 陌生产线快速上手方法</div>
+<div class="detail partial">
+<strong>⚠️ 软技能，教程不直接讲</strong>
+<div class="note">参考答案已很好：工艺图→电气图→程序→现场蹲点→故障记录。靠你自己总结</div>
+</div>
+</div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- P2 -->
+<!-- ============================================================ -->
+<div class="priority-section" id="p2">
+<div class="priority-head p2">
+  <span class="rank">P2</span> 行业背景 + 质量体系 + 软技能 —— 10题（加分拉开距离）
+</div>
+
+<!-- Q28 -->
+<div class="card p2 partial">
+<div class="q-line"><span class="q-tag tag-misc">综合</span> Q28. 最有成就感的项目（STAR法则）</div>
+<div class="detail partial">
+<strong>⚠️ 素材充足，需自己组织回答</strong>
+<div class="path">▸ 5.0录播 第03/07/10/11章 → 4个完整项目<br>
+▸ C#运动控制 第05/06章 → 2个项目</div>
+<div class="note">任意跑通一个后用 STAR 法则包装。准备工作：选一个项目 + 想一个你解决的坑 + 量化结果</div>
+</div>
+</div>
+
+<!-- Q31 -->
+<div class="card p2 notfound">
+<div class="q-line"><span class="q-tag tag-misc">综合</span> Q31. 为什么来安闻（HR必问）</div>
+<div class="detail notfound">
+<strong>❌ 无教程 — 面试话术</strong>
+<div class="note">推荐回答方向：新项目从0开始 > 成熟线修修补补；想从方案设计到落地完整跟下来</div>
+</div>
+</div>
+
+<!-- Q20 -->
+<div class="card p2 notfound">
+<div class="q-line"><span class="q-tag tag-misc">行业</span> Q20. 车载冰箱产线工位分析</div>
+<div class="detail notfound">
+<strong>❌ 无教程 — 行业特定</strong>
+<div class="note">教程是通用工控方向，不针对车载冰箱产品。面试前自行搜索安闻官网/专利/行业资料</div>
+</div>
+</div>
+
+<!-- Q22 -->
+<div class="card p2 notfound">
+<div class="q-line"><span class="q-tag tag-misc">行业</span> Q22. 压缩机式 vs 半导体式车载冰箱</div>
+<div class="detail notfound">
+<strong>❌ 无教程 — 行业知识</strong>
+<div class="note">教程是通用工控方向。面试题文档已有参考答案，背下来即可</div>
+</div>
+</div>
+
+<!-- Q23 -->
+<div class="card p2 notfound">
+<div class="q-line"><span class="q-tag tag-misc">行业</span> Q23. 安闻 5 个冰箱专利</div>
+<div class="detail notfound">
+<strong>❌ 无教程 — 需自行搜索</strong>
+<div class="note">去 Google Patents 或国家知识产权局查一下。面试题文档已有参考答案</div>
+</div>
+</div>
+
+<!-- Q25 -->
+<div class="card p2 notfound">
+<div class="q-line"><span class="q-tag tag-misc">行业</span> Q25. 车载冰箱产线检测标准</div>
+<div class="detail notfound">
+<strong>❌ 无教程 — 行业标准</strong>
+<div class="note">背下 QC/T 1196-2023 就够。面试题文档有详细答案</div>
+</div>
+</div>
+
+<!-- Q26 -->
+<div class="card p2 notfound">
+<div class="q-line"><span class="q-tag tag-misc">体系</span> Q26. IATF16949 / APQP / PPAP</div>
+<div class="detail notfound">
+<strong>❌ 无教程 — 汽车体系特有</strong>
+<div class="note">面试前背一下：IATF16949 > ISO9001；APQP = 先期策划；PPAP = 生产件批准</div>
+</div>
+</div>
+
+<!-- Q27 -->
+<div class="card p2 notfound">
+<div class="q-line"><span class="q-tag tag-misc">体系</span> Q27. IQ/OQ/PQ 设备验证</div>
+<div class="detail notfound">
+<strong>❌ 无教程 — 设备验证</strong>
+<div class="note">面试题文档有标准答案。记：IQ=安装验证、OQ=运行验证、PQ=性能验证</div>
+</div>
+</div>
+
+<!-- S9 -->
+<div class="card p2 found">
+<div class="q-line"><span class="q-tag tag-test">安全</span> S9. 产线安全系统（急停/安全门/光栅）</div>
+<div class="detail found">
+<strong>✅ 有教程 — 项目共性内容</strong>
+<div class="path">▸ 5.0录播 第05~11章各项目 → 安全逻辑处理<br>
+▸ 5.0录播 第14章【必备技能】→ 安全要点<br>
+▸ 5.0录播 第08章【通信协议剖析】→ 异常处理与安全</div>
+<div class="note">无单独"安全系统"专题，但项目源码中处处有（急停、断线保护、异常处理），自己总结成体系</div>
+</div>
+</div>
+
+<!-- S12 -->
+<div class="card p2 partial">
+<div class="q-line"><span class="q-tag tag-proto">协议</span> S12. OPC UA vs OPC DA</div>
+<div class="detail partial">
+<strong>⚠️ 部分覆盖</strong>
+<div class="path">▸ 5.0直播 第29次课【三菱PLC项目应用及OPC通信】→ OPC Classic<br>
+▸ 5.0录播 第09章【通信框架】</div>
+<div class="note">课程涉及 OPC Classic (DA)，OPC UA 是新一代标准。答"目前用 Modbus，了解 OPC UA 方向"即可</div>
+</div>
+</div>
+
+<!-- Q21 -->
+<div class="card p2 partial">
+<div class="q-line"><span class="q-tag tag-test">测试</span> Q21. 产线节拍分析 + OEE 提升</div>
+<div class="detail partial">
+<strong>⚠️ 无需教程 — 公式背一下即可</strong>
+<div class="note">OEE = 可用率 × 性能率 × 质量率。课程项目涉及数据采集（为 OEE 提供数据基础），但无单独 OEE 专题</div>
+</div>
+</div>
+
+</div>
+
+<!-- ===== OUTSIDE SOURCES RECOMMENDATION ===== -->
+<div style="background:#1e293b; border-radius:10px; padding:18px 22px; margin:28px 0 10px; border:1px solid var(--border);">
+  <h3 style="color:var(--accent); margin-bottom:10px;">🔗 无教程题目 —— 建议外部学习资源</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:0.88em; line-height:1.6;">
+    <tr style="border-bottom:1px solid var(--border);">
+      <th style="text-align:left; padding:6px 8px; color:var(--yellow);">题目</th>
+      <th style="text-align:left; padding:6px 8px; color:var(--yellow);">建议去查什么</th>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 8px;">Q20 车载冰箱产线工位</td>
+      <td style="padding:6px 8px;">Google Patents 搜 "AEW automotive refrigerator"，看产线工艺视频</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 8px;">Q22 压缩机 vs 半导体冰箱</td>
+      <td style="padding:6px 8px;">B站/YouTube 搜"车载冰箱原理"，5分钟了解核心区别</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 8px;">Q23 安闻专利</td>
+      <td style="padding:6px 8px;">国家知识产权局 → 申请人搜"安闻" → 找冰箱相关专利</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 8px;">Q25 检测标准 QC/T 1196</td>
+      <td style="padding:6px 8px;">百度搜"QC/T 1196-2023"就有标准介绍文章</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 8px;">Q26 IATF16949/APQP/PPAP</td>
+      <td style="padding:6px 8px;">知乎/微信搜一搜"IATF16949入门"，15分钟看完核心概念</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 8px;">Q27 IQ/OQ/PQ 验证</td>
+      <td style="padding:6px 8px;">知乎搜"IQ OQ PQ"或"设备验证"，3篇文章就能讲清楚</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;">Q19 产线0→1规划</td>
+      <td style="padding:6px 8px;">把教程学过的模块自己串成"控制架构图"画一遍</td>
+    </tr>
+    </table>
+  </div>
+
+</div>
+
+<div class="footer">
+  覆盖统计：✅ <strong style="color:#4ade80;">26 题有教程</strong> &nbsp;|&nbsp; ⚠️ <strong style="color:#fbbf24;">9 题部分覆盖</strong> &nbsp;|&nbsp; ❌ <strong style="color:#f87171;">8 题暂无教程</strong>（6行业+0通用技术+2体系）<br>
+  教程根目录：<code>G:\剑儒\上位机\</code>（喜科堂上位机工控开发 / .NET全栈 / .NET高级进阶 / C#运动控制）<br>
+  生成时间：2026-06-11 · 基于 HR 最新岗位描述 + 安闻面试题 43 题 + 喜科堂视频目录索引
+</div>
+
+</div>
+</body>
+</html>
