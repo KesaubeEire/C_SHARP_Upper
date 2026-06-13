@@ -62,9 +62,36 @@
 - `.claude/skills/teach/learning-records/0001-*.md` — 学习记录1
 - `.claude/skills/teach/learning-records/0002-*.md` — 学习记录2
 
+## Windows 新环境恢复步骤
+
+**到你 Windows 上之后，开一个终端，按顺序执行：**
+
+```bash
+# 1. 拉取最新代码（含所有课程、配置、断点状态）
+git pull
+
+# 2. 恢复 skills 符号链接（Mac 的 symlink 在 Windows 上不管用）
+npx skills@latest add mattpocock/skills
+
+# 3. 启动 Claude Code，输入恢复命令
+claude
+```
+
+然后在 Claude Code 里输入：
+
+```
+/teach 继续学习 C# WinForms Modbus 上位机开发
+```
+
+我会自动读取这个文件恢复所有状态，包括：
+- 课程进度（已学完第1-2课）
+- 教学偏好（深色模式、中文教学等）
+- 知识掌握情况（不会重复讲你已经懂的东西）
+- 记忆重建（深色模式偏好）
+
 ## 推荐恢复命令
 
-在 Windows 上拉取后，输入以下命令继续：
+在 Windows 上拉取并恢复 skills 后，输入：
 ```
 /teach 继续学习 C# WinForms Modbus 上位机开发
 ```
