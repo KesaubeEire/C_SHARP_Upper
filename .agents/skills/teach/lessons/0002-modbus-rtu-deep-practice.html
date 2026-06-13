@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第2课：Modbus RTU 深度实践 — 多设备轮询</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', -apple-system, sans-serif;
+    background: #0f0f1a;
+    color: #e0e0e0;
+    line-height: 1.8;
+    padding: 0;
+  }
+  .container { max-width: 820px; margin: 0 auto; padding: 60px 24px; }
+
+  .lesson-header {
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 2px solid #2a2a3e;
+  }
+  .lesson-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: #8b83ff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    color: #f0f0f0;
+  }
+  .lesson-subtitle {
+    font-size: 16px;
+    color: #999;
+    font-weight: 300;
+  }
+  .mission-badge {
+    display: inline-block;
+    background: rgba(107, 99, 255, 0.15);
+    color: #8b83ff;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-top: 48px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2a2a3e;
+    color: #f0f0f0;
+  }
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-top: 28px;
+    margin-bottom: 10px;
+    color: #d0d0e0;
+  }
+  p { margin-bottom: 16px; color: #ccc; }
+  ul, ol { margin-bottom: 16px; padding-left: 24px; }
+  li { margin-bottom: 8px; color: #bbb; }
+
+  /* Code blocks */
+  pre {
+    background: #12121e;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #e0e0e0;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: #1e1e32;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #e0e0e0;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+  }
+  .kw { color: #c792ea; }
+  .type { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm { color: #546e7a; font-style: italic; }
+  .num { color: #f78c6c; }
+  .op { color: #89ddff; }
+
+  /* Diagram */
+  .flow-diagram {
+    margin: 32px 0;
+    padding: 24px;
+    background: #1a1a2e;
+    border-radius: 12px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 2.2;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .flow-diagram .box {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 6px;
+    margin: 4px;
+  }
+  .flow-diagram .arrow { color: #666; margin: 0 8px; }
+  .flow-diagram .label { font-size: 11px; color: #888; }
+
+  /* Callout */
+  .callout {
+    background: rgba(255,193,7,0.08);
+    border-left: 4px solid #ffc107;
+    padding: 16px 20px;
+    margin: 24px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .callout strong { color: #ffc107; }
+  .callout.interview {
+    background: rgba(76,175,80,0.08);
+    border-left-color: #4caf50;
+  }
+  .callout.interview strong { color: #81c784; }
+  .callout.tip {
+    background: rgba(33,150,243,0.08);
+    border-left-color: #2196f3;
+  }
+  .callout.tip strong { color: #64b5f6; }
+
+  /* Compare table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  .compare-table th, .compare-table td {
+    padding: 12px 16px;
+    border: 1px solid #2a2a3e;
+    text-align: left;
+  }
+  .compare-table th {
+    background: #1a1a2e;
+    color: #8b83ff;
+    font-weight: 600;
+  }
+  .compare-table td { color: #ccc; background: #12121e; }
+  .compare-table .bad { color: #ef9a9a; }
+  .compare-table .good { color: #81c784; }
+
+  /* Interview box */
+  .interview-box {
+    background: linear-gradient(135deg, #2a1a5e 0%, #1a2a4e 100%);
+    color: #e0e0e0;
+    padding: 24px;
+    border-radius: 12px;
+    margin: 24px 0;
+    border: 1px solid #333;
+  }
+  .interview-box h3 { color: #fff; border: none; margin-top: 0; }
+  .interview-box p { color: #ccc; }
+  .interview-box strong { color: #ffd700; }
+
+  .lesson-footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 2px solid #2a2a3e;
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 32px 16px; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="lesson-header">
+  <div class="lesson-number">Lesson 002</div>
+  <h1>Modbus RTU 深度实践 — 从单次读写到多设备轮询</h1>
+  <div class="lesson-subtitle">用生产者-消费者模式，给系统装上"心跳"</div>
+  <div class="mission-badge">🎯 实战项目 · TEST_101 升级</div>
+</div>
+
+<h2>你的现状</h2>
+
+<p>翻了你 <code>TEST_101</code> 的代码，当前的工作流是这样的：</p>
+
+<div class="flow-diagram">
+  <span class="box" style="background:rgba(33,150,243,0.15);color:#64b5f6;border:1px solid rgba(33,150,243,0.3);">点击"读取"按钮</span>
+  <span class="arrow">→</span>
+  <span class="box" style="background:rgba(255,193,7,0.15);color:#ffc107;border:1px solid rgba(255,193,7,0.3);">SendReadRequest()</span>
+  <span class="arrow">→</span>
+  <span class="box" style="background:rgba(76,175,80,0.15);color:#81c784;border:1px solid rgba(76,175,80,0.3);">接收到响应<br>更新 UI</span>
+  <br>
+  <span class="label" style="margin-top:8px;display:inline-block;">⬆ 手动触发 · 一次一发 · UI 线程直接调 Transport</span>
+</div>
+
+<p>这在调试阶段完全够用。但放在真实产线场景下，有三个问题：</p>
+
+<table class="compare-table">
+  <tr><th>问题</th><th>当前表现</th><th>为什么不行</th></tr>
+  <tr>
+    <td><strong>❌ 手动触发</strong></td>
+    <td>必须人点按钮才读</td>
+    <td>产线需要 24h 不间断采集，不能靠人点</td>
+  </tr>
+  <tr>
+    <td><strong>❌ 一次一发</strong></td>
+    <td>读完一个才能点下一个</td>
+    <td>一条 RS485 上可能挂了 10+ 设备，要依次轮询</td>
+  </tr>
+  <tr>
+    <td><strong>❌ 无队列</strong></td>
+    <td>点快了请求会打架，没有排队机制</td>
+    <td>串口是半双工的，同一时间只能有一个请求在路上</td>
+  </tr>
+</table>
+
+<h2>这节课的目标</h2>
+
+<p>把这套架构升级为：</p>
+
+<div class="flow-diagram">
+  <span class="box" style="background:rgba(33,150,243,0.15);color:#64b5f6;border:1px solid rgba(33,150,243,0.3);">定时轮询器<br><span style="font-size:11px;color:#888;">PollingService</span></span>
+  <span class="arrow">→</span>
+  <span class="box" style="background:rgba(255,193,7,0.15);color:#ffc107;border:1px solid rgba(255,193,7,0.3);">命令队列<br><span style="font-size:11px;color:#888;">ConcurrentQueue</span></span>
+  <span class="arrow">→</span>
+  <span class="box" style="background:rgba(76,175,80,0.15);color:#81c784;border:1px solid rgba(76,175,80,0.3);">消费者线程<br><span style="font-size:11px;color:#888;">逐一处理</span></span>
+  <span class="arrow">→</span>
+  <span class="box" style="background:rgba(171,71,188,0.15);color:#ce93d8;border:1px solid rgba(171,71,188,0.3);">结果回调<br><span style="font-size:11px;color:#888;">Invoke → UI</span></span>
+  <br>
+  <span class="label" style="margin-top:8px;display:inline-block;">⬇ 自动轮询 · 排队处理 · 线程安全</span>
+</div>
+
+<h2>核心概念：深入浅出生产者-消费者</h2>
+
+<h3>为什么需要这个模式？</h3>
+<p>串口（RS485）是<strong>半双工</strong>的——同一时刻只能一个人说话。如果你发了请求 A 还没收到回复就发请求 B，两条消息在线上混在一起，谁都解不出来。</p>
+
+<p>所以需要一个"调度员"来确保：<strong>发一个 → 等回复 → 再发下一个</strong></p>
+
+<h3>类比：奶茶店</h3>
+
+<ul>
+  <li><strong>生产者</strong>（点单员）：把订单贴到墙上 = <code>Enqueue(request)</code></li>
+  <li><strong>队列</strong>（墙上的订单）：<code>ConcurrentQueue&lt;ModbusRequest&gt;</code></li>
+  <li><strong>消费者</strong>（做奶茶的）：从墙上取一个订单，做完再取下⼀个 = 后台线程逐一处理</li>
+</ul>
+
+<h3>在你的系统里具体对应什么</h3>
+
+<p><strong>生产者</strong>有两种：</p>
+<ol>
+  <li><strong>定时器（自动）</strong>—— 每 100ms 自动把轮询请求放进队列</li>
+  <li><strong>用户点击（手动）</strong>—— 点了"读取"按钮，也把请求放进同一个队列</li>
+</ol>
+
+<p><strong>消费者</strong>：一个后台线程，从队列里取出请求，通过 SerialPort 发送，等待响应，触发回调。</p>
+
+<h2>动手：关键代码</h2>
+
+<p>下面这段代码是你需要在项目中新增的核心——<code>ModbusPollingService.cs</code>：</p>
+
+<pre><code><span class="kw">using</span> System.Collections.Concurrent;
+
+<span class="kw">public class</span> <span class="type">ModbusRequest</span>
+{
+    <span class="kw">public</span> <span class="type">byte</span> DeviceAddr { <span class="kw">get</span>; }
+    <span class="kw">public</span> <span class="type">byte</span> FuncCode { <span class="kw">get</span>; }
+    <span class="kw">public</span> <span class="type">ushort</span> StartAddr { <span class="kw">get</span>; }
+    <span class="kw">public</span> <span class="type">ushort</span> Count { <span class="kw">get</span>; }
+    <span class="kw">public</span> <span class="type">string</span> Tag { <span class="kw">get</span>; }  <span class="cm">// 比如 "PLC1_温度"</span>
+    <span class="cm">// ...构造函数省略</span>
+}
+
+<span class="kw">public class</span> <span class="type">ModbusPollingService</span> : <span class="type">IDisposable</span>
+{
+    <span class="kw">private readonly</span> <span class="type">ModbusTransport</span> _transport;
+    <span class="kw">private readonly</span> <span class="type">ConcurrentQueue</span>&lt;<span class="type">ModbusRequest</span>&gt; _queue = <span class="kw">new</span>();
+    <span class="kw">private readonly</span> <span class="type">AutoResetEvent</span> _signal = <span class="kw">new</span>(<span class="kw">false</span>);
+    <span class="kw">private</span> <span class="type">CancellationTokenSource</span>? _cts;
+    <span class="kw">private</span> <span class="type">Task</span>? _consumerTask;
+    <span class="kw">private</span> <span class="type">Timer</span>? _pollTimer;
+
+    <span class="cm">// 事件：当一帧数据解析完成后触发</span>
+    <span class="kw">public event</span> <span class="type">Action</span>&lt;<span class="type">ModbusRequest</span>, <span class="type">ModbusParseResult</span>&gt;? DataReceived;
+
+    <span class="kw">public void</span> Start()
+    {
+        _cts = <span class="kw">new</span> <span class="type">CancellationTokenSource</span>();
+        _consumerTask = <span class="type">Task</span>.Run(() => ConsumerLoop(_cts.Token));
+    }
+
+    <span class="cm">/// 添加轮询任务（生产者入口）</span>
+    <span class="kw">public void</span> Enqueue(<span class="type">ModbusRequest</span> request)
+    {
+        _queue.Enqueue(request);
+        _signal.Set();  <span class="cm">// 唤醒消费者</span>
+    }
+
+    <span class="cm">/// 消费者线程：逐一取队列里的请求，发一个等一个</span>
+    <span class="kw">private void</span> ConsumerLoop(<span class="type">CancellationToken</span> ct)
+    {
+        <span class="kw">while</span> (!ct.IsCancellationRequested)
+        {
+            <span class="kw">if</span> (!_queue.TryDequeue(<span class="kw">out</span> <span class="kw">var</span> request))
+            {
+                _signal.WaitOne(<span class="num">100</span>);  <span class="cm">// 队列空了就等</span>
+                <span class="kw">continue</span>;
+            }
+
+            <span class="kw">try</span>
+            {
+                <span class="cm">// 1. 发送请求（阻塞直到写完）</span>
+                <span class="kw">var</span> (frame, fc) = _transport.SendReadRequest(
+                    request.DeviceAddr, request.FuncCode,
+                    request.StartAddr, request.Count);
+
+                <span class="cm">// 2. 等一小段时间让数据收完（RTU 没有帧头标识长度）</span>
+                <span class="type">Thread</span>.Sleep(<span class="num">50</span>);
+
+                <span class="cm">// 3. 读取并解析响应</span>
+                <span class="cm">// ★ 注意：这里需要给 Transport 加一个同步读方法</span>
+                <span class="type">byte</span>[] response = ReadResponse(_transport, request.FuncCode, <span class="num">2000</span>);
+                <span class="kw">var</span> result = <span class="type">ModbusProtocol</span>.ParseResponse(response);
+                <span class="cm">// 4. 触发回调（UI 层通过 Invoke 订阅）</span>
+                DataReceived?.Invoke(request, result);
+            }
+            <span class="kw">catch</span> (<span class="type">Exception</span> ex)
+            {
+                DataReceived?.Invoke(request, <span class="kw">new</span> <span class="type">ModbusParseResult</span>
+                {
+                    IsError = <span class="kw">true</span>,
+                    ErrorMessage = ex.Message
+                });
+            }
+        }
+    }
+
+    <span class="kw">public void</span> Stop() { _cts?.Cancel(); _signal.Set(); }
+
+    <span class="kw">public void</span> Dispose()
+    {
+        Stop();
+        _cts?.Dispose();
+        _signal.Dispose();
+        _pollTimer?.Dispose();
+    }
+}
+</code></pre>
+
+<div class="callout interview">
+  <strong>💡 面试亮点：</strong> "我的通信层使用了<strong>生产者-消费者模式</strong>，用 <code>ConcurrentQueue</code> + <code>AutoResetEvent</code> 实现了一个请求队列。消费者线程逐个发出请求并等待响应，天然解决了串口半双工的问题。所有新请求（不管是定时轮询生成的还是用户手动触发的）都走同一个队列，不会有指令打架。" —— 线程同步答到这个深度，面试官不会只给你开 8K。
+</div>
+
+<h2>第二个关键升级：超时重试策略</h2>
+
+<p>真实场景下，设备不可能永远在线。你需要处理：</p>
+
+<ul>
+  <li><strong>超时</strong>：发了请求 2 秒没回复→重试</li>
+  <li><strong>重试次数</strong>：连续 3 次失败→标记设备离线</li>
+  <li><strong>退避</strong>：失败后不要立刻重试，等 5 秒再试</li>
+</ul>
+
+<pre><code><span class="kw">public class</span> <span class="type">DeviceState</span>
+{
+    <span class="kw">public</span> <span class="type">byte</span> Address { <span class="kw">get</span>; }
+    <span class="kw">public bool</span> IsOnline { <span class="kw">get</span>; <span class="kw">set</span>; } = <span class="kw">true</span>;
+    <span class="kw">public int</span> ConsecutiveFailures { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public</span> <span class="type">DateTime</span>? LastSuccessTime { <span class="kw">get</span>; <span class="kw">set</span>; }
+
+    <span class="kw">public bool</span> ShouldSkip()
+    {
+        <span class="cm">// 失败 3 次后，每 5 秒才重试一次</span>
+        <span class="kw">if</span> (ConsecutiveFailures &lt; <span class="num">3</span>) <span class="kw">return false</span>;
+        <span class="kw">return</span> (<span class="type">DateTime</span>.Now - LastSuccessTime)?.TotalSeconds &lt; <span class="num">5</span>;
+    }
+
+    <span class="kw">public void</span> RecordSuccess()
+    {
+        IsOnline = <span class="kw">true</span>;
+        ConsecutiveFailures = <span class="num">0</span>;
+        LastSuccessTime = <span class="type">DateTime</span>.Now;
+    }
+
+    <span class="kw">public void</span> RecordFailure()
+    {
+        ConsecutiveFailures++;
+        <span class="kw">if</span> (ConsecutiveFailures &gt;= <span class="num">3</span>) IsOnline = <span class="kw">false</span>;
+    }
+}
+</code></pre>
+
+<h2>第三个升级：定时轮询器</h2>
+
+<pre><code><span class="cm">// 配置：要轮询哪些设备、读什么</span>
+<span class="kw">public record</span> <span class="type">PollingConfig</span>
+{
+    <span class="kw">public</span> <span class="type">byte</span> DeviceAddr { <span class="kw">get</span>; <span class="kw">init</span>; }
+    <span class="kw">public</span> <span class="type">byte</span> FuncCode { <span class="kw">get</span>; <span class="kw">init</span>; }    <span class="cm">// 通常 03 读保持寄存器</span>
+    <span class="kw">public</span> <span class="type">ushort</span> StartAddr { <span class="kw">get</span>; <span class="kw">init</span>; }
+    <span class="kw">public</span> <span class="type">ushort</span> Count { <span class="kw">get</span>; <span class="kw">init</span>; }
+    <span class="kw">public int</span> IntervalMs { <span class="kw">get</span>; <span class="kw">init</span>; }  <span class="cm">// 轮询间隔（毫秒）</span>
+    <span class="kw">public</span> <span class="type">string</span> Tag { <span class="kw">get</span>; <span class="kw">init</span>; }      <span class="cm">// 显示用，如 "温度表_1号"</span>
+}
+
+<span class="kw">private void</span> PollTimer_Elapsed(<span class="type">object</span>? sender, <span class="type">EventArgs</span> e)
+{
+    <span class="cm">// 遍历所有配置的轮询项</span>
+    <span class="kw">foreach</span> (<span class="kw">var</span> cfg <span class="kw">in</span> _pollConfigs)
+    {
+        <span class="cm">// 如果该设备当前在退避期，跳过</span>
+        <span class="kw">if</span> (_deviceStates[cfg.DeviceAddr].ShouldSkip())
+            <span class="kw">continue</span>;
+
+        _service.Enqueue(<span class="kw">new</span> <span class="type">ModbusRequest</span>(
+            cfg.DeviceAddr, cfg.FuncCode,
+            cfg.StartAddr, cfg.Count, cfg.Tag));
+    }
+}
+</code></pre>
+
+<div class="flow-diagram" style="text-align:left;line-height:1.8;font-family:'Noto Sans SC',sans-serif;font-size:14px;">
+  <p style="color:#ccc;margin-bottom:12px;"><strong style="color:#ffc107;">🔄 完整的轮询一次周期：</strong></p>
+  <p style="color:#bbb;">1️⃣ Timer 触发 → 遍历配置表 → 把 N 个请求入队</p>
+  <p style="color:#bbb;">2️⃣ 消费者线程取出请求 A → 发帧 → 等响应 → 解析 → DataReceived 事件</p>
+  <p style="color:#bbb;">3️⃣ 取出请求 B → 同上（不会和 A 抢线）</p>
+  <p style="color:#bbb;">4️⃣ 所有请求处理完后线程阻塞等待新信号</p>
+  <p style="color:#bbb;">5️⃣ 等待下一个 Timer tick，重复</p>
+</div>
+
+<h2>面试官会怎么问？</h2>
+
+<div class="interview-box">
+  <h3>🎙️ Q1：串口通信为什么要用队列？</h3>
+  <p>"串口是<strong>半双工</strong>的，发送和接收不能同时进行。如果没有队列，两个请求同时发出会在线上碰撞，接收方无法区分数据边界。用 <code>ConcurrentQueue</code> + 单消费者线程，天然保证<strong>发一个等一个</strong>的时序。"</p>
+
+  <h3>🎙️ Q2：如果某个设备一直不回复，会阻塞后续轮询吗？</h3>
+  <p>"每个请求有<strong>超时时间</strong>（比如 2000ms）。超时后消费者线程会抛出异常，该设备被标记为<strong>离线</strong>并进入退避期（每 5 秒重试一次），<strong>不会阻塞</strong>后续设备的轮询。"</p>
+
+  <h3>🎙️ Q3：ConcurrentQueue 和普通 Queue 有什么区别？</h3>
+  <p>"<code>ConcurrentQueue&lt;T&gt;</code> 是 .NET 提供的<strong>线程安全队列</strong>，内部使用<strong>无锁算法</strong>（CAS），多个生产者可以同时入队而不需要手动加锁。普通 <code>Queue&lt;T&gt;</code> 在多线程环境下需要自己 <code>lock</code>，容易出错且性能更低。"</p>
+
+  <h3>🎙️ Q4：AutoResetEvent 是干什么的？</h3>
+  <p>"<code>AutoResetEvent</code> 是一个<strong>线程同步原语</strong>。当队列为空时，消费者线程通过 <code>WaitOne()</code> 阻塞自己，不占用 CPU。当新请求入队时，生产者调用 <code>Set()</code> 唤醒消费者。这是一种<strong>事件驱动</strong>的等待机制，比 <code>while(true)</code> 轮询更高效。"</p>
+</div>
+
+<h2>你的实践任务</h2>
+
+<p>在你现在的 <code>TEST_101</code> 项目里：</p>
+
+<ol>
+  <li><strong>新建 <code>ModbusPollingService.cs</code></strong> —— 实现上述的生产者-消费者队列</li>
+  <li><strong>新建 <code>DeviceState.cs</code></strong> —— 实现设备状态管理和超时重试</li>
+  <li><strong>在 <code>ModbusForm.cs</code> 集成</strong> —— 启动轮询服务，把原来的按钮事件改为 <code>Enqueue()</code></li>
+  <li><strong>加一个轮询配置面板</strong> —— 可以在 UI 上添加/删除要轮询的设备（设备地址、寄存器起始、读取数量）</li>
+</ol>
+
+<div class="callout tip">
+  <strong>📌 注意：</strong> 你现有的 <code>ModbusTransport</code> 的 <code>SendReadRequest</code> 是同步方法，可以直接被消费者线程调用。但 <code>Sp_DataReceived</code> 事件是在 DataReceived 回调里触发的——在消费者线程模式下，你需要在发送后<strong>同步等待</strong>响应，而不是通过事件。建议给 Transport 加一个 <code>SendAndReadSync()</code> 方法，内部用 <code>ManualResetEvent</code> 等待响应数据。
+</div>
+
+<div class="callout interview">
+  <strong>💡 面试亮点（进阶）：</strong> "我在 Transport 里加了一个 <code>SendAndReadSync</code> 方法，用 <code>ManualResetEventSlim</code> 实现毫秒级超时控制。消费者线程发完请求后通过 <code>WaitHandle</code> 等待响应信号，支持精确到毫秒的超时取消。这样整个轮询管线是<strong>完全同步可控</strong>的，不会出现异步回调地狱。" —— <em>.NET 同步原语用到这个程度，25K+</em>
+</div>
+
+<h2>这节课你拿到了什么</h2>
+
+<ul>
+  <li>✅ 理解了<strong>生产者-消费者模式</strong>在串口通信中的实际应用</li>
+  <li>✅ 掌握了 <code>ConcurrentQueue</code> + <code>AutoResetEvent</code> 的线程同步套路</li>
+  <li>✅ 知道了设备状态管理（离线检测、退避重试）的实现</li>
+  <li>✅ 学会了定时轮询器的设计</li>
+  <li>✅ 4 道高频面试题的话术</li>
+  <li>✅ 实践任务：给 TEST_101 装上"心跳"</li>
+</ul>
+
+<p>从架构地图上看（第1课），这节课你在填的是<strong>业务逻辑层</strong>的第一个模块——命令队列 + 定时调度。</p>
+
+<h2>附录：本课涉及概念的全面拆解</h2>
+<p style="color:#999;font-size:14px;margin-bottom:24px;">以下内容是你在学习过程中的追问梳理，沉淀到这里方便以后查阅。</p>
+
+<h3>A1 | 通信模式：单工 / 半双工 / 全双工</h3>
+
+<table class="compare-table">
+  <tr><th>模式</th><th>方向</th><th>同时收发？</th><th>类比</th><th>技术实例</th></tr>
+  <tr>
+    <td><strong>单工（Simplex）</strong></td>
+    <td>单向</td><td>❌ 只能单向</td>
+    <td>📢 广播喇叭</td>
+    <td>收音机、电视广播</td>
+  </tr>
+  <tr>
+    <td><strong>半双工（Half-Duplex）</strong></td>
+    <td>双向交替</td><td>❌ 不能同时</td>
+    <td>📻 对讲机</td>
+    <td><strong>RS485 串口</strong>、Modbus RTU</td>
+  </tr>
+  <tr>
+    <td><strong>全双工（Full-Duplex）</strong></td>
+    <td>双向同时</td><td>✅ 可以</td>
+    <td>📞 电话</td>
+    <td>RS232、TCP 以太网</td>
+  </tr>
+</table>
+
+<div class="callout interview">
+  <strong>💡 面试话术：</strong> "Modbus RTU 走 RS485 是半双工，同一时刻只能有一帧在线上，所以请求必须串行排队发，一个一个来。这也是我为什么用生产者-消费者队列的根本原因——不是我想用，是物理层决定了必须这么做。Modbus TCP 走以太网是全双工，但 Modbus 协议层仍然是一问一答的，所以队列机制同样适用。"
+</div>
+
+<h3>A2 | 生产者-消费者模式（含完整可运行代码）</h3>
+
+<p><strong>一句话总结：</strong> 点单的人（生产者）把订单贴在墙上（队列），做奶茶的人（消费者）从墙上取一个做一个，做完再做下一个。</p>
+
+<p><strong>在你的系统里具体是谁：</strong></p>
+<ul>
+  <li><strong>生产者 1</strong>：定时器（Timer），每隔一段时间把轮询请求放进队列</li>
+  <li><strong>生产者 2</strong>：你手动点"读取"按钮</li>
+  <li><strong>队列</strong>：<code>ConcurrentQueue&lt;ModbusRequest&gt;</code></li>
+  <li><strong>消费者</strong>：一个后台线程，从队列里取一个请求→发帧→等响应→解析→通知 UI</li>
+</ul>
+
+<p><strong>最小可运行代码（你之后可以直接用这个骨架）：</strong></p>
+
+<pre><code><span class="kw">using</span> System.Collections.Concurrent;
+
+<span class="kw">public class</span> <span class="type">ModbusRequest</span>
+{
+    <span class="kw">public</span> <span class="type">byte</span> DevAddr { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public</span> <span class="type">string</span> Tag { <span class="kw">get</span>; <span class="kw">set</span>; } = <span class="str">""</span>;
+}
+
+<span class="kw">public class</span> <span class="type">PollingService</span> : <span class="type">IDisposable</span>
+{
+    <span class="cm">// ★ 1. 线程安全的队列——多个生产者同时放不怕</span>
+    <span class="kw">private readonly</span> <span class="type">ConcurrentQueue</span>&lt;<span class="type">ModbusRequest</span>&gt; _queue = <span class="kw">new</span>();
+
+    <span class="cm">// ★ 2. 信号灯——队列空了就让消费者睡觉，不白占 CPU</span>
+    <span class="kw">private readonly</span> <span class="type">AutoResetEvent</span> _signal = <span class="kw">new</span>(<span class="kw">false</span>);
+
+    <span class="kw">private</span> <span class="type">CancellationTokenSource</span>? _cts;
+    <span class="kw">private</span> <span class="type">Thread</span>? _consumerThread;
+
+    <span class="kw">public event</span> <span class="type">Action</span>&lt;<span class="type">ModbusRequest</span>&gt;? RequestProcessed;
+
+    <span class="kw">public void</span> Start()
+    {
+        _cts = <span class="kw">new</span> <span class="type">CancellationTokenSource</span>();
+        _consumerThread = <span class="kw">new</span> <span class="type">Thread</span>(() => ConsumerLoop(_cts.<span class="type">Token</span>))
+        {
+            IsBackground = <span class="kw">true</span>,   <span class="cm">// 主程序退出时自动结束</span>
+            Name = <span class="str">"Modbus消费者"</span>
+        };
+        _consumerThread.Start();
+    }
+
+    <span class="cm">// ★ 生产者入口——定时器和按钮都调这个方法</span>
+    <span class="kw">public void</span> Enqueue(<span class="type">ModbusRequest</span> request)
+    {
+        _queue.Enqueue(request);    <span class="cm">// 1. 放进队列</span>
+        _signal.Set();              <span class="cm">// 2. 敲门叫醒消费者</span>
+    }
+
+    <span class="cm">// ★ 消费者循环——后台线程一直在跑这个</span>
+    <span class="kw">private void</span> ConsumerLoop(<span class="type">CancellationToken</span> ct)
+    {
+        <span class="kw">while</span> (!ct.IsCancellationRequested)
+        {
+            <span class="kw">if</span> (!_queue.TryDequeue(<span class="kw">out</span> <span class="kw">var</span> request))
+            {
+                <span class="cm">// 队列空了→睡觉，等别人 Set() 叫醒我</span>
+                _signal.WaitOne(<span class="num">100</span>);
+                <span class="kw">continue</span>;
+            }
+
+            <span class="cm">// 拿到一个请求，处理它</span>
+            <span class="type">Console</span>.WriteLine(<span class="str">$"处理设备 {request.DevAddr}..."</span>);
+            <span class="type">Thread</span>.Sleep(<span class="num">500</span>);  <span class="cm">// 模拟发帧 + 等回复</span>
+
+            <span class="cm">// 通知外面（UI 层）</span>
+            RequestProcessed?.Invoke(request);
+        }
+    }
+
+    <span class="kw">public void</span> Stop() => _cts?.Cancel();
+    <span class="kw">public void</span> Dispose() { Stop(); _cts?.Dispose(); _signal.Dispose(); }
+}
+
+<span class="cm">// 在你的 ModbusForm 里怎么用：</span>
+<span class="kw">var</span> service = <span class="kw">new</span> <span class="type">PollingService</span>();
+service.RequestProcessed += req =>
+{
+    <span class="kw">this</span>.Invoke(() => {
+        box_recv.AppendText(<span class="str">$"设备 {req.DevAddr} 数据已更新\r\n"</span>);
+    });
+};
+service.Start();
+
+<span class="cm">// 无论是定时器还是按钮，都调这一个方法：</span>
+service.Enqueue(<span class="kw">new</span> <span class="type">ModbusRequest</span> { DevAddr = <span class="num">1</span>, Tag = <span class="str">"温度表"</span> });
+</code></pre>
+
+<h3>A3 | AutoResetEvent 深度解析</h3>
+
+<p><strong>它是新玩意吗？</strong> 不是。它是 <strong>操作系统级别的内核事件对象</strong>，从 Windows NT 3.1（1993）就存在了。.NET 1.0（2002）开始就有包装。</p>
+
+<p><strong>为什么叫"Auto Reset"：</strong></p>
+<pre><code>线程A 调用 WaitOne() → 阻塞等待
+线程B 调用 Set()     → 门打开，放行一个等待线程
+                      → 门<strong>自动关上</strong>（Auto Reset!）
+线程A 再 WaitOne()   → 又得等下一次 Set()
+
+对比 ManualResetEvent：
+线程B 调用 Set()     → 门打开，放行<strong>所有</strong>等待线程
+                      → 门<strong>一直开着</strong>，你得手动 Reset() 关上
+</code></pre>
+
+<table class="compare-table">
+  <tr><th></th><th>AutoResetEvent</th><th>ManualResetEvent</th></tr>
+  <tr><td><strong>放行方式</strong></td><td>一次只放行一个</td><td>放行所有等待线程</td></tr>
+  <tr><td><strong>自动关闭</strong></td><td>✅ 放完自动关上</td><td>❌ 得手动 Reset()</td></tr>
+  <tr><td><strong>类比</strong></td><td>单人通过闸机</td><td>大门敞开</td></tr>
+  <tr><td><strong>适用场景</strong></td><td>生产者-消费者（一对一通知）</td><td>一把初始化完叫醒所有等待者</td></tr>
+</table>
+
+<p><strong>Java 有对应的吗？</strong></p>
+<p>没有直接等价的 <code>AutoResetEvent</code> 类，但可以用其他方式模拟：</p>
+
+<table class="compare-table">
+  <tr><th>你需要的效果</th><th>C#</th><th>Java</th></tr>
+  <tr><td>一对一信号通知</td><td>AutoResetEvent</td><td><code>Semaphore(1)</code> 近似，或 <code>synchronized + wait()/notify()</code></td></tr>
+  <tr><td>一对多信号通知</td><td>ManualResetEvent</td><td><code>CountDownLatch</code> / <code>CyclicBarrier</code></td></tr>
+  <tr><td>限制并发数</td><td>Semaphore</td><td>Semaphore</td></tr>
+</table>
+
+<pre><code><span class="cm">// Java 用 Semaphore 模拟 AutoResetEvent</span>
+Semaphore sem = <span class="kw">new</span> Semaphore(<span class="num">1</span>);
+sem.acquire();      <span class="cm">// 消费信号 → WaitOne()</span>
+sem.release();      <span class="cm">// 释放信号 → Set()</span>
+
+<span class="cm">// Java 用 synchronized + wait/notify（更底层的等价物）</span>
+synchronized (lockObj) {
+    <span class="kw">while</span> (queue.isEmpty()) {
+        lockObj.wait();     <span class="cm">// 阻塞等着 → WaitOne()</span>
+    }
+}
+<span class="cm">// 另一个线程</span>
+synchronized (lockObj) {
+    lockObj.notify();       <span class="cm">// 叫醒一个 → Set()</span>
+}
+</code></pre>
+
+<p><strong>前端有类似的吗？</strong></p>
+<p>有，但视角反了。AutoResetEvent 是线程级别的阻塞等待，前端是用回调/事件：</p>
+
+<table class="compare-table">
+  <tr><th></th><th>AutoResetEvent (C# 后端)</th><th>前端等价物</th></tr>
+  <tr><td><strong>等待</strong></td><td><code>WaitOne()</code> — 线程挂起</td><td><code>await</code> / <code>.then()</code> — 不阻塞</td></tr>
+  <tr><td><strong>通知</strong></td><td><code>Set()</code> — 叫醒线程</td><td><code>resolve</code> / <code>emit</code></td></tr>
+  <tr><td><strong>等待期间</strong></td><td>CPU 完全释放</td><td>事件循环继续跑</td></tr>
+</table>
+
+<p style="color:#999;font-size:13px;">注意：Web Worker 场景下有 <code>SharedArrayBuffer</code> + <code>Atomics.wait()</code>，这是浏览器端真正能阻塞线程的机制，但极少用到。</p>
+
+<div class="callout interview">
+  <strong>💡 面试话术：</strong> "我选择 AutoResetEvent 有两个原因：第一，它是操作系统级别的内核对象，稳定可靠，二十多年历史；第二，它在队列空时通过 WaitOne 让线程完全阻塞不占 CPU，比 while(true) + Sleep 高效得多。C# 在这方面比 Java 用起来更简洁——Java 没有直接的等价类，需要自己用 Semaphore 或 synchronized + wait/notify 来模拟。"
+</div>
+
+<h3>A4 | CAS 无锁算法（Compare-And-Swap）</h3>
+
+<p><strong>要解决什么问题？</strong></p>
+<p>多个线程同时修改同一个变量。传统做法是加锁（<code>lock</code>），但加锁意味着其他线程要排队等，有切换开销。</p>
+
+<p><strong>CAS 是什么？</strong></p>
+<p>用 CPU 的一条原子指令完成"检查-修改"两个动作：</p>
+
+<pre><code><span class="cm">// CAS 的语义伪代码：</span>
+<span class="type">bool</span> CompareAndSwap(<span class="kw">ref int</span> location, <span class="type">int</span> expectedValue, <span class="type">int</span> newValue)
+{
+    <span class="kw">if</span> (location == expectedValue)    <span class="cm">// 1. 看看现在是不是我预期的值</span>
+    {
+        location = newValue;            <span class="cm">// 2. 是？改成新值</span>
+        <span class="kw">return true</span>;                   <span class="cm">// 3. 成功了</span>
+    }
+    <span class="kw">return false</span>;                      <span class="cm">// 被别人改了？重试</span>
+}
+</code></pre>
+
+<p><strong>ConcurrentQueue 内部是怎么用的？</strong></p>
+<ol>
+  <li>记下当前的队列尾巴位置</li>
+  <li>尝试 CAS 把尾巴指向新元素</li>
+  <li>如果失败（别的线程抢先改了尾巴）→ 重试第 1 步</li>
+  <li>如果成功 → 完事</li>
+</ol>
+<p>整个过程<strong>无阻塞、无锁</strong>，抢不到的线程立刻重试而不是挂起。高并发下比 <code>lock</code> 快得多。</p>
+
+<div class="callout tip">
+  <strong>📌 你不需要自己实现 CAS：</strong> <code>ConcurrentQueue</code>、<code>ConcurrentDictionary</code> 内部已经用了 CAS，你直接调就行。了解 CAS 是为了在面试时能说清楚"为什么 ConcurrentQueue 比 Queue + lock 快"。
+</div>
+
+<h3>A5 | 退避策略（Backoff）详解</h3>
+
+<p><strong>为什么需要退避？</strong> 设备不响应时，如果你疯狂重试，可能把设备搞得更忙。你越急它越卡。</p>
+
+<p><strong>三档退避策略（从简单到进阶）：</strong></p>
+
+<table class="compare-table">
+  <tr><th>策略</th><th>规则</th><th>适用场景</th></tr>
+  <tr>
+    <td><strong>固定间隔</strong></td>
+    <td>失败了等 5 秒再试</td>
+    <td>刚开始做，先跑通这个</td>
+  </tr>
+  <tr>
+    <td><strong>线性退避</strong></td>
+    <td>第 1 次等 1s，第 2 次等 2s，第 3 次等 3s……</td>
+    <td>设备重启需要几秒到几十秒</td>
+  </tr>
+  <tr>
+    <td><strong>指数退避</strong></td>
+    <td>第 1 次等 1s，第 2 次等 2s，第 3 次等 4s，第 4 次等 8s……</td>
+    <td>网络断开、服务器宕机（AWS 也用这个）</td>
+  </tr>
+</table>
+
+<div class="callout interview">
+  <strong>💡 面试话术（进阶）：</strong> "我用了<strong>指数退避</strong>——失败次数越多，重试间隔越长。第一次失败等 1 秒，第二次等 2 秒，第三次等 4 秒，以此类推，最大不超过 30 秒。这也是 AWS SDK 和 gRPC 的默认策略。一旦设备重新响应，立即重置退避计数器，恢复正常的轮询间隔。"
+</div>
+
+<div class="lesson-footer">
+  <p>代码部分如果不确定怎么下手，随时说，我来帮你实现。</p>
+  <p>准备好了就说"开始写代码" 或者 "下一课"。</p>
+  <p>— 第2课完 —</p>
+</div>
+
+</div>
+</body>
+</html>

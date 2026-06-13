@@ -83,3 +83,17 @@ Windows PowerShell 5.1 环境下：
 - [ ] TestForm 测试窗口功能扩展
 - [ ] 补充更多 C# 语法实战示例
 - [ ] 面试题库持续更新
+
+## Agent skills
+
+### 问题追踪器
+
+Issue 以本地 markdown 文件形式存放在 `.scratch/<功能名>/` 下。详见 `docs/agents/issue-tracker.md`。
+
+### 分类标签
+
+五个标准分类标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。详见 `docs/agents/triage-labels.md`。
+
+### 领域文档
+
+单上下文布局：项目根目录下 `CONTEXT.md` + `docs/adr/`。详见 `docs/agents/domain.md`。
