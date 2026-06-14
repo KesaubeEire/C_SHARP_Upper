@@ -1,60 +1,57 @@
-# Trioop 式 PLC 实时监控系统
+# Trioop PLC Monitor
 
-本项目是一个 **纯 Node.js** 的西门子 S7-1200 PLC 监控与控制系统，无需 Docker、无需 Grafana，一个 `npm start` 搞定。
+纯 Node.js 西门子 S7-1200 实时监控与控制系统。
+**pnpm + Vite + React + TypeScript + Express + node-snap7js**
 
 ## 快速启动
 
 ```bash
-# 1. 安装依赖
-npm install
-
-# 2. 配置 PLC 地址（编辑 plc-config.js）
-#    - 设置你的 PLC IP
-#    - 填写你要读写的 DB 块地址
-
-# 3. 启动
-npm start
+pnpm install
+# 编辑 server/config.ts 设置 PLC IP
+pnpm dev
 ```
 
-浏览器打开 `http://localhost:3000` 即可看到仪表盘。
+浏览器打开 `http://localhost:5173`。
 
-## 前置条件
-
-### 硬件连接
-- 你的机器和 S7-1200 通过**网线**连接（直连或通过交换机均可）
-- 确认两者在**同一网段**（例如 PLC 设 `192.168.1.100`，机器设 `192.168.1.x`）
-
-### PLC 端配置（TIA Portal 中必须做）
-| 配置 | 位置 | 操作 |
-|------|------|------|
-| 启用 PUT/GET 访问 | PLC 属性 → 保护 | 勾选"允许从远程伙伴（PUT/GET）访问" |
-| 取消优化块访问 | 每个 DB 块右键 → 属性 | 取消勾选"优化的块访问" |
-| 固定 IP | PLC 属性 → PROFINET 接口 → 以太网地址 | 设置固定 IP（如 192.168.1.100） |
-
-## 项目结构
+## 结构
 
 ```
 trioop/
-├── CLAUDE.md                        ← 本文件
-├── README.md                        ← 更详细的使用文档
-├── package.json
-├── plc-config.js                    ← ✅ 你只需要编辑这个文件
-├── server.js                        ← 服务端（Express + S7 通信）
-└── public/
-    └── index.html                   ← 前端仪表盘
+├── shared/types.ts           ← 前后端共享类型
+├── server/                   ← 后端（Express + S7）
+│   ├── index.ts              ← 主入口
+│   ├── config.ts             ← PLC 配置（改这里）
+│   ├── plc.ts                ← S7Client 封装
+│   └── sse.ts                ← SSE 推送
+├── src/                      ← 前端（React + Vite）
+│   ├── App.tsx
+│   ├── hooks/usePLCData.ts   ← SSE 实时数据
+│   ├── hooks/usePLCWrite.ts  ← 写入操作
+│   └── components/           ← UI 组件
+├── index.html                ← Vite 入口
+├── vite.config.ts
+├── tsconfig.json
+└── package.json
 ```
 
-## 当用户说"帮我配置PLC点"时
+## 开发
 
-1. 打开 `plc-config.js`
-2. 按用户提供的 TIA Portal DB 块变量表修改 `variables` 数组
-3. 确认 `type` 匹配（real / int / bool / word / dword / byte）
-4. `writable: true` 表示这个点可以在仪表盘上控制写入
-5. 启动后验证数据是否正确显示
+```bash
+pnpm dev          # 同时启动前端(Vite :5173) + 后端(Express :3001)
+pnpm dev:server   # 只启动后端
+pnpm dev:client   # 只启动前端 HMR
+pnpm build        # 构建前端到 dist/
+pnpm start        # 生产模式 (:3000)
+```
 
-## 技术栈
+## 配置
 
-- **后端**: Node.js + Express + node-snap7js（纯 JS S7 协议实现）
-- **前端**: 原生 HTML/CSS/JS（用户是前端开发者，会自行定制）
-- **通信**: ISO-on-TCP（S7 协议，端口 102）
-- **实时推送**: Server-Sent Events (SSE)
+编辑 `server/config.ts`：
+- 设置 PLC IP
+- 填写 DB 块变量（类型、偏移量、读写权限）
+
+## PLC 前置条件
+
+1. TIA Portal 启用 PUT/GET 访问
+2. DB 块取消「优化的块访问」
+3. 固定 IP，与电脑同网段
