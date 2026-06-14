@@ -1,0 +1,15 @@
+{
+  "name": "trioop-plc-monitor",
+  "version": "1.0.0",
+  "description": "纯 Node.js 西门子 S7-1200 实时监控与控制系统",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "node-snap7js": "^0.2.0"
+  }
+}
