@@ -2,6 +2,7 @@
  * SSE 实时数据 Hook
  *
  * 连接 /api/plc/stream，自动接收 PLC 数据推送
+ * 数据格式: { db: { [name]: PLCDataPoint }, io: { i: number[], q: number[] } }
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react'
@@ -9,8 +10,21 @@ import type { PLCData } from '../shared/types'
 
 const RECONNECT_DELAY = 3000
 
+export interface IOData {
+  i: Record<number, number>
+  q: Record<number, number>
+}
+
+interface StreamPayload {
+  db: PLCData
+  io: IOData
+  dbBlocks?: Record<string, number[] | null>
+}
+
 export function usePLCData() {
-  const [data, setData] = useState<PLCData>({})
+  const [db, setDb] = useState<PLCData>({})
+  const [io, setIo] = useState<IOData>({ i: {}, q: {} })
+  const [dbBlocks, setDbBlocks] = useState<Record<string, number[] | null>>({})
   const [connected, setConnected] = useState(false)
   const esRef = useRef<EventSource | null>(null)
   const retryRef = useRef<ReturnType<typeof setTimeout>>()
@@ -28,14 +42,16 @@ export function usePLCData() {
 
     es.onmessage = (event) => {
       try {
-        setData(JSON.parse(event.data))
+        const payload: StreamPayload = JSON.parse(event.data)
+        setDb(payload.db ?? {})
+        setIo({ i: payload.io?.i ?? {}, q: payload.io?.q ?? {} })
+        setDbBlocks(payload.dbBlocks ?? {})
       } catch { /* ignore malformed data */ }
     }
 
     es.onerror = () => {
       setConnected(false)
       es.close()
-      // 自动重连
       retryRef.current = setTimeout(connect, RECONNECT_DELAY)
     }
   }, [])
@@ -48,5 +64,5 @@ export function usePLCData() {
     }
   }, [connect])
 
-  return { data, connected }
+  return { db, io, setIo, dbBlocks, connected }
 }

@@ -13,6 +13,7 @@
   "dependencies": {
     "express": "^4.21.2",
     "node-snap7js": "^0.2.0",
+    "nodes7": "^0.3.18",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
@@ -22,8 +23,8 @@
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
     "concurrently": "^9.1.2",
-    "typescript": "^5.8.3",
     "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
     "vite": "^6.3.3"
   }
 }

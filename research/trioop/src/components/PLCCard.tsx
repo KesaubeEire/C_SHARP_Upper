@@ -21,7 +21,8 @@ export default function PLCCard({
   variable, point, writeLoading, writeError, onWrite, onDismissError,
 }: PLCCardProps) {
   const value = point?.value
-  const tag = `${variable.type.toUpperCase()}${variable.writable ? ' ✏️' : ''}`
+  const areaLabel = variable.area && variable.area !== 'DB' ? `${variable.area} ` : ''
+  const tag = `${areaLabel}${variable.type.toUpperCase()}${variable.writable ? ' ✏️' : ''}`
   const tagClass = variable.writable ? 'card__tag card__tag--writable' : 'card__tag'
 
   // Bool 类型特殊渲染
