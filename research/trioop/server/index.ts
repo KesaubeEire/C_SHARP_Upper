@@ -36,7 +36,7 @@ let runtimePlcIp: string = config.plc.ip
 let runtimeLocalAddr: string | undefined
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let plcDataCache: Record<string, unknown> = {}
-let ioDataCache: { i?: Record<number, number>; q?: Record<number, number> } = {}
+let ioDataCache: { i: Record<number, number>; q: Record<number, number> } = { i: {}, q: {} }
 let runtimeConnType = 3
 let runtimePollInterval = 1000
 let runtimeIOSource: 'io' | 'db' = 'io'    // 'io'=直读I/Q, 'db'=从DB读
@@ -233,7 +233,7 @@ async function poll() {
     ioDataCache.q = result.io.q
     dbBlockCache = result.dbBlocks
 
-    broadcast({ db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache } as any)
+    broadcast({ db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache })
   } catch (err) {
     console.warn(`[PLC] 轮询异常:`, (err as Error).message)
   }

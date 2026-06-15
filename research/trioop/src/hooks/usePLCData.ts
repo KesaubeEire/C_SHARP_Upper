@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import type { PLCData } from '../shared/types'
+import type { PLCData } from '../../shared/types'
 
 const RECONNECT_DELAY = 3000
 
@@ -27,7 +27,7 @@ export function usePLCData() {
   const [dbBlocks, setDbBlocks] = useState<Record<string, number[] | null>>({})
   const [connected, setConnected] = useState(false)
   const esRef = useRef<EventSource | null>(null)
-  const retryRef = useRef<ReturnType<typeof setTimeout>>()
+  const retryRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const connect = useCallback(() => {
     esRef.current?.close()

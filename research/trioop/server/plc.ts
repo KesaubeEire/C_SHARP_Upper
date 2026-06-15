@@ -237,9 +237,15 @@ export async function readAll(variables: PLCVariable[]): Promise<PLCData> {
  * 一次性读取所有已注册项（DB 变量 + I/Q 字节 + DB 块）
  * 比多次调用 readAll/readIOBytes 更高效（nodes7 合并为一次 S7 请求）
  */
-export async function readOnce(): Promise<{ db: PLCData; io: { i: Record<number, number>; q: Record<number, number> }; dbBlocks: Record<string, number[] | null> }> {
+export interface ReadOnceResult {
+  db: PLCData
+  io: { i: Record<number, number>; q: Record<number, number> }
+  dbBlocks: Record<string, number[] | null>
+}
+
+export async function readOnce(): Promise<ReadOnceResult> {
   const values = await readAllItems()
-  const result: ReturnType<typeof readOnce> = {
+  const result: ReadOnceResult = {
     db: {},
     io: { i: {}, q: {} },
     dbBlocks: {},
@@ -303,16 +309,17 @@ export async function readDBRange(dbNumber: number, startOffset: number, byteCou
   const s7addr = `DB${dbNumber},B${startOffset}.${byteCount}`
 
   if (!client) throw new Error('PLC 未连接')
+  const c = client // 捕获非 null 引用
 
   return new Promise((resolve, reject) => {
-    client.addItems([tempTag])
-    const origCB = client.translationCB
-    client.setTranslationCB((tag: string) => tag === tempTag ? s7addr : origCB(tag))
+    c.addItems([tempTag])
+    const origCB = c.translationCB
+    c.setTranslationCB((tag: string) => tag === tempTag ? s7addr : origCB(tag))
 
     // 等一帧让 addItems 生效
     setTimeout(() => {
-      client!.readAllItems((err: any, values: Record<string, any>) => {
-        client!.removeItems([tempTag])
+      c.readAllItems((err: any, values: Record<string, any>) => {
+        c.removeItems([tempTag])
         if (err) {
           reject(new Error(`DB 读取失败: ${err}`))
         } else {

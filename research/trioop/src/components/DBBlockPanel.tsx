@@ -89,7 +89,7 @@ export default function DBBlockPanel({ blocks, data, onAdd, onRemove }: DBBlockP
                         {bytes.length >= 2 && (
                           <div className="db-hex__value-row">
                             <span className="db-hex__val-label">INT:</span>
-                            <span>{bytes.readInt16BE ? '—' : bytes[0] * 256 + bytes[1]}</span>
+                            <span>{(bytes[0] << 8) | bytes[1]}</span>
                           </div>
                         )}
                         {bytes.length >= 4 && (

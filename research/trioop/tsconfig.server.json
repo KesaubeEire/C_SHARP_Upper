@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "outDir": "dist",
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["shared/*"]
