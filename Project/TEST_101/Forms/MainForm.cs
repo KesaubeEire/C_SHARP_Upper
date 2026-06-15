@@ -30,6 +30,7 @@ namespace TEST_101.Forms
         // ──── Modbus 模块核心组件 ────
         private ModbusTransport _mb_transport = null!;
         private InputHistoryManager _mb_history = null!;
+        private ModbusPollingService _mb_pollingService = null!;
         private bool _mb_isTcpMode = false;
         private string _mb_lastDeviceId = "1";
         private ushort _mb_lastStartAddr = 0;
@@ -116,6 +117,12 @@ namespace TEST_101.Forms
             _mb_transport.ConnectionChanged += OnConnectionChanged;
 
             _mb_history = new InputHistoryManager();
+
+            // ★ 初始化轮询服务
+            _mb_pollingService = new ModbusPollingService(_mb_transport, () => _mb_isTcpMode);
+            _mb_pollingService.DataReceived += OnPollingDataReceived;
+            _mb_pollingService.DeviceOnlineChanged += OnPollingDeviceOnlineChanged;
+            _mb_pollingService.ServiceStateChanged += OnPollingServiceStateChanged;
 
             InitModbusDefaults();
             RefreshComPorts();
@@ -521,10 +528,20 @@ namespace TEST_101.Forms
                     _mb_history.Add("tcp_port", _mb_box_port.Text.Trim());
                 }
 
-                // 发送
-                var (frame, fc) = _mb_transport.SendReadRequest(devAddr, funcCode, startAddr, count);
-                ColorizeHexFrame(_mb_box_send_hex, BitConverter.ToString(frame).Replace("-", " "), fc, _mb_isTcpMode);
-                _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] 发送 → {_mb_box_send_hex.Text}\r\n");
+                // ★ 如果轮询正在运行，把请求入队（共享队列）
+                if (_mb_pollingService.IsRunning)
+                {
+                    _mb_pollingService.Enqueue(new ModbusRequest(devAddr, funcCode, startAddr, count,
+                        $"手动#{devAddr} @{startAddr}"));
+                    _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] 📥 手动请求已入队 (Dev#{devAddr}, @{startAddr})\r\n");
+                }
+                else
+                {
+                    // 直接发送（原有逻辑）
+                    var (frame, fc) = _mb_transport.SendReadRequest(devAddr, funcCode, startAddr, count);
+                    ColorizeHexFrame(_mb_box_send_hex, BitConverter.ToString(frame).Replace("-", " "), fc, _mb_isTcpMode);
+                    _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] 发送 → {_mb_box_send_hex.Text}\r\n");
+                }
             }
             catch (FormatException)
             {
@@ -534,6 +551,144 @@ namespace TEST_101.Forms
             {
                 MessageBox.Show("生成指令失败：" + ex.Message);
             }
+        }
+
+        // ========== ★ 轮询服务 ==========
+
+        private void _mb_btn_polling_Click(object? sender, EventArgs e)
+        {
+            if (_mb_pollingService.IsRunning)
+            {
+                _mb_pollingService.Stop();
+                _mb_btn_polling.Text = "▶ 轮询";
+                _mb_btn_polling.BackColor = Color.FromArgb(60, 140, 60);
+                _mb_btn_polling.ForeColor = Color.White;
+                _mb_lb_polling_status.Visible = false;
+                _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] ⏹ 轮询已停止\r\n");
+            }
+            else
+            {
+                if (_mb_isTcpMode && !_mb_transport.IsTcpConnected)
+                { MessageBox.Show("请先连接 TCP"); return; }
+                if (!_mb_isTcpMode && !_mb_transport.IsSerialOpen)
+                { MessageBox.Show("请先打开串口"); return; }
+
+                try
+                {
+                    byte devAddr = byte.Parse(_mb_box_dev.Text.Trim());
+                    string funcStr = _mb_drop_func.Text.Substring(0, 2);
+                    byte funcCode = byte.Parse(funcStr);
+                    string addrText = _mb_box_addr.Text.Trim();
+                    ushort startAddr = addrText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                        ? Convert.ToUInt16(addrText.Substring(2), 16)
+                        : ushort.Parse(addrText);
+                    ushort count = ushort.Parse(_mb_box_count.Text.Trim());
+
+                    _mb_pollingService.ClearPollingConfigs();
+                    _mb_pollingService.AddPollingConfig(new PollingConfig
+                    {
+                        DeviceAddr = devAddr,
+                        FuncCode = funcCode,
+                        StartAddr = startAddr,
+                        Count = count,
+                        IntervalMs = 1000,
+                        Tag = $"Dev#{devAddr} @{startAddr}"
+                    });
+
+                    _mb_pollingService.StartPolling();
+                    _mb_btn_polling.Text = "⏹ 停止";
+                    _mb_btn_polling.BackColor = Color.FromArgb(200, 70, 70);
+                    _mb_btn_polling.ForeColor = Color.White;
+                    _mb_lb_polling_status.Visible = true;
+                    UpdatePollingStatusText();
+                    _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] ▶ 轮询已启动 (Dev#{devAddr}, F{funcStr}, @{startAddr}, x{count})\r\n");
+                }
+                catch (FormatException)
+                {
+                    MessageBox.Show("轮询参数格式错误，请检查设备地址、起始地址、数量");
+                }
+            }
+        }
+
+        private void OnPollingDataReceived(PollingResult result)
+        {
+            if (IsDisposed) return;
+            Invoke(() =>
+            {
+                string hex = result.RawFrame.Length > 0
+                    ? BitConverter.ToString(result.RawFrame).Replace("-", " ")
+                    : "(无响应)";
+                string prefix = result.IsTimeout ? "⏱" : result.ParseResult.IsError ? "❌" : "✅";
+                _mb_box_recv.AppendText($"[{result.Request.Tag}] {prefix} [{DateTime.Now:HH:mm:ss}] {hex}" +
+                    $" ({(int)result.Elapsed.TotalMilliseconds}ms)\r\n");
+
+                if (!result.ParseResult.IsError && result.RawFrame.Length > 0)
+                {
+                    byte funcCode = result.RawFrame.Length >= 2 ? result.RawFrame[1] : result.Request.FuncCode;
+                    ColorizeHexFrame(_mb_box_recv_hex, hex, funcCode, _mb_isTcpMode);
+                    FillGrid(result.ParseResult);
+                }
+
+                if (!result.ParseResult.IsError && result.ParseResult.Registers.Count > 0)
+                {
+                    var values = result.ParseResult.Registers.Select(r => r.Value).ToArray();
+                    EventBus.Instance.Publish(new DataUpdatedEvent(
+                        DeviceId: result.Request.DeviceAddr.ToString(),
+                        StartAddress: result.Request.StartAddr,
+                        Values: values,
+                        Timestamp: DateTime.Now
+                    ));
+                }
+
+                UpdatePollingStatusText();
+            });
+        }
+
+        private void OnPollingDeviceOnlineChanged(byte address, bool isOnline)
+        {
+            if (IsDisposed) return;
+            Invoke(() =>
+            {
+                string status = isOnline ? "🟢 在线" : "🔴 离线";
+                _mb_box_recv.AppendText($"[{DateTime.Now:HH:mm:ss}] Dev#{address} → {status}\r\n");
+                UpdatePollingStatusText();
+            });
+        }
+
+        private void OnPollingServiceStateChanged(bool isRunning)
+        {
+            if (IsDisposed) return;
+            Invoke(() =>
+            {
+                if (!isRunning && !_mb_btn_polling.IsDisposed)
+                {
+                    _mb_btn_polling.Text = "▶ 轮询";
+                    _mb_btn_polling.BackColor = Color.FromArgb(60, 140, 60);
+                    _mb_btn_polling.ForeColor = Color.White;
+                    _mb_lb_polling_status.Visible = false;
+                }
+            });
+        }
+
+        private void UpdatePollingStatusText()
+        {
+            if (!_mb_lb_polling_status.Visible) return;
+
+            var stats = _mb_pollingService.GetStats();
+            var configs = _mb_pollingService.PollingConfigs;
+
+            string devices = string.Join(", ",
+                configs.Select(c =>
+                {
+                    var state = _mb_pollingService.GetDeviceState(c.DeviceAddr);
+                    string icon = state.IsOnline ? "🟢" : "🔴";
+                    string skipInfo = state.ShouldSkip()
+                        ? $" (退避{state.SecondsUntilRetry():F0}s)" : "";
+                    return $"{icon} {c.Tag}{skipInfo}";
+                }));
+
+            _mb_lb_polling_status.Text = $"[队列={stats.QueueLength}] [成功率={stats.SuccessRate}%]" +
+                $" [已发={stats.RequestsSent}] [失败={stats.RequestsFailed}]   {devices}";
         }
 
         // ========== DataGridView 列初始化 ==========
@@ -742,6 +897,7 @@ namespace TEST_101.Forms
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
+            _mb_pollingService?.Dispose();
             _mb_transport?.Dispose();
             _chartDataManager?.Dispose();
             _reportGenerator?.Dispose();

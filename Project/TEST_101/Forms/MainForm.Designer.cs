@@ -58,6 +58,8 @@ namespace TEST_101.Forms
             _mb_lb_count = new Label();
             _mb_box_count = new TextBox();
             _mb_btn_read = new Button();
+            _mb_btn_polling = new Button();
+            _mb_lb_polling_status = new Label();
             _mb_lb_send_hex = new Label();
             _mb_box_send_hex = new RichTextBox();
             _mb_lb_recv_hex = new Label();
@@ -279,6 +281,8 @@ namespace TEST_101.Forms
             _panelMonitor.Controls.Add(_mb_lb_count);
             _panelMonitor.Controls.Add(_mb_box_count);
             _panelMonitor.Controls.Add(_mb_btn_read);
+            _panelMonitor.Controls.Add(_mb_btn_polling);
+            _panelMonitor.Controls.Add(_mb_lb_polling_status);
             _panelMonitor.Controls.Add(_mb_lb_send_hex);
             _panelMonitor.Controls.Add(_mb_box_send_hex);
             _panelMonitor.Controls.Add(_mb_lb_recv_hex);
@@ -572,7 +576,34 @@ namespace TEST_101.Forms
             _mb_btn_read.TabIndex = 28;
             _mb_btn_read.Text = "读取";
             _mb_btn_read.UseVisualStyleBackColor = false;
-            // 
+            //
+            // _mb_btn_polling
+            //
+            _mb_btn_polling.BackColor = Color.FromArgb(60, 140, 60);
+            _mb_btn_polling.FlatStyle = FlatStyle.Flat;
+            _mb_btn_polling.FlatAppearance.BorderSize = 2;
+            _mb_btn_polling.FlatAppearance.BorderColor = Color.FromArgb(255, 255, 200);
+            _mb_btn_polling.Font = new Font("Microsoft YaHei UI", 10F, FontStyle.Bold);
+            _mb_btn_polling.ForeColor = Color.White;
+            _mb_btn_polling.Location = new Point(725, 122);
+            _mb_btn_polling.Name = "_mb_btn_polling";
+            _mb_btn_polling.Size = new Size(95, 32);
+            _mb_btn_polling.TabIndex = 55;
+            _mb_btn_polling.Text = "▶ 轮询";
+            _mb_btn_polling.UseVisualStyleBackColor = false;
+            _mb_btn_polling.Click += _mb_btn_polling_Click;
+            //
+            // _mb_lb_polling_status
+            //
+            _mb_lb_polling_status.AutoSize = true;
+            _mb_lb_polling_status.Font = new Font("Consolas", 9F);
+            _mb_lb_polling_status.ForeColor = Color.FromArgb(100, 100, 100);
+            _mb_lb_polling_status.Location = new Point(10, 440);
+            _mb_lb_polling_status.Name = "_mb_lb_polling_status";
+            _mb_lb_polling_status.Size = new Size(0, 18);
+            _mb_lb_polling_status.TabIndex = 56;
+            _mb_lb_polling_status.Visible = false;
+            //
             // _mb_lb_send_hex
             // 
             _mb_lb_send_hex.AutoSize = true;
@@ -1589,6 +1620,8 @@ namespace TEST_101.Forms
         private Label _mb_lb_count;
         private TextBox _mb_box_count;
         private Button _mb_btn_read;
+        private Button _mb_btn_polling;
+        private Label _mb_lb_polling_status;
         private Label _mb_lb_send_hex;
         private RichTextBox _mb_box_send_hex;
         private Label _mb_lb_recv_hex;

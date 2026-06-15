@@ -28,6 +28,11 @@ namespace TEST_101
         // 状态
         private bool _disposed;
 
+        // ★ 同步读支持（SendAndReadSync）
+        private bool _syncReadPending;
+        private byte[]? _syncReadBuffer;
+        private readonly ManualResetEventSlim _syncReadEvent = new(false);
+
         // ========== 事件（均在 UI 线程触发）==========
 
         /// <summary>收到完整的 Modbus 响应帧（原始字节）</summary>
@@ -171,6 +176,57 @@ namespace TEST_101
             return (frame, funcCode);
         }
 
+        // ========== 同步读（SendAndReadSync）==========
+
+        /// <summary>
+        /// 同步发送 Modbus 读请求并等待响应。
+        /// 内部使用 ManualResetEventSlim，消费者线程可阻塞等待结果。
+        /// </summary>
+        public byte[] SendAndReadSync(byte devAddr, byte funcCode, ushort startAddr, ushort count, int timeoutMs = 2000)
+        {
+            byte[] pdu = ModbusProtocol.BuildReadPDU(devAddr, funcCode, startAddr, count);
+
+            // 准备同步等待
+            _syncReadPending = true;
+            _syncReadBuffer = null;
+            _syncReadEvent.Reset();
+
+            try
+            {
+                if (_isTcpMode())
+                {
+                    byte[] frame = ModbusProtocol.BuildTCPFrame(pdu, devAddr, _tcpTransactionId++);
+
+                    if (_tcpStream == null)
+                        throw new InvalidOperationException("TCP 未连接");
+
+                    _tcpStream.Write(frame, 0, frame.Length);
+                }
+                else
+                {
+                    byte[] frame = ModbusProtocol.BuildRTUFrame(pdu);
+
+                    if (!_sp.IsOpen)
+                        throw new InvalidOperationException("串口未打开");
+
+                    _sp.DiscardInBuffer();
+                    _sp.Write(frame, 0, frame.Length);
+                }
+
+                // 等待响应（Sp_DataReceived 或 TcpReceiveLoop 会 Set 这个事件）
+                if (!_syncReadEvent.Wait(timeoutMs))
+                    throw new TimeoutException(
+                        $"Modbus 响应超时 (dev={devAddr}, func=0x{funcCode:X2}, addr={startAddr}, timeout={timeoutMs}ms)");
+
+                return _syncReadBuffer
+                    ?? throw new InvalidOperationException("同步读返回了空缓冲区");
+            }
+            finally
+            {
+                _syncReadPending = false;
+            }
+        }
+
         // ========== RTU 接收 ==========
 
         private void Sp_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -188,6 +244,14 @@ namespace TEST_101
             {
                 SafeInvoke(() =>
                     ErrorOccurred?.Invoke("⚠ CRC 校验失败，数据可能损坏"));
+                return;
+            }
+
+            // ★ 同步读模式：不触发事件，直接交给等待线程
+            if (_syncReadPending)
+            {
+                _syncReadBuffer = buffer;
+                _syncReadEvent.Set();
                 return;
             }
 
@@ -232,7 +296,16 @@ namespace TEST_101
                     Array.Copy(headerBuf, 0, fullFrame, 0, ModbusProtocol.MBAP_HEADER_SIZE);
                     Array.Copy(pduBuf, 0, fullFrame, ModbusProtocol.MBAP_HEADER_SIZE, length);
 
-                    SafeInvoke(() => FrameReceived?.Invoke(fullFrame, true));
+                    // ★ 同步读模式：不触发事件，直接交给等待线程
+                    if (_syncReadPending)
+                    {
+                        _syncReadBuffer = fullFrame;
+                        _syncReadEvent.Set();
+                    }
+                    else
+                    {
+                        SafeInvoke(() => FrameReceived?.Invoke(fullFrame, true));
+                    }
                 }
                 catch (Exception)
                 {
