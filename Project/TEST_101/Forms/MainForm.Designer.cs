@@ -607,11 +607,12 @@ namespace TEST_101.Forms
             _mb_lb_polling_status.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _mb_lb_polling_status.Font = new Font("Consolas", 9F);
             _mb_lb_polling_status.ForeColor = Color.FromArgb(100, 100, 100);
-            _mb_lb_polling_status.Location = new Point(8, 162);
+            _mb_lb_polling_status.Location = new Point(80, 162);
             _mb_lb_polling_status.Name = "_mb_lb_polling_status";
-            _mb_lb_polling_status.Size = new Size(928, 20);
+            _mb_lb_polling_status.Size = new Size(860, 20);
             _mb_lb_polling_status.TabIndex = 56;
             _mb_lb_polling_status.Text = "队列=0  成功率=0%  已发=0  失败=0";
+            _mb_lb_polling_status.TextAlign = ContentAlignment.MiddleRight;
             _mb_lb_polling_status.Visible = false;
             // 
             // _mb_lb_poll_interval_label
@@ -733,11 +734,11 @@ namespace TEST_101.Forms
             // 
             // _mb_lb_log
             // 
+            _mb_lb_log.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             _mb_lb_log.AutoSize = true;
             _mb_lb_log.Location = new Point(12, 592);
             _mb_lb_log.Name = "_mb_lb_log";
             _mb_lb_log.Size = new Size(65, 20);
-            _mb_lb_log.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             _mb_lb_log.TabIndex = 36;
             _mb_lb_log.Text = "通信日志";
             // 
