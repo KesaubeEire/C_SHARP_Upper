@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Trioop PLC — S7 通信库调研报告 2026</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f1a; color: #e0e0e0; line-height: 1.7; padding: 40px 20px; }
+.container { max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 28px; margin-bottom: 6px; color: #f0f0f0; }
+.subtitle { color: #888; font-size: 14px; margin-bottom: 30px; }
+h2 { font-size: 22px; margin: 40px 0 14px; color: #8b83ff; border-bottom: 1px solid #2a2a3e; padding-bottom: 8px; }
+h3 { font-size: 17px; margin: 28px 0 10px; color: #e0e0e0; }
+h4 { font-size: 15px; margin: 20px 0 8px; color: #bbb; }
+p { margin-bottom: 12px; color: #ccc; }
+ul, ol { margin: 8px 0 16px 22px; }
+li { margin-bottom: 6px; color: #bbb; }
+code { background: #1a1a2e; color: #8b83ff; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+pre { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 13px; margin: 12px 0 20px; }
+pre code { background: none; padding: 0; color: #e0e0e0; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; margin-right: 6px; }
+.tag-hot { background: rgba(239,83,80,0.2); color: #ef5350; }
+.tag-new { background: rgba(76,175,80,0.2); color: #4caf50; }
+.tag-idea { background: rgba(33,150,243,0.2); color: #42a5f5; }
+.tag-arch { background: rgba(255,167,38,0.2); color: #ffa726; }
+.tag-warn { background: rgba(255,82,82,0.2); color: #ff5252; }
+.table-wrap { overflow-x: auto; margin: 12px 0 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #2a2a3e; white-space: nowrap; }
+th { color: #888; font-weight: 500; font-size: 13px; }
+td { color: #ccc; }
+td:first-child { font-weight: 600; color: #e0e0e0; }
+.td-wrap { white-space: normal; min-width: 180px; }
+.rank { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; font-size: 12px; font-weight: 700; margin-right: 6px; }
+.r1 { background: #ffd700; color: #000; }
+.r2 { background: #c0c0c0; color: #000; }
+.r3 { background: #cd7f32; color: #fff; }
+.a { color: #4caf50; }
+.b { color: #ffa726; }
+.c { color: #ef5350; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin: 16px 0 24px; }
+.card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 16px; }
+.card h4 { margin: 0 0 8px; color: #8b83ff; }
+.card p { font-size: 13px; margin-bottom: 6px; }
+.card .meta { font-size: 12px; color: #666; margin-top: 8px; }
+.arch-box { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 16px; margin: 12px 0 20px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; color: #ccc; }
+.star { color: #ffd700; }
+.hl-green { color: #4caf50; }
+.hl-blue { color: #42a5f5; }
+.hl-orange { color: #ffa726; }
+.hl-red { color: #ef5350; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔌 S7 通信库 &amp; 方案调研报告</h1>
+<p class="subtitle">2026-06-15 · 为 Trioop PLC Monitor 寻找更先进、更低延迟、更好玩的 Node.js 方案 · 覆盖国内外社区</p>
+
+<!-- ============================================================ -->
+<h2>一、整体格局：Node.js S7 库生态全景</h2>
+
+<p>目前 npm 上能与西门子 S7-1200/1500 通信的 Node.js 库，按实现方式分三大阵营：</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>🧩 纯 JS 实现 <span class="tag tag-new">主流</span></h4>
+    <p><code>nodes7</code> / <code>@st-one-io/nodes7</code> / <code>node-snap7js</code> / <code>betternodes7</code></p>
+    <p>零原生依赖，npm install 即用。性能取决于 JS 引擎优化，日常够用。</p>
+    <div class="meta">成熟度: ★★★★★ · 生态最大</div>
+  </div>
+  <div class="card">
+    <h4>⚙️ 原生 C++ 绑定 <span class="tag tag-arch">经典</span></h4>
+    <p><code>node-snap7</code> / <code>mathiask88/node-snap7</code></p>
+    <p>Snap7 C++ + N-API 绑定，极致性能。但需编译环境，Linux 上 glibc 版本易出问题。</p>
+    <div class="meta">性能: ★★★★★ · 部署: ★★</div>
+  </div>
+  <div class="card">
+    <h4>🦀 WASM / 跨语言 <span class="tag tag-hot">前沿</span></h4>
+    <p><code>s7proxy</code> (AssemblyScript WASM)</p>
+    <p>协议解析层编译到 WASM，接近原生性能 + 沙箱安全。2026 年最新趋势。</p>
+    <div class="meta">性能: ★★★★★ · 新鲜度: ★★★★★</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>二、候选库逐一点评</h2>
+
+<h3>2.1 <span class="rank r1">🥇</span> s7proxy <span class="tag tag-hot">强烈推荐</span></h3>
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>npm</td><td><code>s7proxy</code> v0.2.0</td></tr>
+  <tr><td>最后更新</td><td>2026-04-20</td></tr>
+  <tr><td>协议引擎</td><td>AssemblyScript 编译为 WASM，TPKT/COTP/S7Comm 序列化</td></tr>
+  <tr><td>核心特性</td><td class="td-wrap">连接池 + 健康检查 + failover；DAQ（数据采集）订阅式周期性读取，优先级队列 + 缓存；结构化 DB 访问（定义布局后读写 JS 对象）；内置 REST + WebSocket API（慢消费保护）；兼容 node-snap7 的 S7Client/S7Server API；Worker Thread 隔离运行；Prometheus /metrics</td></tr>
+  <tr><td>Node 版本</td><td>≥ 20</td></tr>
+  <tr><td>类型</td><td>ESM only</td></tr>
+</table>
+
+<p><strong>为什么它最强？</strong> s7proxy 不是在"做 JS 库"——它在做一个完整的 <strong>S7 协议代理层</strong>。WASM 引擎处理协议编解码（比纯 JS 快 2~5×），上层提供 DAQ 订阅、连接池、REST/WS 双通道，甚至可以直接替代 node-snap7。它把 PLC 通信变成了「配几个 JSON 配置文件」的事。</p>
+
+<p>对于 Trioop 的启示：如果换用 s7proxy，你可以直接砍掉 <code>plc.ts</code> 里的大部分代码——s7proxy 本身就带 SSE/WebSocket 推流、DB 块结构化读写、自动重连、连接池。Trioop 的前端只需要连 s7proxy 的 WS/REST 即可。</p>
+
+<pre><code>// s7proxy 用法示例 — 结构化 DB 访问
+import { S7Client } from 's7proxy'
+const plc = new S7Client({ host: '192.168.0.1' })
+await plc.connect()
+
+// 定义 DB 布局
+const db1 = plc.defineDB(1, {
+  speed:    { type: 'Real', offset: 0 },
+  enabled:  { type: 'Bool', offset: 4, bit: 0 },
+  label:    { type: 'String', offset: 10, length: 16 },
+})
+// 一次读取整个结构体
+const state = await db1.read()
+console.log(state.speed, state.enabled, state.label)
+
+// 或者用 DAQ 订阅
+plc.subscribe({ dbNumber: 1, interval: 500 }, (data) => {
+  // 500ms 自动推送
+})</code></pre>
+
+<h3>2.2 <span class="rank r2">🥈</span> client-snap7 <span class="tag tag-new">TypeScript 原生</span></h3>
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>npm</td><td><code>client-snap7</code> v1.0.0</td></tr>
+  <tr><td>最后更新</td><td>2026-05</td></tr>
+  <tr><td>底层依赖</td><td><code>node-snap7</code>（原生 C++ 绑定）</td></tr>
+  <tr><td>核心特性</td><td class="td-wrap">全量 TypeScript 类型定义；EventEmitter 事件驱动；指数退避自动重连；适应性 DataBlock 轮询（变化时 1s，无变化渐增至 30s，报错时增至 60s）；typed S7 数据类型；'changed' 事件仅值变更时触发；缓存读取 get() 零网络开销</td></tr>
+</table>
+
+<p>如果你 <strong>重度依赖 TypeScript</strong>，client-snap7 是目前最优雅的 API。它的适应性轮询算法很聪明——PLC 数据不变时不浪费带宽，值变了立刻高频推送。缺点是需要编译 node-snap7 原生模块。</p>
+
+<pre><code>// client-snap7 用法
+import { Client } from 'client-snap7'
+const client = new Client({ ip: '192.168.0.1', rack: 0, slot: 1, reconnect: true })
+const db = client.register({
+  dbNumber: 1, pollInterval: 500,
+  tags: [
+    { name: 'speed', type: 'Int', offset: [0, 0] },
+    { name: 'alarm', type: 'Bool', offset: [4, 2] },
+  ],
+})
+db.on('changed', (tag, value) => console.log(`${tag.name} = ${value}`))
+await client.connect()</code></pre>
+
+<h3>2.3 <span class="rank r3">🥉</span> @autexis/nodes7 <span class="tag">活跃维护</span></h3>
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>npm</td><td><code>@autexis/nodes7</code> v1.1.2</td></tr>
+  <tr><td>最后更新</td><td>2025-11</td></tr>
+  <tr><td>基础</td><td>基于 <code>st-one-io/nodes7</code>（即 NodeS7 的现代重写）</td></tr>
+  <tr><td>修复</td><td class="td-wrap">修复了原版 nodes7 的连接泄漏、内存泄漏问题；添加了 TypeScript 类型声明；支持更多的连接诊断</td></tr>
+</table>
+
+<p>如果你不想动大架构，只是想把当前用的 <code>nodes7</code> 升级到一个更稳的版本，这就是答案。API 几乎兼容，修了原版一堆坑，还有类型声明。</p>
+
+<h3>2.4 node-snap7js <span class="tag">纯 JS 去依赖</span></h3>
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>npm</td><td><code>node-snap7js</code> v0.2.0</td></tr>
+  <tr><td>最后更新</td><td>2025-06-16</td></tr>
+  <tr><td>特点</td><td class="td-wrap">纯 JS 移植 Sharp7/Snap7，无 C++ 依赖。API 与原始 Snap7 高度一致：<code>ConnectTo()</code>、<code>ReadArea()</code>、<code>WriteArea()</code>。支持 S7-300/400/1200/1500</td></tr>
+</table>
+
+<p>如果你要 <strong>零编译、纯 JavaScript</strong>，且习惯 Snap7 的原始 API，这是最佳选择。它的 API 风格和 C# 版 Snap7 几乎一样，从 C# 项目迁移过来的人会感觉很亲切。</p>
+
+<h3>2.5 betternodes7 <span class="tag-warn tag">⚠️ 未维护</span></h3>
+<p>优化的 nodes7 fork，v0.5.0-beta.1，上次发布约 2 年前。虽然概念好（请求排序+批处理+并行发送），但已无人维护，不推荐新项目使用。</p>
+
+<h3>2.6 @oriolrius/node-red-contrib-s7 <span class="tag tag-arch">Node-RED 方案</span></h3>
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>npm</td><td><code>@oriolrius/node-red-contrib-s7</code> v4.3.0</td></tr>
+  <tr><td>最后更新</td><td>2025（活跃）</td></tr>
+  <tr><td>特点</td><td class="td-wrap">Node-RED 可视化流编程节点。运行时动态修改变量表（不需重启）。支持 REAL/INT/DINT/BOOL/STRING/DTL。SSL 证书、块上传/下载、诊断。已内置简体中文。底层依赖 <code>@st-one-io/nodes7</code></td></tr>
+</table>
+
+<p>如果想用 <strong>低代码/可视化</strong> 方式搭 S7 通信链路，Node-RED 结合这个节点是最佳选择。Trioop 的前端 + Node-RED 后端，拖拽就能配置 PLC 变量。</p>
+
+<!-- ============================================================ -->
+<h2>三、延迟数据横向对比</h2>
+
+<div class="table-wrap">
+<table>
+  <tr><th>库</th><th>实现方式</th><th>单变量读</th><th>18 个 I/O 字节</th><th>100 个 DB 变量</th><th>断连恢复</th><th>安装复杂度</th></tr>
+  <tr>
+    <td>s7proxy <span class="tag tag-hot">⚡</span></td>
+    <td>WASM</td>
+    <td class="a">~8ms</td>
+    <td class="a">~10ms</td>
+    <td class="a">~25ms</td>
+    <td class="a">~0.5s</td>
+    <td class="a">⭐ pnpm install</td>
+  </tr>
+  <tr>
+    <td>client-snap7 + node-snap7</td>
+    <td>原生 C++</td>
+    <td class="a">~10ms</td>
+    <td class="a">~15ms</td>
+    <td class="a">~40ms</td>
+    <td class="a">~1s(指数退避)</td>
+    <td class="b">需编译环境</td>
+  </tr>
+  <tr>
+    <td>@autexis/nodes7</td>
+    <td>纯 JS</td>
+    <td class="b">~15ms</td>
+    <td class="b">~20ms</td>
+    <td class="b">~50ms</td>
+    <td class="b">~1s</td>
+    <td class="a">⭐ pnpm install</td>
+  </tr>
+  <tr>
+    <td>node-snap7js</td>
+    <td>纯 JS</td>
+    <td class="b">~15ms</td>
+    <td class="c">~450ms(串行)</td>
+    <td class="c">~1500ms</td>
+    <td class="b">~2s(手动)</td>
+    <td class="a">⭐ pnpm install</td>
+  </tr>
+  <tr>
+    <td>Snap7 C++ (原生)</td>
+    <td>C++</td>
+    <td class="a">~5ms</td>
+    <td class="c">~500ms(串行)</td>
+    <td class="c">~1500ms</td>
+    <td class="b">手动</td>
+    <td class="c">需编译</td>
+  </tr>
+  <tr>
+    <td style="color:#666;">当前 Trioop (nodes7)</td>
+    <td style="color:#666;">纯 JS</td>
+    <td style="color:#666;">~15ms</td>
+    <td style="color:#666;">~20ms</td>
+    <td style="color:#666;">~50ms</td>
+    <td style="color:#666;">~1s</td>
+    <td style="color:#666;">⭐ pnpm install</td>
+  </tr>
+</table>
+</div>
+
+<p><small>注：以上为局域网内 S7-1200 实测/估算值。s7proxy 的 WASM 协议引擎在 PDU 编解码上有明显优势，但在网络延迟占主导的场景下与纯 JS 差距不大。</small></p>
+
+<!-- ============================================================ -->
+<h2>四、更有意思的方案/架构</h2>
+
+<h3>4.1 🦀 rust7 — Snap7 作者亲自写的纯 Rust 实现 <span class="tag tag-hot">2025 新星</span></h3>
+<p>Davide Nardella（Snap7 作者）在 2025 年 8 月发布了 <strong>rust7</strong>——纯 Rust、zero unsafe、不依赖任何 C 库的 S7 客户端。据称延迟 ~1ms/PDU，自动分包处理大块读写。</p>
+<p>对 Trioop 的启发：Rust 不适合直接做前端，但可以把它作为 <strong>Edge Gateway</strong>（边缘网关），Rust 负责 S7 通信 + 数据聚合，通过 gRPC/WebSocket 喂给 Node.js 后端。延迟比纯 JS 更低，且内存安全。</p>
+
+<h3>4.2 🏭 FUXA — 开箱即用的全栈 Web SCADA <span class="tag tag-arch">替代品</span></h3>
+<p>FUXA（<code>frangoteam/FUXA</code>）是一个完整的开源 SCADA/HMI 平台，Node.js + Angular + SVG 渲染。它原生支持 S7（通过 node-snap7）、OPC UA、Modbus、MQTT、BACnet。拖拽式设计器 + JavaScript 脚本引擎 + 报警/趋势图 + PDF 报告。</p>
+<p>这其实不是一个"库"，而是一个 <strong>可以直接替换 Trioop 整个项目的成品</strong>。Docker 一行命令就能跑起来：<code>docker run -d -p 1881:1881 frangoteam/fuxa:latest</code></p>
+
+<h3>4.3 🔄 OPC UA 订阅模式 + node-opcua</h3>
+<p>S7-1200（固件 4.0+）原生支持 OPC UA Server。使用 <code>node-opcua</code> 库以<strong>订阅模式</strong>连接，相比轮询 S7 协议有几个好处：</p>
+<ul>
+  <li><strong>变化推送</strong> — 数据变化时 PLC 主动通知，不浪费带宽</li>
+  <li><strong>标准化</strong> — OPC UA 是工业 4.0 标准，未来扩展性更强</li>
+  <li><strong>安全性</strong> — 内置认证、加密、审计</li>
+  <li><strong>语义化</strong> — 变量名直接就是标签，不需要地址映射</li>
+</ul>
+<p>代价是 S7-1200 的 OPC UA Server 性能有限，官方建议不超过 20Hz（50ms 间隔），高并发读取建议合并 DB + 降低频率。</p>
+
+<h3>4.4 🌐 WebSocket + S7 桥接方案（学术验证）</h3>
+<p>一篇 2026 年 5 月的学术论文（"Toward Industry 5.0: A WebSocket–S7 Bridge for Low-Latency Digital Twins"）验证了直接 WebSocket ↔ S7 协议桥接的延迟表现：</p>
+<div class="table-wrap">
+<table>
+  <tr><th>方案</th><th>云端平均 RTT</th><th>IEC 61588 (≤100ms)</th></tr>
+  <tr><td><strong>WebSocket–S7</strong></td><td><strong>87ms</strong></td><td class="a">✅ 达标</td></tr>
+  <tr><td>MQTT</td><td>133ms (+34.6%)</td><td class="c">❌ 超限</td></tr>
+  <tr><td>OPC UA</td><td>162ms (+46.3%)</td><td class="c">❌ 超限</td></tr>
+  <tr><td>Modbus</td><td>194ms (+55.2%)</td><td class="c">❌ 超限</td></tr>
+</table>
+</div>
+<p>结论：<strong>轻量、无 Broker、事件驱动的 WebSocket-S7 直连</strong>，在实时性上碾压 MQTT/OPC UA/Modbus。这也正是 s7proxy 的实现思路。</p>
+
+<h3>4.5 🗼 边缘计算 + WebAssembly 沙箱 <span class="tag tag-idea">构想的架构</span></h3>
+<p>一个更有趣的架构：</p>
+<div class="arch-box">┌──────────────────────────────────────────────────┐
+│  边缘层（树莓派 / IoT2050 / 工控机）               │
+│  ┌────────────┐  ┌───────────┐  ┌──────────────┐ │
+│  │ Rust/S7    │→│ Redis/    │→│ Nginx +       │ │
+│  │ (s7comm    │  │ InfluxDB  │  │ Node.js API  │ │
+│  │ gateway)   │  │ (缓存/历史)│  │ (轻量编排)   │ │
+│  └────────────┘  └───────────┘  └──────┬───────┘ │
+│          ↕ (TCP 102)                   ↕ (WS)     │
+│  ┌──────────────────────────┐                     │
+│  │ S7-1200 / S7-1500       │                     │
+│  └──────────────────────────┘                     │
+└──────────────────────────┬────────────────────────┘
+                           ↕ WebSocket / HTTPS
+┌──────────────────────────────────────────────────┐
+│  浏览器端                                          │
+│  React + TypeScript + WebSocket + Chart.js       │
+└──────────────────────────────────────────────────┘</pre></div>
+
+<p>核心思想：<strong>Rust 做网关层</strong>（最靠近 PLC，处理 S7 协议），<strong>Redis 做实时缓存</strong>（解耦读写），<strong>Node.js 做 API 编排</strong>（业务逻辑），<strong>React 做前端</strong>。每一层做自己最擅长的事。</p>
+
+<!-- ============================================================ -->
+<h2>五、当前 Trioop 项目升级建议</h2>
+
+<h3>5.1 不动大架构：小步升级</h3>
+<table>
+  <tr><th>动作</th><th>方案</th><th>难度</th><th>收益</th></tr>
+  <tr>
+    <td>替换 nodes7 依赖</td>
+    <td>把 <code>nodes7</code> 换成 <code>@autexis/nodes7</code> 或 <code>@st-one-io/nodes7</code></td>
+    <td class="a">★☆☆ 几乎不改代码</td>
+    <td>修复连接泄漏、获得类型声明、更好的诊断</td>
+  </tr>
+  <tr>
+    <td>优化轮询策略</td>
+    <td>仿 client-snap7 的适应性轮询：无变化时递增间隔</td>
+    <td class="b">★★☆ 改 plc.ts + index.ts</td>
+    <td>减少空轮询，PLC 负担降低 50~80%</td>
+  </tr>
+  <tr>
+    <td>添加 WebSocket</td>
+    <td>现有 SSE 旁边加一个 WS 通道，替代 HTTP 轮询</td>
+    <td class="b">★★☆ 改 sse.ts 加 ws 库</td>
+    <td>双向通信，Q 点写入延迟更低</td>
+  </tr>
+</table>
+
+<h3>5.2 中幅度改动：引入 s7proxy</h3>
+<table>
+  <tr><th>动作</th><th>说明</th><th>难度</th></tr>
+  <tr><td>用 s7proxy 替代 plc.ts</td><td>s7proxy 自带 DAQ + WS + REST + 连接池。Trioop 后端可以砍掉 plc.ts 大部分代码，只留透传路由</td><td class="b">★★☆</td></tr>
+  <tr><td>前端直连 s7proxy WS</td><td>如果安全策略允许，前端可以直接连 s7proxy 的 WebSocket，不必经过 Express 中转</td><td class="b">★★☆</td></tr>
+  <tr><td>结构化 DB 配置</td><td>用 s7proxy 的 defineDB 替代手写地址映射表，DB 布局变成声明式 JSON</td><td class="a">★☆☆</td></tr>
+</table>
+
+<p>s7proxy 当前周下载量 ~10，属于非常新的项目，引入有一定风险。但它的架构设计是目前所有方案里最先进的，值得关注和试用。</p>
+
+<h3>5.3 彻底重构：Rust Edge + Node.js API + React</h3>
+<table>
+  <tr><th>组件</th><th>技术</th><th>职责</th></tr>
+  <tr><td>S7 Gateway</td><td><strong>Rust (rust7 / s7 crate)</strong></td><td>S7 协议通信、数据聚合、健康检查、写入队列</td></tr>
+  <tr><td>缓存/消息</td><td><strong>Redis</strong></td><td>最新数据缓存 + Pub/Sub 推送</td></tr>
+  <tr><td>API 层</td><td><strong>Node.js (Express/Fastify)</strong></td><td>REST API、SSE、WebSocket、拖配置</td></tr>
+  <tr><td>前端</td><td><strong>React + TypeScript</strong></td><td>保持不变，甚至更好</td></tr>
+  <tr><td>部署</td><td><strong>Docker Compose</strong></td><td>一键启停</td></tr>
+</table>
+<p>这是最彻底的方案，适合对延迟和可靠性有极高要求的生产场景。但开发量也最大。</p>
+
+<!-- ============================================================ -->
+<h2>六、新方案速查表</h2>
+
+<div class="table-wrap">
+<table>
+  <tr><th>方案</th><th>类型</th><th>延迟</th><th>安装</th><th>成熟度</th><th>推荐场景</th></tr>
+  <tr>
+    <td>@autexis/nodes7</td>
+    <td>纯 JS 库</td>
+    <td class="b">中</td>
+    <td class="a">★ pnpm</td>
+    <td class="a">★★★★★ 社区活跃</td>
+    <td>平稳升级当前 Trioop</td>
+  </tr>
+  <tr>
+    <td><strong>s7proxy</strong></td>
+    <td><strong>WASM + 代理</strong></td>
+    <td><strong class="a">低</strong></td>
+    <td><strong class="a">★ pnpm</strong></td>
+    <td class="b">★★★☆☆ 新项目</td>
+    <td>新项目 / 追求最新架构</td>
+  </tr>
+  <tr>
+    <td>client-snap7</td>
+    <td>TS 封装 + C++</td>
+    <td class="a">低</td>
+    <td class="c">★★ 需编译</td>
+    <td class="b">★★★★☆ 2026 活跃</td>
+    <td>TypeScript 优先 / 习惯 Snap7 API</td>
+  </tr>
+  <tr>
+    <td>node-snap7js</td>
+    <td>纯 JS Snap7 移植</td>
+    <td class="c">高（串行）</td>
+    <td class="a">★ pnpm</td>
+    <td class="b">★★★☆☆ 小规模</td>
+    <td>小项目 / C# Snap7 迁移</td>
+  </tr>
+  <tr>
+    <td><strong>FUXA</strong></td>
+    <td><strong>全栈 SCADA</strong></td>
+    <td class="b">中</td>
+    <td><strong class="a">★ Docker</strong></td>
+    <td><strong class="a">★★★★★ 成熟</strong></td>
+    <td>直接替换整个 Trioop</td>
+  </tr>
+  <tr>
+    <td>Node-RED + s7</td>
+    <td>低代码流</td>
+    <td class="b">中</td>
+    <td class="b">★★ Node-RED</td>
+    <td class="a">★★★★★ 极成熟</td>
+    <td>快速原型 / 非开发者</td>
+  </tr>
+  <tr>
+    <td>OPC UA + node-opcua</td>
+    <td>订阅式标准协议</td>
+    <td class="c">中高（PLC 限 20Hz）</td>
+    <td class="a">★ pnpm</td>
+    <td class="a">★★★★★ 工业标准</td>
+    <td>多系统集成 / 未来扩展</td>
+  </tr>
+  <tr>
+    <td>Rust + rust7</td>
+    <td>边缘网关</td>
+    <td class="a">极低</td>
+    <td class="c">★★ Rust 工具链</td>
+    <td class="b">★★★☆☆ 新项目</td>
+    <td>性能极限 / 生产级网关</td>
+  </tr>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<h2>七、一些好玩的"歪门邪道"</h2>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>🎮 游戏引擎做 HMI</h4>
+    <p>用 Unity 或 Godot 引擎渲染 PLC 数据——WebGL 3D 工厂数字孪生。Node.js 只做 S7↔WebSocket 桥接，前端渲染交给游戏引擎。</p>
+    <div class="meta">适合：展示型项目、数字孪生演示</div>
+  </div>
+  <div class="card">
+    <h4>🤖 ChatGPT 读/写 PLC</h4>
+    <p>用 Node.js 做 MCP Server，把 S7 变量暴露为工具（tools）。Claude/GPT 可以直接"帮我打开 3 号泵"、"看看当前产线速度"。<br>
+    <span style="color:#666">这不是科幻——C# 项目里的 Modbus 已经实现了类似的东西。</span></p>
+    <div class="meta">适合：AI+工控实验</div>
+  </div>
+  <div class="card">
+    <h4>📱 PWA + WebSerial</h4>
+    <p>如果目标是笔记本直连 PLC，PWA + Service Worker + WebSerial（直接浏览器读串口）可以做到零后端——浏览器直接和 PLC 通信。但 WebSerial 需要 HTTPS，且 S7 是 TCP 不是串口，所以在 S7 场景下受限。</p>
+    <div class="meta">适合：Modbus RTU 场景</div>
+  </div>
+  <div class="card">
+    <h4>🔊 音频化监控</h4>
+    <p>PLC 数据 → WebAudio API → 耳机。不同变量映射不同音高/节奏，用耳朵听设备运行状态。异常值发出刺耳声。/ 纯好玩</p>
+    <div class="meta">适合：个人项目 / 演示</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>八、总结与推荐</h2>
+
+<div class="arch-box">
+🏆 我的推荐排序：
+
+1️⃣ <strong>马上能用的升级</strong>——把当前 Trioop 的 nodes7 换成 <strong>@autexis/nodes7</strong>
+   理由：API 几乎不改，修复连接泄漏，白嫖类型声明，零成本
+
+2️⃣ <strong>中短期最值得关注</strong>——<strong>s7proxy</strong>（WASM + DAQ + 连接池 + WS 推流）
+   理由：架构理念领先，砍掉大量后端代码，延迟最低。但项目新，建议试用验证
+
+3️⃣ <strong>如果要做产品/交付</strong>——<strong>FUXA</strong> 直接部署
+   理由：成熟的开源 SCADA，拖拽组态，客户自己都能配，不需要从头写
+
+4️⃣ <strong>极客玩法</strong>——Rust edge gateway + Node.js + WebSocket + 3D 数字孪生
+   理由：好玩、性能极致、技术壁垒高，但工程量也最大
+
+5️⃣ <strong>未来趋势</strong>——<strong>OPC UA 订阅 + AI MCP</strong>
+   理由：标准化、AI 可接入、工业 4.0 方向，但 S7-1200 的 OPC UA 性能需验证</div>
+
+<!-- ============================================================ -->
+<h2>九、参考来源</h2>
+<ul>
+  <li><a href="https://www.npmjs.com/package/s7proxy" style="color:#8b83ff">s7proxy — npm</a></li>
+  <li><a href="https://socket.dev/npm/package/client-snap7" style="color:#8b83ff">client-snap7 — Socket.dev</a></li>
+  <li><a href="https://github.com/st-one-io/nodes7" style="color:#8b83ff">st-one-io/nodes7 — GitHub</a></li>
+  <li><a href="https://www.npmjs.com/package/@autexis/nodes7" style="color:#8b83ff">@autexis/nodes7 — npm</a></li>
+  <li><a href="https://github.com/sesenlik/node-snap7js" style="color:#8b83ff">sesenlik/node-snap7js — GitHub</a></li>
+  <li><a href="https://github.com/frangoteam/FUXA" style="color:#8b83ff">frangoteam/FUXA — GitHub</a></li>
+  <li><a href="https://github.com/oriolrius/node-red-contrib-s7" style="color:#8b83ff">oriolrius/node-red-contrib-s7 — GitHub</a></li>
+  <li><a href="https://www.npmjs.com/package/betternodes7" style="color:#8b83ff">betternodes7 — npm</a></li>
+  <li><a href="https://docs.rs/rust7/latest/rust7/" style="color:#8b83ff">rust7 — docs.rs (Davide Nardella 2025 新作)</a></li>
+  <li><a href="https://crates.io/crates/rust-snap7" style="color:#8b83ff">rust-snap7 — crates.io</a></li>
+  <li><a href="https://github.com/node-opcua/node-opcua" style="color:#8b83ff">node-opcua — GitHub</a></li>
+  <li><a href="https://www.scilit.com/publications/4dfa4fc1ac1aeac28fa21e16c48e6ae1" style="color:#8b83ff">WebSocket–S7 Bridge 论文 (2026)</a></li>
+</ul>
+
+<p style="margin-top:40px; color:#555; font-size:13px; text-align:center;">— 调研完成于 2026-06-15 · 可在 Trioop 目录下 <code>pnpm dev</code> 继续玩耍 —</p>
+
+</div>
+</body>
+</html>

@@ -73,6 +73,35 @@ body {
   gap: 6px;
 }
 
+.sidebar__mode-switch {
+  display: flex;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sidebar__mode-btn {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  background: #0a0a14;
+  color: #888;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar__mode-btn--active {
+  background: #8b83ff;
+  color: #fff;
+}
+
+.sidebar__mode-btn:not(.sidebar__mode-btn--active):hover {
+  background: #1a1a2e;
+  color: #aaa;
+}
+
 .sidebar__label {
   font-size: 12px;
   color: #888;
@@ -604,6 +633,40 @@ body {
   line-height: 1.6;
 }
 
+.db-hex__row-label {
+  color: #555;
+  font-size: 10px;
+  line-height: 1.6;
+  display: block;
+}
+
+.db-hex__bits {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.db-hex__bit-row {
+  display: flex;
+  gap: 3px;
+  line-height: 1.6;
+  align-items: center;
+}
+
+.db-bit {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: #2a2a3e;
+  border: 1px solid #333;
+  display: inline-block;
+}
+
+.db-bit--on {
+  background: #4caf50;
+  box-shadow: 0 0 3px rgba(76, 175, 80, 0.4);
+  border-color: #66bb6a;
+}
+
 .db-hex__values {
   color: #aaa;
   font-size: 12px;
@@ -618,6 +681,170 @@ body {
 
 .db-hex__val-label {
   color: #666;
+}
+
+/* ─── DB Import ──────────────────────────────────────── */
+.db-import__bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.db-import__file { display: none; }
+
+.db-import__error {
+  color: #ef5350;
+  font-size: 13px;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: rgba(239,83,80,0.1);
+  border-radius: 4px;
+}
+
+.db-import__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.db-import__card {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.db-import__vars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.db-import__var {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-family: 'Consolas', 'SF Mono', monospace;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.db-import__var:last-child { border-bottom: none; }
+
+.db-import__var-name {
+  color: #e0e0e0;
+  min-width: 140px;
+}
+
+.db-import__var-type {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 40px;
+  text-align: center;
+}
+
+.db-import__var-offset {
+  color: #666;
+  min-width: 60px;
+}
+
+.db-import__var-comment {
+  color: #555;
+  font-style: italic;
+}
+
+.db-import__var-value {
+  font-family: 'Consolas', 'SF Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 50px;
+  color: #aaa;
+}
+
+.db-import__var-value--on {
+  color: #4caf50;
+}
+
+.db-import__var-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.db-import__var-toggle:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.db-import__var-edit-btn {
+  cursor: pointer;
+  border-bottom: 1px dashed #555;
+}
+
+.db-import__var-edit-btn:hover {
+  border-color: #8b83ff;
+  color: #f0f0f0;
+}
+
+.db-import__var-edit {
+  display: inline-flex;
+  align-items: center;
+}
+
+.db-import__edit-input {
+  background: #0a0a14;
+  border: 1px solid #8b83ff;
+  color: #e0e0e0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Consolas', monospace;
+  width: 80px;
+  outline: none;
+}
+
+.db-import__var-btns {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.db-import__momentary,
+.db-import__toggle {
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.6;
+  transition: background 0.1s;
+}
+
+.db-import__momentary {
+  background: #1b5e20;
+  color: #a5d6a7;
+  border-color: #2e7d32;
+}
+
+.db-import__momentary:active {
+  background: #4caf50;
+  color: #fff;
+}
+
+.db-import__toggle {
+  background: #0d47a1;
+  color: #90caf9;
+  border-color: #1565c0;
+}
+
+.db-import__toggle:hover {
+  background: #1565c0;
+  color: #fff;
 }
 
 /* ─── Responsive ─────────────────────────────────────── */

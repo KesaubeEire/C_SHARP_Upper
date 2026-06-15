@@ -10,6 +10,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import config from './config.js'
 import * as plc from './plc.js'
+import * as opcua from './opcua.js'
+import { parseDBFile, parsedVarsToNodes7Tags } from './dbParser.js'
 
 // ─── 路径 ─────────────────────────────────────────────────
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -99,7 +101,69 @@ app.post('/api/plc/disconnect', (_req, res) => {
 
 // ─── API: 获取连接状态 ────────────────────────────────────
 app.get('/api/plc/status', (_req, res) => {
-  res.json({ connected: plc.isConnected(), plcIp: runtimePlcIp, localAddress: runtimeLocalAddr ?? null, connType: runtimeConnType, pollInterval: runtimePollInterval, ioSource: runtimeIOSource })
+  res.json({
+    mode: runtimeMode,
+    connected: runtimeMode === 's7' ? plc.isConnected() : opcua.isConnected(),
+    plcIp: runtimePlcIp,
+    localAddress: runtimeLocalAddr ?? null,
+    connType: runtimeConnType,
+    pollInterval: runtimePollInterval,
+    ioSource: runtimeIOSource,
+  })
+})
+
+// ─── OPC UA 连接 ────────────────────────────────────────
+let runtimeMode: 's7' | 'opcua' = 's7'
+
+app.post('/api/opcua/connect', async (req, res) => {
+  const { plcIp, port, username, password } = req.body
+  if (!plcIp) return res.status(400).json({ error: '请提供 PLC IP' })
+
+  runtimeMode = 'opcua'
+
+  try {
+    await opcua.connect(plcIp, port, username, password)
+    res.json({ success: true, message: `OPC UA 已连接到 ${plcIp}` })
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message })
+  }
+})
+
+app.post('/api/opcua/disconnect', async (_req, res) => {
+  await opcua.disconnect()
+  res.json({ success: true })
+})
+
+app.get('/api/opcua/browse', async (req, res) => {
+  const nodeId = (req.query.nodeId as string) || 'i=85'
+  try {
+    const nodes = await opcua.browse(nodeId)
+    res.json(nodes)
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message })
+  }
+})
+
+app.post('/api/opcua/read', async (req, res) => {
+  const { nodeIds } = req.body
+  if (!nodeIds || !Array.isArray(nodeIds)) return res.status(400).json({ error: '请提供 nodeIds 数组' })
+  try {
+    const data = await opcua.readNodes(nodeIds)
+    res.json({ data })
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message })
+  }
+})
+
+app.post('/api/opcua/write', async (req, res) => {
+  const { nodeId, value } = req.body
+  if (!nodeId) return res.status(400).json({ error: '请提供 nodeId' })
+  try {
+    await opcua.writeNode(nodeId, value)
+    res.json({ success: true })
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message })
+  }
 })
 
 // ─── API: 获取最新数据 ──────────────────────────────────
@@ -181,6 +245,97 @@ app.post('/api/plc/write', async (req, res) => {
   }
 })
 
+// ─── API: 导入 DB 文件 ─────────────────────────────────
+let importedDBs: Record<string, { dbNumber: number; dbName: string; variables: import('./dbParser.js').ParsedDBVariable[] }> = {}
+
+app.post('/api/plc/import-db', async (req, res) => {
+  const { content, dbNumber } = req.body
+  if (!content) return res.status(400).json({ error: '请提供 DB 文件内容' })
+
+  try {
+    const parsed = parseDBFile(content, dbNumber)
+    if (parsed.optimized) {
+      return res.status(400).json({ error: `DB"${parsed.dbName}" 开启了优化块访问，无法通过绝对地址读取` })
+    }
+    if (parsed.variables.length === 0) {
+      return res.status(400).json({ error: '未解析到任何变量，请确认文件格式是否正确' })
+    }
+
+    const key = `${parsed.dbNumber}_${parsed.dbName}`
+    importedDBs[key] = { dbNumber: parsed.dbNumber, dbName: parsed.dbName, variables: parsed.variables }
+
+    // 转换为 nodes7 标签并注册（带变量名，用于回传实时值）
+    const tags = parsedVarsToNodes7Tags(parsed.variables, parsed.dbNumber)
+    if (plc.isConnected()) {
+      for (const t of tags) {
+        plc.addDynamicTag(t.tag, t.s7addr, t.name)
+      }
+    }
+
+    res.json({
+      success: true,
+      dbNumber: parsed.dbNumber,
+      dbName: parsed.dbName,
+      variableCount: parsed.variables.length,
+      variables: parsed.variables,
+    })
+  } catch (err) {
+    res.status(400).json({ error: `解析失败: ${(err as Error).message}` })
+  }
+})
+
+app.get('/api/plc/imported-dbs', (_req, res) => {
+  res.json(Object.values(importedDBs))
+})
+
+// ─── 调试：查看动态标签状态 ─────────────────────────
+app.get('/api/plc/debug-tags', (_req, res) => {
+  res.json({
+    importedDBs: Object.keys(importedDBs),
+    tags: plc.getDebugTags(),
+  })
+})
+
+app.delete('/api/plc/imported-dbs/:key', (req, res) => {
+  const key = req.params.key
+  const db = importedDBs[key]
+  if (db) {
+    const tags = parsedVarsToNodes7Tags(db.variables, db.dbNumber)
+    for (const t of tags) {
+      plc.removeDynamicTag(t.tag)
+    }
+    delete importedDBs[key]
+  }
+  res.json({ success: true })
+})
+
+// ─── API: 导入 DB 变量写入 ────────────────────────────
+app.post('/api/plc/imported-db-write', async (req, res) => {
+  const { dbNumber, name, value } = req.body
+  if (!dbNumber || !name || value === undefined) {
+    return res.status(400).json({ error: '请提供 dbNumber、name 和 value' })
+  }
+
+  const key = Object.keys(importedDBs).find(k => importedDBs[k].dbNumber === dbNumber)
+  if (!key) return res.status(404).json({ error: `未找到 DB${dbNumber}` })
+  const db = importedDBs[key]
+  const varDef = db.variables.find(v => v.name === name)
+  if (!varDef) return res.status(404).json({ error: `未找到变量 ${name}` })
+
+  try {
+    if (varDef.type === 'bool') {
+      await plc.modifyBit(`DB${dbNumber},B${varDef.offset}.1`, varDef.bit ?? 0, !!value)
+    } else {
+      const tags = parsedVarsToNodes7Tags([varDef], dbNumber)
+      if (tags.length === 0) throw new Error('无法生成节点地址')
+      await plc.writeRaw(tags[0].s7addr, Number(value))
+    }
+    res.json({ success: true })
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message })
+  }
+})
+
 // ─── API: 写入 I/O 点 ──────────────────────────────────
 app.post('/api/plc/write-io', async (req, res) => {
   const { area, byte: byteAddr, bit, value, currentByte } = req.body
@@ -225,7 +380,9 @@ async function poll() {
       if (!plc.isConnected()) return
     }
 
-    // 一次读取所有已注册项（nodes7 自动合并为最优 S7 请求包）
+    // 写入队列忙时跳过本次轮询（避免和 modifyBit 冲突）
+    if (!plc.isQueueIdle()) return
+
     const result = await plc.readOnce()
 
     plcDataCache = result.db

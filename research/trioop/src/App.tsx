@@ -6,6 +6,7 @@ import PLCGrid from './components/PLCGrid'
 import ConnectionPanel from './components/ConnectionPanel'
 import IOGrid from './components/IOGrid'
 import DBBlockPanel from './components/DBBlockPanel'
+import DBImportPanel from './components/DBImportPanel'
 import type { PLCConfig } from '../shared/types'
 
 interface DBBlockConfig {
@@ -94,6 +95,7 @@ export default function App() {
             <IOGrid label="🔵 输出点 (Q 区)" data={io.q} prefix="Q" bytes={[0, 1, 8]} onToggle={handleQToggle} />
           </section>
 
+          <DBImportPanel onImport={() => {}} liveData={db} />
           <DBBlockPanel blocks={blocks} data={dbBlocks} onAdd={addBlock} onRemove={removeBlock} />
         </main>
       </div>

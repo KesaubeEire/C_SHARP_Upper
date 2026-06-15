@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "express": "^4.21.2",
+    "node-opcua": "2.160.0",
     "nodes7": "^0.3.18",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

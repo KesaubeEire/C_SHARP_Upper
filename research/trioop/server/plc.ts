@@ -12,6 +12,7 @@ import type { PLCVariable, PLCData, IOAreaData } from '../shared/types.js'
 
 let client: InstanceType<typeof NodeS7> | null = null
 let _connected = false
+const _addrMap = new Map<string, string>()  // 标签→S7地址 映射（可变，支持动态添加）
 
 // 读取回调缓存
 let _latestValues: Record<string, any> = {}
@@ -116,16 +117,15 @@ export async function connect(
     client = new NodeS7()
 
     // 注册所有地址
+    _addrMap.clear()
     initAddrTable(variables ?? [], dbBlocks ?? [])
+    addrTable.forEach(a => _addrMap.set(a.tag, a.s7addr))
 
     // 建立翻译回调：已知标签查表，未知的直通（用于 write IO 点位）
-    const addrMap = new Map(addrTable.map(a => [a.tag, a.s7addr]))
     client.setTranslationCB((tag: string) => {
-      const mapped = addrMap.get(tag)
+      const mapped = _addrMap.get(tag)
       if (mapped) return mapped
-      // 对于 Q/I 点位格式（如 "Q0.0"、"I1.5"）直接透传
       if (/^[IQM]\d+\.\d+$/.test(tag)) return tag
-      // DB 地址透传
       if (/^DB\d+,/.test(tag)) return tag
       return ''
     })
@@ -254,15 +254,18 @@ export async function readOnce(): Promise<ReadOnceResult> {
   // 解析 DB 变量
   for (const entry of addrTable) {
     if (entry.type === 'db_var') {
-      const v = entry.ref as PLCVariable
       const val = values[entry.tag]
       if (val !== undefined && val !== null) {
-        result.db[v.name] = {
-          value: val as number | boolean,
-          type: v.type,
-          writable: !!v.writable,
-          dbNumber: v.dbNumber,
-          offset: v.offset,
+        // 动态导入的变量 ref 存的是变量名（字符串），配置文件变量 ref 是 PLCVariable 对象
+        const name = typeof entry.ref === 'string' ? entry.ref : (entry.ref as PLCVariable)?.name
+        if (name) {
+          result.db[name] = {
+            value: val as number | boolean,
+            type: entry.ref && typeof entry.ref !== 'string' ? (entry.ref as PLCVariable).type : 'real',
+            writable: entry.ref && typeof entry.ref !== 'string' ? !!(entry.ref as PLCVariable).writable : true,
+            dbNumber: 0,
+            offset: 0,
+          }
         }
       }
     }
@@ -451,4 +454,130 @@ export function removeDBBlock(label: string) {
   const entry = addrTable.find(a => a.type === 'db_block' && a.ref === label)
   if (client && entry) client.removeItems([entry.tag])
   unregisterDBBlock(label)
+}
+
+// ─── 写入队列（串行处理，防止并发冲突） ──────────────────
+
+interface RawWriteJob {
+  type: 'read' | 'write' | 'rmw'
+  s7addr: string
+  value?: number
+  bit?: number
+  bitValue?: boolean
+  resolve: (val: any) => void
+  reject: (err: Error) => void
+}
+
+const rawQueue: RawWriteJob[] = []
+let rawBusy = false
+
+async function processRawQueue() {
+  if (rawBusy || rawQueue.length === 0) return
+  rawBusy = true
+  const job = rawQueue.shift()!
+  try {
+    if (job.type === 'read') {
+      const val = await doReadRaw(job.s7addr)
+      job.resolve(val)
+    } else if (job.type === 'write') {
+      await doWriteRaw(job.s7addr, job.value!)
+      job.resolve(undefined)
+    } else if (job.type === 'rmw') {
+      const curr = await doReadRaw(job.s7addr)
+      const newVal = job.bitValue ? (curr | (1 << job.bit!)) : (curr & ~(1 << job.bit!))
+      await doWriteRaw(job.s7addr, newVal)
+      job.resolve(undefined)
+    }
+  } catch (err) {
+    job.reject(err as Error)
+  } finally {
+    rawBusy = false
+    processRawQueue()
+  }
+}
+
+/** 轮询调用此函数检查是否可以安全读（队列空闲时才能读） */
+export function isQueueIdle(): boolean {
+  return !rawBusy && rawQueue.length === 0
+}
+
+/** 实际的读操作 */
+async function doReadRaw(s7addr: string): Promise<number> {
+  if (!client || !_connected) throw new Error('PLC 未连接')
+  const tag = `_raw_${Date.now()}`
+  return new Promise((resolve, reject) => {
+    const origCB = client!.translationCB
+    client!.setTranslationCB((t: string) => t === tag ? s7addr : origCB(t))
+    client!.addItems([tag])
+    setTimeout(() => {
+      client!.readAllItems((err: any, values: Record<string, any>) => {
+        client!.removeItems([tag])
+        client!.setTranslationCB(origCB)
+        const val = values[tag]
+        if (err || val === undefined) reject(new Error(`读取 ${s7addr} 失败`))
+        else resolve(Number(val))
+      })
+    }, 50)
+  })
+}
+
+/** 实际的写操作（带 5s 超时，防止卡死队列） */
+async function doWriteRaw(s7addr: string, value: number): Promise<void> {
+  if (!client || !_connected) throw new Error('PLC 未连接')
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(`写入 ${s7addr} 超时`)), 5000)
+    client!.writeItems(s7addr, value, (err: any) => {
+      clearTimeout(timeout)
+      if (err) reject(new Error(`写入 ${s7addr} 失败: ${err}`))
+      else resolve()
+    })
+  })
+}
+
+// ─── 外部 API（入队列，串行执行） ────────────────────────
+
+export function readRaw(s7addr: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    rawQueue.push({ type: 'read', s7addr, resolve, reject })
+    processRawQueue()
+  })
+}
+
+export function writeRaw(s7addr: string, value: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    rawQueue.push({ type: 'write', s7addr, value, resolve, reject })
+    processRawQueue()
+  })
+}
+
+/** 读-改-写（读当前字节 → 改指定位 → 写回） */
+export function modifyBit(s7addr: string, bit: number, value: boolean): Promise<void> {
+  return new Promise((resolve, reject) => {
+    rawQueue.push({ type: 'rmw', s7addr, bit, bitValue: value, resolve, reject })
+    processRawQueue()
+  })
+}
+
+// ─── 动态标签管理（供导入 DB 文件使用） ──────────────────
+export function addDynamicTag(tag: string, s7addr: string, varName?: string) {
+  if (!client) return
+  const exists = addrTable.find(a => a.tag === tag)
+  if (exists) return
+  addrTable.push({ tag, s7addr, type: 'db_var', ref: varName })
+  _addrMap.set(tag, s7addr)
+  client.addItems([tag])
+}
+
+export function getDebugTags() {
+  return {
+    addrTable: addrTable.map(a => ({ tag: a.tag, s7addr: a.s7addr, type: a.type, ref: typeof a.ref })),
+    addrMap: Object.fromEntries(_addrMap),
+  }
+}
+
+export function removeDynamicTag(tag: string) {
+  if (!client) return
+  client.removeItems([tag])
+  _addrMap.delete(tag)
+  addrTable = addrTable.filter(a => a.tag !== tag)
 }

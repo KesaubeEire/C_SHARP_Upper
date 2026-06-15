@@ -67,35 +67,44 @@ export default function DBBlockPanel({ blocks, data, onAdd, onRemove }: DBBlockP
                     <div className="db-hex">
                       {/* 地址列 */}
                       <div className="db-hex__col db-hex__addr">
+                        <span className="db-hex__row-label">位</span>
                         {bytes.map((_, i) => {
                           const addr = block.startOffset + i
                           return <span key={i} className="db-hex__addr-val">{addr.toString(16).toUpperCase().padStart(4, '0')}</span>
                         })}
                       </div>
+                      {/* 位矩阵列 */}
+                      <div className="db-hex__col db-hex__bits">
+                        <span className="db-hex__row-label">7 6 5 4 3 2 1 0</span>
+                        {bytes.map((b, i) => (
+                          <span key={i} className="db-hex__bit-row">
+                            {[7,6,5,4,3,2,1,0].map(bit => {
+                              const on = (b & (1 << bit)) !== 0
+                              return <span key={bit} className={`db-bit ${on ? 'db-bit--on' : ''}`} title={`位 ${bit} = ${on ? '1' : '0'}`} />
+                            })}
+                          </span>
+                        ))}
+                      </div>
                       {/* HEX 列 */}
                       <div className="db-hex__col db-hex__hex">
+                        <span className="db-hex__row-label">HEX</span>
                         {bytes.map((b, i) => (
                           <span key={i} className="db-hex__byte">{b.toString(16).toUpperCase().padStart(2, '0')}</span>
                         ))}
                       </div>
                       {/* ASCII 列 */}
                       <div className="db-hex__col db-hex__ascii">
+                        <span className="db-hex__row-label">ASCII</span>
                         {bytes.map((b, i) => (
                           <span key={i} className="db-hex__char">{b >= 32 && b <= 126 ? String.fromCharCode(b) : '·'}</span>
                         ))}
                       </div>
                       {/* 数值解读 */}
                       <div className="db-hex__col db-hex__values">
+                        <span className="db-hex__row-label">INT</span>
                         {bytes.length >= 2 && (
                           <div className="db-hex__value-row">
-                            <span className="db-hex__val-label">INT:</span>
                             <span>{(bytes[0] << 8) | bytes[1]}</span>
-                          </div>
-                        )}
-                        {bytes.length >= 4 && (
-                          <div className="db-hex__value-row">
-                            <span className="db-hex__val-label">REAL:</span>
-                            <span>—</span>
                           </div>
                         )}
                       </div>

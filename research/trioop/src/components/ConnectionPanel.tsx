@@ -19,14 +19,16 @@ function loadSaved() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
-  return { plcIp: '192.168.0.1', adapterIp: '', connType: 'BASIC', pollInterval: 1000, ioSource: 'io', ioDb: '5', ioStart: '0', ioLen: '8' }
+  return { mode: 's7', plcIp: '192.168.0.1', adapterIp: '', connType: 'BASIC', pollInterval: 1000, ioSource: 'io', ioDb: '5', ioStart: '0', ioLen: '8' }
 }
 
 export default function ConnectionPanel() {
   const saved = loadSaved()
+  const [mode, setMode] = useState(saved.mode)
   const [adapters, setAdapters] = useState<NetworkAdapter[]>([])
   const [selectedAdapter, setSelectedAdapter] = useState(saved.adapterIp)
   const [plcIp, setPlcIp] = useState(saved.plcIp)
+  const [opcUaPort, setOpcUaPort] = useState('4840')
   const [connType, setConnType] = useState(saved.connType)
   const [pollInterval, setPollInterval] = useState(String(saved.pollInterval))
   const [ioSource, setIoSource] = useState(saved.ioSource)
@@ -40,10 +42,10 @@ export default function ConnectionPanel() {
   // 保存到 localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      plcIp, adapterIp: selectedAdapter, connType, pollInterval: Number(pollInterval) || 1000,
+      mode, plcIp, adapterIp: selectedAdapter, connType, pollInterval: Number(pollInterval) || 1000,
       ioSource, ioDb, ioStart, ioLen,
     }))
-  }, [plcIp, selectedAdapter, connType, pollInterval, ioSource, ioDb, ioStart, ioLen])
+  }, [mode, plcIp, selectedAdapter, connType, pollInterval, ioSource, ioDb, ioStart, ioLen])
 
   // 加载网卡列表
   useEffect(() => {
@@ -79,20 +81,12 @@ export default function ConnectionPanel() {
         const res = await fetch('/api/plc/status')
         const st = await res.json()
         if (!st.connected) {
-          fetch('/api/plc/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              plcIp: saved.plcIp,
-              localAddress: saved.adapterIp || undefined,
-              connType: saved.connType,
-              pollInterval: saved.pollInterval,
-              ioSource: saved.ioSource,
-              ioDbConfig: { dbNumber: Number(saved.ioDb) || 5, startOffset: Number(saved.ioStart) || 0, byteCount: Number(saved.ioLen) || 8 },
-            }),
-          }).then(r => r.json()).then(d => {
-            if (d.success) setStatusMsg(`已重连到 ${saved.plcIp}`)
-          }).catch(() => {})
+          const url = saved.mode === 'opcua' ? '/api/opcua/connect' : '/api/plc/connect'
+          const body = saved.mode === 'opcua'
+            ? { plcIp: saved.plcIp }
+            : { plcIp: saved.plcIp, localAddress: saved.adapterIp || undefined, connType: saved.connType, pollInterval: saved.pollInterval, ioSource: saved.ioSource, ioDbConfig: { dbNumber: Number(saved.ioDb) || 5, startOffset: Number(saved.ioStart) || 0, byteCount: Number(saved.ioLen) || 8 } }
+          fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            .then(r => r.json()).then(d => { if (d.success) setStatusMsg(`已重连到 ${saved.plcIp}`) }).catch(() => {})
         }
       } catch {}
     }, 3000)
@@ -103,24 +97,31 @@ export default function ConnectionPanel() {
     setConnecting(true)
     setStatusMsg('正在连接...')
     try {
-      const res = await fetch('/api/plc/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plcIp: plcIp.trim(),
-          localAddress: selectedAdapter || undefined,
-          connType,
-          pollInterval: Number(pollInterval) || 1000,
-          ioSource,
-          ioDbConfig: { dbNumber: Number(ioDb) || 5, startOffset: Number(ioStart) || 0, byteCount: Number(ioLen) || 8 },
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setConnected(true)
-        setStatusMsg(`已连接到 ${plcIp}`)
+      if (mode === 's7') {
+        const res = await fetch('/api/plc/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plcIp: plcIp.trim(),
+            localAddress: selectedAdapter || undefined,
+            connType,
+            pollInterval: Number(pollInterval) || 1000,
+            ioSource,
+            ioDbConfig: { dbNumber: Number(ioDb) || 5, startOffset: Number(ioStart) || 0, byteCount: Number(ioLen) || 8 },
+          }),
+        })
+        const data = await res.json()
+        if (data.success) { setConnected(true); setStatusMsg(`已连接到 ${plcIp}`) }
+        else { setStatusMsg(`连接失败: ${data.error}`) }
       } else {
-        setStatusMsg(`连接失败: ${data.error}`)
+        const res = await fetch('/api/opcua/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plcIp: plcIp.trim(), port: Number(opcUaPort) || 4840 }),
+        })
+        const data = await res.json()
+        if (data.success) { setConnected(true); setStatusMsg(`OPC UA 已连接到 ${plcIp}`) }
+        else { setStatusMsg(`OPC UA 连接失败: ${data.error}`) }
       }
     } catch (err) {
       setStatusMsg(`连接失败: ${(err as Error).message}`)
@@ -131,7 +132,11 @@ export default function ConnectionPanel() {
 
   async function handleDisconnect() {
     try {
-      await fetch('/api/plc/disconnect', { method: 'POST' })
+      if (mode === 's7') {
+        await fetch('/api/plc/disconnect', { method: 'POST' })
+      } else {
+        await fetch('/api/opcua/disconnect', { method: 'POST' })
+      }
       setConnected(false)
       setStatusMsg('已断开')
     } catch { /* ignore */ }
@@ -140,6 +145,14 @@ export default function ConnectionPanel() {
   return (
     <aside className="sidebar">
       <h2 className="sidebar__title">🔌 PLC 连接</h2>
+
+      <div className="sidebar__group">
+        <label className="sidebar__label">通信模式</label>
+        <div className="sidebar__mode-switch">
+          <button className={`sidebar__mode-btn ${mode === 's7' ? 'sidebar__mode-btn--active' : ''}`} onClick={() => setMode('s7')}>S7</button>
+          <button className={`sidebar__mode-btn ${mode === 'opcua' ? 'sidebar__mode-btn--active' : ''}`} onClick={() => setMode('opcua')}>OPC UA</button>
+        </div>
+      </div>
 
       <div className="sidebar__group">
         <label className="sidebar__label">本机网卡</label>
@@ -156,34 +169,41 @@ export default function ConnectionPanel() {
         <input className="sidebar__input" type="text" value={plcIp} onChange={e => setPlcIp(e.target.value)} placeholder="192.168.0.1" />
       </div>
 
-      <div className="sidebar__group">
-        <label className="sidebar__label">连接通道</label>
-        <select className="sidebar__select" value={connType} onChange={e => setConnType(e.target.value)}>
-          {CONN_TYPES.map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
-      </div>
+      {mode === 's7' ? (
+        <>
+          <div className="sidebar__group">
+            <label className="sidebar__label">连接通道</label>
+            <select className="sidebar__select" value={connType} onChange={e => setConnType(e.target.value)}>
+              {CONN_TYPES.map(t => (<option key={t.value} value={t.value}>{t.label}</option>))}
+            </select>
+          </div>
 
-      <div className="sidebar__group">
-        <label className="sidebar__label">轮询间隔 (ms)</label>
-        <input className="sidebar__input" type="number" value={pollInterval} onChange={e => { const v = Math.max(50, Number(e.target.value) || 50); setPollInterval(String(v)) }} min={50} max={10000} step={50} />
-      </div>
+          <div className="sidebar__group">
+            <label className="sidebar__label">轮询间隔 (ms)</label>
+            <input className="sidebar__input" type="number" value={pollInterval} onChange={e => { const v = Math.max(50, Number(e.target.value) || 50); setPollInterval(String(v)) }} min={50} max={10000} step={50} />
+          </div>
 
-      <div className="sidebar__group">
-        <label className="sidebar__label">I/O 数据源</label>
-        <select className="sidebar__select" value={ioSource} onChange={e => setIoSource(e.target.value)}>
-          <option value="io">直读 I/Q 区</option>
-          <option value="db">从 DB 读取</option>
-        </select>
-      </div>
+          <div className="sidebar__group">
+            <label className="sidebar__label">I/O 数据源</label>
+            <select className="sidebar__select" value={ioSource} onChange={e => setIoSource(e.target.value)}>
+              <option value="io">直读 I/Q 区</option>
+              <option value="db">从 DB 读取</option>
+            </select>
+          </div>
 
-      {ioSource === 'db' && (
-        <div className="sidebar__group" style={{ display: 'flex', gap: 6, flexDirection: 'row', flexWrap: 'wrap' }}>
-          <input className="sidebar__input" style={{ width: 52 }} value={ioDb} onChange={e => setIoDb(e.target.value)} placeholder="DB" />
-          <input className="sidebar__input" style={{ width: 52 }} value={ioStart} onChange={e => setIoStart(e.target.value)} placeholder="起始" />
-          <input className="sidebar__input" style={{ width: 52 }} value={ioLen} onChange={e => setIoLen(e.target.value)} placeholder="长度" />
-          <span style={{ fontSize: 11, color: '#666', lineHeight: '32px' }}>DB{ioDb} @{ioStart} · {ioLen}B</span>
+          {ioSource === 'db' && (
+            <div className="sidebar__group" style={{ display: 'flex', gap: 6, flexDirection: 'row', flexWrap: 'wrap' }}>
+              <input className="sidebar__input" style={{ width: 52 }} value={ioDb} onChange={e => setIoDb(e.target.value)} placeholder="DB" />
+              <input className="sidebar__input" style={{ width: 52 }} value={ioStart} onChange={e => setIoStart(e.target.value)} placeholder="起始" />
+              <input className="sidebar__input" style={{ width: 52 }} value={ioLen} onChange={e => setIoLen(e.target.value)} placeholder="长度" />
+              <span style={{ fontSize: 11, color: '#666', lineHeight: '32px' }}>DB{ioDb} @{ioStart} · {ioLen}B</span>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="sidebar__group">
+          <label className="sidebar__label">OPC UA 端口</label>
+          <input className="sidebar__input" type="number" value={opcUaPort} onChange={e => setOpcUaPort(e.target.value)} placeholder="4840" />
         </div>
       )}
 
