@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>魏先 · 安闻面试全攻略 — 简历项目 × 43题深度回答</title>
+<style>
+  :root { --bg: #0b1120; --card: #111b2e; --text: #e2e8f0; --accent: #38bdf8; --green: #4ade80;
+    --yellow: #fbbf24; --red: #f87171; --muted: #94a3b8; --border: #1e293b; --code-bg: #0d1520;
+    --orange: #fb923c; --purple: #a78bfa; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Microsoft YaHei","Segoe UI",sans-serif; background:var(--bg); color:var(--text); line-height:1.8; padding:20px; }
+  .container { max-width:1200px; margin:0 auto; }
+  h1 { text-align:center; font-size:1.6em; padding:16px 0 4px; color:var(--accent); }
+  .subtitle { text-align:center; color:var(--muted); margin-bottom:20px; font-size:0.88em; }
+
+  h2 { color:var(--accent); margin:40px 0 14px; padding-bottom:6px; border-bottom:2px solid var(--border); font-size:1.2em; }
+  h3 { color:var(--yellow); margin:20px 0 8px; font-size:1.05em; }
+
+  .card { background:var(--card); border-radius:10px; padding:18px 22px; margin:14px 0; border-left:5px solid var(--accent); }
+  .card.p0 { border-left-color:var(--red); }
+  .card.p1 { border-left-color:var(--yellow); }
+  .card.p2 { border-left-color:var(--accent); }
+
+  .q-title { font-weight:700; font-size:1.02em; margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.75em; font-weight:700; }
+  .badge-p0 { background:#f8717133; color:#f87171; }
+  .badge-p1 { background:#fbbf2433; color:#fbbf24; }
+  .badge-p2 { background:#38bdf833; color:#38bdf8; }
+  .badge-proj { background:#a78bfa33; color:#a78bfa; font-size:0.72em; }
+
+  .answer-block { background:#0d1520; border-radius:8px; padding:14px 18px; margin:10px 0; border:1px solid var(--border); }
+  .answer-block .label { font-size:0.75em; color:var(--orange); font-weight:700; margin-bottom:4px; }
+  .answer-block p { margin:4px 0; }
+  .answer-block .highlight { color:var(--yellow); }
+
+  pre { background:var(--code-bg); border-radius:8px; padding:12px 16px; overflow-x:auto; font-family:"Cascadia Code","Fira Code",Consolas,monospace; font-size:0.83em; line-height:1.6; margin:8px 0; border:1px solid var(--border); }
+  code { font-family:"Cascadia Code","Fira Code",Consolas,monospace; font-size:0.9em; background:rgba(255,255,255,0.04); padding:1px 5px; border-radius:3px; }
+  pre code { background:none; padding:0; }
+
+  .note { padding:10px 14px; border-radius:6px; font-size:0.86em; margin:8px 0; }
+  .note.tip { background:#052e1633; border:1px solid #16653444; color:var(--green); }
+  .note.warn { background:#713f1233; border:1px solid #854d0e44; color:var(--yellow); }
+  .note.info { background:#1e3a5f33; border:1px solid #2563eb44; }
+
+  .project-map { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:14px; margin:16px 0; }
+  .proj-card { background:var(--card); border-radius:8px; padding:14px 16px; border-top:4px solid var(--accent); }
+  .proj-card h4 { color:var(--accent); font-size:0.95em; margin-bottom:6px; }
+
+  .skill-map { width:100%; border-collapse:collapse; margin:10px 0; font-size:0.88em; }
+  .skill-map th { background:var(--card); color:var(--accent); padding:8px 12px; text-align:left; border:1px solid var(--border); }
+  .skill-map td { padding:8px 12px; border:1px solid var(--border); }
+  .skill-map .match { color:var(--green); font-weight:700; }
+
+  .answer-steps { margin:8px 0; padding-left:20px; }
+  .answer-steps li { margin:4px 0; }
+
+  .toc { background:var(--card); border-radius:10px; padding:16px 20px; margin:16px 0; }
+  .toc h3 { color:var(--accent); margin:0 0 8px; }
+  .toc a { color:var(--accent); text-decoration:none; display:block; padding:2px 0; font-size:0.9em; }
+
+  .footer { text-align:center; color:var(--muted); margin:40px 0 20px; font-size:0.8em; }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:12px 0; }
+  @media (max-width:700px) { .two-col {grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🎯 魏先 · 安闻面试全攻略</h1>
+<div class="subtitle">
+  简历 3 大项目 × 43 道面试题 → 逐题结构化回答模板<br>
+  生成时间：2026-06-12 · 基于魏先简历 + 安闻面试题库 + 喜科堂教程对照
+</div>
+
+<div class="toc">
+  <h3>📑 快速导航</h3>
+  <a href="#overview">0. 简历亮点总览 + 面试策略</a>
+  <a href="#skills">0.5 技能映射 —— 简历 vs 面试题要求</a>
+  <a href="#p0">1. P0 必问（上位机编程 + 通信 + 数据采集）— 15题</a>
+  <a href="#p1">2. P1 常问（产线测试 + 数据库 + PLC）— 17题</a>
+  <a href="#p2">3. P2 加分（行业体系 + 软技能）— 10题</a>
+  <a href="#closing">4. 面试收尾话术 + 反问问题</a>
+</div>
+
+<!-- ============================================================ -->
+<!-- OVERVIEW -->
+<!-- ============================================================ -->
+<h2 id="overview">📋 0. 简历亮点总览 + 面试策略</h2>
+
+<div class="card">
+  <h3>面试官第一眼会看到什么？</h3>
+  <table class="skill-map">
+    <tr><th>他们会关注</th><th>你简历的对应内容</th><th>竞争力评估</th></tr>
+    <tr>
+      <td>上位机开发经验</td>
+      <td>3 个完整 C#/.NET 上位机项目，覆盖分选/组装/仓储/SCADA</td>
+      <td class="match">✅ 强（项目数量多、场景全）</td>
+    </tr>
+    <tr>
+      <td>PLC 品牌</td>
+      <td>西门子全系列：S7-200 SMART / 1200 / 1500T / 1511T</td>
+      <td class="match">✅ 强（安闻也是西门子生态）</td>
+    </tr>
+    <tr>
+      <td>通讯协议</td>
+      <td>Profinet + Modbus TCP + Modbus RTU + OPC UA（了解）</td>
+      <td class="match">✅ 强（三种协议都有实战）</td>
+    </tr>
+    <tr>
+      <td>伺服/变频器</td>
+      <td>V90 伺服 × 4、V20/G120 变频器，含参数整定</td>
+      <td class="match">✅ 强（直接对口产线设备）</td>
+    </tr>
+    <tr>
+      <td>数据库</td>
+      <td>SQL Server + SQLite（项目中有 DatabaseManager 封装）</td>
+      <td class="match">✅ 匹配</td>
+    </tr>
+    <tr>
+      <td>视觉集成</td>
+      <td>海康工业相机 SDK，颜色识别 + 破损检测</td>
+      <td class="match">✅ 加分（多数上位机工程师不会）</td>
+    </tr>
+    <tr>
+      <td>电气实操</td>
+      <td>3 个月全日制电气培训，独立接线 + 调伺服/变频器</td>
+      <td class="match">✅ 加分（能下现场不娇气）</td>
+    </tr>
+    <tr>
+      <td>编程语言</td>
+      <td>C# + TypeScript（5年+前端经验）</td>
+      <td class="match">✅ 编程功底扎实</td>
+    </tr>
+    <tr>
+      <td style="color:var(--yellow);">行业经验</td>
+      <td style="color:var(--yellow);">无车载冰箱/汽车行业直接经验</td>
+      <td style="color:var(--yellow);">⚠️ 需补课（P2题）</td>
+    </tr>
+  </table>
+</div>
+
+<div class="note tip">
+  <strong>🎯 面试核心策略：</strong>简历上的 3 个项目都是"西门子 + Modbus/Profinet + 伺服/变频器"技术栈，和安闻产线设备高度一致。<br>
+  <strong>你的最大卖点：</strong>不需要从头学通讯协议和设备——你已经在类似设备上做过完整的"通讯→采集→监控→报警→存储"闭环。<br>
+  <strong>唯一短板：</strong>汽车行业体系（IATF16949 等），但这是可培训的——面试时诚实说"愿意学"即可。
+</div>
+
+<!-- ============================================================ -->
+<!-- PROJECT SUMMARY -->
+<!-- ============================================================ -->
+<h2 id="projects">🗂️ 简历 3 大项目速查卡</h2>
+
+<div class="project-map">
+  <div class="proj-card">
+    <h4>项目一：七轴分选/加工/组装/仓储</h4>
+    <p style="font-size:0.85em;color:var(--muted);">
+      <strong>PLC：</strong>1511T + 1215C + 200 SMART<br>
+      <strong>通讯：</strong>Profinet + Modbus TCP<br>
+      <strong>设备：</strong>V90×4 + G120 + ET200 + 海康相机<br>
+      <strong>功能：</strong>数据采集(≤200ms) + 实时曲线 + 视觉集成 + 仓储分拣 + 报警日志
+    </p>
+  </div>
+  <div class="proj-card" style="border-top-color:var(--yellow);">
+    <h4>项目二：圆盘组装机监控</h4>
+    <p style="font-size:0.85em;color:var(--muted);">
+      <strong>PLC：</strong>西门子 S7-200<br>
+      <strong>通讯：</strong>Modbus RTU（PPI 转 Modbus）<br>
+      <strong>设备：</strong>X/Y 步进 + 圆盘转盘 + 光纤传感器 + 气动<br>
+      <strong>功能：</strong>6工位监控 + 配方管理(换型15→2min) + 生产统计 + IO在线监控
+    </p>
+  </div>
+  <div class="proj-card" style="border-top-color:var(--green);">
+    <h4>项目三：送料搬运装配流水线 SCADA</h4>
+    <p style="font-size:0.85em;color:var(--muted);">
+      <strong>PLC：</strong>西门子 S7-1200<br>
+      <strong>通讯：</strong>Profinet + Modbus TCP<br>
+      <strong>设备：</strong>V20 + V90 + 步进 + 高速计数器<br>
+      <strong>功能：</strong>多设备通讯 + 变频器监控 + 编码器定位 + 全线动画仿真 + 历史回放
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SKILL MAPPING -->
+<!-- ============================================================ -->
+<h2 id="skills">🔗 0.5 技能映射 —— 简历项目 vs 面试题要求</h2>
+
+<div class="card">
+  <h3>面试官会从哪个项目切入提问？</h3>
+  <table class="skill-map">
+    <tr><th>面试问什么</th><th>用哪个项目回答</th><th>为什么</th></tr>
+    <tr><td>多 PLC 数据采集架构</td><td>项目一（3 台 PLC 同时采）</td><td>最复杂，最能展示架构能力</td></tr>
+    <tr><td>Modbus RTU vs TCP 区别</td><td>项目二(RTU) + 项目一(TCP)</td><td>两种都用过，对比着讲更有说服力</td></tr>
+    <tr><td>伺服/变频器监控</td><td>项目三（V20+V90）</td><td>变频器和伺服都监控了，最全面</td></tr>
+    <tr><td>配方管理</td><td>项目二（换型 15→2min）</td><td>有量化数据，面试官最爱听</td></tr>
+    <tr><td>数据库设计</td><td>DatabaseManager.cs</td><td>有完整代码，能直接讲架构</td></tr>
+    <tr><td>设备断线重连</td><td>项目一 + 项目二</td><td>多设备场景最能体现异常处理</td></tr>
+    <tr><td>视觉集成</td><td>项目一（海康相机）</td><td>差异化亮点，多数上位机工程师没做过</td></tr>
+    <tr><td>跨线程 UI 更新</td><td>项目一（≤200ms 实时刷新）</td><td>频率高，必须用异步/多线程</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- P0 -->
+<!-- ============================================================ -->
+<h2 id="p0">🔴 1. P0 必问 —— 上位机编程 + 通信 + 数据采集（15题）</h2>
+
+<!-- Q1 -->
+<div class="card p0">
+<div class="q-title">
+  Q1. 上位机多 PLC 数据采集架构是怎样的？采集时 UI 卡顿怎么解决？
+  <span class="badge badge-p0">P0 必问</span>
+  <span class="badge badge-proj">项目一</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答（结合项目一）：</div>
+<p>"我在<strong>七轴分选监控系统</strong>里对接了 3 台 PLC——1511T 用 Profinet、1215C 和 200 SMART 走 Modbus TCP。架构上我做了三层：</p>
+<p><strong>① 协议层：</strong>每台 PLC 独立一个通信实例，各自维护连接状态和重连逻辑，互不影响。</p>
+<p><strong>② 采集调度层：</strong>用 <code>Task.Run</code> + <code>async/await</code> 异步采集，3 台 PLC 并行轮询，刷新周期控制在 200ms 以内。<strong>关键设计是生产者-消费者模式</strong>——采集线程只管往 <code>Channel&lt;T&gt;</code> 里写数据，UI 线程通过 <code>await foreach</code> 消费数据并更新界面，两边解耦，采集慢不会拖 UI。</p>
+<p><strong>③ 显示层：</strong>UI 更新用 <code>Control.Invoke</code>（WinForms）封送到主线程，或者 async/await 自动捕获 SynchronizationContext 回到 UI 线程。实时曲线用 GDI+ 自绘，只重绘变化区域不做全屏刷新。</p>
+<p>核心思路就是<strong>'采集不卡 UI，UI 不拖采集'</strong>——异步采集 + 有界缓冲区 + 批量 UI 更新。"</p>
+</div>
+<div class="note tip"><strong>面试官可能会追问：</strong>"Channel&lt;T&gt; 有界容量满了怎么办？" → 答："背压机制，<code>WriteAsync</code> 会自动等待，不会丢数据也不会爆内存。"</div>
+</div>
+
+<!-- Q5 -->
+<div class="card p0">
+<div class="q-title">
+  Q5. async/await 和 Task.Wait() 有什么区别？为什么上位机不能用 Wait()？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<code>Task.Wait()</code> 是同步阻塞当前线程，会卡死 UI——WinForms 的消息泵被堵住，界面直接白屏未响应。</p>
+<p><strong>async/await 则是'异步不阻塞'</strong>——遇到 await 时当前方法挂起，线程回线程池去处理别的事，等异步操作完成后再调度回来继续执行。</p>
+<p><strong>上位机为什么必须用 async/await：</strong>串口读数据或者 PLC 轮询，一次通信可能要 50-200ms。如果每秒轮询 5 次还用 Wait()，UI 线程全部时间都被占满，用户点什么都没反应。用 async/await 的话，等待期间线程可以处理用户点击、刷新其他控件。</p>
+<p>还有一个坑：<strong>Wait() 在 UI 线程上可能死锁</strong>——因为 await 默认要回到原始 SynchronizationContext（UI 线程），但 UI 线程被 Wait() 堵住了回不来，就死锁了。用 <code>ConfigureAwait(false)</code> 可以避开，但根本方案还是别用 Wait()。"</p>
+</div>
+</div>
+
+<!-- Q8 -->
+<div class="card p0">
+<div class="q-title">
+  Q8. Modbus RTU 和 Modbus TCP 有什么区别？你分别用在哪些场景？
+  <span class="badge badge-p0">P0 必问</span>
+  <span class="badge badge-proj">项目一+二</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"我两种都实际用过，对比着讲：</p>
+<table class="skill-map" style="font-size:0.9em;">
+  <tr><th>维度</th><th>Modbus RTU</th><th>Modbus TCP</th></tr>
+  <tr><td>物理层</td><td>RS485（双绞线，差分信号）</td><td>以太网（RJ45）</td></tr>
+  <tr><td>帧格式</td><td>地址(1B) + 功能码(1B) + 数据(NB) + CRC(2B)</td><td>MBAP头(7B) + 功能码(1B) + 数据(NB)</td></tr>
+  <tr><td>校验</td><td>CRC-16 循环冗余</td><td>靠 TCP 层保证，不额外校验</td></tr>
+  <tr><td>地址</td><td>1-247（1 字节站号）</td><td>用 IP 地址区分设备</td></tr>
+  <tr><td>速率</td><td>9600~115200 bps</td><td>100Mbps+，快得多</td></tr>
+  <tr><td>多主</td><td>不支持（单主轮询）</td><td>可多客户端同时连</td></tr>
+</table>
+<p><strong>我的项目里：</strong>圆盘组装机用 Modbus RTU——S7-200 老 PLC 走 RS485，上位机做主站轮询 6 个工位数据。七轴系统用 Modbus TCP——1215C 和 200 SMART 都走以太网，速率高、可以并行通信。TCP 还有一个好处是 MBAP 头里带了长度字段，天然解决粘包半包问题，RTU 要靠 3.5 字符间隔来判断帧结束。"</p>
+</div>
+</div>
+
+<!-- Q11 -->
+<div class="card p0">
+<div class="q-title">
+  Q11. C# 实现 Modbus 通信你用过什么库？为什么选择它？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"我既用过现成的库，也自己写过通信库：</p>
+<p>① <strong>自己封装 Modbus 协议类：</strong>学习阶段为了搞懂底层原理，手写了帧组装（功能码 + 地址 + 数据 + CRC 计算）和响应解析。<strong>CRC-16 查表法</strong>比逐位计算快 8 倍，适合高频轮询。这个经历让我面试时能讲清楚每个字节的含义。</p>
+<p>② <strong>NModbus4 / FluentModbus：</strong>实际项目里用这些开源库，稳定、API 简洁。比如读保持寄存器一行 <code>master.ReadHoldingRegisters(1, 0, 10)</code> 就搞定。</p>
+<p>③ <strong>选型考虑：</strong>如果项目简单、只用 Modbus → 直接用 FluentModbus。如果需要和 MES 对接、数据库一起上 → 自己封装一层 Transport 抽象（<code>IModbusTransport</code> 接口），底层可切换串口/TCP，上层代码不改。</p>
+<p>核心原则：<strong>别重复造轮子，但要懂轮子怎么转的。</strong>"</p>
+</div>
+</div>
+
+<!-- Q14 -->
+<div class="card p0">
+<div class="q-title">
+  Q14. 设备突然断线，上位机怎么处理？断线重连机制怎么设计？
+  <span class="badge badge-p0">P0 必问</span>
+  <span class="badge badge-proj">项目一+二+三</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"断线处理我分四层来搞：</p>
+<ol class="answer-steps">
+  <li><strong>检测层 —— 怎么知道断了？</strong>
+    <ul>
+      <li>Modbus 发送后超时没收到响应（通常设 500ms~1s timeout）</li>
+      <li>串口 <code>SerialPort.ErrorReceived</code> 事件捕获硬件异常</li>
+      <li>连续 3 次超时才判定断线（防偶发干扰误判）</li>
+    </ul>
+  </li>
+  <li><strong>重连层 —— 怎么恢复？</strong>
+    <ul>
+      <li>指数退避策略：1s → 2s → 4s → 8s → 上限 30s，避免疯狂重连</li>
+      <li>每次重连前先 <code>Close()</code> 再 <code>Open()</code>，确保串口/连接状态干净</li>
+      <li>重连成功后自动补读断线期间的配置/状态寄存器</li>
+    </ul>
+  </li>
+  <li><strong>数据层 —— 断线期间数据怎么办？</strong>
+    <ul>
+      <li>采集数据标为 '离线'，时间戳精确标记断线时段</li>
+      <li>关键工艺参数先用 SQLite 本地缓存，恢复后补传 MES</li>
+    </ul>
+  </li>
+  <li><strong>UI 层 —— 怎么告诉操作员？</strong>
+    <ul>
+      <li>设备状态灯变红（绿=在线 / 黄=重连中 / 红=离线）</li>
+      <li>弹窗报警 + 记录报警历史到数据库</li>
+      <li>如果 30s 还没恢复，声光报警（现场蜂鸣器）</li>
+    </ul>
+  </li>
+</ol>
+<p>这个设计在我三个项目里都用了，只是重连参数根据设备重要性微调。"</p>
+</div>
+</div>
+
+<!-- Q6 -->
+<div class="card p0">
+<div class="q-title">
+  Q6. 程序崩溃或突然断电，怎么保证采集数据不丢？
+  <span class="badge badge-p0">P0 必问</span>
+  <span class="badge badge-proj">项目一+三</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"分三层保障：</p>
+<p><strong>① 即时写盘：</strong>不是攒一批再写，而是每条数据到达就 <code>INSERT</code>（SQLite WAL 模式下写入很快）。或至少每 100 条/每 5 秒批量 flush 一次。</p>
+<p><strong>② 双存储兜底：</strong>本地 SQLite（毫秒级写入 + WAL 模式崩溃恢复）做第一道防线，关键数据异步同步到 SQL Server/MES。即使 SQL Server 网络断了也不丢数据——SQLite 在本地一直记着。</p>
+<p><strong>③ 异常捕获 + 未处理异常：</strong><code>try-catch</code> 包住采集循环体，单个设备的异常不影响其他设备。AppDomain 级别挂 <code>UnhandledException</code> 做最后一道兜底，记录崩溃时间点后再退出。</p>
+<p><strong>④ .NET 6+ 可以用 <code>IHostApplicationLifetime</code> 的 <code>ApplicationStopping</code> token</strong>，在程序被 kill 时做最后 flush。WinForms 里重写 <code>OnFormClosing</code> 也能做同样的事。"</p>
+</div>
+</div>
+
+<!-- Q12 -->
+<div class="card p0">
+<div class="q-title">
+  Q12. 大小端问题 —— 上位机怎么处理 Modbus 数据中的字节序？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"Modbus 默认是<strong>大端序</strong>（Big-Endian）——高字节在前。但 PC（x86）是小端序，所以读回来必须转换。</p>
+<p><strong>坑：</strong>不同 PLC 厂商对 32 位寄存器的字节序还不一样：
+  <br>· 西门子：两个字（Word）顺序是小端，如 0xABCD EFGH → 低字在前 ABCD，高字在后 EFGH
+  <br>· 三菱/施耐德：高字在前
+  <br>· 有些国产 PLC 字节序更乱，4 字节随便排列</p>
+<p><strong>我的处理方式：</strong>在 <code>ModbusProtocol</code> 类里封装一个通用转换，用 <code>BitConverter</code> + <code>Array.Reverse</code>。还可以用 <code>BinaryPrimitives.ReadInt32BigEndian()</code>（.NET 6+），一行搞定不用记位运算。</p>
+<p>最佳实践是<strong>把字节序做成配置项</strong>——PLC 型号映射到一个 Endianness 枚举（ABCD / CDAB / BADC / DCBA），换 PLC 只改配置不重编译。"</p>
+</div>
+</div>
+
+<!-- S5 -->
+<div class="card p0">
+<div class="q-title">
+  S5. Modbus 功能码全表（01~16）—— 最常用哪些？用在哪里？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<table class="skill-map" style="font-size:0.9em;">
+  <tr><th>功能码</th><th>名称</th><th>作用</th><th>项目中的实际使用</th></tr>
+  <tr><td>01 (0x01)</td><td>读线圈</td><td>读开关量输出（DO）</td><td>读气缸电磁阀开关状态、继电器</td></tr>
+  <tr><td>02 (0x02)</td><td>读离散输入</td><td>读开关量输入（DI）</td><td>读传感器/光电开关/限位信号</td></tr>
+  <tr><td><strong>03 (0x03)</strong></td><td><strong>读保持寄存器</strong></td><td>读模拟量/参数</td><td><strong>最常用</strong>——读温度、速度、伺服位置</td></tr>
+  <tr><td><strong>04 (0x04)</strong></td><td>读输入寄存器</td><td>读模拟量输入（AI）</td><td>读 4-20mA 传感器原始值</td></tr>
+  <tr><td>05 (0x05)</td><td>写单线圈</td><td>控制单个 DO</td><td>单点启停某个电机/阀门</td></tr>
+  <tr><td><strong>06 (0x06)</strong></td><td><strong>写单寄存器</strong></td><td>写单个参数</td><td>修改变频器频率设定值</td></tr>
+  <tr><td>15 (0x0F)</td><td>写多线圈</td><td>批量控制 DO</td><td>一次控制多个气缸同时动作</td></tr>
+  <tr><td><strong>16 (0x10)</strong></td><td><strong>写多寄存器</strong></td><td>批量写参数</td><td><strong>配方下发</strong>——一次写多个工艺参数到 PLC</td></tr>
+</table>
+<p>"上位机 90% 的场景就是 03（读）和 06/16（写），其他用的少。"</p>
+</div>
+</div>
+
+<!-- S6 -->
+<div class="card p0">
+<div class="q-title">
+  S6. Modbus RTU 帧格式长什么样？CRC 校验怎么算的？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"RTU 帧结构：<strong>地址码(1B) + 功能码(1B) + 数据区(NB) + CRC校验(2B)</strong></p>
+<p>比如读 1 号站保持寄存器 40001，长度 1 个字的请求帧：</p>
+<pre><code>01 03 00 00 00 01 84 0A
+│  │  └─────┘ └──┘ └───┘
+│  │   起始地址  数量  CRC-16
+│  └─ 功能码 03=读保持寄存器
+└─ 站号 1</code></pre>
+<p><strong>CRC-16 算法：</strong>生成多项式 0xA001，初始值 0xFFFF。每个字节与 CRC 低 8 位异或，然后右移 8 次——移出的位如果是 1 就异或多项式。实际项目用<strong>查表法</strong>——预计算 256 个字节的 CRC 值放入数组，查表代替逐位计算，效率提高 8 倍。</p>
+<p>TCP 就没有 CRC 了——因为 TCP 层已经保证了数据完整性，用 MBAP 头（7 字节）替代了地址码和 CRC 的位置。"</p>
+</div>
+</div>
+
+<!-- S7 -->
+<div class="card p0">
+<div class="q-title">
+  S7. TCP 粘包/半包是什么？Modbus TCP 怎么解决？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"TCP 是流协议，没有消息边界——你发了两帧数据，接收方可能一次收到（粘包），也可能分三次收到（半包）。</p>
+<p><strong>Modbus TCP 的解决方案就是 MBAP 头</strong>——7 字节固定头，其中第 5-6 字节是<strong>长度字段</strong>，告诉接收方'这条消息后面还有多少字节'。程序读到 MBAP 头 → 解析长度 → 按长度精确接收剩余数据，天然不粘不半。</p>
+<p>对比 Modbus RTU，它没有长度字段，只能靠<strong>3.5 字符的时间间隔</strong>来判断帧结束——如果发送太快两帧之间间隔不够，就会粘包。所以 RTU 轮询时要留帧间间隔，不然 485 总线上可能丢数据。"</p>
+</div>
+</div>
+
+<!-- S1 -->
+<div class="card p0">
+<div class="q-title">
+  S1. IDisposable / using —— 为什么串口连接要用 using？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>using 是 try-finally 的语法糖</strong>——无论正常执行还是抛异常，finally 块里都会调 <code>Dispose()</code>，保证资源释放。</p>
+<p><strong>串口为什么必须 Dispose：</strong>SerialPort 占用了 Windows 内核的串口句柄。不释放的话：① 串口一直被占用，别的程序打不开；② 进程退出后 OS 会回收，但进程运行期间就是资源泄漏；③ 硬件串口数量有限（通常 1-8 个），泄漏一次少一个。</p>
+<p><strong>上位机的典型用法：</strong></p>
+<pre><code>// ✅ using 语句 —— 作用域结束自动 Dispose
+using (var sp = new SerialPort("COM1", 9600))
+{
+    sp.Open();
+    // ... 读写操作
+}  // 这里即使抛异常也会关串口
+
+// ✅ C# 8+ using 声明 —— 更简洁
+using var conn = new SqlConnection(connStr);
+// ... 方法结束时自动 Dispose</code></pre>
+<p><strong>我的 DatabaseManager 就实现了 IDisposable</strong>——在 Dispose 里 Close + Dispose 连接对象。用它的地方只要 <code>using var db = DatabaseManager.CreateSQLite(...)</code> 就行。</p>
+<p><strong>进阶：</strong>C# 8 还有 <code>IAsyncDisposable</code>——串口关闭可以异步做：<code>await using var sp = ...</code>。"</p>
+</div>
+</div>
+
+<!-- S2 -->
+<div class="card p0">
+<div class="q-title">
+  S2. 装箱拆箱是什么？上位机里怎么避免？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>装箱：</strong>值类型（int, struct, double）→ 转成 object，会在堆上分配一个新对象，把值 copy 过去。有 CPU 和内存开销。</p>
+<p><strong>拆箱：</strong>object → 转回值类型，从堆上取出值 copy 回栈上。</p>
+<p><strong>上位机里典型坑：</strong>Modbus 数据解析时，如果用了 <code>ArrayList</code>（存 object），每个寄存器值都要装箱。1000 个寄存器轮询一次就 1000 次装箱。</p>
+<p><strong>解决方案就是泛型集合：</strong><code>List&lt;int&gt;</code> / <code>List&lt;ushort&gt;</code>。泛型在编译时就确定了类型，不存在 object 中转，零装箱。<code>Dictionary&lt;int, PlcDataPoint&gt;</code> 也一样，按设备地址索引数据结构不需要拆箱。</p>
+<p>面试可以补充一句：.NET 的 <code>Span&lt;T&gt;</code> 更进一步——连堆分配都省了，直接在栈上操作内存切片，Modbus 帧解析性能能再提一个量级。不过这是加分项。"</p>
+</div>
+</div>
+
+<!-- S10 -->
+<div class="card p0">
+<div class="q-title">
+  S10. 上位机怎么和 MES 系统对接？数据上报怎么做？
+  <span class="badge badge-p0">P0 必问</span>
+  <span class="badge badge-proj">项目一+三</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"MES 对接本质就是把产线数据报给上层系统。几种方式：</p>
+<p><strong>① REST API 上报（常用的）：</strong>上位机把产量、合格率、设备状态打包成 JSON，<code>POST</code> 到 MES 的 HTTP 接口。C# 用 <code>HttpClient</code> + <code>async/await</code>，非阻塞上报，不影响采集。</p>
+<p><strong>② MQTT 推送：</strong>适合实时性要求高的场景（设备报警、关键工艺参数变化）。用 MQTTnet 库，发布到 MQTT Broker，MES 订阅。西门子 PLC 还可以直接通过 MQTT 模块上云。</p>
+<p><strong>③ 数据库直连：</strong>上位机写 SQL Server 表，MES 定时读。简单粗暴但耦合度高。</p>
+<p><strong>④ 文件交换：</strong>导出 Excel/CSV，MES 定时导进。最原始但兼容性最好。</p>
+<p><strong>我的项目里的实践：</strong>七轴系统中关键工艺数据（分选结果、入库记录）通过 POST 上报到工厂 MES。中间加了一层本地 SQLite 作为缓冲——网络断的时候先存本地，恢复后补传。上报格式是 JSON，带时间戳 + 设备编号 + 工位编号 + 批次号，方便 MES 端做追溯。"</p>
+</div>
+</div>
+
+<!-- Q9 -->
+<div class="card p0">
+<div class="q-title">
+  Q9. RS232 / RS422 / RS485 有什么区别？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<table class="skill-map" style="font-size:0.9em;">
+  <tr><th>维度</th><th>RS232</th><th>RS422</th><th>RS485</th></tr>
+  <tr><td>工作方式</td><td>全双工（单端）</td><td>全双工（差分）</td><td>半双工（差分）</td></tr>
+  <tr><td>线数</td><td>3 线（TXD/RXD/GND）</td><td>4 线（TXD±/RXD±）</td><td>2 线（A/B）</td></tr>
+  <tr><td>距离</td><td>≤15m</td><td>≤1200m</td><td>≤1200m</td></tr>
+  <tr><td>节点数</td><td>1对1</td><td>1主10从</td><td>最多32个（中继可扩）</td></tr>
+  <tr><td>抗干扰</td><td>差（单端）</td><td>强（差分）</td><td>强（差分）</td></tr>
+</table>
+<p>"上位机最常用的是 <strong>RS485</strong>——工业现场距离远、干扰大、一主多从（多台 PLC/变频器挂在同一条总线上）。Modbus RTU 就是跑在 RS485 上的。</p>
+<p><strong>现场调试经验：</strong>终端电阻一定要接（120Ω 并在 A/B 两端），不接的话信号反射会导致通信时断时续。波特率越高距离越短，9600 跑 1200 米没问题，115200 最多 100 米左右。"</p>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="card p0">
+<div class="q-title">
+  Q3. 委托和事件的区别？上位机里怎么用？
+  <span class="badge badge-p0">P0 必问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>核心区别：事件是委托的封装，限制了外部只能 += / -=，不能直接 Invoke 或赋值覆盖。</strong></p>
+<pre><code>// delegate —— 外部可以直接 Invoke，甚至可以 = null 清空
+public Action&lt;string&gt; OnDataReceived;  // ❌ 外部可以 OnDataReceived = null
+
+// event —— 外部只能订阅/取消，触发权在类内部
+public event Action&lt;string&gt; OnDataReceived;  // ✅ 安全封装</code></pre>
+<p><strong>上位机应用：</strong></p>
+<ul>
+  <li>串口收到数据 → 触发 <code>OnDataReceived</code> 事件，通知 UI 层更新</li>
+  <li>PLC 断线 → 触发 <code>OnConnectionLost</code> 事件，报警模块订阅它</li>
+  <li>配方切换 → 触发 <code>OnRecipeChanged</code> 事件，多个模块各自处理</li>
+</ul>
+<p><strong>最经典的委托应用是跨线程更新 UI：</strong><code>this.Invoke(new Action(() => label.Text = "xxx"))</code>——把一个 Action 委托封送到 UI 线程执行。这行代码在三个项目里到处都是。"</p>
+</div>
+</div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- P1 -->
+<!-- ============================================================ -->
+<h2 id="p1">🟡 2. P1 常问 —— 产线测试 + 数据库 + PLC 基础（17题）</h2>
+
+<!-- Q24 -->
+<div class="card p1">
+<div class="q-title">
+  Q24. EOL（End of Line）出厂测试项目怎么设计？
+  <span class="badge badge-p1">P1 常问</span>
+  <span class="badge badge-proj">项目一</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"EOL 测试就是产品出厂前最后一道全检。我虽然没有做过冰箱 EOL，但做过<strong>类似的分选检测系统</strong>，整体架构可以类比：</p>
+<p><strong>流程：</strong>产品到位（传感器触发）→ <strong>上位机发检测指令给 PLC</strong> → PLC 控制执行机构执行测试 → <strong>上位机实时采集检测数据</strong>（温度、电流、转速等）→ <strong>数据与阈值比对判 PASS/FAIL</strong> → 结果写入数据库 + 上传 MES。</p>
+<p><strong>关键设计：</strong>
+  <br>① 每个工位独立线程，并行检测不互相等
+  <br>② 测试参数做成配方（JSON 存 MySQL），换产品直接 load 配方不用改代码
+  <br>③ 所有检测数据带时间戳 + 设备号 + 批次号落盘，方便追溯
+  <br>④ FAIL 品自动触发声光报警并标记工位，防止混入良品</p>
+<p><strong>和我的项目对应：</strong>项目一的视觉检测（海康相机 + 颜色识别 + 破损检测）就是 EOL 的一个子模块——采集 → 判定 → 分类 → 记录，逻辑完全一样。"</p>
+</div>
+</div>
+
+<!-- S11 -->
+<div class="card p1">
+<div class="q-title">
+  S11. SQLite vs SQL Server 怎么选？上位机用什么？
+  <span class="badge badge-p1">P1 常问</span>
+  <span class="badge badge-proj">DatabaseManager</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<table class="skill-map" style="font-size:0.9em;">
+  <tr><th>场景</th><th>推荐</th><th>原因</th></tr>
+  <tr><td>单机上位机、数据量 &lt; 千万行</td><td>SQLite</td><td>零部署、零配置、文件级备份</td></tr>
+  <tr><td>多上位机共享数据</td><td>SQL Server</td><td>支持并发读写、权限管理</td></tr>
+  <tr><td>需要和 MES/ERP 对接</td><td>SQL Server</td><td>企业标准数据库，DBA 能运维</td></tr>
+  <tr><td>历史数据归档查询</td><td>SQL Server</td><td>百万行以上 SQLite 查询变慢</td></tr>
+  <tr><td>断网缓存 / 离线运行</td><td>SQLite</td><td>不依赖网络，WAL 模式写入快</td></tr>
+</table>
+<p>"我的项目中 <strong>DatabaseManager 同时支持 SQLite 和 SQL Server</strong>——开发测试阶段用 SQLite（方便），生产环境切 SQL Server。关键设计是通过 <code>IDbConnection</code> 接口抽象，上层代码（Repository）不感知底层是哪个数据库。</p>
+<p>还有一个实践：<strong>SQLite 做本地缓冲、SQL Server 做中心存储</strong>——采集数据先写 SQLite（毫秒级），后台异步同步到 SQL Server。这样即使网络断也不丢数据。"</p>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="card p1">
+<div class="q-title">
+  Q2. 你做过什么 C# 上位机项目？遇到什么坑？怎么解决的？
+  <span class="badge badge-p1">P1 常问</span>
+  <span class="badge badge-proj">全部项目</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答（选项目一+二，有对比有亮点）：</div>
+<p>"两个典型项目：</p>
+<p><strong>1. 七轴分选监控系统</strong>——3 台 PLC、4 组伺服、视觉集成。最大的坑是<strong>三台 PLC 同时轮询时 UI 卡死</strong>。一开始用 <code>Thread.Sleep</code> 等响应，结果 UI 线程被堵死。后来改成 <code>async/await + Task.Run</code>，三台 PLC 各自独立 Task 并行轮询，await 期间线程回池，UI 不受影响。再配上 Channel&lt;T&gt; 做生产者消费者，采集和显示彻底解耦。</p>
+<p><strong>2. 圆盘组装机配方管理</strong>——最初配方存在 PLC 里，换型要手动改一堆寄存器，误操作率高。我做了一个上位机端配方管理系统——JSON 存所有工艺参数，选配方后一键下发（一条 Modbus 16 功能码写多寄存器），换型时间从 15 分钟缩短到 2 分钟。这个优化直接影响了产线效率，是我最自豪的改进。</p>
+<p><strong>还有一个通用坑——Modbus 字节序对不上。</strong>不同 PLC 对 32 位浮点数的字节序不一样，读出来的温度、速度值完全对不上。后来我在通信层加了 Endianness 配置，按 PLC 型号选字节序模式，问题解决。"</p>
+</div>
+</div>
+
+<!-- Q15 -->
+<div class="card p1">
+<div class="q-title">
+  Q15. 西门子 vs 三菱 PLC —— 上位机通信有什么区别？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<table class="skill-map" style="font-size:0.9em;">
+  <tr><th>维度</th><th>西门子</th><th>三菱</th></tr>
+  <tr><td>通信协议</td><td>S7 协议（私有）/ Profinet</td><td>Fins TCP / MC 协议</td></tr>
+  <tr><td>数据区</td><td>DB 块（DB1.DBX0.0 格式）</td><td>D 寄存器 / M 继电器 / X/Y 位</td></tr>
+  <tr><td>上位机库</td><td>S7.NET / Sharp7</td><td>MX Component / Fins 库</td></tr>
+  <tr><td>编程软件</td><td>TIA Portal（博途）</td><td>GX Works2/3</td></tr>
+  <tr><td>市场定位</td><td>中大型项目（汽车/产线）</td><td>中小型设备（性价比高）</td></tr>
+</table>
+<p>"我的经验主要是西门子生态——S7-200 SMART / 1200 / 1500 都对接过，Profinet 和 Modbus TCP 都用过。三菱的 Fins 协议从课程里学过基本通信方式，但实际项目没用过。不过上位机侧的思路是一样的——协议不同但架构不变：协议层 + 传输层 + 业务层分离，换底层协议只改 Transport 实现，上层不感知。</p>
+<p><strong>安闻应该是西门子为主？</strong>那我上手会比较快，设备我都熟。"</p>
+</div>
+</div>
+
+<!-- Q16 -->
+<div class="card p1">
+<div class="q-title">
+  Q16. 梯形图(LAD)/结构化文本(ST)/顺序功能图(SFC) 各用在什么场景？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"三种语言各自有擅长的场景：</p>
+<p><strong>梯形图 LAD：</strong>最像电气原理图，<strong>逻辑控制首选</strong>——启停、互锁、报警。电工也能看懂，现场调试方便。产线上 80% 的逻辑都是 LAD 写的。</p>
+<p><strong>结构化文本 ST：</strong>像高级编程语言（类似 Pascal），适合<strong>复杂算法和数据处理</strong>——PID 控制、配方管理、数据计算。上位机程序员看着亲切，但现场电工看不懂。</p>
+<p><strong>顺序功能图 SFC：</strong>适合<strong>工艺流程明确的顺序控制</strong>——分步骤执行，每一步有转移条件。比如装瓶流水线：上料→灌装→封盖→贴标→包装，每一步完成才能进下一步。</p>
+<p><strong>S7-1200/1500 还支持 SCL（类似 ST）</strong>，我在 TIA Portal 里用 SCL 写过简单的数据处理逻辑。如果面试官问——诚实说：我上位机为主，PLC 程序能读能改，但独立写复杂控制逻辑还需要现场多练。"</p>
+</div>
+</div>
+
+<!-- S8 -->
+<div class="card p1">
+<div class="q-title">
+  S8. PLC 扫描周期是什么？上位机通信怎么配合？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"PLC 不是并发执行的，它是一个<strong>循环扫描</strong>的机器：读输入 → 执行程序 → 写输出 → 通信处理 → 回来读输入，这样一个循环叫一个扫描周期。小型 PLC 一般几毫秒到几十毫秒。</p>
+<p><strong>上位机通信的关键：</strong>PLC 只在扫描周期的<strong>通信处理阶段</strong>才响应 Modbus 请求。如果上位机轮询太快（比如 10ms 一次），而 PLC 扫描周期是 20ms，那有些请求会排队等待，表现为通信时断时续。</p>
+<p><strong>所以上位机轮询间隔要 &gt; PLC 扫描周期的 2-3 倍</strong>——比如 PLC 扫描 20ms，上位机 50-100ms 轮一次就够了。这在我的项目里做过调优——初始用 20ms 轮询，发现丢帧率高，调大到 80ms 后就稳定了。</p>
+<p>还有一个坑：通信处理在扫描周期里的占比不是 100%，西门子 S7-200 通信只占扫描周期的 10-20%。所以实际有效通信带宽远小于理论值。"</p>
+</div>
+</div>
+
+<!-- Q17 -->
+<div class="card p1">
+<div class="q-title">
+  Q17. 伺服电机控制 —— 脉冲方向 vs EtherCAT 总线？
+  <span class="badge badge-p1">P1 常问</span>
+  <span class="badge badge-proj">项目一+三</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>脉冲方向（Pulse + Direction）：</strong>传统方式，PLC 发脉冲序列给伺服驱动器，频率控制速度、数量控制位置。简单可靠，但接线多（一轴至少 2 根信号线 + 使能 + 报警），适合≤4 轴的小系统。</p>
+<p><strong>EtherCAT / Profinet 总线：</strong>一根网线搞定所有轴，实时性强（μs 级同步），适合多轴联动（>4 轴）。数据交换不只是位置/速度，还能读伺服内部状态（温度、负载率、故障码）。</p>
+<p><strong>我的项目：</strong>项目三用了 <strong>V90 伺服通过 Profinet 连 S7-1200</strong>，走的就是总线方式——上位机通过 PLC 中转读伺服的位置/速度/转矩数据。上位机不直接跟伺服通信（安全考虑——控制权在 PLC，上位机只监控+调参）。</p>
+<p>脉冲方向我也在培训中实操过——用 S7-200 SMART 的高速脉冲输出控制步进电机。核心是加减速曲线（梯形/S 形），避免突然启停丢步。"</p>
+</div>
+</div>
+
+<!-- Q18 -->
+<div class="card p1">
+<div class="q-title">
+  Q18. 变频器在产线中应用？上位机怎么监控变频器？
+  <span class="badge badge-p1">P1 常问</span>
+  <span class="badge badge-proj">项目一+三</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"变频器就是控制交流电机转速的设备——在产线上驱动传送带、风机、水泵、压缩机等。</p>
+<p><strong>上位机监控的核心参数：</strong>运行频率(Hz)、输出电流(A)、输出电压(V)、故障代码、运行状态（运行/停止/故障）。</p>
+<p><strong>我的项目实践（项目三）：</strong>V20 变频器通过 Modbus RTU 和上位机通信。用 03 功能码定时读取频率和电流画实时曲线，06 功能码远程设定频率值。关键设计是<strong>频率写入加了范围限制</strong>（最低 5Hz 最高 50Hz），防止误操作——比如输了个 999 进去马达飞车。</p>
+<p><strong>项目一用的是 G120</strong>——它带 Profinet 接口，数据走 Profinet 到 1511T PLC，上位机再从 PLC 读，不直接跟变频器通信。这是工业常见做法——PLC 做控制层，上位机做监控层，物理隔离提高安全性。</p>
+<p>故障代码一定要存下来——变频器报故障时第一时间抓取故障码，方便事后追溯原因（过流/过压/过热/缺相）。"</p>
+</div>
+</div>
+
+<!-- Q13 -->
+<div class="card p1">
+<div class="q-title">
+  Q13. 上位机怎么和变频器/伺服通信？
+  <span class="badge badge-p1">P1 常问</span>
+  <span class="badge badge-proj">项目一+三</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>两种方式我都用过：</strong></p>
+<p><strong>① 上位机直连设备（项目三 V20 变频器）：</strong>通过 Modbus RTU/RS485，上位机做主站直接读变频器寄存器。好处是架构简单，不依赖 PLC。坏处是控制权分散，安全性差——上位机和 PLC 都可能改参数，容易冲突。</p>
+<p><strong>② 上位机通过 PLC 中转（项目一 G120+V90）：</strong>变频器/伺服连到 PLC（Profinet/脉冲），PLC 负责实时控制，上位机只做监控和数据采集。这是工业标准做法——PLC 做硬实时闭环，上位机做软实时监控，职责清晰、安全。</p>
+<p><strong>变频器寄存器要查手册：</strong>不同品牌的寄存器地址不同。西门子 G120 的通讯手册里频率给定是 40100、状态字是 40110——这些地址必须对着手册一个个配，配错了读回来就是乱数。</p>
+<p><strong>还有一个安全点：</strong>写频率/启停命令一定要加确认——我的界面上频率调节有个'应用'按钮，确认后才写入。防止操作员手滑直接把传送带速度从 50Hz 改成 5Hz。"</p>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="card p1">
+<div class="q-title">
+  Q4. 泛型在上位机里有什么用？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>最大的好处：类型安全 + 避免装箱拆箱</strong>。举例：</p>
+<pre><code>// ❌ 不用泛型 —— ArrayList 存 object，装箱 + 类型不安全
+ArrayList points = new ArrayList();
+points.Add(new PlcDataPoint());  // 装箱
+var p = (PlcDataPoint)points[0]; // 拆箱，类型转换可能抛异常
+
+// ✅ 泛型集合 —— 编译时类型检查，零装箱
+List&lt;PlcDataPoint&gt; points = new List&lt;PlcDataPoint&gt;();
+points.Add(new PlcDataPoint());  // 不装箱
+var p = points[0];               // 不拆箱，类型安全</code></pre>
+<p><strong>实际项目里的典型应用：</strong></p>
+<ul>
+  <li><code>Dictionary&lt;int, PlcDevice&gt;</code> —— 按设备 ID 索引设备对象</li>
+  <li><code>List&lt;AlarmRecord&gt;</code> —— 报警列表，直接绑定 DataGridView</li>
+  <li>泛型 Repository：<code>IRepository&lt;T&gt;</code> 接口，CRUD 操作复用</li>
+  <li>泛型方法：<code>ModbusValue ConvertEndian&lt;T&gt;(byte[] data)</code> 统一处理不同数据类型的字节序转换</li>
+</ul>
+<p>上位机数据量大（每秒可能数百条寄存器值），装箱开销累积起来很可观。泛型是基础素养。"</p>
+</div>
+</div>
+
+<!-- Q10 -->
+<div class="card p1">
+<div class="q-title">
+  Q10. CAN 总线是什么？用在什么场景？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"CAN 是车载/工业设备的主流总线协议。核心特点：<strong>多主架构</strong>——任意节点都能主动发数据，不像 Modbus 只能主站轮询；<strong>优先级仲裁</strong>——ID 越小的帧越优先；<strong>差分信号</strong>——抗干扰强。</p>
+<p><strong>车载冰箱场景：</strong>冰箱控制模块通过 CAN 和整车 ECU 通信——上报温度、故障状态，接收整车指令（比如停车后延时断电）。</p>
+<p><strong>上位机的角色：</strong>产线 EOL 测试时，上位机可能需要通过 USB-CAN 模块监听 CAN 总线，验证冰箱和模拟 ECU 之间的通信是否正确。C# 可以用 PCAN-Basic API 或 SocketCAN 来收发包。</p>
+<p>坦诚说我的项目里 Modbus 和 Profinet 用的多，CAN 只在课程里学过基础帧格式和 CANopen 概念。但协议本质都是 '帧结构 + 校验 + 地址'——上手思路一样。</p>
+</div>
+</div>
+
+<!-- Q7 -->
+<div class="card p1">
+<div class="q-title">
+  Q7. 上位机用什么图表库画曲线？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"分三层：</p>
+<p><strong>① 自己用 GDI+ 画：</strong>曲线简单时没必要引第三方库。在 <code>PictureBox.Paint</code> 事件里用 <code>Graphics.DrawLine</code> 连点成线。关键是<strong>双缓冲</strong>——先画到内存 Bitmap 再一次性贴到屏幕，不闪烁。我在项目二里用这种方式画了 6 工位的状态动画。</p>
+<p><strong>② ScottPlot（开源免费）：</strong>适合需要交互（缩放、拖拽、右键菜单）的场景。一行 <code>plot.Add.Scatter(x, y)</code> 搞定。渲染性能好，百万点都能流畅。上位机社区最推荐的方案。</p>
+<p><strong>③ LightningChart / OxyPlot：</strong>高性能专业图表，3D 渲染、热力图都支持。但商用要付费。</p>
+<p>选型建议：常规实时曲线 → ScottPlot；简单状态指示 → GDI+ 自绘；有预算+高要求 → LightningChart。安闻如果只是温度/电流/速度曲线，ScottPlot 绰绰有余。</p>
+</div>
+</div>
+
+<!-- S4 -->
+<div class="card p1">
+<div class="q-title">
+  S4. Span&lt;T&gt; / Memory&lt;T&gt; 在协议解析中怎么用？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>Span&lt;T&gt; 是栈上的内存切片，零堆分配，适合高性能字节处理。</strong></p>
+<p><strong>Modbus 帧解析场景：</strong></p>
+<pre><code>// 传统：每次解析都创建新数组，GC 压力大
+byte[] frame = ReadModbusFrame();  // 堆分配
+byte[] data = frame[3..^2];        // 又分配一个数组
+
+// Span&lt;T&gt;：切片指原缓冲区，零分配
+Span&lt;byte&gt; frame = ReadModbusFrame();
+Span&lt;byte&gt; data = frame.Slice(3, frame.Length - 5);  // 不是新数组，只是指针</code></pre>
+<p><strong>上位机收益：</strong>每秒解析数百帧 Modbus 报文，省掉大量 byte[] 分配和 GC 回收，CPU 占用率能降 30-40%。</p>
+<p><strong>Memory&lt;T&gt; 是 Span 的堆版本</strong>——async 方法里不能传 Span（ref struct 有栈限制），用 Memory&lt;T&gt; 代替。</p>
+<p>坦诚说这是 .NET Core 2.1+ 的新特性，我课程学的 .NET Framework 4.8 项目没用过。但在 .NET 10 项目中我会优先用——API 很直观。"</p>
+</div>
+</div>
+
+<!-- S3 -->
+<div class="card p1">
+<div class="q-title">
+  S3. record vs class 有什么区别？上位机里怎么选？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>record 是 C# 9 引入的值语义引用类型</strong>——核心是 <strong>不可变性 + 值相等</strong>。</p>
+<table class="skill-map" style="font-size:0.9em;">
+  <tr><th>维度</th><th>class</th><th>record</th></tr>
+  <tr><td>相等性</td><td>引用相等（同一个对象）</td><td>值相等（属性一样就相等）</td></tr>
+  <tr><td>可变性</td><td>默认可变</td><td>默认不可变（init 属性）</td></tr>
+  <tr><td>语法</td><td>传统</td><td>简洁：<code>record Point(int X, int Y);</code></td></tr>
+  <tr><td>With 表达式</td><td>不支持</td><td><code>p with { X = 10 }</code> 快速拷贝</td></tr>
+</table>
+<p><strong>上位机推荐用法：</strong>
+  <br>· Modbus 寄存器、配方参数、报警记录 → <strong>record</strong>（数据载体，不改）
+  <br>· 串口连接、UI 控件、业务逻辑 → <strong>class</strong>（有状态，会变）</p>
+<p>一行 <code>record PlcDataPoint(int Address, float Value, string Unit);</code> 顶 class 的构造函数 + Equals + GetHashCode 一堆代码。但 .NET Framwork 4.8 不支持，我现在用 .NET 10 项目会用。"</p>
+</div>
+</div>
+
+<!-- Q19 -->
+<div class="card p1">
+<div class="q-title">
+  Q19. 产线控制系统从 0 到 1 怎么规划？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"这个可以结合我的项目经验来答，分四个阶段：</p>
+<p><strong>第一阶段：需求梳理 & 架构设计</strong>（1-2周）
+  <br>· 明确要和哪些设备通信（PLC 型号、通讯协议、寄存器地址表）
+  <br>· 画系统架构图：设备层 → 控制层 → 数据层 → 展示层
+  <br>· 确定技术栈：C# WinForms/WPF、数据库选型、第三方库
+  <br>· 和 PLC 工程师对齐寄存器映射表</p>
+<p><strong>第二阶段：通信层 + 核心功能</strong>（3-4周）
+  <br>· 先搭通信框架（连接管理、断线重连、协议解析）
+  <br>· 实现基础采集轮询（单设备跑通 → 扩展多设备）
+  <br>· 做数据缓存层（本地 SQLite 缓冲）</p>
+<p><strong>第三阶段：UI + 业务功能</strong>（3-4周）
+  <br>· 监控主画面（设备状态 + 实时数据 + 曲线）
+  <br>· 报警系统（阈值配置 + 弹窗 + 历史查询）
+  <br>· 配方管理 / 生产统计 / 报表导出</p>
+<p><strong>第四阶段：联调 + 上线</strong>（2-3周）
+  <br>· 现场 IO 对点 → 单机调试 → 联机联调 → 试运行 → 验收
+  <br>· 这个阶段一定在前期做好<strong>日志系统</strong>——现场问题全靠日志定位</p>
+<p>全程贯穿一个原则：<strong>先跑通最小闭环（一台 PLC 一条数据），再扩展复杂度。</strong>"</p>
+</div>
+</div>
+
+<!-- Q29 -->
+<div class="card p1">
+<div class="q-title">
+  Q29. 和设备供应商（PLC/伺服/相机）怎么配合？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"和设备供应商打交道，关键三样东西：<strong>通讯手册、寄存器表、调试工具</strong>。</p>
+<p><strong>① 前期：明确接口文档</strong>——供应商交付时必须提供寄存器地址表、通信协议规格、故障码定义。在项目启动阶段就要到这些资料，否则开发做一半发现地址不对，工期全耽误。</p>
+<p><strong>② 过程：分阶段联调</strong>——先在供应商办公室做通信连通性测试（ping 通 + 读几个已知寄存器验证），再去现场联调全流程。避免到现场了才发现通信有问题。</p>
+<p><strong>③ 碰到问题：用调试工具定位</strong>——Modbus Poll 手动发包验证设备是否正常响应；Wireshark 抓包看帧格式对不对。先排除自己代码的问题，再把抓到的异常帧发给供应商。</p>
+<p><strong>④ 经验：</strong>供应商文档经常有错——寄存器地址偏差一位（比如应该是 40100 实际是 40099）、字节序标反了等等。第一件事不是改自己代码，而是用调试工具确认实际行为。"</p>
+</div>
+</div>
+
+<!-- Q30 -->
+<div class="card p1">
+<div class="q-title">
+  Q30. 进入一条陌生的产线，怎么快速上手？
+  <span class="badge badge-p1">P1 常问</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"我的方法：<strong>从上到下，从外到内。</strong></p>
+<p>① <strong>先看工艺图/电气图</strong>——搞清楚这条线做什么产品、有多少工位、每个工位有什么传感器和执行器。这是对整个系统的宏观理解。</p>
+<p>② <strong>再读 PLC 程序</strong>——了解控制逻辑、寄存器分配。如果 PLC 有注释最好，没有的话对照电气图反推。</p>
+<p>③ <strong>找老员工/现场调试人员聊</strong>——问这条线常见问题是什么、最容易出故障的工位是哪个、有没有什么'祖传 bug'（比如某传感器总误报）。这些经验文档里没有。</p>
+<p>④ <strong>现场蹲点观察</strong>——完整看产线跑几轮，对照程序和 I/O 指示灯理解每个动作。自动化专业最怕只会在屏幕前面看代码，不去现场碰设备。</p>
+<p>⑤ <strong>看历史故障记录</strong>——从报警历史数据库里反向学习这条线的常见异常模式，提前心里有数。</p>
+<p>正常来说 1-2 周能独立处理产线的日常问题，1 个月能参与改进优化。"</p>
+</div>
+</div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- P2 -->
+<!-- ============================================================ -->
+<h2 id="p2">🔵 3. P2 加分 —— 行业背景 + 质量体系 + 软技能（10题）</h2>
+
+<div class="note warn">
+  <strong>⚠️ 注意：</strong>P2 题大部分是汽车行业特定知识，你简历没有直接经验。面试时诚实说"目前了解基础概念，愿意深入学"，同时展示你已经做的功课（下面这些回答就是你的功课）。
+</div>
+
+<!-- Q28 -->
+<div class="card p2">
+<div class="q-title">
+  Q28. 最有成就感的项目（STAR 法则）
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 推荐用 STAR 法则讲圆盘组装机配方管理（有量化数据）：</div>
+<p><strong>S（情境）：</strong>圆盘组装机有 6 个工位，每种产品需要不同的装配参数（电机速度、传感器阈值、气缸延时）。项目中换型要手动在 PLC 端改几十个寄存器，操作员经常改错，每次换型平均 15 分钟，一个月换型 20 次 = 5 小时停机。</p>
+<p><strong>T（任务）：</strong>做一套上位机配方管理系统，操作员选产品自动下发所有参数到 PLC。</p>
+<p><strong>A（行动）：</strong>设计配方数据模型（JSON 格式存所有参数，带版本号），用 Modbus 16 功能码一次写多个寄存器，加下发前校验（读回来比对确认写入正确）。还做了配方导入导出，方便新产品快速配置。</p>
+<p><strong>R（结果）：</strong>换型时间从 15 分钟 → 2 分钟，人为失误率降到零。这套方案后来被公司推广到另外两条线。这是我第一次感受到上位机不只是"监控画面"，而是能直接提升产线效率。</p>
+</div>
+</div>
+
+<!-- Q31 -->
+<div class="card p2">
+<div class="q-title">
+  Q31. 为什么来安闻？（HR 必问）
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 推荐回答方向：</div>
+<p>"我一直在看汽车行业的上位机岗位。几个原因：</p>
+<p>① <strong>技术匹配度：</strong>我做的西门子 PLC 通信、伺服/变频器监控、Modbus/Profinet 协议，和安闻产线设备的技术栈高度一致，不需要从头学，可以快速产出。</p>
+<p>② <strong>想从 0 到 1 跟项目：</strong>成长期的公司，新产线多，能从方案设计到调试落地完整跟下来——这比在成熟大厂维护老代码更有挑战，成长也更快。</p>
+<p>③ <strong>汽车行业前景：</strong>车载冰箱是增量市场（新能源车标配化趋势），产线自动化需求大，上位机岗位有持续发展空间。</p>
+<p>④ <strong>个人意愿：</strong>我有电气实操基础，能下现场，接受出差。不是那种只想坐办公室写代码的程序员。</p>
+<p>（注意语气：自信但不吹，实在但不自卑。）"</p>
+</div>
+</div>
+
+<!-- Q20 -->
+<div class="card p2">
+<div class="q-title">
+  Q20. 车载冰箱产线有哪些工位？上位机在每个工位做什么？
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答（提前做的功课）：</div>
+<p>"典型车载冰箱产线的工位和上位机职责：</p>
+<table class="skill-map" style="font-size:0.85em;">
+  <tr><th>工位</th><th>做什么</th><th>上位机的角色</th></tr>
+  <tr><td>发泡线体</td><td>箱体发泡成型（保温层）</td><td>监控发泡温度、模具温度、注料量，超差报警</td></tr>
+  <tr><td>制冷系统装配</td><td>压缩机/冷凝器/蒸发器安装</td><td>螺栓扭矩数据采集（电动拧紧枪 → 上位机记录）</td></tr>
+  <tr><td>抽真空+冷媒充注</td><td>制冷管路抽真空、充 R134a</td><td>真空度/充注量实时监控，超限自动判定 FAIL</td></tr>
+  <tr><td>电气装配</td><td>线束、控制器、传感器安装</td><td>通电测试——电压/电流检测 + CAN 通信连通性验证</td></tr>
+  <tr><td><strong>EOL 终检测试</strong></td><td><strong>制冷性能测试（核心）</strong></td><td><strong>监控箱内降温曲线、功率、电流，自动判 PASS/FAIL。这是数据量最大、逻辑最复杂的工位</strong></td></tr>
+  <tr><td>噪音/振动检测</td><td>运行噪音/振动测试</td><td>采集分贝值/加速度值，与标准阈值比对</td></tr>
+  <tr><td>外观检查</td><td>外观缺陷检测</td><td>可接入工业相机做 AI 视觉检测（类似我项目里的海康相机）</td></tr>
+  <tr><td>包装下线</td><td>打包、贴标、入库</td><td>打印标签（序列号/批次号）+ 入库记录上传 MES</td></tr>
+</table>
+<p>上位机贯穿所有工位——从装配过程数据采集到最终测试判定，每一个工位的数据都要汇总到上位机，形成完整的追溯链。"</p>
+</div>
+</div>
+
+<!-- Q22 -->
+<div class="card p2">
+<div class="q-title">
+  Q22. 压缩机式 vs 半导体式车载冰箱 有什么区别？
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"核心区别是制冷原理不同：</p>
+<p><strong>压缩机式（主流，安闻方向）：</strong>和家用冰箱一样，压缩机制冷剂循环（压缩→冷凝→膨胀→蒸发）。优点：制冷效率高（可达 -20°C），适合大容积。缺点：体积大、有轻微噪音振动。产线检测重点：制冷速率、最低温度、功耗、噪音。</p>
+<p><strong>半导体式（无压缩机）：</strong>靠帕尔贴效应——电流通过半导体制冷片，一面冷一面热（风扇散热）。优点：体积小、无振动、可加热（反接）。缺点：制冷效率低、环境温度高时效果差、一般只能比环境低 15-20°C。适合小容积保温杯型冰箱。</p>
+<p><strong>上位机测试区别：</strong>压缩机式要测高压/低压、压缩机电参数；半导体式测制冷片功耗和热端温度。测试参数不一样但测试流程类似——都是给电→等稳定→测性能曲线→判 PASS/FAIL。"</p>
+</div>
+</div>
+
+<!-- Q25 -->
+<div class="card p2">
+<div class="q-title">
+  Q25. 车载冰箱产线检测标准有哪些？
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"主要看 QC/T 1196-2023《汽车用电动压缩机车载冰箱》行业标准。核心检测项：</p>
+<ul>
+  <li><strong>制冷性能：</strong>在环境温度 32°C、43°C 下的降温曲线和最低温度</li>
+  <li><strong>绝缘电阻：</strong>电气安全 —— DC 500V 测试，绝缘电阻 ≥ 1MΩ</li>
+  <li><strong>耐电压：</strong>AC 500V 1 分钟，无击穿闪络</li>
+  <li><strong>噪声：</strong>距冰箱 1m 处 ≤ 45dB(A)（压缩机式）</li>
+  <li><strong>功耗：</strong>额定电压下运行功率在标称值 ±10% 内</li>
+  <li><strong>密封性：</strong>门封条密封性测试（防止冷气泄漏）</li>
+  <li><strong>振动耐久：</strong>模拟车辆颠簸，运行状态下随机振动测试</li>
+</ul>
+<p>上位机要做的是把每个检测项的<strong>实测值、标准值、判定结果</strong>完整记录下来，生成出厂检验报告（PDF/Excel）。关键是不可篡改——谁测的、什么时候测的、结果是什么，全链路可追溯。</p>
+<p>（如果追问：这是汽车行业 QC/T 标准，类似电器行业的 GB 标准。具体数值可能记不准，但测试项的大类我理解。）"</p>
+</div>
+</div>
+
+<!-- Q26 -->
+<div class="card p2">
+<div class="q-title">
+  Q26. IATF16949 / APQP / PPAP 是什么？
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"汽车行业质量管理的三个核心概念：</p>
+<p><strong>IATF16949：</strong>汽车行业质量管理体系标准，高于 ISO9001。核心思想是<strong>缺陷预防 + 持续改进 + 减少变差</strong>。对产线的影响：生产过程必须有完整的追溯记录——这台冰箱用的哪个供应商的压缩机、哪个批次的发泡料、在哪个工位测的什么参数。这些都是上位机的数据要记录的。</p>
+<p><strong>APQP（先期产品质量策划）：</strong>产品开发时就要把质量控制想好。分 5 个阶段——策划→设计→过程设计→验证→量产。上位机开发在"过程设计"阶段介入——定义需要采集哪些过程参数、检测哪些指标、数据怎么存储。</p>
+<p><strong>PPAP（生产件批准程序）：</strong>量产前给客户提交 18 项文件证明你的产线能稳定产出合格品。其中包含初始过程能力研究（CPK ≥ 1.33）。上位机产出的测试数据就是 PPAP 报告的数据来源。</p>
+<p>坦白说我没在汽车行业实际做过 IATF16949 项目，但我在电气培训期间学过基础概念。入职后会系统学习并在工作中应用。"</p>
+</div>
+</div>
+
+<!-- Q27 -->
+<div class="card p2">
+<div class="q-title">
+  Q27. IQ/OQ/PQ 设备验证是什么？
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"设备安装调试的三阶段验证：</p>
+<p><strong>IQ（安装验证）：</strong>设备/系统按规格安装了吗？——检查硬件型号、软件版本、通讯接线、电气安装是否符合设计文档。</p>
+<p><strong>OQ（运行验证）：</strong>设备能按预期运行吗？——用已知标准件/标准信号测试，验证上位机采集精度、报警触发、数据记录功能。比如输入标准 4-20mA 信号，验证上位机显示值误差在 ±0.5% 内。</p>
+<p><strong>PQ（性能验证）：</strong>在实际生产条件下能持续稳定产出合格品吗？——连续跑一批产品（通常 3 批），验证 CPK ≥ 1.33、不良率在目标以内、上位机数据完整性和追溯性。</p>
+<p><strong>上位机的角色：</strong>OQ 阶段验证采集精度、通信稳定性；PQ 阶段提供连续运行的生产数据和检验报告。每一步都有签字确认——IQ/OQ/PQ 完成才能放行量产。</p>
+<p>这本质上就是我的项目里 <strong>'IO 对点 → 单机调试 → 联机联调 → 试运行'</strong> 的正式化版本，只不过汽车行业多了签字和文件管控。"</p>
+</div>
+</div>
+
+<!-- Q21 -->
+<div class="card p2">
+<div class="q-title">
+  Q21. 产线节拍分析和 OEE 提升
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"<strong>OEE = 可用率 × 性能率 × 质量率</strong></p>
+<p>· 可用率 = 实际运行时间 / 计划生产时间（排除故障、换型、缺料等停机）
+  <br>· 性能率 = 实际产量 / 理论产量（排除速度降低、微小停顿）
+  <br>· 质量率 = 合格品 / 总产量</p>
+<p><strong>上位机能做什么：</strong>精确记录每次停机的原因和时长（报警系统自动记录），计算每个工位的节拍时间（传感器信号时间戳差值），统计产量和合格率。有了数据才能知道哪里是瓶颈——是某个工位节拍太慢？还是某台设备故障率太高？</p>
+<p><strong>提升思路（举例）：</strong>假设 EOL 测试是瓶颈——测试一台冰箱要 5 分钟。上位机能做的是：① 优化测试流程，去掉不必要的等待时间；② 并行测试多工位，增加产能；③ 数据分析找到测试失败最多的是哪个参数，反馈给工艺改善。这些数据就是 OEE 分析的基础。"</p>
+</div>
+</div>
+
+<!-- S9 -->
+<div class="card p2">
+<div class="q-title">
+  S9. 产线安全系统 —— 急停/安全门/光栅怎么集成到上位机？
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<p>"安全系统最重要的原则：<strong>急停必须硬接线，不能走软件。</strong>拍下急停按钮直接切断动力电源，不经过 PLC/上位机任何处理——这是安全法规要求。</p>
+<p><strong>上位机的角色是监控</strong>，不是控制：
+  <br>· 急停状态 —— 采集急停继电器的辅助触点信号，显示在界面上（哪个区域急停了）
+  <br>· 安全门/光栅 —— 通过安全 PLC（如西门子 F-CPU）的安全输入模块采集，上位机只读不写
+  <br>· 报警记录 —— 安全事件触发时自动记录时间、位置、状态，永久存储不可删除</p>
+<p><strong>上位机绝对不能做的事：</strong>用软件复位急停。急停必须人工现场确认安全后才能手动恢复。上位机发个复位指令就重新启动设备——这在任何工厂都是红线。</p>
+<p>我的项目里虽然没有独立的'安全 PLC'，但报警系统中处理了设备异常/断线/传感器故障的逻辑——本质上就是安全监控的思想：检测异常 → 通知操作员 → 记录可追溯。"</p>
+</div>
+</div>
+
+<!-- S12 -->
+<div class="card p2">
+<div class="q-title">
+  S12. OPC UA 和 OPC DA 有什么区别？
+  <span class="badge badge-p2">P2 加分</span>
+</div>
+<div class="answer-block">
+<div class="label">→ 你可以这样回答：</div>
+<table class="skill-map" style="font-size:0.9em;">
+  <tr><th>维度</th><th>OPC DA（旧）</th><th>OPC UA（新）</th></tr>
+  <tr><td>技术基础</td><td>COM/DCOM（Windows 限定）</td><td>平台无关（TCP/WebSocket）</td></tr>
+  <tr><td>跨平台</td><td>❌ 只能 Windows</td><td>✅ Windows/Linux/嵌入式</td></tr>
+  <tr><td>安全性</td><td>依赖 DCOM 权限（难配）</td><td>内置加密+证书认证+用户鉴权</td></tr>
+  <tr><td>数据模型</td><td>简单的 Item/Group 层级</td><td>丰富的面向对象信息模型</td></tr>
+  <tr><td>防火墙</td><td>DCOM 端口范围大，难穿透</td><td>固定 4840 端口，防火墙友好</td></tr>
+  <tr><td>趋势</td><td>落后，新项目不选</td><td>工业 4.0 标准，MES/SCADA 主流</td></tr>
+</table>
+<p>"目前我的项目主要用 Modbus/Profinet。OPC UA 是工业 4.0 方向——西门子 S7-1500 自带 OPC UA Server，可以直接被上位机 Client 读数据，替代传统的 S7 协议。但目前工作中暂未实际使用。我的计划是如果项目需要，用 C# 的 OPCFoundation SDK 或 UA-.NETStandard 来对接。"</p>
+</div>
+</div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- CLOSING -->
+<!-- ============================================================ -->
+<h2 id="closing">🎤 4. 面试收尾话术 + 反问问题</h2>
+
+<div class="card">
+  <h3>面试结束时的"你有什么想问我们的？"—— 推荐问这些问题（显专业）</h3>
+  <ol class="answer-steps">
+    <li><strong>"您刚才提到产线在和哪些品牌的 PLC/变频器对接？西门子为主吗？"</strong><br>
+      <span style="color:var(--muted);font-size:0.85em;">→ 展示你对设备兼容性的关注，同时确认自己能否快速上手</span></li>
+    <li><strong>"上位机软件目前是自己开发的还是外购的？如果是自己开发，团队大概几个人？"</strong><br>
+      <span style="color:var(--muted);font-size:0.85em;">→ 了解工作规模和独立度</span></li>
+    <li><strong>"新产线上位机项目是从 0 开始，还是在现有框架上开发？"</strong><br>
+      <span style="color:var(--muted);font-size:0.85em;">→ 了解技术债务和新功能比例</span></li>
+    <li><strong>"上位机和 MES 系统之间的数据交互目前是什么方式？"</strong><br>
+      <span style="color:var(--muted);font-size:0.85em;">→ 展示你对工厂信息化的理解</span></li>
+  </ol>
+
+<div class="note tip">
+  <strong>千万别问的问题：</strong>公司是做什么的？（简历上已经写了）、加班多不多？（第一印象差）、薪资多少？（等 HR 轮再问）
+</div>
+</div>
+
+<div class="card" style="border-left-color:var(--green);">
+  <h3>🔥 面试官可能会挖坑的问题 —— 准备好怎么接</h3>
+
+  <p><strong>坑1："你是前端转行的，为什么觉得能做上位机？"</strong><br>
+  → "前端和上位机本质都是 UI + 数据 + 通信。我做了 5 年前端，异步编程（Promise/async-await）和数据处理是日常，这些能力直接迁移到 C# async/await 和 Modbus 数据处理。再加上 3 个月全日制电气培训补了工控基础——我现在缺的不是编程能力，是行业经验，而这正是我来安闻的原因。"</p>
+
+  <p><strong>坑2："你的项目经验是在培训机构做的吗？"</strong><br>
+  → "培训项目给了我完整的动手机会——从接线、PLC编程、伺服调试到上位机开发全流程。这三个项目不是简单抄代码，每个我都独立调试通过，踩过的坑（Modbus 字节序、UI 线程卡顿、断线重连策略）都是实际写代码解决的。培训项目的代码量和技术深度跟企业项目一样，只是应用场景不同。"</p>
+
+  <p><strong>坑3："你了解车载冰箱产线吗？"</strong><br>
+  → "我有提前做功课——了解了车载冰箱的工位流程、检测标准 QC/T 1196、行业质量体系。虽然没在冰箱产线实际工作过，但我做的分选检测系统的采集-判定-存储-追溯流程本质上是一样的。具体产品参数需要入职后学，但上位机的技术能力和思维方法可以直接用。"</p>
+</div>
+
+<div class="footer">
+  基于：魏先简历 + 安闻 43 题面试题库 + 喜科堂教程对照 + ADO.NET 知识补充<br>
+  生成时间：2026-06-12 · 面试准备专用
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C# 上位机开源项目推荐 — GitHub 精选学习路线</title>
+<style>
+  :root { --bg: #0b1120; --card: #111b2e; --text: #e2e8f0; --accent: #38bdf8; --green: #4ade80;
+    --yellow: #fbbf24; --red: #f87171; --muted: #94a3b8; --border: #1e293b; --code-bg: #0d1520;
+    --orange: #fb923c; --purple: #a78bfa; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Microsoft YaHei","Segoe UI",sans-serif; background:var(--bg); color:var(--text); line-height:1.8; padding:20px; }
+  .container { max-width:1200px; margin:0 auto; }
+  h1 { text-align:center; font-size:1.6em; padding:16px 0 4px; color:var(--accent); }
+  .subtitle { text-align:center; color:var(--muted); margin-bottom:20px; font-size:0.88em; }
+
+  h2 { color:var(--accent); margin:40px 0 14px; padding-bottom:6px; border-bottom:2px solid var(--border); font-size:1.2em; }
+  h3 { color:var(--yellow); margin:20px 0 8px; font-size:1.05em; }
+
+  .project-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(350px,1fr)); gap:16px; margin:16px 0; }
+
+  .proj-card { background:var(--card); border-radius:10px; padding:18px 20px; border-left:5px solid var(--accent); position:relative; }
+  .proj-card.rank1 { border-left-color:#fbbf24; }
+  .proj-card.rank2 { border-left-color:#a78bfa; }
+  .proj-card.rank3 { border-left-color:#38bdf8; }
+  .proj-card.rank4 { border-left-color:#4ade80; }
+
+  .proj-card .rank-badge { position:absolute; top:12px; right:16px; font-size:1.8em; }
+  .proj-card h4 { font-size:1.05em; margin-bottom:4px; }
+  .proj-card h4 a { color:var(--accent); text-decoration:none; }
+  .proj-card h4 a:hover { text-decoration:underline; }
+  .proj-card .stars { color:var(--yellow); font-size:0.85em; margin-bottom:8px; }
+  .proj-card .tech { font-size:0.82em; color:var(--muted); margin-bottom:8px; }
+  .proj-card .tech code { background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:3px; font-size:0.9em; }
+  .proj-card .desc { font-size:0.88em; line-height:1.65; }
+  .proj-card .why { margin-top:8px; padding:8px 12px; background:#052e1633; border-radius:6px; font-size:0.84em; color:var(--green); border:1px solid #16653444; }
+
+  .api-table { width:100%; border-collapse:collapse; margin:10px 0; font-size:0.88em; }
+  .api-table th { background:var(--card); color:var(--accent); padding:8px 12px; text-align:left; border:1px solid var(--border); }
+  .api-table td { padding:8px 12px; border:1px solid var(--border); }
+  .api-table tr:nth-child(even) td { background:rgba(255,255,255,0.015); }
+
+  .roadmap { display:flex; gap:12px; margin:16px 0; flex-wrap:wrap; }
+  .roadmap .step { flex:1; min-width:180px; background:var(--card); border-radius:10px; padding:14px 16px; text-align:center; border-top:4px solid var(--accent); }
+  .roadmap .step .day { font-size:0.78em; color:var(--muted); }
+  .roadmap .step .title { font-weight:700; font-size:0.95em; margin:4px 0; }
+  .roadmap .step .detail { font-size:0.8em; color:var(--muted); }
+  .roadmap .arrow { display:flex; align-items:center; font-size:1.5em; color:var(--accent); }
+
+  .card { background:var(--card); border-radius:10px; padding:18px 22px; margin:14px 0; border-left:5px solid var(--accent); }
+
+  .note { padding:10px 14px; border-radius:6px; font-size:0.86em; margin:8px 0; }
+  .note.tip { background:#052e1633; border:1px solid #16653444; }
+  .note.warn { background:#713f1233; border:1px solid #854d0e44; }
+  .note.info { background:#1e3a5f33; border:1px solid #2563eb44; }
+
+  .toc { background:var(--card); border-radius:10px; padding:16px 20px; margin:16px 0; }
+  .toc h3 { color:var(--accent); margin:0 0 8px; }
+  .toc a { color:var(--accent); text-decoration:none; display:block; padding:2px 0; font-size:0.9em; }
+
+  .footer { text-align:center; color:var(--muted); margin:40px 0 20px; font-size:0.8em; }
+
+  @media (max-width:700px) { .project-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🖥️ C# 上位机开源项目推荐</h1>
+<div class="subtitle">
+  GitHub 精选 · 从入门到 SCADA 全栈学习路径<br>
+  生成时间：2026-06-12 · 基于魏先简历技术栈（C# + WPF/WinForms + Modbus/Profinet + SQL Server）
+</div>
+
+<div class="toc">
+  <h3>📑 导航</h3>
+  <a href="#top6">1. 六大推荐项目（按学习优先级）</a>
+  <a href="#compare">2. 项目对比一览表</a>
+  <a href="#roadmap">3. 推荐学习路线</a>
+  <a href="#more">4. 更多参考项目</a>
+  <a href="#tips">5. 学习建议</a>
+</div>
+
+<!-- ============================================================ -->
+<!-- TOP 6 -->
+<!-- ============================================================ -->
+<h2 id="top6">📦 1. 六大推荐项目（按学习优先级排序）</h2>
+
+<div class="project-grid">
+
+  <!-- 1 -->
+  <div class="proj-card rank1">
+    <div class="rank-badge">🥇</div>
+    <h4><a href="https://github.com/MinimalWindowsDev/Industrial-WPF-HMI-Template" target="_blank">Industrial-WPF-HMI-Template</a></h4>
+    <div class="stars">⭐ 上涨中（工业专用）</div>
+    <div class="tech">技术栈：<code>WPF</code> <code>Prism</code> <code>CommunityToolkit.Mvvm</code> <code>SQLite</code></div>
+    <div class="desc">现代 WPF 工业上位机模板。模块化架构，包含实时监控、报警信号、PLC 集成、趋势曲线。支持 Native AOT。</div>
+    <div class="why">✅ 最推荐 —— WPF + MVVM 是现代上位机标准写法，架构清晰，直接拿去改就能用</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="proj-card rank2">
+    <div class="rank-badge">🥈</div>
+    <h4><a href="https://github.com/mesta1/Simple-HMI-with-WPF" target="_blank">Simple-HMI-with-WPF</a></h4>
+    <div class="stars">⭐ ~100</div>
+    <div class="tech">技术栈：<code>WPF</code> <code>MVVM Light</code> <code>Siemens S7</code></div>
+    <div class="desc">简单的 WPF HMI 入门示例。Siemens S7 通信、实时趋势图表，代码量小、结构清晰，专为初学者设计。</div>
+    <div class="why">✅ 入门首选 —— 一个下午能看完，快速理解 WPF HMI 基本骨架</div>
+  </div>
+
+  <!-- 3 -->
+  <div class="proj-card rank3">
+    <div class="rank-badge">🥉</div>
+    <h4><a href="https://github.com/GavinYellow/SharpSCADA" target="_blank">SharpSCADA</a></h4>
+    <div class="stars">⭐ ~200</div>
+    <div class="tech">技术栈：<code>C#</code> <code>.NET Framework</code> <code>SQL Server</code> <code>Modbus</code> <code>OPC</code> <code>Profinet</code></div>
+    <div class="desc">轻量级工业网关 + 组态软件。插件架构，支持 Siemens Profinet、AB EtherNet/IP、Modbus、OPC 等多协议。</div>
+    <div class="why">✅ 协议层学习最佳 —— 多协议集成的代码写法非常实战，做采集层必看</div>
+  </div>
+
+  <!-- 4 -->
+  <div class="proj-card rank4">
+    <div class="rank-badge">🏅</div>
+    <h4><a href="https://github.com/rapidscada/rapidscada" target="_blank">Rapid SCADA</a></h4>
+    <div class="stars">⭐ 1,000+</div>
+    <div class="tech">技术栈：<code>C#</code> <code>.NET</code> <code>Web + Desktop</code> <code>Modbus</code> <code>OPC</code> <code>PLC</code></div>
+    <div class="desc">功能最完整的开源 SCADA 平台。HMI 设计器 + 报警管理 + 趋势曲线 + 报表，无标签数量限制，持续维护中。</div>
+    <div class="why">✅ 全貌学习 —— 看一个完整的大型 SCADA 系统是怎么设计的，适合有基础后啃</div>
+  </div>
+
+  <!-- 5 -->
+  <div class="proj-card">
+    <div class="rank-badge">🔧</div>
+    <h4><a href="https://github.com/dathlin/HslControlsDemo" target="_blank">HslControlsDemo</a></h4>
+    <div class="stars">⭐ 724</div>
+    <div class="tech">技术栈：<code>C#</code> <code>WinForms</code> <code>WPF</code></div>
+    <div class="desc">工业 UI 控件宝库。仪表盘、开关、管道、阀门、传送带动画、实时趋势图等几十种控件，开箱即用。</div>
+    <div class="why">✅ 控件即战力 —— 搭配 HslCommunication 库，快速搭出专业的上位机界面</div>
+  </div>
+
+  <!-- 6 -->
+  <div class="proj-card">
+    <div class="rank-badge">🌐</div>
+    <h4><a href="https://github.com/eatbs0956/FA_Device_Data_Collector_Public" target="_blank">FA Device Data Collector</a></h4>
+    <div class="stars">⭐ 较新项目</div>
+    <div class="tech">技术栈：<code>C#</code> <code>Vue</code> <code>Modbus</code> <code>OPC UA/DA</code> <code>S7</code> <code>MQTT</code> <code>EtherNet/IP</code></div>
+    <div class="desc">制造业工业数据采集通用后台。支持 10 大工业协议，Web 可视化管理平台，Apache 许可。</div>
+    <div class="why">✅ 前后端分离参考 —— C# 后端 + Vue 前端，适合想走 Web 化上位机方向</div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- COMPARE TABLE -->
+<!-- ============================================================ -->
+<h2 id="compare">📊 2. 项目对比一览表</h2>
+
+<div class="card">
+<table class="api-table">
+  <tr>
+    <th>项目</th>
+    <th>Stars</th>
+    <th>UI 框架</th>
+    <th>协议支持</th>
+    <th>适合学什么</th>
+    <th>难度</th>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/MinimalWindowsDev/Industrial-WPF-HMI-Template" target="_blank">Industrial-WPF-HMI-Template</a></td>
+    <td>上涨中</td>
+    <td>WPF</td>
+    <td>PLC 基础</td>
+    <td>MVVM 架构 / 模块化设计</td>
+    <td style="color:var(--yellow);">⭐⭐</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/mesta1/Simple-HMI-with-WPF" target="_blank">Simple-HMI-with-WPF</a></td>
+    <td>~100</td>
+    <td>WPF</td>
+    <td>Siemens S7</td>
+    <td>WPF HMI 入门骨架</td>
+    <td style="color:var(--green);">⭐</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/GavinYellow/SharpSCADA" target="_blank">SharpSCADA</a></td>
+    <td>~200</td>
+    <td>WinForms</td>
+    <td>Modbus / OPC / Profinet / EIP</td>
+    <td>协议集成层 / 插件架构</td>
+    <td style="color:var(--orange);">⭐⭐⭐</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/rapidscada/rapidscada" target="_blank">Rapid SCADA</a></td>
+    <td>1,000+</td>
+    <td>Web + Desktop</td>
+    <td>Modbus / OPC / PLC</td>
+    <td>完整 SCADA 系统架构</td>
+    <td style="color:var(--red);">⭐⭐⭐⭐</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/dathlin/HslControlsDemo" target="_blank">HslControlsDemo</a></td>
+    <td>724</td>
+    <td>WinForms / WPF</td>
+    <td>（搭配 HslCommunication）</td>
+    <td>工业 UI 控件库使用</td>
+    <td style="color:var(--green);">⭐</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/eatbs0956/FA_Device_Data_Collector_Public" target="_blank">FA Device Data Collector</a></td>
+    <td>较新</td>
+    <td>Vue (Web)</td>
+    <td>10 大工业协议</td>
+    <td>C# 后端 + Vue 前端分离</td>
+    <td style="color:var(--yellow);">⭐⭐</td>
+  </tr>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<!-- ROADMAP -->
+<!-- ============================================================ -->
+<h2 id="roadmap">🗺️ 3. 推荐学习路线（2-3 周）</h2>
+
+<div class="roadmap">
+  <div class="step" style="border-top-color:var(--green);">
+    <div class="day">第 1 天</div>
+    <div class="title">Simple-HMI-with-WPF</div>
+    <div class="detail">了解 WPF HMI 基本骨架：<br>界面布局 + S7 通信 + 趋势图</div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="step" style="border-top-color:var(--yellow);">
+    <div class="day">第 2-3 天</div>
+    <div class="title">Industrial-WPF-HMI-Template</div>
+    <div class="detail">学 MVVM + Prism +<br>模块化工业上位机架构</div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="step" style="border-top-color:var(--orange);">
+    <div class="day">第 4-5 天</div>
+    <div class="title">SharpSCADA</div>
+    <div class="detail">深挖协议集成层写法：<br>Modbus / OPC / Profinet</div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="step" style="border-top-color:var(--purple);">
+    <div class="day">第 2 周</div>
+    <div class="title">HslControlsDemo</div>
+    <div class="detail">把工业控件用起来：<br>仪表盘 / 管道 / 趋势图<br>自己拼一个上位机</div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="step" style="border-top-color:var(--red);">
+    <div class="day">第 3 周</div>
+    <div class="title">Rapid SCADA</div>
+    <div class="detail">看完整 SCADA 怎么设计的：<br>HMI 设计器 + 报警 + 报表</div>
+  </div>
+</div>
+
+<div class="note tip">
+  <strong>💡 学习方式建议：</strong>不要只看代码。每个项目 clone 下来跑通 → 改一个功能 → 对比自己的项目想"我能怎么用"。
+  没有硬件也可以用 <strong>Modbus Slave 模拟器</strong>（免费）或 <strong>PLCSIM</strong> 来模拟 PLC。
+</div>
+
+<!-- ============================================================ -->
+<!-- MORE -->
+<!-- ============================================================ -->
+<h2 id="more">📚 4. 更多参考项目</h2>
+
+<div class="card">
+<table class="api-table">
+  <tr>
+    <th>项目</th>
+    <th>链接</th>
+    <th>亮点</th>
+    <th>适合场景</th>
+  </tr>
+  <tr>
+    <td><strong>FUXA</strong></td>
+    <td><a href="https://github.com/frangoteam/FUXA" target="_blank">github.com/frangoteam/FUXA</a></td>
+    <td>⭐ 2,000+ · Web 拖拽 HMI · Node.js</td>
+    <td>快速原型 / IoT / Web 化 HMI</td>
+  </tr>
+  <tr>
+    <td><strong>AdvancedHMI</strong></td>
+    <td><a href="https://sourceforge.net/projects/advancedhmi/" target="_blank">SourceForge</a></td>
+    <td>20+ PLC 驱动 · WinForms 拖拽设计</td>
+    <td>多 PLC 项目快速开发</td>
+  </tr>
+  <tr>
+    <td><strong>FreeSCADA</strong></td>
+    <td><a href="https://github.com/AlexDovgan/FreeSCADA" target="_blank">github.com/AlexDovgan/FreeSCADA</a></td>
+    <td>~200 star · WPF · OPC/Modbus/SNMP</td>
+    <td>WPF 版 SCADA 参考</td>
+  </tr>
+  <tr>
+    <td><strong>ModbusTCP源码C#</strong></td>
+    <td><a href="https://github.com/yhsc0001/ModbusTCPyuanmaC" target="_blank">github.com/yhsc0001/ModbusTCPyuanmaC</a></td>
+    <td>纯 C# Modbus TCP 实现</td>
+    <td>学习 Modbus 协议底层实现</td>
+  </tr>
+  <tr>
+    <td><strong>Communication-Protocol-Assistant</strong></td>
+    <td><a href="https://github.com/baitianbt/Communication-Protocol-Assistant" target="_blank">github.com/baitianbt/Communication-Protocol-Assistant</a></td>
+    <td>.NET 8.0 · Modbus/OPC UA/S7/CAN</td>
+    <td>协议学习 + 调试工具</td>
+  </tr>
+  <tr>
+    <td><strong>工业数据采集平台</strong></td>
+    <td><a href="https://gitee.com/hguhos/device-data-collect" target="_blank">gitee.com/hguhos/device-data-collect</a></td>
+    <td>ASP.NET Core + Vue3 · SignalR 实时推送</td>
+    <td>Web 化采集平台参考（国内 Gitee）</td>
+  </tr>
+  <tr>
+    <td><strong>温湿度监控上位机</strong></td>
+    <td><a href="https://gitee.com/meanZhang/TempHumidityMonitor" target="_blank">gitee.com/meanZhang/TempHumidityMonitor</a></td>
+    <td>C# + Modbus + SQLite</td>
+    <td>最小完整闭环项目（国内 Gitee）</td>
+  </tr>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<!-- TIPS -->
+<!-- ============================================================ -->
+<h2 id="tips">💡 5. 学习建议</h2>
+
+<div class="card" style="border-left-color:var(--green);">
+  <h3>按你的简历技术栈选项目</h3>
+  <table class="api-table">
+    <tr><th>你想加强什么</th><th>优先看哪个</th></tr>
+    <tr><td>WPF 上位机架构（MVVM/Prism）</td><td>Industrial-WPF-HMI-Template</td></tr>
+    <tr><td>Modbus / OPC 协议集成</td><td>SharpSCADA、ModbusTCP源码C#</td></tr>
+    <tr><td>多 PLC 数据采集（Siemens S7）</td><td>Simple-HMI-with-WPF、SharpSCADA</td></tr>
+    <tr><td>上位机 UI 控件/仪表盘</td><td>HslControlsDemo</td></tr>
+    <tr><td>完整 SCADA 系统设计</td><td>Rapid SCADA</td></tr>
+    <tr><td>前后端分离（C# 后端 + Web 前端）</td><td>FA Device Data Collector、工业数据采集平台</td></tr>
+    <tr><td>没有硬件也能跑</td><td>Simple-HMI-with-WPF + Modbus Slave 模拟器</td></tr>
+  </table>
+</div>
+
+<div class="note tip">
+  <strong>🎯 面试加分策略：</strong>学完一个项目后，在简历上把它的思路融入你的项目描述。比如看了 SharpSCADA 的插件架构 → 面试时说"我的通信层参考了插件化设计，换协议只改配置不重编译"。这比泛泛说"我了解 Modbus"有说服力得多。
+</div>
+
+<div class="note warn">
+  <strong>⚠️ 注意版本差异：</strong>SharpSCADA、FreeSCADA 等老项目基于 .NET Framework 4.x，和你的 .NET 10 项目有 API 差异。学设计思路和架构，代码写法用现代 .NET 语法（Span、Channel、record 等）。
+</div>
+
+<div class="footer">
+  GitHub 搜索关键词：<code>C# SCADA</code> · <code>C# HMI</code> · <code>C# Modbus</code> · <code>WPF 上位机</code> · <code>工业数据采集</code><br>
+  生成时间：2026-06-12
+</div>
+
+</div>
+</body>
+</html>
