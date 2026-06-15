@@ -599,13 +599,14 @@ namespace TEST_101.Forms
             // 
             // _mb_lb_polling_status
             // 
-            _mb_lb_polling_status.AutoSize = true;
+            _mb_lb_polling_status.AutoSize = false;
             _mb_lb_polling_status.Font = new Font("Consolas", 9F);
             _mb_lb_polling_status.ForeColor = Color.FromArgb(100, 100, 100);
-            _mb_lb_polling_status.Location = new Point(10, 440);
+            _mb_lb_polling_status.Location = new Point(10, 436);
             _mb_lb_polling_status.Name = "_mb_lb_polling_status";
-            _mb_lb_polling_status.Size = new Size(0, 14);
+            _mb_lb_polling_status.Size = new Size(940, 20);
             _mb_lb_polling_status.TabIndex = 56;
+            _mb_lb_polling_status.Text = "队列=0  成功率=0%  已发=0  失败=0";
             _mb_lb_polling_status.Visible = false;
             //
             // _mb_lb_poll_interval_label
