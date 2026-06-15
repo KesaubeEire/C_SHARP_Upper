@@ -22,3 +22,8 @@ Thumbs.db
 ## IDE
 .ionide/
 .localhistory/
+
+## 项目无关目录
+Communication-Protocol-Assistant/
+SharpSCADA/
+*.db
