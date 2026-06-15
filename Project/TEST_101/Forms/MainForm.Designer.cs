@@ -205,9 +205,9 @@ namespace TEST_101.Forms
             // _statusStrip
             // 
             _statusStrip.Items.AddRange(new ToolStripItem[] { _lbConnectionStatus, _lbAlarmCount, _lbTime });
-            _statusStrip.Location = new Point(0, 781);
+            _statusStrip.Location = new Point(0, 771);
             _statusStrip.Name = "_statusStrip";
-            _statusStrip.Size = new Size(1018, 22);
+            _statusStrip.Size = new Size(1026, 22);
             _statusStrip.TabIndex = 1;
             // 
             // _lbConnectionStatus
@@ -240,7 +240,7 @@ namespace TEST_101.Forms
             _tabControl.Location = new Point(0, 0);
             _tabControl.Name = "_tabControl";
             _tabControl.SelectedIndex = 0;
-            _tabControl.Size = new Size(1018, 781);
+            _tabControl.Size = new Size(1026, 771);
             _tabControl.TabIndex = 0;
             // 
             // _tabMonitor
@@ -248,7 +248,7 @@ namespace TEST_101.Forms
             _tabMonitor.Controls.Add(_panelMonitor);
             _tabMonitor.Location = new Point(4, 28);
             _tabMonitor.Name = "_tabMonitor";
-            _tabMonitor.Size = new Size(1010, 749);
+            _tabMonitor.Size = new Size(1018, 739);
             _tabMonitor.TabIndex = 0;
             _tabMonitor.Text = "📡 通讯监控";
             // 
@@ -301,7 +301,7 @@ namespace TEST_101.Forms
             _panelMonitor.Dock = DockStyle.Fill;
             _panelMonitor.Location = new Point(0, 0);
             _panelMonitor.Name = "_panelMonitor";
-            _panelMonitor.Size = new Size(1010, 749);
+            _panelMonitor.Size = new Size(1018, 739);
             _panelMonitor.TabIndex = 0;
             // 
             // _mb_lb_title
@@ -325,23 +325,23 @@ namespace TEST_101.Forms
             // 
             // _mb_lb_mode
             // 
+            _mb_lb_mode.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _mb_lb_mode.AutoSize = true;
-            _mb_lb_mode.Location = new Point(577, 14);
+            _mb_lb_mode.Location = new Point(585, 14);
             _mb_lb_mode.Name = "_mb_lb_mode";
             _mb_lb_mode.Size = new Size(37, 20);
             _mb_lb_mode.TabIndex = 2;
             _mb_lb_mode.Text = "模式";
-            _mb_lb_mode.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            //
+            // 
             // _mb_drop_mode
             // 
+            _mb_drop_mode.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _mb_drop_mode.DropDownStyle = ComboBoxStyle.DropDownList;
             _mb_drop_mode.FormattingEnabled = true;
             _mb_drop_mode.Items.AddRange(new object[] { "RTU", "TCP" });
-            _mb_drop_mode.Location = new Point(620, 10);
+            _mb_drop_mode.Location = new Point(628, 10);
             _mb_drop_mode.Name = "_mb_drop_mode";
             _mb_drop_mode.Size = new Size(60, 27);
-            _mb_drop_mode.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _mb_drop_mode.TabIndex = 3;
             // 
             // _mb_lb_ip
@@ -485,21 +485,21 @@ namespace TEST_101.Forms
             // 
             // _mb_lb_status
             // 
+            _mb_lb_status.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _mb_lb_status.AutoSize = true;
-            _mb_lb_status.Location = new Point(725, 74);
+            _mb_lb_status.Location = new Point(733, 74);
             _mb_lb_status.Name = "_mb_lb_status";
             _mb_lb_status.Size = new Size(51, 20);
             _mb_lb_status.TabIndex = 18;
             _mb_lb_status.Text = "已断开";
-            _mb_lb_status.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            //
+            // 
             // _mb_sep1
             // 
+            _mb_sep1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _mb_sep1.BorderStyle = BorderStyle.Fixed3D;
             _mb_sep1.Location = new Point(12, 109);
             _mb_sep1.Name = "_mb_sep1";
-            _mb_sep1.Size = new Size(920, 2);
-            _mb_sep1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _mb_sep1.Size = new Size(928, 2);
             _mb_sep1.TabIndex = 19;
             // 
             // _mb_lb_dev
@@ -604,44 +604,44 @@ namespace TEST_101.Forms
             // 
             // _mb_lb_polling_status
             // 
+            _mb_lb_polling_status.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _mb_lb_polling_status.Font = new Font("Consolas", 9F);
             _mb_lb_polling_status.ForeColor = Color.FromArgb(100, 100, 100);
             _mb_lb_polling_status.Location = new Point(8, 162);
             _mb_lb_polling_status.Name = "_mb_lb_polling_status";
-            _mb_lb_polling_status.Size = new Size(920, 20);
-            _mb_lb_polling_status.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _mb_lb_polling_status.Size = new Size(928, 20);
             _mb_lb_polling_status.TabIndex = 56;
             _mb_lb_polling_status.Text = "队列=0  成功率=0%  已发=0  失败=0";
             _mb_lb_polling_status.Visible = false;
             // 
             // _mb_lb_poll_interval_label
             // 
+            _mb_lb_poll_interval_label.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _mb_lb_poll_interval_label.AutoSize = true;
             _mb_lb_poll_interval_label.Font = new Font("Microsoft YaHei UI", 9F);
-            _mb_lb_poll_interval_label.Location = new Point(828, 128);
+            _mb_lb_poll_interval_label.Location = new Point(836, 128);
             _mb_lb_poll_interval_label.Name = "_mb_lb_poll_interval_label";
             _mb_lb_poll_interval_label.Size = new Size(32, 17);
             _mb_lb_poll_interval_label.TabIndex = 57;
             _mb_lb_poll_interval_label.Text = "间隔";
-            _mb_lb_poll_interval_label.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            //
+            // 
             // _mb_polling_interval
             // 
+            _mb_polling_interval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _mb_polling_interval.Font = new Font("Microsoft YaHei UI", 9F);
             _mb_polling_interval.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-            _mb_polling_interval.Location = new Point(860, 124);
+            _mb_polling_interval.Location = new Point(868, 124);
             _mb_polling_interval.Maximum = new decimal(new int[] { 5000, 0, 0, 0 });
             _mb_polling_interval.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             _mb_polling_interval.Name = "_mb_polling_interval";
             _mb_polling_interval.Size = new Size(72, 23);
-            _mb_polling_interval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _mb_polling_interval.TabIndex = 58;
             _mb_polling_interval.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             // 
             // _mb_lb_send_hex
             // 
             _mb_lb_send_hex.AutoSize = true;
-            _mb_lb_send_hex.Location = new Point(12, 194);
+            _mb_lb_send_hex.Location = new Point(12, 191);
             _mb_lb_send_hex.Name = "_mb_lb_send_hex";
             _mb_lb_send_hex.Size = new Size(65, 20);
             _mb_lb_send_hex.TabIndex = 29;
@@ -649,20 +649,20 @@ namespace TEST_101.Forms
             // 
             // _mb_box_send_hex
             // 
+            _mb_box_send_hex.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _mb_box_send_hex.BackColor = Color.FromArgb(245, 245, 245);
             _mb_box_send_hex.Font = new Font("Consolas", 10F);
             _mb_box_send_hex.Location = new Point(80, 191);
             _mb_box_send_hex.Name = "_mb_box_send_hex";
             _mb_box_send_hex.ReadOnly = true;
-            _mb_box_send_hex.Size = new Size(852, 23);
-            _mb_box_send_hex.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _mb_box_send_hex.Size = new Size(914, 23);
             _mb_box_send_hex.TabIndex = 30;
             _mb_box_send_hex.Text = "";
             // 
             // _mb_lb_recv_hex
             // 
             _mb_lb_recv_hex.AutoSize = true;
-            _mb_lb_recv_hex.Location = new Point(12, 229);
+            _mb_lb_recv_hex.Location = new Point(12, 226);
             _mb_lb_recv_hex.Name = "_mb_lb_recv_hex";
             _mb_lb_recv_hex.Size = new Size(65, 20);
             _mb_lb_recv_hex.TabIndex = 31;
@@ -670,20 +670,20 @@ namespace TEST_101.Forms
             // 
             // _mb_box_recv_hex
             // 
+            _mb_box_recv_hex.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _mb_box_recv_hex.BackColor = Color.FromArgb(245, 245, 245);
             _mb_box_recv_hex.Font = new Font("Consolas", 10F);
             _mb_box_recv_hex.Location = new Point(80, 226);
             _mb_box_recv_hex.Name = "_mb_box_recv_hex";
             _mb_box_recv_hex.ReadOnly = true;
-            _mb_box_recv_hex.Size = new Size(852, 23);
-            _mb_box_recv_hex.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _mb_box_recv_hex.Size = new Size(914, 23);
             _mb_box_recv_hex.TabIndex = 32;
             _mb_box_recv_hex.Text = "";
             // 
             // _mb_lb_result
             // 
             _mb_lb_result.AutoSize = true;
-            _mb_lb_result.Location = new Point(12, 264);
+            _mb_lb_result.Location = new Point(12, 261);
             _mb_lb_result.Name = "_mb_lb_result";
             _mb_lb_result.Size = new Size(65, 20);
             _mb_lb_result.TabIndex = 33;
@@ -694,6 +694,7 @@ namespace TEST_101.Forms
             _mb_grid_result.AllowUserToAddRows = false;
             _mb_grid_result.AllowUserToDeleteRows = false;
             _mb_grid_result.AllowUserToResizeRows = false;
+            _mb_grid_result.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _mb_grid_result.BackgroundColor = Color.FromArgb(250, 250, 250);
             _mb_grid_result.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
@@ -718,13 +719,12 @@ namespace TEST_101.Forms
             _mb_grid_result.Name = "_mb_grid_result";
             _mb_grid_result.ReadOnly = true;
             _mb_grid_result.RowHeadersVisible = false;
-            _mb_grid_result.Size = new Size(852, 195);
-            _mb_grid_result.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _mb_grid_result.Size = new Size(914, 325);
             _mb_grid_result.TabIndex = 34;
             // 
             // _mb_btn_clear
             // 
-            _mb_btn_clear.Location = new Point(12, 291);
+            _mb_btn_clear.Location = new Point(19, 288);
             _mb_btn_clear.Name = "_mb_btn_clear";
             _mb_btn_clear.Size = new Size(50, 32);
             _mb_btn_clear.TabIndex = 35;
@@ -734,24 +734,25 @@ namespace TEST_101.Forms
             // _mb_lb_log
             // 
             _mb_lb_log.AutoSize = true;
-            _mb_lb_log.Location = new Point(12, 471);
+            _mb_lb_log.Location = new Point(12, 592);
             _mb_lb_log.Name = "_mb_lb_log";
             _mb_lb_log.Size = new Size(65, 20);
+            _mb_lb_log.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             _mb_lb_log.TabIndex = 36;
             _mb_lb_log.Text = "通信日志";
             // 
             // _mb_box_recv
             // 
+            _mb_box_recv.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _mb_box_recv.BackColor = Color.FromArgb(30, 30, 30);
             _mb_box_recv.Font = new Font("Consolas", 9F);
             _mb_box_recv.ForeColor = Color.FromArgb(0, 255, 0);
-            _mb_box_recv.Location = new Point(80, 468);
+            _mb_box_recv.Location = new Point(80, 592);
             _mb_box_recv.Multiline = true;
             _mb_box_recv.Name = "_mb_box_recv";
             _mb_box_recv.ReadOnly = true;
             _mb_box_recv.ScrollBars = ScrollBars.Both;
-            _mb_box_recv.Size = new Size(852, 145);
-            _mb_box_recv.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _mb_box_recv.Size = new Size(914, 135);
             _mb_box_recv.TabIndex = 37;
             _mb_box_recv.WordWrap = false;
             // 
@@ -775,7 +776,7 @@ namespace TEST_101.Forms
             _tabChart.Controls.Add(_splitChart);
             _tabChart.Location = new Point(4, 28);
             _tabChart.Name = "_tabChart";
-            _tabChart.Size = new Size(1010, 749);
+            _tabChart.Size = new Size(1018, 739);
             _tabChart.TabIndex = 1;
             _tabChart.Text = "📈 实时曲线";
             // 
@@ -792,8 +793,8 @@ namespace TEST_101.Forms
             // _splitChart.Panel2
             // 
             _splitChart.Panel2.Controls.Add(_panelChartArea);
-            _splitChart.Size = new Size(1010, 749);
-            _splitChart.SplitterDistance = 180;
+            _splitChart.Size = new Size(1018, 739);
+            _splitChart.SplitterDistance = 181;
             _splitChart.TabIndex = 0;
             // 
             // _panelChartConfig
@@ -805,7 +806,7 @@ namespace TEST_101.Forms
             _panelChartConfig.Location = new Point(0, 0);
             _panelChartConfig.Name = "_panelChartConfig";
             _panelChartConfig.Padding = new Padding(10);
-            _panelChartConfig.Size = new Size(180, 749);
+            _panelChartConfig.Size = new Size(181, 739);
             _panelChartConfig.TabIndex = 0;
             // 
             // _listChannels
@@ -815,7 +816,7 @@ namespace TEST_101.Forms
             _listChannels.Items.AddRange(new object[] { "CH1: 伺服转速 (D100) 🔴", "CH2: 伺服转矩 (D102) 🔵", "CH3: 变频器频率 (D200) \U0001f7e2", "CH4: 电流 (D202) \U0001f7e1" });
             _listChannels.Location = new Point(10, 40);
             _listChannels.Name = "_listChannels";
-            _listChannels.Size = new Size(160, 659);
+            _listChannels.Size = new Size(161, 649);
             _listChannels.TabIndex = 0;
             // 
             // _lbChannelConfig
@@ -824,7 +825,7 @@ namespace TEST_101.Forms
             _lbChannelConfig.Font = new Font("微软雅黑", 10F, FontStyle.Bold);
             _lbChannelConfig.Location = new Point(10, 10);
             _lbChannelConfig.Name = "_lbChannelConfig";
-            _lbChannelConfig.Size = new Size(160, 30);
+            _lbChannelConfig.Size = new Size(161, 30);
             _lbChannelConfig.TabIndex = 1;
             _lbChannelConfig.Text = "通道配置";
             // 
@@ -835,9 +836,9 @@ namespace TEST_101.Forms
             _panelChartBtns.Controls.Add(_btnChartClear);
             _panelChartBtns.Controls.Add(_btnChartExport);
             _panelChartBtns.Dock = DockStyle.Bottom;
-            _panelChartBtns.Location = new Point(10, 699);
+            _panelChartBtns.Location = new Point(10, 689);
             _panelChartBtns.Name = "_panelChartBtns";
-            _panelChartBtns.Size = new Size(160, 40);
+            _panelChartBtns.Size = new Size(161, 40);
             _panelChartBtns.TabIndex = 2;
             // 
             // _btnChartStart
@@ -877,7 +878,7 @@ namespace TEST_101.Forms
             _panelChartArea.Dock = DockStyle.Fill;
             _panelChartArea.Location = new Point(0, 0);
             _panelChartArea.Name = "_panelChartArea";
-            _panelChartArea.Size = new Size(826, 749);
+            _panelChartArea.Size = new Size(833, 739);
             _panelChartArea.TabIndex = 0;
             // 
             // _tabAlarm
@@ -885,7 +886,7 @@ namespace TEST_101.Forms
             _tabAlarm.Controls.Add(_splitAlarm);
             _tabAlarm.Location = new Point(4, 28);
             _tabAlarm.Name = "_tabAlarm";
-            _tabAlarm.Size = new Size(1010, 749);
+            _tabAlarm.Size = new Size(1018, 739);
             _tabAlarm.TabIndex = 2;
             _tabAlarm.Text = "⚠️ 报警系统";
             // 
@@ -902,8 +903,8 @@ namespace TEST_101.Forms
             // _splitAlarm.Panel2
             // 
             _splitAlarm.Panel2.Controls.Add(_panelAlarmList);
-            _splitAlarm.Size = new Size(1010, 749);
-            _splitAlarm.SplitterDistance = 253;
+            _splitAlarm.Size = new Size(1018, 739);
+            _splitAlarm.SplitterDistance = 255;
             _splitAlarm.TabIndex = 0;
             // 
             // _panelAlarmRules
@@ -915,7 +916,7 @@ namespace TEST_101.Forms
             _panelAlarmRules.Location = new Point(0, 0);
             _panelAlarmRules.Name = "_panelAlarmRules";
             _panelAlarmRules.Padding = new Padding(10);
-            _panelAlarmRules.Size = new Size(253, 749);
+            _panelAlarmRules.Size = new Size(255, 739);
             _panelAlarmRules.TabIndex = 0;
             // 
             // _gridAlarmRules
@@ -931,7 +932,7 @@ namespace TEST_101.Forms
             _gridAlarmRules.Name = "_gridAlarmRules";
             _gridAlarmRules.ReadOnly = true;
             _gridAlarmRules.RowHeadersVisible = false;
-            _gridAlarmRules.Size = new Size(233, 659);
+            _gridAlarmRules.Size = new Size(235, 649);
             _gridAlarmRules.TabIndex = 0;
             // 
             // _colRuleName
@@ -976,7 +977,7 @@ namespace TEST_101.Forms
             _lbAlarmRules.Font = new Font("微软雅黑", 10F, FontStyle.Bold);
             _lbAlarmRules.Location = new Point(10, 10);
             _lbAlarmRules.Name = "_lbAlarmRules";
-            _lbAlarmRules.Size = new Size(233, 30);
+            _lbAlarmRules.Size = new Size(235, 30);
             _lbAlarmRules.TabIndex = 1;
             _lbAlarmRules.Text = "报警规则";
             // 
@@ -986,9 +987,9 @@ namespace TEST_101.Forms
             _panelAlarmRuleBtns.Controls.Add(_btnEditRule);
             _panelAlarmRuleBtns.Controls.Add(_btnDeleteRule);
             _panelAlarmRuleBtns.Dock = DockStyle.Bottom;
-            _panelAlarmRuleBtns.Location = new Point(10, 699);
+            _panelAlarmRuleBtns.Location = new Point(10, 689);
             _panelAlarmRuleBtns.Name = "_panelAlarmRuleBtns";
-            _panelAlarmRuleBtns.Size = new Size(233, 40);
+            _panelAlarmRuleBtns.Size = new Size(235, 40);
             _panelAlarmRuleBtns.TabIndex = 2;
             // 
             // _btnAddRule
@@ -1024,7 +1025,7 @@ namespace TEST_101.Forms
             _panelAlarmList.Location = new Point(0, 0);
             _panelAlarmList.Name = "_panelAlarmList";
             _panelAlarmList.Padding = new Padding(10);
-            _panelAlarmList.Size = new Size(753, 749);
+            _panelAlarmList.Size = new Size(759, 739);
             _panelAlarmList.TabIndex = 0;
             // 
             // _gridAlarms
@@ -1040,7 +1041,7 @@ namespace TEST_101.Forms
             _gridAlarms.Name = "_gridAlarms";
             _gridAlarms.ReadOnly = true;
             _gridAlarms.RowHeadersVisible = false;
-            _gridAlarms.Size = new Size(733, 659);
+            _gridAlarms.Size = new Size(739, 649);
             _gridAlarms.TabIndex = 0;
             // 
             // _colAlarmTime
@@ -1079,7 +1080,7 @@ namespace TEST_101.Forms
             _lbAlarmList.Font = new Font("微软雅黑", 10F, FontStyle.Bold);
             _lbAlarmList.Location = new Point(10, 10);
             _lbAlarmList.Name = "_lbAlarmList";
-            _lbAlarmList.Size = new Size(733, 30);
+            _lbAlarmList.Size = new Size(739, 30);
             _lbAlarmList.TabIndex = 1;
             _lbAlarmList.Text = "实时报警";
             // 
@@ -1089,9 +1090,9 @@ namespace TEST_101.Forms
             _panelAlarmBtns.Controls.Add(_btnResetAlarm);
             _panelAlarmBtns.Controls.Add(_btnExportAlarm);
             _panelAlarmBtns.Dock = DockStyle.Bottom;
-            _panelAlarmBtns.Location = new Point(10, 699);
+            _panelAlarmBtns.Location = new Point(10, 689);
             _panelAlarmBtns.Name = "_panelAlarmBtns";
-            _panelAlarmBtns.Size = new Size(733, 40);
+            _panelAlarmBtns.Size = new Size(739, 40);
             _panelAlarmBtns.TabIndex = 2;
             // 
             // _btnConfirmAlarm
@@ -1123,7 +1124,7 @@ namespace TEST_101.Forms
             _tabRecipe.Controls.Add(_splitRecipe);
             _tabRecipe.Location = new Point(4, 28);
             _tabRecipe.Name = "_tabRecipe";
-            _tabRecipe.Size = new Size(1010, 749);
+            _tabRecipe.Size = new Size(1018, 739);
             _tabRecipe.TabIndex = 3;
             _tabRecipe.Text = "📋 配方管理";
             // 
@@ -1140,8 +1141,8 @@ namespace TEST_101.Forms
             // _splitRecipe.Panel2
             // 
             _splitRecipe.Panel2.Controls.Add(_panelRecipeEdit);
-            _splitRecipe.Size = new Size(1010, 749);
-            _splitRecipe.SplitterDistance = 289;
+            _splitRecipe.Size = new Size(1018, 739);
+            _splitRecipe.SplitterDistance = 291;
             _splitRecipe.TabIndex = 0;
             // 
             // _panelRecipeList
@@ -1153,7 +1154,7 @@ namespace TEST_101.Forms
             _panelRecipeList.Location = new Point(0, 0);
             _panelRecipeList.Name = "_panelRecipeList";
             _panelRecipeList.Padding = new Padding(10);
-            _panelRecipeList.Size = new Size(289, 749);
+            _panelRecipeList.Size = new Size(291, 739);
             _panelRecipeList.TabIndex = 0;
             // 
             // _gridRecipes
@@ -1169,7 +1170,7 @@ namespace TEST_101.Forms
             _gridRecipes.Name = "_gridRecipes";
             _gridRecipes.ReadOnly = true;
             _gridRecipes.RowHeadersVisible = false;
-            _gridRecipes.Size = new Size(269, 659);
+            _gridRecipes.Size = new Size(271, 649);
             _gridRecipes.TabIndex = 0;
             // 
             // _colRecipeName
@@ -1202,7 +1203,7 @@ namespace TEST_101.Forms
             _lbRecipeList.Font = new Font("微软雅黑", 10F, FontStyle.Bold);
             _lbRecipeList.Location = new Point(10, 10);
             _lbRecipeList.Name = "_lbRecipeList";
-            _lbRecipeList.Size = new Size(269, 30);
+            _lbRecipeList.Size = new Size(271, 30);
             _lbRecipeList.TabIndex = 1;
             _lbRecipeList.Text = "配方列表";
             // 
@@ -1212,9 +1213,9 @@ namespace TEST_101.Forms
             _panelRecipeBtns.Controls.Add(_btnCopyRecipe);
             _panelRecipeBtns.Controls.Add(_btnDeleteRecipe);
             _panelRecipeBtns.Dock = DockStyle.Bottom;
-            _panelRecipeBtns.Location = new Point(10, 699);
+            _panelRecipeBtns.Location = new Point(10, 689);
             _panelRecipeBtns.Name = "_panelRecipeBtns";
-            _panelRecipeBtns.Size = new Size(269, 40);
+            _panelRecipeBtns.Size = new Size(271, 40);
             _panelRecipeBtns.TabIndex = 2;
             // 
             // _btnNewRecipe
@@ -1250,7 +1251,7 @@ namespace TEST_101.Forms
             _panelRecipeEdit.Location = new Point(0, 0);
             _panelRecipeEdit.Name = "_panelRecipeEdit";
             _panelRecipeEdit.Padding = new Padding(10);
-            _panelRecipeEdit.Size = new Size(717, 749);
+            _panelRecipeEdit.Size = new Size(723, 739);
             _panelRecipeEdit.TabIndex = 0;
             // 
             // _gridRecipeParams
@@ -1265,7 +1266,7 @@ namespace TEST_101.Forms
             _gridRecipeParams.Location = new Point(10, 40);
             _gridRecipeParams.Name = "_gridRecipeParams";
             _gridRecipeParams.RowHeadersVisible = false;
-            _gridRecipeParams.Size = new Size(697, 659);
+            _gridRecipeParams.Size = new Size(703, 649);
             _gridRecipeParams.TabIndex = 0;
             // 
             // _colParamIndex
@@ -1308,7 +1309,7 @@ namespace TEST_101.Forms
             _lbRecipeEdit.Font = new Font("微软雅黑", 10F, FontStyle.Bold);
             _lbRecipeEdit.Location = new Point(10, 10);
             _lbRecipeEdit.Name = "_lbRecipeEdit";
-            _lbRecipeEdit.Size = new Size(697, 30);
+            _lbRecipeEdit.Size = new Size(703, 30);
             _lbRecipeEdit.TabIndex = 1;
             _lbRecipeEdit.Text = "配方参数";
             // 
@@ -1318,9 +1319,9 @@ namespace TEST_101.Forms
             _panelRecipeEditBtns.Controls.Add(_btnDownloadPlc);
             _panelRecipeEditBtns.Controls.Add(_btnSaveRecipe);
             _panelRecipeEditBtns.Dock = DockStyle.Bottom;
-            _panelRecipeEditBtns.Location = new Point(10, 699);
+            _panelRecipeEditBtns.Location = new Point(10, 689);
             _panelRecipeEditBtns.Name = "_panelRecipeEditBtns";
-            _panelRecipeEditBtns.Size = new Size(697, 40);
+            _panelRecipeEditBtns.Size = new Size(703, 40);
             _panelRecipeEditBtns.TabIndex = 2;
             // 
             // _btnReadPlc
@@ -1352,7 +1353,7 @@ namespace TEST_101.Forms
             _tabReport.Controls.Add(_panelReport);
             _tabReport.Location = new Point(4, 28);
             _tabReport.Name = "_tabReport";
-            _tabReport.Size = new Size(1010, 749);
+            _tabReport.Size = new Size(1018, 739);
             _tabReport.TabIndex = 4;
             _tabReport.Text = "📊 生产报表";
             // 
@@ -1366,7 +1367,7 @@ namespace TEST_101.Forms
             _panelReport.Location = new Point(0, 0);
             _panelReport.Name = "_panelReport";
             _panelReport.Padding = new Padding(10);
-            _panelReport.Size = new Size(1010, 749);
+            _panelReport.Size = new Size(1018, 739);
             _panelReport.TabIndex = 0;
             // 
             // _gridReport
@@ -1382,7 +1383,7 @@ namespace TEST_101.Forms
             _gridReport.Name = "_gridReport";
             _gridReport.ReadOnly = true;
             _gridReport.RowHeadersVisible = false;
-            _gridReport.Size = new Size(990, 539);
+            _gridReport.Size = new Size(998, 529);
             _gridReport.TabIndex = 0;
             // 
             // _colRptTime
@@ -1431,7 +1432,7 @@ namespace TEST_101.Forms
             _panelStats.Location = new Point(10, 60);
             _panelStats.Name = "_panelStats";
             _panelStats.Padding = new Padding(0, 10, 0, 0);
-            _panelStats.Size = new Size(990, 100);
+            _panelStats.Size = new Size(998, 100);
             _panelStats.TabIndex = 1;
             // 
             // _cardTotal
@@ -1480,7 +1481,7 @@ namespace TEST_101.Forms
             _panelReportFilter.Dock = DockStyle.Top;
             _panelReportFilter.Location = new Point(10, 10);
             _panelReportFilter.Name = "_panelReportFilter";
-            _panelReportFilter.Size = new Size(990, 50);
+            _panelReportFilter.Size = new Size(998, 50);
             _panelReportFilter.TabIndex = 2;
             // 
             // _lbReportType
@@ -1536,9 +1537,9 @@ namespace TEST_101.Forms
             _panelReportBtns.Controls.Add(_btnExportExcel);
             _panelReportBtns.Controls.Add(_btnPrint);
             _panelReportBtns.Dock = DockStyle.Bottom;
-            _panelReportBtns.Location = new Point(10, 699);
+            _panelReportBtns.Location = new Point(10, 689);
             _panelReportBtns.Name = "_panelReportBtns";
-            _panelReportBtns.Size = new Size(990, 40);
+            _panelReportBtns.Size = new Size(998, 40);
             _panelReportBtns.TabIndex = 3;
             // 
             // _btnExportExcel
@@ -1559,7 +1560,7 @@ namespace TEST_101.Forms
             // 
             // MainForm
             // 
-            ClientSize = new Size(1018, 803);
+            ClientSize = new Size(1026, 793);
             Controls.Add(_tabControl);
             Controls.Add(_statusStrip);
             Font = new Font("微软雅黑", 9F);
