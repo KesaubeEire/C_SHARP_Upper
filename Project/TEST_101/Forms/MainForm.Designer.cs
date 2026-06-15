@@ -60,6 +60,8 @@ namespace TEST_101.Forms
             _mb_btn_read = new Button();
             _mb_btn_polling = new Button();
             _mb_lb_polling_status = new Label();
+            _mb_lb_poll_interval_label = new Label();
+            _mb_polling_interval = new NumericUpDown();
             _mb_lb_send_hex = new Label();
             _mb_box_send_hex = new RichTextBox();
             _mb_lb_recv_hex = new Label();
@@ -202,9 +204,9 @@ namespace TEST_101.Forms
             // _statusStrip
             // 
             _statusStrip.Items.AddRange(new ToolStripItem[] { _lbConnectionStatus, _lbAlarmCount, _lbTime });
-            _statusStrip.Location = new Point(0, 878);
+            _statusStrip.Location = new Point(0, 633);
             _statusStrip.Name = "_statusStrip";
-            _statusStrip.Size = new Size(1400, 22);
+            _statusStrip.Size = new Size(952, 22);
             _statusStrip.TabIndex = 1;
             // 
             // _lbConnectionStatus
@@ -237,7 +239,7 @@ namespace TEST_101.Forms
             _tabControl.Location = new Point(0, 0);
             _tabControl.Name = "_tabControl";
             _tabControl.SelectedIndex = 0;
-            _tabControl.Size = new Size(1400, 878);
+            _tabControl.Size = new Size(952, 633);
             _tabControl.TabIndex = 0;
             // 
             // _tabMonitor
@@ -245,7 +247,7 @@ namespace TEST_101.Forms
             _tabMonitor.Controls.Add(_panelMonitor);
             _tabMonitor.Location = new Point(4, 28);
             _tabMonitor.Name = "_tabMonitor";
-            _tabMonitor.Size = new Size(1392, 846);
+            _tabMonitor.Size = new Size(944, 601);
             _tabMonitor.TabIndex = 0;
             _tabMonitor.Text = "📡 通讯监控";
             // 
@@ -283,6 +285,8 @@ namespace TEST_101.Forms
             _panelMonitor.Controls.Add(_mb_btn_read);
             _panelMonitor.Controls.Add(_mb_btn_polling);
             _panelMonitor.Controls.Add(_mb_lb_polling_status);
+            _panelMonitor.Controls.Add(_mb_lb_poll_interval_label);
+            _panelMonitor.Controls.Add(_mb_polling_interval);
             _panelMonitor.Controls.Add(_mb_lb_send_hex);
             _panelMonitor.Controls.Add(_mb_box_send_hex);
             _panelMonitor.Controls.Add(_mb_lb_recv_hex);
@@ -296,7 +300,7 @@ namespace TEST_101.Forms
             _panelMonitor.Dock = DockStyle.Fill;
             _panelMonitor.Location = new Point(0, 0);
             _panelMonitor.Name = "_panelMonitor";
-            _panelMonitor.Size = new Size(1392, 846);
+            _panelMonitor.Size = new Size(944, 601);
             _panelMonitor.TabIndex = 0;
             // 
             // _mb_lb_title
@@ -576,13 +580,13 @@ namespace TEST_101.Forms
             _mb_btn_read.TabIndex = 28;
             _mb_btn_read.Text = "读取";
             _mb_btn_read.UseVisualStyleBackColor = false;
-            //
+            // 
             // _mb_btn_polling
-            //
+            // 
             _mb_btn_polling.BackColor = Color.FromArgb(60, 140, 60);
-            _mb_btn_polling.FlatStyle = FlatStyle.Flat;
-            _mb_btn_polling.FlatAppearance.BorderSize = 2;
             _mb_btn_polling.FlatAppearance.BorderColor = Color.FromArgb(255, 255, 200);
+            _mb_btn_polling.FlatAppearance.BorderSize = 2;
+            _mb_btn_polling.FlatStyle = FlatStyle.Flat;
             _mb_btn_polling.Font = new Font("Microsoft YaHei UI", 10F, FontStyle.Bold);
             _mb_btn_polling.ForeColor = Color.White;
             _mb_btn_polling.Location = new Point(725, 122);
@@ -592,17 +596,39 @@ namespace TEST_101.Forms
             _mb_btn_polling.Text = "▶ 轮询";
             _mb_btn_polling.UseVisualStyleBackColor = false;
             _mb_btn_polling.Click += _mb_btn_polling_Click;
-            //
+            // 
             // _mb_lb_polling_status
-            //
+            // 
             _mb_lb_polling_status.AutoSize = true;
             _mb_lb_polling_status.Font = new Font("Consolas", 9F);
             _mb_lb_polling_status.ForeColor = Color.FromArgb(100, 100, 100);
             _mb_lb_polling_status.Location = new Point(10, 440);
             _mb_lb_polling_status.Name = "_mb_lb_polling_status";
-            _mb_lb_polling_status.Size = new Size(0, 18);
+            _mb_lb_polling_status.Size = new Size(0, 14);
             _mb_lb_polling_status.TabIndex = 56;
             _mb_lb_polling_status.Visible = false;
+            //
+            // _mb_lb_poll_interval_label
+            //
+            _mb_lb_poll_interval_label.AutoSize = true;
+            _mb_lb_poll_interval_label.Font = new Font("Microsoft YaHei UI", 9F);
+            _mb_lb_poll_interval_label.Location = new Point(828, 128);
+            _mb_lb_poll_interval_label.Name = "_mb_lb_poll_interval_label";
+            _mb_lb_poll_interval_label.Size = new Size(32, 17);
+            _mb_lb_poll_interval_label.TabIndex = 57;
+            _mb_lb_poll_interval_label.Text = "间隔";
+            //
+            // _mb_polling_interval
+            //
+            _mb_polling_interval.Font = new Font("Microsoft YaHei UI", 9F);
+            _mb_polling_interval.Location = new Point(860, 124);
+            _mb_polling_interval.Name = "_mb_polling_interval";
+            _mb_polling_interval.Size = new Size(72, 25);
+            _mb_polling_interval.TabIndex = 58;
+            _mb_polling_interval.Minimum = 100;
+            _mb_polling_interval.Maximum = 5000;
+            _mb_polling_interval.Value = 1000;
+            _mb_polling_interval.Increment = 100;
             //
             // _mb_lb_send_hex
             // 
@@ -1521,7 +1547,7 @@ namespace TEST_101.Forms
             // 
             // MainForm
             // 
-            ClientSize = new Size(1400, 900);
+            ClientSize = new Size(952, 655);
             Controls.Add(_tabControl);
             Controls.Add(_statusStrip);
             Font = new Font("微软雅黑", 9F);
@@ -1622,6 +1648,8 @@ namespace TEST_101.Forms
         private Button _mb_btn_read;
         private Button _mb_btn_polling;
         private Label _mb_lb_polling_status;
+        private Label _mb_lb_poll_interval_label;
+        private NumericUpDown _mb_polling_interval;
         private Label _mb_lb_send_hex;
         private RichTextBox _mb_box_send_hex;
         private Label _mb_lb_recv_hex;

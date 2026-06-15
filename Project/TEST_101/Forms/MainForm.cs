@@ -591,7 +591,7 @@ namespace TEST_101.Forms
                         FuncCode = funcCode,
                         StartAddr = startAddr,
                         Count = count,
-                        IntervalMs = 1000,
+                        IntervalMs = (int)_mb_polling_interval.Value,
                         Tag = $"Dev#{devAddr} @{startAddr}"
                     });
 
