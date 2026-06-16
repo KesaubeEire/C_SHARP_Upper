@@ -7,6 +7,16 @@ import ConnectionPanel from './components/ConnectionPanel'
 import IOGrid from './components/IOGrid'
 import DBBlockPanel from './components/DBBlockPanel'
 import DBImportPanel from './components/DBImportPanel'
+import TrendChart from './components/TrendChart'
+import AlarmPanel from './components/AlarmPanel'
+import Dashboard from './components/Dashboard'
+import VisualDashboard from './components/VisualDashboard'
+import DiagnosticsPanel from './components/DiagnosticsPanel'
+import RecipePanel from './components/RecipePanel'
+import AlarmAnnunciator from './components/AlarmAnnunciator'
+import ProcessFlowDiagram from './components/ProcessFlowDiagram'
+import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, TrendRecorder } from '@altara/industrial'
+import { Gauge } from '@altara/core'
 import type { PLCConfig } from '../shared/types'
 
 interface DBBlockConfig {
@@ -16,11 +26,22 @@ interface DBBlockConfig {
   byteCount: number
 }
 
+/** 将后端 {start,end}[] 范围展开为 flat 字节数组 */
+function rangesToBytes(ranges?: { start: number; end: number }[]): number[] {
+  if (!ranges || ranges.length === 0) return [0, 1, 8]
+  const bytes = new Set<number>()
+  for (const r of ranges) {
+    for (let b = r.start; b <= r.end; b++) bytes.add(b)
+  }
+  return [...bytes].sort((a, b) => a - b)
+}
+
 export default function App() {
-  const { db, io, setIo, dbBlocks, connected } = usePLCData()
+  const { db, io, setIo, dbBlocks, connected, lastDataTime } = usePLCData()
   const { write, states, dismissError } = usePLCWrite()
   const [config, setConfig] = useState<PLCConfig | null>(null)
   const [blocks, setBlocks] = useState<DBBlockConfig[]>([])
+  const [showAltara, setShowAltara] = useState(false)
 
   // 启动时加载配置
   useEffect(() => {
@@ -65,14 +86,55 @@ export default function App() {
     } catch {}
   }, [])
 
+  // 键盘快捷键
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'F11') { e.preventDefault(); document.documentElement.requestFullscreen?.() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   const variables = config?.variables ?? []
   const pointCount = Object.keys(db).length
+
+  // I/Q 字节地址：localStorage 最优先（用户在 ConnectionPanel 改了即时生效），无则 fallback 到后端 config
+  const ioRanges = (() => {
+    try {
+      const raw = localStorage.getItem('trioop_connection')
+      if (raw) {
+        const s = JSON.parse(raw)
+        if (s.ioIBytes || s.ioQBytes) {
+          const toRanges = (v: string) => {
+            if (!v) return undefined
+            const nums = v.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n))
+            if (nums.length === 0) return undefined
+            const sorted = [...new Set(nums)].sort((a, b) => a - b)
+            const r: { start: number; end: number }[] = []
+            let st = sorted[0], en = sorted[0]
+            for (let i = 1; i < sorted.length; i++) {
+              if (sorted[i] === en + 1) { en = sorted[i] }
+              else { r.push({ start: st, end: en }); st = en = sorted[i] }
+            }
+            r.push({ start: st, end: en })
+            return r
+          }
+          return { i: toRanges(s.ioIBytes), q: toRanges(s.ioQBytes) }
+        }
+      }
+    } catch { /* ignore */ }
+    return config?.ioRanges
+  })()
+  const ioBytes = { i: rangesToBytes(ioRanges?.i), q: rangesToBytes(ioRanges?.q) }
 
   return (
     <div className="app app--with-sidebar">
       <ConnectionPanel />
       <div className="app__main">
-        <StatusBar config={config} connected={connected} pointCount={pointCount} />
+        <StatusBar config={config} connected={connected} pointCount={pointCount} lastDataTime={lastDataTime} />
+        <button className="btn btn--ghost btn--sm" style={{ position: 'fixed', bottom: 8, right: 8, zIndex: 100, fontSize: 11 }} onClick={() => setShowAltara(!showAltara)}>
+          {showAltara ? '关闭演示' : '组件演示'}
+        </button>
         <main className="main">
           {variables.length > 0 && (
             <section className="section">
@@ -88,12 +150,75 @@ export default function App() {
           )}
 
           <section className="section">
-            <IOGrid label="🟡 输入点 (I 区)" data={io.i} prefix="I" bytes={[0, 1, 8]} />
+            <IOGrid label="🟡 输入点 (I 区)" data={io.i} prefix="I" bytes={ioBytes.i} />
           </section>
 
           <section className="section">
-            <IOGrid label="🔵 输出点 (Q 区)" data={io.q} prefix="Q" bytes={[0, 1, 8]} onToggle={handleQToggle} />
+            <IOGrid label="🔵 输出点 (Q 区)" data={io.q} prefix="Q" bytes={ioBytes.q} onToggle={handleQToggle} />
           </section>
+
+          {/* 实时趋势 */}
+          <section className="section">
+            <TrendChart variables={variables.map(v => v.name)} liveData={db} timeRange={300} />
+          </section>
+
+          {/* 报警面板 */}
+          <AlarmPanel />
+
+          {/* 报警面板（瓷砖式） */}
+          <AlarmAnnunciator
+            alarms={[
+              { id: 'fault', label: '设备故障', priority: 1 },
+              { id: 'overtemp', label: '超温', priority: 1 },
+              { id: 'overload', label: '过载', priority: 2 },
+              { id: 'lowflow', label: '流量低', priority: 2 },
+              { id: 'maintenance', label: '维护提醒', priority: 3 },
+            ]}
+            states={{}}
+            columns={5}
+          />
+
+          {/* 工艺流程图 */}
+          <ProcessFlowDiagram
+            nodes={[
+              { id: 'tank1', type: 'tank', x: 20, y: 80, label: '原料罐' },
+              { id: 'pump1', type: 'pump', x: 120, y: 90, label: '进料泵' },
+              { id: 'valve1', type: 'valve', x: 200, y: 95, label: '调节阀' },
+              { id: 'he1', type: 'heat-exchanger', x: 280, y: 85, label: '换热器' },
+              { id: 'tank2', type: 'tank', x: 400, y: 80, label: '反应罐' },
+              { id: 'inst1', type: 'instrument', x: 480, y: 40, label: 'TIC' },
+            ]}
+            edges={[
+              { from: 'tank1', to: 'pump1' },
+              { from: 'pump1', to: 'valve1' },
+              { from: 'valve1', to: 'he1' },
+              { from: 'he1', to: 'tank2' },
+            ]}
+            values={{ tank1: 85, pump1: 1450, valve1: 62, tank2: 120, inst1: 98 }}
+          />
+
+          {/* 可视化仪表盘 */}
+          <VisualDashboard liveData={db} />
+
+          {/* 系统诊断 */}
+          <DiagnosticsPanel />
+
+          {showAltara && (
+            <section className="section">
+              <h2 className="section__title">📦 @altara/industrial 组件演示</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+                <div className="card"><div className="card__name">OEE Dashboard</div><OEEDashboard mockMode oeeTarget={0.85} /></div>
+                <div className="card"><div className="card__name">Motor Dashboard</div><MotorDashboard mockMode ratedRPM={3000} ratedCurrent={50} /></div>
+                <div className="card"><div className="card__name">Predictive Maintenance</div><PredictiveMaintenanceGauge mockMode size="md" /></div>
+                <div className="card"><div className="card__name">Alarm Annunciator</div><AlarmAnnunciatorPanel mockMode columns={3} /></div>
+                <div className="card" style={{ gridColumn: '1 / -1' }}><div className="card__name">Trend Recorder</div><TrendRecorder mockMode showLegend timeScale="1m" /></div>
+                <div className="card"><div className="card__name">Gauge</div><Gauge min={0} max={100} unit="%" label="负载" mockMode /></div>
+              </div>
+            </section>
+          )}
+
+          {/* 配方管理 */}
+          <RecipePanel liveData={db} />
 
           <DBImportPanel onImport={() => {}} liveData={db} />
           <DBBlockPanel blocks={blocks} data={dbBlocks} onAdd={addBlock} onRemove={removeBlock} />

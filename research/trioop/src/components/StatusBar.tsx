@@ -1,13 +1,24 @@
 import type { PLCConfig } from '../../shared/types'
+import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../hooks/useTheme'
 
 interface StatusBarProps {
   config: PLCConfig | null
   connected: boolean
   pointCount: number
+  lastDataTime?: number
 }
 
-export default function StatusBar({ config, connected, pointCount }: StatusBarProps) {
+export default function StatusBar({ config, connected, pointCount, lastDataTime }: StatusBarProps) {
   const writableCount = config?.variables.filter(v => v.writable).length ?? 0
+  const { username, role, logout } = useAuth()
+  const { theme, toggle: toggleTheme } = useTheme()
+  const dataStale = lastDataTime && (Date.now() - lastDataTime) > 5000
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen()
+    else document.documentElement.requestFullscreen()
+  }
 
   return (
     <header className="status-bar">
@@ -26,6 +37,11 @@ export default function StatusBar({ config, connected, pointCount }: StatusBarPr
 
         <span className={`status-dot ${connected ? 'connected' : ''}`} />
         <span className="status-text">{connected ? '已连接' : '未连接'}</span>
+        {dataStale && <span className="status-text" style={{ color: '#ffa726' }}>数据延迟</span>}
+        {username && <span className="stat"><span className="stat__label">{username}</span><span className="stat__value" style={{ fontSize: 11, color: '#888' }}>({role})</span></span>}
+        <button className="btn btn--ghost btn--sm" onClick={logout} title="退出登录">🚪</button>
+        <button className="btn btn--ghost btn--sm" onClick={toggleTheme} title="切换主题">{theme === 'dark' ? '☀️' : '🌙'}</button>
+        <button className="btn btn--ghost btn--sm" onClick={toggleFullscreen} title="全屏切换">⛶</button>
       </div>
     </header>
   )

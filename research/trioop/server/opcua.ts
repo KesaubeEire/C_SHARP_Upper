@@ -1,10 +1,12 @@
 /**
  * OPC UA 通信模块
- * 通过 OPC UA 协议读取 S7-1200 DB 块数据
+ *
+ * 通过 OPC UA Subscription（订阅）实时接收 S7-1200 DB 变量变更，
+ * 变量变了 PLC 主动推，不轮询。
  */
 
-import { OPCUAClient, AttributeIds, makeBrowsePath, DataValue } from 'node-opcua'
-import type { BrowseResult, NodeIdLike } from 'node-opcua'
+import { OPCUAClient, AttributeIds } from 'node-opcua'
+import type { NodeIdLike, ClientSubscription, ClientMonitoredItem } from 'node-opcua'
 
 const DEFAULT_PORT = 4840
 const DEFAULT_TIMEOUT = 10000
@@ -13,15 +15,16 @@ let client: OPCUAClient | null = null
 let session: any = null
 let _connected = false
 
+// ─── 订阅相关 ─────────────────────────────────────────────
+let _subscription: ClientSubscription | null = null
+const _monitoredItems: Map<string, { item: ClientMonitoredItem; name: string }> = new Map()
+
 export function isConnected(): boolean {
   return _connected
 }
 
-/** OPC UA 节点值缓存 */
-let _nodeCache: Record<string, any> = {}
-
-export function getNodeCache(): Record<string, any> {
-  return _nodeCache
+export function hasActiveSubscription(): boolean {
+  return _subscription !== null && !_subscription.isTerminated()
 }
 
 /** 连接 OPC UA 服务器 */
@@ -40,7 +43,6 @@ export async function connect(ip: string, port?: number, username?: string, pass
   try {
     await client.connect(endpoint)
 
-    // 创建会话
     if (username && password) {
       session = await client.createSession({ userName: username, password })
     } else {
@@ -54,8 +56,9 @@ export async function connect(ip: string, port?: number, username?: string, pass
   }
 }
 
-/** 断开连接 */
+/** 断开连接（自动清理订阅） */
 export async function disconnect(): Promise<void> {
+  await unsubscribeAll()
   try {
     if (session) await session.close()
   } catch {}
@@ -65,7 +68,7 @@ export async function disconnect(): Promise<void> {
   client = null
   session = null
   _connected = false
-  _nodeCache = {}
+  _monitoredItems.clear()
 }
 
 /** 浏览节点的子节点 */
@@ -74,12 +77,14 @@ export async function browse(nodeId: NodeIdLike): Promise<{ nodeId: string; brow
 
   const result = await session.browse(nodeId)
   const nodes: any[] = []
+  const ncMap: Record<number, string> = { 1: 'Object', 2: 'Variable', 4: 'Method', 8: 'ObjectType', 16: 'VariableType', 32: 'ReferenceType', 64: 'DataType', 128: 'View' }
   for (const ref of result.references ?? []) {
+    const rawClass = typeof ref.nodeClass === 'number' ? ref.nodeClass : Number(ref.nodeClass)
     nodes.push({
       nodeId: ref.nodeId.toString(),
       browseName: ref.browseName?.toString() ?? '',
       displayName: ref.displayName?.text ?? '',
-      nodeClass: ref.nodeClass?.toString() ?? '',
+      nodeClass: ncMap[rawClass] ?? String(rawClass),
     })
   }
   return nodes
@@ -113,8 +118,7 @@ export async function readNodes(nodeIds: NodeIdLike[]): Promise<Record<string, a
   for (let i = 0; i < nodeIds.length; i++) {
     const dv = results[i]
     if (dv.statusCode.isGood()) {
-      const key = nodeIds[i].toString()
-      data[key] = dv.value.value
+      data[nodeIds[i].toString()] = dv.value.value
     }
   }
 
@@ -128,37 +132,192 @@ export async function writeNode(nodeId: NodeIdLike, value: any): Promise<void> {
   await session.write({
     nodeId,
     attributeId: AttributeIds.Value,
-    value: {
-      value,
-    },
+    value: { value },
   })
-}
-
-/** 订阅节点变更（简化版：轮询方式） */
-export async function pollNodes(nodeIds: NodeIdLike[]): Promise<Record<string, any>> {
-  const data = await readNodes(nodeIds)
-  for (const [key, val] of Object.entries(data)) {
-    _nodeCache[key] = val
-  }
-  return data
 }
 
 /** 浏览 PLC 的 DB 块结构 */
 export async function browsePLC(): Promise<any> {
   if (!session) throw new Error('OPC UA 未连接')
 
-  // S7-1200 OPC UA 地址空间通常为: Objects → PLC → DB blocks
   const objectsNode = 'i=85'  // Objects folder
-
-  // 浏览 Objects 下的子节点，找 PLC 相关的
   const objects = await browse(objectsNode)
   const plcNode = objects.find(n => n.displayName === 'PLC' || n.displayName === 'Controller')
-  if (!plcNode) return objects  // 返回 Objects 下的所有节点
+  if (!plcNode) return objects
 
-  // 浏览 PLC 节点下找 DB 块
   const plcChildren = await browse(plcNode.nodeId)
-  return {
-    plc: plcNode,
-    children: plcChildren,
+  return { plc: plcNode, children: plcChildren }
+}
+
+/**
+ * 按变量名列表自动搜索 OPC UA 地址空间，找到匹配的 nodeId
+ *
+ * 从 Objects 开始递归浏览，收集所有 Variable 节点，与 names 匹配
+ */
+export async function findVariablesByName(names: string[]): Promise<{ name: string; nodeId: string }[]> {
+  if (!session) throw new Error('OPC UA 未连接')
+  if (names.length === 0) return []
+
+  const allVars: { displayName: string; nodeId: string }[] = []
+
+  async function walk(nodeId: string, depth: number) {
+    if (depth > 6) return  // 限制深度
+    try {
+      const nodes = await browse(nodeId)
+      for (const n of nodes) {
+        if (n.nodeClass === 'Variable') {
+          allVars.push({ displayName: n.displayName, nodeId: n.nodeId })
+        }
+        if (n.nodeClass === 'Object' || n.nodeClass === 'Variable') {
+          await walk(n.nodeId, depth + 1)
+        }
+      }
+    } catch { /* 跳过无权限节点 */ }
   }
+
+  await walk('i=85', 0)
+
+  // 精确匹配 → 后缀匹配 → 忽略大小写包含
+  const results: { name: string; nodeId: string }[] = []
+  for (const name of names) {
+    let found = allVars.find(v => v.displayName === name)
+    if (!found) found = allVars.find(v => v.displayName.endsWith(name))
+    if (!found) found = allVars.find(v => v.displayName.toLowerCase().includes(name.toLowerCase()))
+    if (found) results.push({ name, nodeId: found.nodeId })
+  }
+  return results
+}
+
+/**
+ * 返回 OPC UA 地址空间中所有 Variable 节点的 flat 列表
+ * 用于调试和手动配映射
+ */
+export async function getAllVariables(): Promise<{ displayName: string; nodeId: string }[]> {
+  if (!session) throw new Error('OPC UA 未连接')
+  const allVars: { displayName: string; nodeId: string }[] = []
+
+  async function walk(nodeId: string, depth: number) {
+    if (depth > 6) return
+    try {
+      const nodes = await browse(nodeId)
+      for (const n of nodes) {
+        if (n.nodeClass === 'Variable') {
+          allVars.push({ displayName: n.displayName, nodeId: n.nodeId })
+        }
+        if (n.nodeClass === 'Object' || n.nodeClass === 'Variable') {
+          await walk(n.nodeId, depth + 1)
+        }
+      }
+    } catch {}
+  }
+
+  await walk('i=85', 0)
+  return allVars
+}
+
+// ─── Subscription 订阅（这才是 OPC UA 的正确用法） ──────
+
+/**
+ * 创建 Subscription，订阅一组节点
+ *
+ * @param items  [{ nodeId: string, name: string }]   nodeId 和变量名
+ * @param onChange  (name, value) => void  值变了就回调，name 是你传入的 name
+ * @param publishingInterval  发布间隔(ms)，默认 200ms
+ */
+export async function subscribe(
+  items: { nodeId: string; name: string }[],
+  onChange: (name: string, value: any) => void,
+  publishingInterval: number = 200,
+): Promise<void> {
+  if (!session) throw new Error('OPC UA 未连接')
+  if (items.length === 0) return
+
+  // 如果已有订阅，追加到现有订阅里
+  if (_subscription && !_subscription.isTerminated()) {
+    await _addMonitoredItems(items, onChange)
+    return
+  }
+
+  // 创建新订阅
+  _subscription = await session.createSubscription({
+    requestedPublishingInterval: publishingInterval,
+    requestedLifetimeCount: 1000,
+    requestedMaxKeepAliveCount: 20,
+    maxNotificationsPerPublish: 1000,
+    publishingEnabled: true,
+    priority: 10,
+  })
+
+  _subscription.on('terminated', () => {
+    _monitoredItems.clear()
+    _subscription = null
+  })
+
+  await _addMonitoredItems(items, onChange)
+}
+
+/**
+ * 往现有订阅里追加监控项
+ */
+async function _addMonitoredItems(
+  items: { nodeId: string; name: string }[],
+  onChange: (name: string, value: any) => void,
+): Promise<void> {
+  if (!_subscription || _subscription.isTerminated()) return
+
+  for (const { nodeId, name } of items) {
+    // 跳过已在监控的
+    if (_monitoredItems.has(nodeId)) continue
+
+    const item = await _subscription.monitor({
+      nodeId,
+      attributeId: AttributeIds.Value,
+    }, {
+      samplingInterval: 100,    // 采样间隔 100ms
+      discardOldest: true,
+      queueSize: 10,
+    })
+
+    item.on('changed', (dataValue: any) => {
+      const val = dataValue?.value?.value
+      if (val !== undefined && val !== null) {
+        onChange(name, val)
+      }
+    })
+
+    _monitoredItems.set(nodeId, { item, name })
+  }
+}
+
+/** 取消全部订阅 */
+export async function unsubscribeAll(): Promise<void> {
+  if (_subscription) {
+    try {
+      await _subscription.terminate()
+    } catch {}
+    _subscription = null
+    _monitoredItems.clear()
+  }
+}
+
+/** 当前订阅的变量信息 */
+export function getSubscribedItems(): { nodeId: string; name: string }[] {
+  return Array.from(_monitoredItems.entries()).map(([nodeId, { name }]) => ({ nodeId, name }))
+}
+
+/** 节点值缓存（最近一次变更的值） */
+const _valueCache: Record<string, any> = {}
+
+export function getValueCache(): Record<string, any> {
+  return _valueCache
+}
+
+/** 订阅 + 自动缓存（供 index.ts 用） */
+export async function subscribeWithCache(
+  items: { nodeId: string; name: string }[],
+  publishingInterval?: number,
+): Promise<void> {
+  await subscribe(items, (name, value) => {
+    _valueCache[name] = value
+  }, publishingInterval)
 }

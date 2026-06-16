@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { useToast } from '../hooks/useToast'
 
 interface ParsedVar {
   name: string
@@ -21,6 +22,7 @@ interface DBImportPanelProps {
 }
 
 export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps) {
+  const toast = useToast()
   const [importedDBs, setImportedDBs] = useState<ImportedDB[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -39,13 +41,28 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
     if (!file) return
     setLoading(true); setError('')
     try {
-      const content = await file.text()
-      const res = await fetch('/api/plc/import-db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) })
+      // 直接发原始文件内容，避免 file.text() + JSON.stringify 阻塞主线程
+      const res = await fetch('/api/plc/import-db', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file })
       const data = await res.json()
       if (data.success) { await loadImported(); onImport() }
       else setError(data.error || '导入失败')
     } catch (err) { setError(`文件读取失败: ${(err as Error).message}`) }
     finally { setLoading(false); if (fileRef.current) fileRef.current.value = '' }
+  }
+
+  /** 点按钮前先清空 input 值，防止重复触发或 Esc 后残留 */
+  const handleClickFile = useCallback(() => {
+    if (fileRef.current) { fileRef.current.value = ''; fileRef.current.click() }
+  }, [])
+
+  /** 刷新单个 DB 块：重新注册到当前连接（切换模式/断连后恢复用） */
+  async function handleRefresh(key: string) {
+    try {
+      const res = await fetch(`/api/plc/imported-dbs/${encodeURIComponent(key)}/refresh`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) { await loadImported(); onImport() }
+      else setError(data.error || '刷新失败')
+    } catch { setError('刷新失败') }
   }
 
   async function handleRemove(key: string) {
@@ -57,8 +74,9 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
     fetch('/api/plc/imported-db-write', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dbNumber, name, value }),
-    }).catch(() => {})
-  }, [])
+    }).then(r => { if (r.ok) toast(`${name}=${value}`, 'success') })
+      .catch(() => toast(`写入 ${name} 失败`, 'error'))
+  }, [toast])
 
   const writeValue = async (dbNumber: number, name: string) => {
     const val = Number(editVal)
@@ -78,7 +96,7 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
 
       <div className="db-import__bar">
         <input ref={fileRef} type="file" accept=".db" onChange={handleFileUpload} className="db-import__file" />
-        <button className="btn btn--primary" onClick={() => fileRef.current?.click()} disabled={loading}>{loading ? '解析中...' : '选择 .db 文件'}</button>
+        <button className="btn btn--primary" onClick={handleClickFile} disabled={loading}>{loading ? '解析中...' : '选择 .db 文件'}</button>
       </div>
       {error && <div className="db-import__error">{error}</div>}
 
@@ -93,6 +111,7 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
                 <div className="db-card__header">
                   <span className="db-card__label">DB{db.dbNumber} · {db.dbName}</span>
                   <span className="db-card__info">{db.variableCount} 个变量</span>
+                  <button className="btn btn--primary db-card__refresh" onClick={() => handleRefresh(key)} title="重新注册到当前连接">↻</button>
                   <button className="btn btn--danger db-card__del" onClick={() => handleRemove(key)}>✕</button>
                 </div>
                 <div className="db-import__vars">

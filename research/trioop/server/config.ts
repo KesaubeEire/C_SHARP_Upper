@@ -14,6 +14,12 @@ const config: PLCConfig = {
 
   pollInterval: 1000,  // 1秒轮询（I/Q 区每 2 秒更新一次）
 
+  /** I/Q 区读取的字节范围（默认读 0、1、8 三字节） */
+  ioRanges: {
+    i: [{ start: 0, end: 1 }, { start: 8, end: 8 }],
+    q: [{ start: 0, end: 1 }, { start: 8, end: 8 }],
+  },
+
   variables: [
     // ─── 在这里按实际 PLC 配置 DB 变量 ───
     // 格式: { name: '变量名', dbNumber: 1, offset: 0, type: 'bool', bit: 0 }

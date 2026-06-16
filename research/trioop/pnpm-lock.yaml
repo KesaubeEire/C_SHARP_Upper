@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@altara/core':
+        specifier: ^0.0.2
+        version: 0.0.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@altara/industrial':
+        specifier: ^0.1.0
+        version: 0.1.0(@altara/core@0.0.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       express:
         specifier: ^4.21.2
         version: 4.22.2
@@ -50,6 +56,32 @@ importers:
         version: 6.4.3(@types/node@25.9.3)(tsx@4.22.4)
 
 packages:
+
+  '@altara/core@0.0.2':
+    resolution: {integrity: sha512-KnXAOvfuOeK3vHWkem+ZGwMfkPAXAcYaqw7ee4AzPsry53tYiGKVd3XUGzzc1i07GNPTHRuo8XmAh5/1UKp5IQ==}
+    peerDependencies:
+      leaflet: '*'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+      react-grid-layout: '*'
+      react-leaflet: '*'
+      three: '*'
+    peerDependenciesMeta:
+      leaflet:
+        optional: true
+      react-grid-layout:
+        optional: true
+      react-leaflet:
+        optional: true
+      three:
+        optional: true
+
+  '@altara/industrial@0.1.0':
+    resolution: {integrity: sha512-8fSMY2R7PDNI11cSibRVL5RFSHd//1cqt86sWhmfRUnAW+rU61IPr2/nQ0/gCbme2c84YxlkFOB2b34TeiBxjg==}
+    peerDependencies:
+      '@altara/core': 0.0.2
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -1705,6 +1737,11 @@ packages:
     peerDependencies:
       browserslist: '>= 4.21.0'
 
+  use-sync-external-store@1.6.0:
+    resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   util@0.12.5:
     resolution: {integrity: sha512-kZf/K6hEIrWHI6XqOFUiiMa+79wE/D8Q+NCNAWclkyg3b4d2k7s0QGepNjiABc+aR3N1PAyHL7p6UcLY6LmrnA==}
 
@@ -1795,7 +1832,37 @@ packages:
     resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==}
     engines: {node: '>=12'}
 
+  zustand@4.5.7:
+    resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
+    engines: {node: '>=12.7.0'}
+    peerDependencies:
+      '@types/react': '>=16.8'
+      immer: '>=9.0.6'
+      react: '>=16.8'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+
 snapshots:
+
+  '@altara/core@0.0.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      zustand: 4.5.7(@types/react@19.2.17)(react@19.2.7)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
+  '@altara/industrial@0.1.0(@altara/core@0.0.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@altara/core': 0.0.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -3955,6 +4022,10 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
+  use-sync-external-store@1.6.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
+
   util@0.12.5:
     dependencies:
       inherits: 2.0.4
@@ -4030,3 +4101,10 @@ snapshots:
   yauzl@3.4.0:
     dependencies:
       pend: 1.2.0
+
+  zustand@4.5.7(@types/react@19.2.17)(react@19.2.7):
+    dependencies:
+      use-sync-external-store: 1.6.0(react@19.2.7)
+    optionalDependencies:
+      '@types/react': 19.2.17
+      react: 19.2.7

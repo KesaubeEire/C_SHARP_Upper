@@ -11,6 +11,8 @@
     "start": "NODE_ENV=production tsx server/index.ts"
   },
   "dependencies": {
+    "@altara/core": "^0.0.2",
+    "@altara/industrial": "^0.1.0",
     "express": "^4.21.2",
     "node-opcua": "2.160.0",
     "nodes7": "^0.3.18",

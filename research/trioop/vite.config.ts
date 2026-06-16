@@ -7,6 +7,15 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, 'shared'),
+      'react-leaflet': path.resolve(__dirname, 'src/stubs/empty.ts'),
+      'leaflet': path.resolve(__dirname, 'src/stubs/empty.ts'),
+      'react-grid-layout': path.resolve(__dirname, 'src/stubs/empty.ts'),
+      'mqtt': path.resolve(__dirname, 'src/stubs/empty.ts'),
+    },
+  },
+  build: {
+    rollupOptions: {
+      external: ['react-leaflet', 'leaflet', 'react-grid-layout', 'mqtt'],
     },
   },
   server: {

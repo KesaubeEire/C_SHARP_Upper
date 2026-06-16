@@ -19,7 +19,22 @@ function loadSaved() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
-  return { mode: 's7', plcIp: '192.168.0.1', adapterIp: '', connType: 'BASIC', pollInterval: 1000, ioSource: 'io', ioDb: '5', ioStart: '0', ioLen: '8' }
+  return { mode: 's7', plcIp: '192.168.0.1', adapterIp: '', connType: 'BASIC', pollInterval: 1000, ioSource: 'io', ioDb: '5', ioStart: '0', ioLen: '8', ioIBytes: '0,1,8', ioQBytes: '0,1,8' }
+}
+
+/** 将 "0,1,8" 格式的字节串转为后端用的 {start,end}[] 范围 */
+function bytesToRanges(commaStr: string): { start: number; end: number }[] {
+  const nums = commaStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 0)
+  if (nums.length === 0) return [{ start: 0, end: 1 }, { start: 8, end: 8 }]
+  const sorted = [...new Set(nums)].sort((a, b) => a - b)
+  const ranges: { start: number; end: number }[] = []
+  let start = sorted[0], end = sorted[0]
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) { end = sorted[i] }
+    else { ranges.push({ start, end }); start = end = sorted[i] }
+  }
+  ranges.push({ start, end })
+  return ranges
 }
 
 export default function ConnectionPanel() {
@@ -35,6 +50,8 @@ export default function ConnectionPanel() {
   const [ioDb, setIoDb] = useState(saved.ioDb)
   const [ioStart, setIoStart] = useState(saved.ioStart)
   const [ioLen, setIoLen] = useState(saved.ioLen)
+  const [ioIBytes, setIoIBytes] = useState(saved.ioIBytes ?? '0,1,8')
+  const [ioQBytes, setIoQBytes] = useState(saved.ioQBytes ?? '0,1,8')
   const [connecting, setConnecting] = useState(false)
   const [connected, setConnected] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
@@ -43,9 +60,9 @@ export default function ConnectionPanel() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       mode, plcIp, adapterIp: selectedAdapter, connType, pollInterval: Number(pollInterval) || 1000,
-      ioSource, ioDb, ioStart, ioLen,
+      ioSource, ioDb, ioStart, ioLen, ioIBytes, ioQBytes,
     }))
-  }, [mode, plcIp, selectedAdapter, connType, pollInterval, ioSource, ioDb, ioStart, ioLen])
+  }, [mode, plcIp, selectedAdapter, connType, pollInterval, ioSource, ioDb, ioStart, ioLen, ioIBytes, ioQBytes])
 
   // 加载网卡列表
   useEffect(() => {
@@ -83,8 +100,8 @@ export default function ConnectionPanel() {
         if (!st.connected) {
           const url = saved.mode === 'opcua' ? '/api/opcua/connect' : '/api/plc/connect'
           const body = saved.mode === 'opcua'
-            ? { plcIp: saved.plcIp }
-            : { plcIp: saved.plcIp, localAddress: saved.adapterIp || undefined, connType: saved.connType, pollInterval: saved.pollInterval, ioSource: saved.ioSource, ioDbConfig: { dbNumber: Number(saved.ioDb) || 5, startOffset: Number(saved.ioStart) || 0, byteCount: Number(saved.ioLen) || 8 } }
+            ? { plcIp: saved.plcIp, ioRanges: { i: bytesToRanges(saved.ioIBytes ?? '0,1,8'), q: bytesToRanges(saved.ioQBytes ?? '0,1,8') } }
+            : { plcIp: saved.plcIp, localAddress: saved.adapterIp || undefined, connType: saved.connType, pollInterval: saved.pollInterval, ioSource: saved.ioSource, ioDbConfig: { dbNumber: Number(saved.ioDb) || 5, startOffset: Number(saved.ioStart) || 0, byteCount: Number(saved.ioLen) || 8 }, ioRanges: { i: bytesToRanges(saved.ioIBytes ?? '0,1,8'), q: bytesToRanges(saved.ioQBytes ?? '0,1,8') } }
           fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
             .then(r => r.json()).then(d => { if (d.success) setStatusMsg(`已重连到 ${saved.plcIp}`) }).catch(() => {})
         }
@@ -108,6 +125,7 @@ export default function ConnectionPanel() {
             pollInterval: Number(pollInterval) || 1000,
             ioSource,
             ioDbConfig: { dbNumber: Number(ioDb) || 5, startOffset: Number(ioStart) || 0, byteCount: Number(ioLen) || 8 },
+            ioRanges: { i: bytesToRanges(ioIBytes), q: bytesToRanges(ioQBytes) },
           }),
         })
         const data = await res.json()
@@ -117,7 +135,7 @@ export default function ConnectionPanel() {
         const res = await fetch('/api/opcua/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plcIp: plcIp.trim(), port: Number(opcUaPort) || 4840 }),
+          body: JSON.stringify({ plcIp: plcIp.trim(), port: Number(opcUaPort) || 4840, ioRanges: { i: bytesToRanges(ioIBytes), q: bytesToRanges(ioQBytes) } }),
         })
         const data = await res.json()
         if (data.success) { setConnected(true); setStatusMsg(`OPC UA 已连接到 ${plcIp}`) }
@@ -206,6 +224,16 @@ export default function ConnectionPanel() {
           <input className="sidebar__input" type="number" value={opcUaPort} onChange={e => setOpcUaPort(e.target.value)} placeholder="4840" />
         </div>
       )}
+
+      {/* I/Q 字节地址配置：S7 和 OPC UA 模式都可见 */}
+      <div className="sidebar__group">
+        <label className="sidebar__label">I 区字节地址（逗号分隔）</label>
+        <input className="sidebar__input" type="text" value={ioIBytes} onChange={e => setIoIBytes(e.target.value)} placeholder="0,1,8" />
+      </div>
+      <div className="sidebar__group">
+        <label className="sidebar__label">Q 区字节地址（逗号分隔）</label>
+        <input className="sidebar__input" type="text" value={ioQBytes} onChange={e => setIoQBytes(e.target.value)} placeholder="0,1,8" />
+      </div>
 
       <div className="sidebar__actions">
         {connected ? (

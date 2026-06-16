@@ -26,6 +26,7 @@ export function usePLCData() {
   const [io, setIo] = useState<IOData>({ i: {}, q: {} })
   const [dbBlocks, setDbBlocks] = useState<Record<string, number[] | null>>({})
   const [connected, setConnected] = useState(false)
+  const [lastDataTime, setLastDataTime] = useState(0)
   const esRef = useRef<EventSource | null>(null)
   const retryRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -46,6 +47,7 @@ export function usePLCData() {
         setDb(payload.db ?? {})
         setIo({ i: payload.io?.i ?? {}, q: payload.io?.q ?? {} })
         setDbBlocks(payload.dbBlocks ?? {})
+        setLastDataTime(Date.now())
       } catch { /* ignore malformed data */ }
     }
 
@@ -64,5 +66,5 @@ export function usePLCData() {
     }
   }, [connect])
 
-  return { db, io, setIo, dbBlocks, connected }
+  return { db, io, setIo, dbBlocks, connected, lastDataTime }
 }

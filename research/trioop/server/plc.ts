@@ -50,10 +50,21 @@ interface AddrEntry {
 let addrTable: AddrEntry[] = []
 let dbBlockTable: { label: string; dbNumber: number; startOffset: number; byteCount: number }[] = []
 
-/** 注册 I/O 字节 */
-function registerIO() {
-  for (let b = 0; b <= 8; b++) {
+/** 注册 I/O 字节（按配置的范围注册，不传则默认 0-8） */
+function registerIO(ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[] }) {
+  const expandRanges = (ranges?: { start: number; end: number }[]): number[] => {
+    if (!ranges || ranges.length === 0) return [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    const bytes = new Set<number>()
+    for (const r of ranges) {
+      for (let b = r.start; b <= r.end; b++) bytes.add(b)
+    }
+    return [...bytes].sort((a, b) => a - b)
+  }
+
+  for (const b of expandRanges(ioRanges?.i)) {
     addrTable.push({ tag: `IB${b}`, s7addr: `IB${b}`, type: 'i' })
+  }
+  for (const b of expandRanges(ioRanges?.q)) {
     addrTable.push({ tag: `QB${b}`, s7addr: `QB${b}`, type: 'q' })
   }
 }
@@ -82,6 +93,7 @@ function registerDBBlock(label: string, dbNumber: number, startOffset: number, b
   const tag = `db_${label}`
   const s7addr = `DB${dbNumber},B${startOffset}.${byteCount}`
   addrTable.push({ tag, s7addr, type: 'db_block', ref: label })
+  _addrMap.set(tag, s7addr)
   dbBlockTable.push({ label, dbNumber, startOffset, byteCount })
 }
 
@@ -92,9 +104,13 @@ function unregisterDBBlock(label: string) {
 }
 
 /** 初始化 nodes7 地址表 */
-function initAddrTable(variables: PLCVariable[], dbBlocks: { label: string; dbNumber: number; startOffset: number; byteCount: number }[]) {
+function initAddrTable(
+  variables: PLCVariable[],
+  dbBlocks: { label: string; dbNumber: number; startOffset: number; byteCount: number }[],
+  ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[] },
+) {
   addrTable = []
-  registerIO()
+  registerIO(ioRanges)
   registerVariables(variables)
   for (const b of dbBlocks) {
     registerDBBlock(b.label, b.dbNumber, b.startOffset, b.byteCount)
@@ -108,6 +124,7 @@ export async function connect(
   localAddress?: string, connType?: number,
   variables?: PLCVariable[],
   dbBlocks?: { label: string; dbNumber: number; startOffset: number; byteCount: number }[],
+  ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[] },
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (client) {
@@ -118,7 +135,7 @@ export async function connect(
 
     // 注册所有地址
     _addrMap.clear()
-    initAddrTable(variables ?? [], dbBlocks ?? [])
+    initAddrTable(variables ?? [], dbBlocks ?? [], ioRanges)
     addrTable.forEach(a => _addrMap.set(a.tag, a.s7addr))
 
     // 建立翻译回调：已知标签查表，未知的直通（用于 write IO 点位）
@@ -566,6 +583,20 @@ export function addDynamicTag(tag: string, s7addr: string, varName?: string) {
   addrTable.push({ tag, s7addr, type: 'db_var', ref: varName })
   _addrMap.set(tag, s7addr)
   client.addItems([tag])
+}
+
+/** 批量注册动态标签（一次 addItems，避免循环阻塞） */
+export function addDynamicTags(tags: { tag: string; s7addr: string; varName?: string }[]) {
+  if (!client || tags.length === 0) return
+  const newTags: string[] = []
+  for (const t of tags) {
+    const exists = addrTable.find(a => a.tag === t.tag)
+    if (exists) continue
+    addrTable.push({ tag: t.tag, s7addr: t.s7addr, type: 'db_var', ref: t.varName })
+    _addrMap.set(t.tag, t.s7addr)
+    newTags.push(t.tag)
+  }
+  if (newTags.length > 0) client.addItems(newTags)
 }
 
 export function getDebugTags() {
