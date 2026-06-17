@@ -3,19 +3,24 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './hooks/useAuth'
 import { ToastProvider } from './hooks/useToast'
-import { ThemeProvider } from './hooks/useTheme'
+import { ThemeProvider, useTheme } from './hooks/useTheme'
 import { AltaraProvider } from '@altara/core'
 import './App.css'
+
+function AltaraThemeWrapper({ children }: { children: React.ReactNode }) {
+  const { theme } = useTheme()
+  return <AltaraProvider theme={theme}>{children}</AltaraProvider>
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
       <ThemeProvider>
-        <AltaraProvider>
+        <AltaraThemeWrapper>
           <ToastProvider>
           <App />
         </ToastProvider>
-        </AltaraProvider>
+        </AltaraThemeWrapper>
       </ThemeProvider>
     </AuthProvider>
   </StrictMode>,

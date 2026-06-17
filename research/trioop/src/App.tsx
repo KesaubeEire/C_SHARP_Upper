@@ -11,10 +11,10 @@ import TrendChart from './components/TrendChart'
 import AlarmPanel from './components/AlarmPanel'
 import Dashboard from './components/Dashboard'
 import VisualDashboard from './components/VisualDashboard'
+import ComponentPlayground from './components/ComponentPlayground'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import RecipePanel from './components/RecipePanel'
 import AlarmAnnunciator from './components/AlarmAnnunciator'
-import ProcessFlowDiagram from './components/ProcessFlowDiagram'
 import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, TrendRecorder } from '@altara/industrial'
 import { Gauge } from '@altara/core'
 import type { PLCConfig } from '../shared/types'
@@ -42,6 +42,12 @@ export default function App() {
   const [config, setConfig] = useState<PLCConfig | null>(null)
   const [blocks, setBlocks] = useState<DBBlockConfig[]>([])
   const [showAltara, setShowAltara] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768)
+  useEffect(() => {
+    const handler = () => setSidebarOpen(false)
+    window.addEventListener('close-sidebar', handler)
+    return () => window.removeEventListener('close-sidebar', handler)
+  }, [])
 
   // 启动时加载配置
   useEffect(() => {
@@ -129,9 +135,11 @@ export default function App() {
 
   return (
     <div className="app app--with-sidebar">
-      <ConnectionPanel />
+      <div className={`sidebar-wrapper${sidebarOpen ? '' : ' sidebar-wrapper--closed'}`}>
+        <ConnectionPanel />
+      </div>
       <div className="app__main">
-        <StatusBar config={config} connected={connected} pointCount={pointCount} lastDataTime={lastDataTime} />
+        <StatusBar config={config} connected={connected} pointCount={pointCount} lastDataTime={lastDataTime} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <button className="btn btn--ghost btn--sm" style={{ position: 'fixed', bottom: 8, right: 8, zIndex: 100, fontSize: 11 }} onClick={() => setShowAltara(!showAltara)}>
           {showAltara ? '关闭演示' : '组件演示'}
         </button>
@@ -178,44 +186,19 @@ export default function App() {
             columns={5}
           />
 
-          {/* 工艺流程图 */}
-          <ProcessFlowDiagram
-            nodes={[
-              { id: 'tank1', type: 'tank', x: 20, y: 80, label: '原料罐' },
-              { id: 'pump1', type: 'pump', x: 120, y: 90, label: '进料泵' },
-              { id: 'valve1', type: 'valve', x: 200, y: 95, label: '调节阀' },
-              { id: 'he1', type: 'heat-exchanger', x: 280, y: 85, label: '换热器' },
-              { id: 'tank2', type: 'tank', x: 400, y: 80, label: '反应罐' },
-              { id: 'inst1', type: 'instrument', x: 480, y: 40, label: 'TIC' },
-            ]}
-            edges={[
-              { from: 'tank1', to: 'pump1' },
-              { from: 'pump1', to: 'valve1' },
-              { from: 'valve1', to: 'he1' },
-              { from: 'he1', to: 'tank2' },
-            ]}
-            values={{ tank1: 85, pump1: 1450, valve1: 62, tank2: 120, inst1: 98 }}
-          />
-
           {/* 可视化仪表盘 */}
           <VisualDashboard liveData={db} />
 
+          {/* 组件实验室 */}
+          <div style={{ textAlign: 'right', marginBottom: 8 }}>
+            <button className="btn btn--ghost btn--sm" onClick={() => setShowAltara(!showAltara)}>
+              {showAltara ? '✕ 关闭实验室' : '🧪 组件实验室'}
+            </button>
+          </div>
+          {showAltara && <ComponentPlayground />}
+
           {/* 系统诊断 */}
           <DiagnosticsPanel />
-
-          {showAltara && (
-            <section className="section">
-              <h2 className="section__title">📦 @altara/industrial 组件演示</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
-                <div className="card"><div className="card__name">OEE Dashboard</div><OEEDashboard mockMode oeeTarget={0.85} /></div>
-                <div className="card"><div className="card__name">Motor Dashboard</div><MotorDashboard mockMode ratedRPM={3000} ratedCurrent={50} /></div>
-                <div className="card"><div className="card__name">Predictive Maintenance</div><PredictiveMaintenanceGauge mockMode size="md" /></div>
-                <div className="card"><div className="card__name">Alarm Annunciator</div><AlarmAnnunciatorPanel mockMode columns={3} /></div>
-                <div className="card" style={{ gridColumn: '1 / -1' }}><div className="card__name">Trend Recorder</div><TrendRecorder mockMode showLegend timeScale="1m" /></div>
-                <div className="card"><div className="card__name">Gauge</div><Gauge min={0} max={100} unit="%" label="负载" mockMode /></div>
-              </div>
-            </section>
-          )}
 
           {/* 配方管理 */}
           <RecipePanel liveData={db} />

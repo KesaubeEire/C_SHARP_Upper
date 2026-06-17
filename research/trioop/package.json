@@ -13,11 +13,13 @@
   "dependencies": {
     "@altara/core": "^0.0.2",
     "@altara/industrial": "^0.1.0",
+    "@types/react-grid-layout": "^2.1.0",
     "express": "^4.21.2",
     "node-opcua": "2.160.0",
     "nodes7": "^0.3.18",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-grid-layout": "^2.2.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

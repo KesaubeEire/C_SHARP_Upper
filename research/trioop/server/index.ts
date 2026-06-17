@@ -18,6 +18,8 @@ import { writePoints, queryHistory, exportCSV, stopFlush } from './historyStore.
 import { recordPoll, recordError, getDiagnostics, resetDiagnostics } from './diagnostics.js'
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getRecipe } from './recipeManager.js'
 import { authenticate, validateToken, logout, getUsers, addUser, removeUser, changePassword, extractToken } from './auth.js'
+import { updateTagAddressByDB } from './plc.js'
+import { getMapping, setMapping, deleteMapping, setMappings } from './dbMapping.js'
 
 // ─── 路径 ─────────────────────────────────────────────────
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -410,7 +412,7 @@ app.post('/api/plc/import-db', async (req, res) => {
     // 转换为 nodes7 标签并批量注册（带变量名，用于回传实时值）
     const tags = parsedVarsToNodes7Tags(parsed.variables, parsed.dbNumber)
     if (plc.isConnected()) {
-      plc.addDynamicTags(tags.map(t => ({ tag: t.tag, s7addr: t.s7addr, varName: t.name })))
+      plc.addDynamicTags(tags.map(t => ({ tag: t.tag, s7addr: t.s7addr, varName: `${parsed.dbName}:${t.name}` })))
     }
 
     // OPC UA 模式：自动搜索匹配的 nodeId 并订阅
@@ -495,7 +497,7 @@ app.post('/api/plc/imported-dbs/:key/refresh', async (req, res) => {
     } else {
       if (plc.isConnected()) {
         const tags = parsedVarsToNodes7Tags(db.variables, db.dbNumber)
-        plc.addDynamicTags(tags.map(t => ({ tag: t.tag, s7addr: t.s7addr, varName: t.name })))
+        plc.addDynamicTags(tags.map(t => ({ tag: t.tag, s7addr: t.s7addr, varName: `${db.dbName}:${t.name}` })))
         res.json({ success: true, registered: tags.length })
       } else {
         res.status(400).json({ error: 'PLC 未连接' })
@@ -559,6 +561,29 @@ app.post('/api/plc/write-io', async (req, res) => {
     const msg = (err as Error).message
     res.status(502).json({ error: msg })
   }
+})
+
+
+// ─── API: 直写 PLC ────────────────────────────────────
+app.post("/api/plc/write-raw", async (req, res) => {
+  const { address, value, bit } = req.body
+  if (!address || value === undefined) return res.status(400).json({ error: "请提供 address 和 value" })
+  try {
+    if (bit !== undefined) {
+      await plc.modifyBit(address, bit, !!value)
+    } else {
+      await plc.writeRaw(address, Number(value))
+    }
+    res.json({ success: true })
+  } catch (err) { res.status(502).json({ error: (err as Error).message }) }
+})
+
+// ─── API: 更新标签 DB 号 ────────────────────────────
+app.post("/api/plc/update-tag-addr", async (req, res) => {
+  const { dbName, dbNumber } = req.body
+  if (!dbName || !dbNumber) return res.status(400).json({ error: "请提供 dbName 和 dbNumber" })
+  try { const count = plc.updateTagAddressByDB(dbName, dbNumber); res.json({ success: true, updated: count }) }
+  catch (err) { res.status(502).json({ error: (err as Error).message }) }
 })
 
 // ─── API: 报警管理 ──────────────────────────────────────

@@ -4,12 +4,14 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+  },
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, 'shared'),
       'react-leaflet': path.resolve(__dirname, 'src/stubs/empty.ts'),
       'leaflet': path.resolve(__dirname, 'src/stubs/empty.ts'),
-      'react-grid-layout': path.resolve(__dirname, 'src/stubs/empty.ts'),
       'mqtt': path.resolve(__dirname, 'src/stubs/empty.ts'),
     },
   },

@@ -7,9 +7,11 @@ interface StatusBarProps {
   connected: boolean
   pointCount: number
   lastDataTime?: number
+  sidebarOpen?: boolean
+  onToggleSidebar?: () => void
 }
 
-export default function StatusBar({ config, connected, pointCount, lastDataTime }: StatusBarProps) {
+export default function StatusBar({ config, connected, pointCount, lastDataTime, sidebarOpen, onToggleSidebar }: StatusBarProps) {
   const writableCount = config?.variables.filter(v => v.writable).length ?? 0
   const { username, role, logout } = useAuth()
   const { theme, toggle: toggleTheme } = useTheme()
@@ -22,7 +24,14 @@ export default function StatusBar({ config, connected, pointCount, lastDataTime 
 
   return (
     <header className="status-bar">
-      <h1 className="status-bar__title">🔌 PLC 实时监控</h1>
+      <div className="status-bar__left">
+        {onToggleSidebar && (
+          <button className="status-bar__menu-btn" onClick={onToggleSidebar} title={sidebarOpen ? '收起侧栏' : '展开侧栏'}>
+            ☰
+          </button>
+        )}
+        <h1 className="status-bar__title">🔌 PLC 实时监控</h1>
+      </div>
 
       <div className="status-bar__right">
         <span className="stat">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Dropdown from './Dropdown'
 
 const STORAGE_KEY = 'trioop_connection'
 
@@ -162,7 +163,10 @@ export default function ConnectionPanel() {
 
   return (
     <aside className="sidebar">
-      <h2 className="sidebar__title">🔌 PLC 连接</h2>
+      <div className="sidebar__header">
+        <h2 className="sidebar__title">🔌 PLC 连接</h2>
+        <button className="sidebar__close-btn" onClick={() => window.dispatchEvent(new CustomEvent('close-sidebar'))}>✕</button>
+      </div>
 
       <div className="sidebar__group">
         <label className="sidebar__label">通信模式</label>
@@ -174,12 +178,7 @@ export default function ConnectionPanel() {
 
       <div className="sidebar__group">
         <label className="sidebar__label">本机网卡</label>
-        <select className="sidebar__select" value={selectedAdapter} onChange={e => setSelectedAdapter(e.target.value)}>
-          <option value="">自动选择</option>
-          {adapters.map(a => (
-            <option key={a.ip} value={a.ip}>{a.name} ({a.ip})</option>
-          ))}
-        </select>
+        <Dropdown value={selectedAdapter} onChange={setSelectedAdapter} options={[{ value: '', label: '自动选择' }, ...adapters.map(a => ({ value: a.ip, label: `${a.name} (${a.ip})` }))]} />
       </div>
 
       <div className="sidebar__group">
@@ -191,9 +190,7 @@ export default function ConnectionPanel() {
         <>
           <div className="sidebar__group">
             <label className="sidebar__label">连接通道</label>
-            <select className="sidebar__select" value={connType} onChange={e => setConnType(e.target.value)}>
-              {CONN_TYPES.map(t => (<option key={t.value} value={t.value}>{t.label}</option>))}
-            </select>
+            <Dropdown value={connType} onChange={setConnType} options={CONN_TYPES} />
           </div>
 
           <div className="sidebar__group">
@@ -203,10 +200,7 @@ export default function ConnectionPanel() {
 
           <div className="sidebar__group">
             <label className="sidebar__label">I/O 数据源</label>
-            <select className="sidebar__select" value={ioSource} onChange={e => setIoSource(e.target.value)}>
-              <option value="io">直读 I/Q 区</option>
-              <option value="db">从 DB 读取</option>
-            </select>
+            <Dropdown value={ioSource} onChange={setIoSource} options={[{ value: 'io', label: '直读 I/Q 区' }, { value: 'db', label: '从 DB 读取' }]} />
           </div>
 
           {ioSource === 'db' && (

@@ -561,10 +561,8 @@ export function readRaw(s7addr: string): Promise<number> {
 }
 
 export function writeRaw(s7addr: string, value: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    rawQueue.push({ type: 'write', s7addr, value, resolve, reject })
-    processRawQueue()
-  })
+  // 直接写 PLC，不走队列（队列要求 item 先 addItems，动态标签通不过）
+  return doWriteRaw(s7addr, value)
 }
 
 /** 读-改-写（读当前字节 → 改指定位 → 写回） */
@@ -604,6 +602,26 @@ export function getDebugTags() {
     addrTable: addrTable.map(a => ({ tag: a.tag, s7addr: a.s7addr, type: a.type, ref: typeof a.ref })),
     addrMap: Object.fromEntries(_addrMap),
   }
+}
+
+/** 根据 DB 名称更新所有动态标签的 S7 地址（映射 DB 号变更时调用） */
+export function updateTagAddressByDB(dbName: string, newDbNumber: number): number {
+  if (!client) return 0
+  let count = 0
+  const dbPrefix = `DB${newDbNumber},`
+  for (const entry of addrTable) {
+    if (entry.type !== 'db_var' || typeof entry.ref !== 'string') continue
+    if (!entry.ref.startsWith(dbName + ':')) continue
+    const oldAddr = entry.s7addr
+    const newAddr = oldAddr.replace(/^DB\d+/, `DB${newDbNumber}`)
+    if (oldAddr === newAddr) continue
+    client.removeItems([entry.tag])
+    entry.s7addr = newAddr
+    _addrMap.set(entry.tag, newAddr)
+    client.addItems([entry.tag])
+    count++
+  }
+  return count
 }
 
 export function removeDynamicTag(tag: string) {

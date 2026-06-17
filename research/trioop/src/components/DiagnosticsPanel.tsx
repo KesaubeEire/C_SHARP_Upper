@@ -7,7 +7,7 @@ export default function DiagnosticsPanel() {
     try { setDiag(await (await fetch('/api/diagnostics')).json()) } catch {}
   }, [])
 
-  useEffect(() => { load(); const t = setInterval(load, 3000); return () => clearInterval(t) }, [load])
+  useEffect(() => { load(); const t = setInterval(load, 1000); return () => clearInterval(t) }, [load])
 
   const handleReset = async () => {
     await fetch('/api/diagnostics/reset', { method: 'POST' })
