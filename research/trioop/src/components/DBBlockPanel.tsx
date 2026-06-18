@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 
 interface DBBlockConfig {
   label: string
@@ -32,8 +33,7 @@ export default function DBBlockPanel({ blocks, data, onAdd, onRemove }: DBBlockP
   }
 
   return (
-    <section className="section">
-      <h2 className="section__title">📦 DB 块监控</h2>
+    <CollapsibleSection title="📦 DB 块监控" storageKey="db-block">
 
       {/* 添加 DB 块 */}
       <div className="db-form">
@@ -116,6 +116,6 @@ export default function DBBlockPanel({ blocks, data, onAdd, onRemove }: DBBlockP
           })}
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   )
 }

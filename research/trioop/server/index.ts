@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url'
 import config from './config.js'
 import * as plc from './plc.js'
 import * as opcua from './opcua.js'
-import { parseDBFile, parsedVarsToNodes7Tags } from './dbParser.js'
+import { parseDBFile, parseUDTFile, parsedVarsToNodes7Tags } from './dbParser.js'
 import { trendBuffer } from './ringBuffer.js'
 import { checkAlarms, getRules, setRule, deleteRule, getActiveAlarms, getAlarmHistory, acknowledgeAlarm, acknowledgeAll } from './alarmEngine.js'
 import { writePoints, queryHistory, exportCSV, stopFlush } from './historyStore.js'
@@ -378,6 +378,7 @@ app.post('/api/plc/write', async (req, res) => {
 
 // ─── API: 导入 DB 文件 ─────────────────────────────────
 let importedDBs: Record<string, { dbNumber: number; dbName: string; variables: import('./dbParser.js').ParsedDBVariable[] }> = {}
+let udtDefs: import('./dbParser.js').UDTMap = {}
 
 app.post('/api/plc/import-db', async (req, res) => {
   // 同时支持：前端直接发原始文件 (octet-stream) 或 JSON (旧格式)
@@ -398,7 +399,7 @@ app.post('/api/plc/import-db', async (req, res) => {
   if (!content) return res.status(400).json({ error: '请提供 DB 文件内容' })
 
   try {
-    const parsed = parseDBFile(content, dbNumber)
+    const parsed = parseDBFile(content, dbNumber, udtDefs)
     if (parsed.optimized) {
       return res.status(400).json({ error: `DB"${parsed.dbName}" 开启了优化块访问，无法通过绝对地址读取` })
     }
@@ -453,8 +454,46 @@ app.get('/api/plc/imported-dbs', (_req, res) => {
 app.get('/api/plc/debug-tags', (_req, res) => {
   res.json({
     importedDBs: Object.keys(importedDBs),
+    udtDefs: Object.keys(udtDefs),
     tags: plc.getDebugTags(),
   })
+})
+
+// ─── API: 导入 UDT 定义文件 ─────────────────────────
+app.post('/api/plc/import-udt', async (req, res) => {
+  let content: string
+  try {
+    if (req.is('application/octet-stream')) {
+      const chunks: Buffer[] = []
+      for await (const chunk of req) chunks.push(chunk)
+      content = Buffer.concat(chunks).toString('utf-8')
+    } else {
+      content = req.body?.content
+    }
+  } catch (err) {
+    return res.status(400).json({ error: `读取 UDT 文件失败: ${(err as Error).message}` })
+  }
+  if (!content) return res.status(400).json({ error: '请提供 UDT 文件内容' })
+
+  try {
+    const parsed = parseUDTFile(content)
+    const count = Object.keys(parsed).length
+    if (count === 0) return res.status(400).json({ error: '未解析到任何 UDT 定义，请确认文件包含 TYPE 块' })
+    // 合并到全局 udtDefs
+    Object.assign(udtDefs, parsed)
+    res.json({ success: true, count, names: Object.keys(parsed) })
+  } catch (err) {
+    res.status(400).json({ error: `UDT 解析失败: ${(err as Error).message}` })
+  }
+})
+
+app.get('/api/plc/imported-udts', (_req, res) => {
+  res.json(Object.keys(udtDefs))
+})
+
+app.delete('/api/plc/imported-udts/:name', (req, res) => {
+  delete udtDefs[req.params.name]
+  res.json({ success: true })
 })
 
 app.delete('/api/plc/imported-dbs/:key', (req, res) => {

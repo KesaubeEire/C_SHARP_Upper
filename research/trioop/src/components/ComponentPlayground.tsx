@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 import { Gauge, SignalPanel, EventLog, Attitude } from '@altara/core'
 import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, TrendRecorder, WaterfallSpectrogram, PIDTuningPanel, PIDNode, ProcessFlowDiagram } from '@altara/industrial'
 
@@ -315,8 +316,7 @@ export default function ComponentPlayground() {
   const handleMouseUp = () => { dragRef.current.dragging = false }
 
   return (
-    <section className="section" style={{ marginBottom: 24 }}>
-      <h2 className="section__title">🧪 组件实验室</h2>
+    <CollapsibleSection title="🧪 组件实验室" storageKey="component-lab" style={{ marginBottom: 24 }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
         <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>共 {COMPONENTS.length} 个组件 — 点击左侧选择，右侧调整参数</span>
         <button className={`btn btn--sm ${isMock ? 'btn--primary' : 'btn--ghost'}`} onClick={() => setIsMock(!isMock)}>
@@ -348,6 +348,6 @@ export default function ComponentPlayground() {
           ))}
         </div>
       </div>
-    </section>
+    </CollapsibleSection>
   )
 }

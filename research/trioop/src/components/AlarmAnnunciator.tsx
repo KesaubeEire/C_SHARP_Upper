@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 
 type AlarmState = 'normal' | 'warning' | 'alarm' | 'acknowledged'
 
@@ -37,8 +38,7 @@ export default function AlarmAnnunciator({ alarms = [], states = {}, onAcknowled
     : { _all: alarms }
 
   return (
-    <section className="section">
-      <h2 className="section__title">🚨 报警面板</h2>
+    <CollapsibleSection title="🚨 报警面板" storageKey="alarm-annunciator">
       {Object.entries(groups).map(([group, groupAlarms]) => (
         <div key={group}>
           {groupBy && group !== '_ungrouped' && (
@@ -67,6 +67,6 @@ export default function AlarmAnnunciator({ alarms = [], states = {}, onAcknowled
           </div>
         </div>
       ))}
-    </section>
+    </CollapsibleSection>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 
 export default function DiagnosticsPanel() {
   const [diag, setDiag] = useState<any>(null)
@@ -23,8 +24,7 @@ export default function DiagnosticsPanel() {
       : `${Math.floor(diag.uptime / 60)}m ${diag.uptime % 60}s`
 
   return (
-    <section className="section">
-      <h2 className="section__title">🩺 系统诊断</h2>
+    <CollapsibleSection title="🩺 系统诊断" storageKey="diagnostics">
       <div className="diag-grid">
         <div className="diag-item">
           <span className="diag-item__label">运行时间</span>
@@ -58,6 +58,6 @@ export default function DiagnosticsPanel() {
         </div>
       )}
       <button className="btn btn--sm btn--ghost" style={{ marginTop: 8 }} onClick={handleReset}>重置统计</button>
-    </section>
+    </CollapsibleSection>
   )
 }

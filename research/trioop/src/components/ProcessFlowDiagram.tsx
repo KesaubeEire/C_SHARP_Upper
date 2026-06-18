@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 
 type PFDNodeType = 'tank' | 'pump' | 'valve' | 'heat-exchanger' | 'column' | 'compressor' | 'instrument'
 
@@ -189,12 +190,10 @@ export default function ProcessFlowDiagram({ nodes, edges, values = {}, width = 
   }).filter(Boolean) as { key: string; d: string; label?: string }[]
 
   return (
-    <section className="section">
-      <div className="section__title-row">
-        <h2 className="section__title" style={{ margin: 0 }}>🏭 工艺流程图</h2>
-        <span className="pfd-hint">Ctrl+滚轮缩放 · 拖拽平移</span>
-        <button className="btn btn--ghost btn--sm" onClick={() => { const r = { x: 0, y: 0, zoom: 1 }; setView(r); saved.current = r; saveView(0, 0, 1) }}>重置</button>
-      </div>
+    <CollapsibleSection title="🏭 工艺流程图" storageKey="process-flow"
+      actions={<><span className="pfd-hint">Ctrl+滚轮缩放 · 拖拽平移</span>
+        <button className="btn btn--ghost btn--sm" onClick={() => { const r = { x: 0, y: 0, zoom: 1 }; setView(r); saved.current = r; saveView(0, 0, 1) }}>重置</button></>}
+    >
       <div className="pfd-wrap" style={{ cursor: 'grab', height, overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card-bg)' }}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
       >
@@ -225,6 +224,6 @@ export default function ProcessFlowDiagram({ nodes, edges, values = {}, width = 
         </svg>
         {nodes.length === 0 && <div className="db-empty" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>暂无流程节点</div>}
       </div>
-    </section>
+    </CollapsibleSection>
   )
 }

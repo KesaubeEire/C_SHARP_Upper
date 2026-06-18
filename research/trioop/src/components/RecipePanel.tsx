@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 
 interface Recipe { name: string; description?: string; values: Record<string, number>; createdAt: number; updatedAt: number }
 
@@ -66,8 +67,7 @@ export default function RecipePanel({ liveData }: { liveData?: Record<string, { 
   }
 
   return (
-    <section className="section">
-      <h2 className="section__title">📋 配方管理</h2>
+    <CollapsibleSection title="📋 配方管理" storageKey="recipe">
 
       {applyResult && <div className="recipe-result">{applyResult}</div>}
 
@@ -106,6 +106,6 @@ export default function RecipePanel({ liveData }: { liveData?: Record<string, { 
           ))}
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../hooks/useToast'
 import { loadMapping, saveMapping, saveDBData, writePLC } from '../hooks/useDBMapping'
 
@@ -30,6 +31,9 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   const [editing, setEditing] = useState<string | null>(null)
   const [editVal, setEditVal] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const udtFileRef = useRef<HTMLInputElement>(null)
+  const [udtNames, setUdtNames] = useState<string[]>([])
+  const [udtLoading, setUdtLoading] = useState(false)
 
   const loadImported = async () => {
     try {
@@ -41,7 +45,14 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
     } catch {}
   }
 
-  useState(() => { loadImported() })
+  const loadUdts = async () => {
+    try {
+      const res = await fetch('/api/plc/imported-udts')
+      if (res.ok) setUdtNames(await res.json())
+    } catch {}
+  }
+
+  useState(() => { loadImported(); loadUdts() })
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -65,20 +76,54 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
     if (fileRef.current) { fileRef.current.value = ''; fileRef.current.click() }
   }, [])
 
+  /** UDT 文件上传 */
+  async function handleUdtUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUdtLoading(true); setError('')
+    try {
+      const res = await fetch('/api/plc/import-udt', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file })
+      const data = await res.json()
+      if (data.success) {
+        toast(`已导入 ${data.count} 个 UDT: ${data.names.join(', ')}`, 'success')
+        await loadUdts()
+      } else {
+        setError(data.error || 'UDT 导入失败')
+      }
+    } catch (err) { setError(`UDT 文件读取失败: ${(err as Error).message}`) }
+    finally { setUdtLoading(false); if (udtFileRef.current) udtFileRef.current.value = '' }
+  }
+
+  const handleClickUdt = useCallback(() => {
+    if (udtFileRef.current) { udtFileRef.current.value = ''; udtFileRef.current.click() }
+  }, [])
+
+  /** 删除单个 UDT */
+  async function handleRemoveUdt(name: string) {
+    try {
+      await fetch(`/api/plc/imported-udts/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      await loadUdts()
+    } catch {}
+  }
+
   /** 刷新单个 DB 块：重新注册到当前连接（切换模式/断连后恢复用） */
   async function handleRefresh(key: string) {
     try {
       const dbName = key.split('_').slice(1).join('_')
-      // 直接从 input 控件取值，确保跟界面上显示的一致
-      const input = document.getElementById(`dbnum-${dbName}`) as HTMLInputElement | null
-      const mappedDb = input ? Number(input.value) : (loadMapping()[dbName] ?? 1)
+      // 从 loadMapping() 取映射号（DBNumberInput 每次改动都会 saveMapping）
+      const m = loadMapping()
+      const mappedDb = m[dbName] ?? 1
       const res = await fetch(`/api/plc/imported-dbs/${encodeURIComponent(key)}/refresh`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dbNumber: mappedDb, dbName }),
       })
       const data = await res.json()
-      if (data.success) { await loadImported(); onImport() }
-      else setError(data.error || '刷新失败')
+      if (!data.success) { setError(data.error || '刷新失败'); return }
+      // 只更新当前 DB 的变量数（不调 loadImported 以免 key 变化导致 DBNumberInput 重挂）
+      setImportedDBs(prev => prev.map(db =>
+        db.dbName === dbName ? { ...db, variableCount: data.registered ?? data.matched ?? db.variableCount } : db
+      ))
+      onImport()
     } catch { setError('刷新失败') }
   }
 
@@ -110,9 +155,30 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   }
 
   return (
-    <section className="section">
-      <h2 className="section__title">📥 导入 DB 文件</h2>
+    <CollapsibleSection title="📥 导入 DB 文件" storageKey="db-import">
 
+      {/* ─── UDT 定义文件导入 ─────────────────────────────── */}
+      <div className="udt-import">
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: '0.85em', color: '#888' }}>🔷 数据类型 (UDT)</span>
+          <input ref={udtFileRef} type="file" accept=".db,.udt" onChange={handleUdtUpload} style={{ display: 'none' }} />
+          <button className="btn btn--sm" onClick={handleClickUdt} disabled={udtLoading}>
+            {udtLoading ? '解析中...' : '选择 UDT 文件'}
+          </button>
+        </div>
+        {udtNames.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            {udtNames.map(name => (
+              <span key={name} className="udt-tag">
+                {name}
+                <button className="udt-tag__del" onClick={() => handleRemoveUdt(name)} title="删除此 UDT">✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── DB 文件导入 ──────────────────────────────── */}
       <div className="db-import__bar">
         <input ref={fileRef} type="file" accept=".db" onChange={handleFileUpload} className="db-import__file" />
         <button className="btn btn--primary" onClick={handleClickFile} disabled={loading}>{loading ? '解析中...' : '选择 .db 文件'}</button>
@@ -194,7 +260,7 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
           })}
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   )
 }
 

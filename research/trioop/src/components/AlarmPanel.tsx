@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 
 interface AlarmRule {
   name: string; variableName: string; condition: string; threshold: number; message: string; enabled: boolean
@@ -54,8 +55,7 @@ export default function AlarmPanel() {
   const condLabel: Record<string, string> = { eq: '==', ne: '!=', gt: '>', lt: '<', ge: '>=', le: '<=' }
 
   return (
-    <section className="section alarm-panel">
-      <h2 className="section__title">🔔 报警</h2>
+    <CollapsibleSection title="🔔 报警" storageKey="alarm" className="alarm-panel">
       <div className="alarm-tabs">
         <button className={`btn btn--sm ${tab === 'active' ? 'btn--primary' : ''}`} onClick={() => setTab('active')}>
           活动 {active.length > 0 && <span className="alarm-badge">{active.length}</span>}
@@ -125,6 +125,6 @@ export default function AlarmPanel() {
           )}
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   )
 }

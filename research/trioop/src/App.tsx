@@ -13,6 +13,7 @@ import Dashboard from './components/Dashboard'
 import VisualDashboard from './components/VisualDashboard'
 import ComponentPlayground from './components/ComponentPlayground'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
+import CollapsibleSection from './components/CollapsibleSection'
 import RecipePanel from './components/RecipePanel'
 import AlarmAnnunciator from './components/AlarmAnnunciator'
 import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, TrendRecorder } from '@altara/industrial'
@@ -42,11 +43,15 @@ export default function App() {
   const [config, setConfig] = useState<PLCConfig | null>(null)
   const [blocks, setBlocks] = useState<DBBlockConfig[]>([])
   const [showAltara, setShowAltara] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   useEffect(() => {
-    const handler = () => setSidebarOpen(false)
-    window.addEventListener('close-sidebar', handler)
-    return () => window.removeEventListener('close-sidebar', handler)
+    const mq = window.matchMedia('(min-width: 769px)')
+    setSidebarOpen(mq.matches)
+    const onChange = (e: MediaQueryListEvent) => setSidebarOpen(e.matches)
+    mq.addEventListener('change', onChange)
+    const closeHandler = () => setSidebarOpen(false)
+    window.addEventListener('close-sidebar', closeHandler)
+    return () => { mq.removeEventListener('change', onChange); window.removeEventListener('close-sidebar', closeHandler) }
   }, [])
 
   // 启动时加载配置
@@ -145,8 +150,7 @@ export default function App() {
         </button>
         <main className="main">
           {variables.length > 0 && (
-            <section className="section">
-              <h2 className="section__title">📊 状态变量</h2>
+            <CollapsibleSection title="📊 状态变量" storageKey="status-vars">
               <PLCGrid
                 variables={variables}
                 data={db}
@@ -154,21 +158,21 @@ export default function App() {
                 onWrite={write}
                 onDismissError={dismissError}
               />
-            </section>
+            </CollapsibleSection>
           )}
 
-          <section className="section">
-            <IOGrid label="🟡 输入点 (I 区)" data={io.i} prefix="I" bytes={ioBytes.i} />
-          </section>
+          <CollapsibleSection title="🟡 输入点 (I 区)" storageKey="io-input">
+            <IOGrid label="" data={io.i} prefix="I" bytes={ioBytes.i} />
+          </CollapsibleSection>
 
-          <section className="section">
-            <IOGrid label="🔵 输出点 (Q 区)" data={io.q} prefix="Q" bytes={ioBytes.q} onToggle={handleQToggle} />
-          </section>
+          <CollapsibleSection title="🔵 输出点 (Q 区)" storageKey="io-output">
+            <IOGrid label="" data={io.q} prefix="Q" bytes={ioBytes.q} onToggle={handleQToggle} />
+          </CollapsibleSection>
 
           {/* 实时趋势 */}
-          <section className="section">
+          <CollapsibleSection title="📈 实时趋势" storageKey="trend">
             <TrendChart variables={variables.map(v => v.name)} liveData={db} timeRange={300} />
-          </section>
+          </CollapsibleSection>
 
           {/* 报警面板 */}
           <AlarmPanel />

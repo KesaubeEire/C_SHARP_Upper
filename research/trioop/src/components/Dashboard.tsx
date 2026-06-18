@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 import { Gauge } from '@altara/core'
 import type { AltaraDataSource } from '@altara/core'
 
@@ -63,8 +64,7 @@ export default function Dashboard({ liveData }: { liveData?: Record<string, { va
   const modalOpen = editingId !== null
 
   return (
-    <section className="section">
-      <h2 className="section__title">🎛️ 仪表盘</h2>
+    <CollapsibleSection title="🎛️ 仪表盘" storageKey="dashboard">
       <div className="dashboard-bar">
         <button className="btn btn--sm btn--primary" onClick={openNew}>+ 添加组件</button>
       </div>
@@ -128,7 +128,7 @@ export default function Dashboard({ liveData }: { liveData?: Record<string, { va
           </div>
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   )
 }
 

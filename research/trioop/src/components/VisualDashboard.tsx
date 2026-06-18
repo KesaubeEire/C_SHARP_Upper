@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback, useRef } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 import { Responsive } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import { Gauge, SignalPanel, EventLog } from '@altara/core'
@@ -82,6 +83,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   const [editing, setEditing] = useState<string | null>(null)
   const [formTitle, setFormTitle] = useState(''); const [formCfg, setFormCfg] = useState<Record<string, any>>({}); const [formType, setFormType] = useState<WidgetType>('value')
   const [rowH, setRowH] = useState(() => { try { return Number(localStorage.getItem(ROW_HEIGHT_KEY)) || 120 } catch { return 120 } })
+  const paletteRef = useRef<HTMLDivElement>(null)
 
   const containerRef = useRef<HTMLDivElement>(null); const [containerWidth, setContainerWidth] = useState(0)
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }, [data])
@@ -97,6 +99,18 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     setData(d => ({ widgets: [...d.widgets, { id, type, title: meta.label, config: cfg }], layouts: { ...d.layouts, lg: [...layout, newLayout] } }))
     setFormTitle(meta.label); setFormType(type); setFormCfg({ ...cfg }); setEditing(id); setShowPalette(false)
   }, [data.layouts])
+
+  // 点击外部 / Escape → 关闭 palette dropdown
+  useEffect(() => {
+    if (!showPalette) return
+    const handler = (e: MouseEvent) => {
+      if (paletteRef.current && !paletteRef.current.contains(e.target as Node)) setShowPalette(false)
+    }
+    const keyHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowPalette(false) }
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 0)
+    document.addEventListener('keydown', keyHandler)
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', keyHandler) }
+  }, [showPalette])
 
   const onLayoutChange = useCallback((layout: any, allLayouts: any) => {
     setData(d => ({ ...d, layouts: allLayouts }))
@@ -118,23 +132,32 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   }, [editing])
 
   return (
-    <section className="section">
-      <div className="section__title-row">
-        <h2 className="section__title" style={{ margin: 0 }}>🎛️ 可视化仪表盘</h2>
-        <button className="btn btn--sm btn--primary" onClick={() => setShowPalette(!showPalette)}>+ 添加组件</button>
-        <span className="pfd-hint">{data.widgets.length} 组件 · 缩放吸附 · 自由拖拽</span>
+    <CollapsibleSection title="🎛️ 可视化仪表盘" storageKey="visual-dashboard" keepMounted
+      actions={<><span style={{ whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-muted)' }}>{data.widgets.length} 组件</span>
+        <div style={{ position: 'relative' }} ref={paletteRef}>
+          <button className="btn btn--sm btn--primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setShowPalette(p => !p)}>
+            <span>+ 添加</span>
+            <svg className={`dropdown__arrow ${showPalette ? 'dropdown__arrow--open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          {showPalette && (
+            <div className="vdb-palette-dropdown">
+              {Object.entries(WIDGET_META).map(([type, meta]) => (
+                <button key={type} className="vdb-palette-dropdown__item" onClick={() => addWidget(type as WidgetType)}>
+                  <span className="vdb-palette-dropdown__icon">{meta.icon}</span>
+                  <span className="vdb-palette-dropdown__label">{meta.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>行高</span>
           <input type="range" min={80} max={300} step={10} value={rowH} onChange={e => setRowH(Number(e.target.value))} style={{ width: 80, accentColor: '#2196f3' }} />
           <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 36 }}>{rowH}px</span>
-        </div>
-      </div>
-
-      {showPalette && (
-        <div className="vdb-palette">
-          {Object.entries(WIDGET_META).map(([type, meta]) => (<button key={type} className="vdb-palette__item" onClick={() => addWidget(type as WidgetType)}><span className="vdb-palette__icon">{meta.icon}</span><span className="vdb-palette__label">{meta.label}</span></button>))}
-        </div>
-      )}
+        </div></>}
+    >
 
       {data.widgets.length === 0 ? (
         <div className="db-empty" style={{ textAlign: 'center', padding: 40 }}>点击「+ 添加组件」开始构建仪表盘</div>
@@ -222,7 +245,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
           </div>
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   )
 }
 
