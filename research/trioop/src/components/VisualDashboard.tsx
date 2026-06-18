@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { Responsive } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -61,7 +61,7 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
   const liveVal = pt?.value; const liveNum = typeof liveVal === 'number' ? liveVal : (liveVal ? 1 : 0); const hasLive = liveVal !== undefined && liveVal !== null
   switch (type) {
     case 'gauge': { const ds = hasLive && cfg.variableName ? { subscribe: (cb: any) => { cb({ timestamp: Date.now(), value: liveNum }); return () => {} }, getHistory: () => [{ timestamp: Date.now(), value: liveNum }], status: 'connected' as const, destroy: () => {} } : undefined; return <Gauge min={cfg.min ?? 0} max={cfg.max ?? 100} unit={cfg.unit} label="" size="md" dataSource={ds} mockMode={!ds} /> }
-    case 'trend': return <TrendRecorder timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} mockMode />
+    case 'trend': return <TrendRecorderCell timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} mockMode />
     case 'oee': return <OEEDashboard availability={cfg.availability ?? 0.85} performance={cfg.performance ?? 0.78} quality={cfg.quality ?? 0.95} shift={cfg.shift || 'A'} mockMode />
     case 'motor': return <MotorDashboard rpm={cfg.rpm ?? 2850} torque={cfg.torque ?? 42} current={cfg.current ?? 38} temperature={cfg.temperature ?? 72} mockMode />
     case 'predictive': return <PredictiveMaintenanceGauge healthScore={cfg.healthScore ?? 74} rulDays={cfg.rulDays ?? 45} size="md" mockMode />
@@ -360,3 +360,36 @@ function VariablePicker({ dbName, varName, importedDBs, onChange }: {
     </div>
   )
 }
+
+/** 趋势图自适应容器：ResizeObserver→width/height→TrendRecorder 原生分辨率渲染 */
+const TrendRecorderCell = React.memo(function TrendRecorderCell({ timeScale, showGrid, showLegend, mockMode }: {
+  timeScale: string; showGrid: boolean; showLegend: boolean; mockMode?: boolean
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState({ w: 400, h: 200 })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) setSize({ w: Math.round(e.contentRect.width), h: Math.round(e.contentRect.height) })
+    })
+    ro.observe(el)
+    const r = el.getBoundingClientRect()
+    if (r.width > 0 && r.height > 0) setSize({ w: Math.round(r.width), h: Math.round(r.height) })
+    return () => ro.disconnect()
+  }, [])
+
+  return (
+    <div ref={ref} style={{ width: '100%', height: '100%' }}>
+      <TrendRecorder
+        width={size.w}
+        height={size.h}
+        timeScale={timeScale as any}
+        showGrid={showGrid}
+        showLegend={showLegend}
+        mockMode={mockMode}
+      />
+    </div>
+  )
+})

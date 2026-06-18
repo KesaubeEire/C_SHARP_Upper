@@ -170,7 +170,7 @@ export default function App() {
           </CollapsibleSection>
 
           {/* 实时趋势 */}
-          <CollapsibleSection title="📈 实时趋势" storageKey="trend">
+          <CollapsibleSection title="📈 实时趋势" storageKey="trend" keepMounted>
             <TrendChart variables={variables.map(v => v.name)} liveData={db} timeRange={300} />
           </CollapsibleSection>
 

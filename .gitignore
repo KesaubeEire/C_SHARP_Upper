@@ -13,7 +13,8 @@
 ## .NET
 *.nupkg
 *.snupkg
-**/[Pp]ackages/*
+Project/**/[Pp]ackages/*
+VS_Dev/**/[Pp]ackages/*
 
 ## OS
 Thumbs.db
@@ -30,3 +31,7 @@ SharpSCADA/
 
 # 历史数据（太大，不纳入版本控制）
 research/trioop/data/
+# altara 源码纳入版本管理，但 node_modules / dist 由内部 .gitignore 排除
+research/altara/node_modules/
+research/altara/dist/
+!research/altara/packages/

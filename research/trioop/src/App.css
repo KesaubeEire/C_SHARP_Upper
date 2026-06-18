@@ -1573,6 +1573,19 @@ body {
   overflow: hidden;
 }
 
+/* 趋势图在 widget 中撑满容器 */
+.vdb-widget__body .vt-timeseries,
+.vdb-widget__body .vt-trend {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0;
+}
+.vdb-widget__body .vt-timeseries__canvas,
+.vdb-widget__body .vt-trend canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .vdb-widget__body .vt-gauge {
   width: 100% !important;
   height: 100% !important;

@@ -169,22 +169,33 @@ export default function TrendChart({ variables, liveData, timeRange = 300 }: Tre
     return () => { running = false; cancelAnimationFrame(animRef.current) }
   }, [draw])
 
-  // 画布大小自适应
+  // 画布大小自适应：ResizeObserver 监听容器，直接把宽高灌进 canvas 属性 + style
   useEffect(() => {
-    function resize() {
-      const canvas = canvasRef.current
-      if (!canvas || !canvas.parentElement) return
-      const rect = canvas.parentElement.getBoundingClientRect()
-      canvas.width = rect.width * devicePixelRatio
-      canvas.height = rect.height * devicePixelRatio
-      canvas.style.width = rect.width + 'px'
-      canvas.style.height = rect.height + 'px'
-      const ctx = canvas.getContext('2d')
-      if (ctx) ctx.scale(devicePixelRatio, devicePixelRatio)
+    const canvas = canvasRef.current
+    const container = canvas?.parentElement
+    if (!canvas || !container) return
+    let raf = 0
+
+    function syncSize() {
+      const c = canvasRef.current
+      if (!c || !c.parentElement) return
+      const rect = c.parentElement.getBoundingClientRect()
+      const w = Math.round(rect.width)
+      const h = Math.round(rect.height)
+      if (w === 0 || h === 0) return
+      c.width = w * devicePixelRatio
+      c.height = h * devicePixelRatio
+      c.style.width = w + 'px'
+      c.style.height = h + 'px'
     }
-    resize()
-    window.addEventListener('resize', resize)
-    return () => window.removeEventListener('resize', resize)
+
+    syncSize()
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(syncSize)
+    })
+    ro.observe(container)
+    return () => { ro.disconnect(); cancelAnimationFrame(raf) }
   }, [])
 
   if (variables.length === 0) return null
