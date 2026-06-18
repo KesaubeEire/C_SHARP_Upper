@@ -68,12 +68,13 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   /** 刷新单个 DB 块：重新注册到当前连接（切换模式/断连后恢复用） */
   async function handleRefresh(key: string) {
     try {
-      const m = loadMapping()
       const dbName = key.split('_').slice(1).join('_')
-      const mappedDb = m[dbName]
+      // 直接从 input 控件取值，确保跟界面上显示的一致
+      const input = document.getElementById(`dbnum-${dbName}`) as HTMLInputElement | null
+      const mappedDb = input ? Number(input.value) : (loadMapping()[dbName] ?? 1)
       const res = await fetch(`/api/plc/imported-dbs/${encodeURIComponent(key)}/refresh`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dbNumber: mappedDb }),
+        body: JSON.stringify({ dbNumber: mappedDb, dbName }),
       })
       const data = await res.json()
       if (data.success) { await loadImported(); onImport() }
@@ -82,7 +83,11 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   }
 
   async function handleRemove(key: string) {
-    try { await fetch(`/api/plc/imported-dbs/${encodeURIComponent(key)}`, { method: 'DELETE' }); await loadImported(); onImport() } catch {}
+    try {
+      const dbName = key.split('_').slice(1).join('_')
+      await fetch(`/api/plc/imported-dbs/${encodeURIComponent(key)}?dbName=${encodeURIComponent(dbName)}`, { method: 'DELETE' })
+      await loadImported(); onImport()
+    } catch {}
   }
 
   /** 写值（fire & forget，不 await） */
@@ -139,7 +144,8 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
                     <span className="db-import__h-off">偏移</span>
                   </div>
                   {db.variables.map(v => {
-                    const live = liveData?.[v.name]
+                    const liveKey = `${db.dbName}:${v.name}`
+                    const live = liveData?.[liveKey]
                     const showVal = live?.value !== undefined && live?.value !== null
                     const isEditing = editing === v.name
 

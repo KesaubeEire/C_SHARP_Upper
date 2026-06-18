@@ -459,22 +459,28 @@ app.get('/api/plc/debug-tags', (_req, res) => {
 
 app.delete('/api/plc/imported-dbs/:key', (req, res) => {
   const key = req.params.key
-  const db = importedDBs[key]
+  let actualKey = key
+  let db = importedDBs[actualKey]
+  if (!db && req.query.dbName) {
+    const entry = Object.entries(importedDBs).find(([, v]) => v.dbName === req.query.dbName)
+    if (entry) { actualKey = entry[0]; db = entry[1] }
+  }
   if (db) {
     const tags = parsedVarsToNodes7Tags(db.variables, db.dbNumber)
-    for (const t of tags) {
-      plc.removeDynamicTag(t.tag)
-    }
-    delete importedDBs[key]
+    for (const t of tags) plc.removeDynamicTag(t.tag)
+    delete importedDBs[actualKey]
   }
   res.json({ success: true })
 })
 
 // ─── API: 刷新导入的 DB 块（切换模式/断连后重新注册） ──
 app.post('/api/plc/imported-dbs/:key/refresh', async (req, res) => {
-  const key = req.params.key
-  const db = importedDBs[key]
-  if (!db) return res.status(404).json({ error: `未找到 DB: ${key}` })
+  let db = importedDBs[req.params.key]
+  // 如果 key 不匹配（例如前端映射改了 dbNumber），按 dbName 回退查找
+  if (!db && req.body?.dbName) {
+    db = Object.values(importedDBs).find(d => d.dbName === req.body.dbName)
+  }
+  if (!db) return res.status(404).json({ error: `未找到 DB: ${req.params.key}` })
 
   try {
     if (runtimeMode === 'opcua') {
@@ -496,7 +502,8 @@ app.post('/api/plc/imported-dbs/:key/refresh', async (req, res) => {
       }
     } else {
       if (plc.isConnected()) {
-        const tags = parsedVarsToNodes7Tags(db.variables, db.dbNumber)
+        const effectiveDbNumber = req.body?.dbNumber ?? db.dbNumber
+        const tags = parsedVarsToNodes7Tags(db.variables, effectiveDbNumber)
         plc.addDynamicTags(tags.map(t => ({ tag: t.tag, s7addr: t.s7addr, varName: `${db.dbName}:${t.name}` })))
         res.json({ success: true, registered: tags.length })
       } else {

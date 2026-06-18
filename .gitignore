@@ -27,3 +27,6 @@ Thumbs.db
 Communication-Protocol-Assistant/
 SharpSCADA/
 *.db
+
+# 历史数据（太大，不纳入版本控制）
+research/trioop/data/

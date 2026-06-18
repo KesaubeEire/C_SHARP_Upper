@@ -1,137 +1,119 @@
 /**
- * 历史数据存储
+ * 历史数据存储 — 工业级实现
  *
- * 纯文件实现，零外部依赖。
- * 按天分文件，每 5 秒批量写入。
- * 格式: { t: timestamp, n: name, v: value }
+ * 三層架構：
+ * 1. 死区检测（Deadband）— 值变化超过阈值才写
+ * 2. SQLite 存储（better-sqlite3）— 索引查询毫秒级
+ * 3. 降采样（Downsampling）— raw(1h) → _1m(7d) → _1h(30d)
  */
 
-import fs from 'fs'
+import Database from 'better-sqlite3'
 import path from 'path'
+import fs from 'fs'
 
-const DATA_DIR = path.resolve(import.meta.dirname, '..', 'data', 'history')
-const FLUSH_INTERVAL = 5000 // 5s 刷一次盘
+const DB_DIR = path.resolve(import.meta.dirname, '..', 'data', 'history')
+const DB_FILE = path.join(DB_DIR, 'history.db')
 
-// 确保目录存在
-try { fs.mkdirSync(DATA_DIR, { recursive: true }) } catch {}
+try { fs.mkdirSync(DB_DIR, { recursive: true }) } catch {}
 
-// 写缓冲 { fileName: entries[] }
-const buffer: Map<string, { t: number; n: string; v: number }[]> = new Map()
+// ─── 死区配置 ──────────────────────────────────────────
+const DEADBAND: Record<string, number> = {}
 
-let flushTimer: ReturnType<typeof setInterval> | null = null
-
-function getFileName(): string {
-  const d = new Date()
-  return `history-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.jsonl`
+export function setDeadband(name: string, threshold: number): void {
+  if (threshold >= 0) DEADBAND[name] = threshold
 }
 
-/** 写入一条记录（内存缓冲） */
+export function setDeadbands(map: Record<string, number>): void {
+  for (const [k, v] of Object.entries(map)) setDeadband(k, v)
+}
+
+// ─── SQLite ────────────────────────────────────────────
+const db = new Database(DB_FILE)
+db.pragma('journal_mode = WAL')
+db.pragma('synchronous = NORMAL')
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS raw  (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
+  CREATE TABLE IF NOT EXISTS _1m   (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
+  CREATE TABLE IF NOT EXISTS _1h   (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
+  CREATE INDEX IF NOT EXISTS idx_raw  ON raw(name, ts);
+  CREATE INDEX IF NOT EXISTS idx_1m   ON _1m(name, ts);
+  CREATE INDEX IF NOT EXISTS idx_1h   ON _1h(name, ts);
+`)
+
+const insRaw = db.prepare('INSERT INTO raw VALUES (?, ?, ?)')
+const ins1m  = db.prepare('INSERT OR REPLACE INTO _1m VALUES (?, ?, ?)')
+const ins1h  = db.prepare('INSERT OR REPLACE INTO _1h VALUES (?, ?, ?)')
+const delRaw = db.prepare('DELETE FROM raw WHERE ts < ?')
+const del1m  = db.prepare('DELETE FROM _1m WHERE ts < ?')
+const del1h  = db.prepare('DELETE FROM _1h WHERE ts < ?')
+
+const lastVals = new Map<string, { val: number; ts: number }>()
+
+// ─── 写入（含死区） ────────────────────────────────────
 export function writePoint(name: string, value: number | boolean): void {
   const val = typeof value === 'number' ? value : (value ? 1 : 0)
-  const fileName = getFileName()
-  const entry = { t: Date.now(), n: name, v: val }
-  const arr = buffer.get(fileName) || []
-  arr.push(entry)
-  buffer.set(fileName, arr)
+  const th = DEADBAND[name] ?? 0
+  const last = lastVals.get(name)
+  if (last !== undefined && Math.abs(val - last.val) <= th) return
+  lastVals.set(name, { val, ts: Date.now() })
+  insRaw.run(name, Date.now(), val)
 }
 
-/** 批量写多条 */
 export function writePoints(data: Record<string, number | boolean>): void {
-  const fileName = getFileName()
+  for (const [name, value] of Object.entries(data)) writePoint(name, value)
+}
+
+// ─── 降采样 ────────────────────────────────────────────
+let last1m = 0, last1h = 0
+
+function downsample() {
   const now = Date.now()
-  const arr = buffer.get(fileName) || []
-  for (const [name, value] of Object.entries(data)) {
-    const val = typeof value === 'number' ? value : (value ? 1 : 0)
-    arr.push({ t: now, n: name, v: val })
+  if (now - last1m >= 60_000) {
+    const cutoff = now - 3600_000
+    db.transaction(() => {
+      const rows = db.prepare(`SELECT name, CAST(ts/60000 AS INTEGER)*60000 AS bucket, AVG(val) AS avg FROM raw WHERE ts<? AND ts>? GROUP BY name,bucket`).all(now, now - 60_000) as any[]
+      for (const r of rows) ins1m.run(r.name, r.bucket, r.avg)
+      delRaw.run(cutoff)
+    })()
+    last1m = now
   }
-  buffer.set(fileName, arr)
+  if (now - last1h >= 3600_000) {
+    const cutoff = now - 7 * 86400_000
+    db.transaction(() => {
+      const rows = db.prepare(`SELECT name, CAST(ts/3600000 AS INTEGER)*3600000 AS bucket, AVG(val) AS avg FROM _1m WHERE ts<? AND ts>? GROUP BY name,bucket`).all(now, now - 3600_000) as any[]
+      for (const r of rows) ins1h.run(r.name, r.bucket, r.avg)
+      del1m.run(cutoff)
+    })()
+    last1h = now
+  }
+  del1h.run(now - 30 * 86400_000)
 }
 
-/** 刷盘：将缓冲区写入文件 */
-function flush(): void {
-  for (const [fileName, entries] of buffer) {
-    if (entries.length === 0) continue
-    const filePath = path.join(DATA_DIR, fileName)
-    try {
-      const lines = entries.map(e => JSON.stringify(e)).join('\n') + '\n'
-      fs.appendFileSync(filePath, lines, 'utf-8')
-      buffer.set(fileName, [])
-    } catch (err) {
-      console.error(`[History] 写入失败 ${filePath}:`, err)
-    }
-  }
-}
+// ─── 定时刷盘 ──────────────────────────────────────────
+let timer: ReturnType<typeof setInterval> | null = null
 
-/** 启动定时刷盘 */
 export function startFlush(): void {
-  if (flushTimer) return
-  flushTimer = setInterval(flush, FLUSH_INTERVAL)
+  if (timer) return
+  timer = setInterval(downsample, 10_000)
 }
 
-/** 停止刷盘 */
 export function stopFlush(): void {
-  if (flushTimer) {
-    clearInterval(flushTimer)
-    flushTimer = null
-  }
-  // 最后刷一次
-  flush()
+  if (timer) { clearInterval(timer); timer = null }
 }
 
-/**
- * 查询历史数据
- * @param name  变量名
- * @param from  起始时间戳 (ms)
- * @param to    结束时间戳 (ms)
- * @param limit 最大返回条数
- */
-export function queryHistory(name: string, from?: number, to?: number, limit: number = 10000): { timestamp: number; value: number }[] {
-  const result: { timestamp: number; value: number }[] = []
-  const files = fs.readdirSync(DATA_DIR).filter(f => f.startsWith('history-') && f.endsWith('.jsonl')).sort()
-
-  for (const file of files) {
-    if (result.length >= limit) break
-    const filePath = path.join(DATA_DIR, file)
-    try {
-      const content = fs.readFileSync(filePath, 'utf-8')
-      const lines = content.split('\n').filter(Boolean)
-      for (const line of lines) {
-        const entry = JSON.parse(line)
-        if (entry.n !== name) continue
-        if (from !== undefined && entry.t < from) continue
-        if (to !== undefined && entry.t > to) continue
-        result.push({ timestamp: entry.t, value: entry.v })
-        if (result.length >= limit) break
-      }
-    } catch {}
-  }
-
-  // 加上缓冲区中未刷盘的
-  for (const [, entries] of buffer) {
-    for (const e of entries) {
-      if (e.n !== name) continue
-      if (from !== undefined && e.t < from) continue
-      if (to !== undefined && e.t > to) continue
-      result.push({ timestamp: e.t, value: e.v })
-    }
-  }
-
-  // 按时间排序
-  result.sort((a, b) => a.timestamp - b.timestamp)
-  return result
+// ─── 查询（自动选表） ─────────────────────────────────
+export function queryHistory(name: string, from?: number, to?: number, limit = 10000): { timestamp: number; value: number }[] {
+  const tFrom = from ?? 0, tTo = to ?? Date.now()
+  const span = tTo - tFrom
+  const table = span > 7 * 86400_000 ? '_1h' : span > 3600_000 ? '_1m' : 'raw'
+  const rows = db.prepare(`SELECT ts, val FROM ${table} WHERE name=? AND ts BETWEEN ? AND ? ORDER BY ts LIMIT ?`).all(name, tFrom, tTo, limit) as { ts: number; val: number }[]
+  return rows.map(r => ({ timestamp: r.ts, value: r.val }))
 }
 
-/**
- * 导出 CSV
- */
 export function exportCSV(name: string, from?: number, to?: number): string {
   const data = queryHistory(name, from, to, 50000)
-  const rows = ['timestamp,value']
-  for (const d of data) {
-    rows.push(`${new Date(d.timestamp).toISOString()},${d.value}`)
-  }
-  return rows.join('\n')
+  return 'timestamp,value\n' + data.map(d => `${new Date(d.timestamp).toISOString()},${d.value}`).join('\n')
 }
 
-// 启动时自动开始刷盘
 startFlush()

@@ -151,7 +151,7 @@ export function parseDBFile(content: string, defaultDbNumber?: number): ParsedDB
  * 解析一行变量定义
  * 格式: VarName : Type; 或 VarName : Array[0..N] of Type;
  */
-function parseVariableLine(line: string): ParsedDBVariable | null {
+function parseVariableLine(line: string, udtMap?: Record<string, { name: string; type: string }[]>): ParsedDBVariable | null {
   // 去掉行尾注释
   const commentMatch = line.match(/\/\/\s*(.*)$/)
   const comment = commentMatch ? commentMatch[1].trim() : undefined
@@ -165,30 +165,40 @@ function parseVariableLine(line: string): ParsedDBVariable | null {
   }
 
   // 匹配 Array 类型: VarName : Array[0..N] of Type;
-  const arrayMatch = clean.match(/^([^\s:;]+)\s*:\s*Array\s*\[\s*\d+\s*\.\.\s*(\d+)\s*\]\s+of\s+(\w+)/i)
+  const arrayMatch = clean.match(/^([^\s:;]+)\s*:\s*Array\s*\[\s*\d+\s*\.\.\s*(\d+)\s*\]\s+of\s+(.+)/i)
   if (arrayMatch) {
     const name = arrayMatch[1]
-    const rawType = arrayMatch[3].toLowerCase()
-    const arrayCount = parseInt(arrayMatch[2]) + 1  // 0..9 → 10 个
+    const rawType = arrayMatch[3].replace(/"/g, '').trim().split(/\s+/)[0].toLowerCase()
+    const arrayCount = parseInt(arrayMatch[2]) + 1
     const type = TYPE_ALIAS[rawType]
-    if (!type) return null
-    return { name, type, offset: 0, arrayCount, comment }
+    if (type) return { name, type, offset: 0, arrayCount, comment }
+    const udtName = arrayMatch[3].replace(/"/g, '').trim()
+    const udtFields = udtMap?.[udtName]
+    if (udtFields) return flattenUDTArray(name, udtFields, arrayCount, comment)
+    return { name, type: 'byte', offset: 0, arrayCount: arrayCount * 4, comment }
   }
 
-  // 匹配普通类型: VarName : Type;（变量名支持中文）
+  // 匹配普通类型: VarName : Type;
   const varMatch = clean.match(/^([^\s:;]+)\s*:\s*(\w+)/)
   if (varMatch) {
     const name = varMatch[1]
     const rawType = varMatch[2].toLowerCase()
+    if (rawType === 'string' || rawType === 'wstring') return null
     const type = TYPE_ALIAS[rawType]
-    if (!type) return null
+    if (type) return { name, type, offset: 0, comment }
+    const udtFields = udtMap?.[varMatch[2]]
+    if (udtFields) return flattenUDT(name, udtFields, comment)
+    return null
+  }
 
-    // 字符串类型特殊处理
-    if (rawType === 'string' || rawType === 'wstring') {
-      return null  // 暂不支持字符串
-    }
-
-    return { name, type, offset: 0, comment }
+  // 匹配 UDT 类型: VarName : "UDT名称";
+  const udtMatch = clean.match(/^([^\s:;]+)\s*:\s*"([^"]+)"\s*;/)
+  if (udtMatch) {
+    const name = udtMatch[1]
+    const udtName = udtMatch[2]
+    const udtFields = udtMap?.[udtName]
+    if (udtFields) return flattenUDT(name, udtFields, comment)
+    return { name, type: 'byte', offset: 0, comment }
   }
 
   return null
