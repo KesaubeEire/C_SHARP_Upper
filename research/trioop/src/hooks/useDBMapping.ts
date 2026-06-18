@@ -54,6 +54,29 @@ export function resolveVarName(fullName: string): { dbNumber: number; varName: s
   return { dbNumber, varName }
 }
 
+// ─── UDT 持久化 ─────────────────────────────────────────
+const UDT_FILES_KEY = 'trioop_udt_files'
+
+export function saveUDTContent(content: string): void {
+  const all = loadAllUDTFiles()
+  if (!all.includes(content)) {
+    all.push(content)
+    try { localStorage.setItem(UDT_FILES_KEY, JSON.stringify(all)) } catch {}
+  }
+}
+
+export function loadAllUDTContent(): string {
+  try { return JSON.parse(localStorage.getItem(UDT_FILES_KEY) || '[]').join('\n') } catch { return '' }
+}
+
+function loadAllUDTFiles(): string[] {
+  try { return JSON.parse(localStorage.getItem(UDT_FILES_KEY) || '[]') } catch { return [] }
+}
+
+export function clearUDTCache(): void {
+  try { localStorage.removeItem(UDT_FILES_KEY) } catch {}
+}
+
 /** 写入 PLC：bool 走 modifyBit(RMW), 数值直接写 */
 export async function writePLC(fullName: string, value: number): Promise<void> {
   const { dbNumber, varName } = resolveVarName(fullName)

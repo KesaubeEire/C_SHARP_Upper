@@ -1449,6 +1449,46 @@ body {
 .vdb-palette-dropdown__icon { font-size: 16px; flex-shrink: 0; }
 .vdb-palette-dropdown__label { font-weight: 500; white-space: nowrap; }
 
+/* ─── Variable Picker ────────────────────────────────── */
+.vdb-var-picker__dropdown {
+  z-index: 99999;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  animation: dropdown-in 0.1s ease-out;
+}
+.vdb-var-picker__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--foreground);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.08s;
+}
+.vdb-var-picker__item:hover,
+.vdb-var-picker__item--active {
+  background: var(--muted);
+}
+.vdb-var-picker__name { font-family: 'Consolas', 'SF Mono', monospace; }
+.vdb-var-picker__type { font-size: 10px; color: var(--muted-foreground); flex-shrink: 0; margin-left: 12px; }
+.vdb-var-picker__empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
 .vdb-rgl-wrapper { position: relative; min-height: 80px; }
 
 .react-grid-placeholder {
@@ -1951,6 +1991,32 @@ select:focus, .cplay-prop__select:focus {
 
 .modal-input::placeholder {
   color: var(--muted-foreground);
+}
+
+.modal-field-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.modal-field-row > .modal-input { flex: 1; }
+.modal-clear-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.modal-clear-btn:hover {
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .modal-actions {

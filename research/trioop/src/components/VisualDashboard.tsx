@@ -1,12 +1,12 @@
 // @ts-nocheck
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { Responsive } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import { Gauge, SignalPanel, EventLog } from '@altara/core'
 import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, TrendRecorder, PIDTuningPanel } from '@altara/industrial'
 import { useContextMenu } from './VDBContextMenu'
-import { resolveVarName, loadMapping, writePLC } from '../hooks/useDBMapping'
+import { resolveVarName, loadMapping, loadAllDBData, writePLC } from '../hooks/useDBMapping'
 
 
 type WidgetType = 'value' | 'lamp' | 'button' | 'gauge' | 'trend' | 'oee' | 'motor' | 'predictive' | 'alarm' | 'pid' | 'signal' | 'eventlog'
@@ -203,24 +203,48 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
       {editing && (
         <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setEditing(null) }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ width: 480 }}>
-            <h3 className="modal-title">✏️ 设置</h3>
+            <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              ✏️ 设置
+              <button className="btn btn--ghost btn--sm" style={{ color: 'var(--muted-foreground)', fontSize: 11 }}
+                onClick={() => {
+                  setFormTitle(WIDGET_META[formType]?.label || '')
+                  const defaults: Record<string, any> = {}
+                  for (const f of CONFIG_FIELDS[formType] || []) defaults[f.key] = f.default
+                  setFormCfg(defaults)
+                }}
+                title="重置所有字段">重置</button>
+            </h3>
             <div className="modal-form">
               <label className="modal-label">标题</label>
-              <input className="modal-input" value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="自定义标题" />
+              <div className="modal-field-row">
+                <input className="modal-input" value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="自定义标题" />
+                {formTitle && <button className="modal-clear-btn" onClick={() => setFormTitle('')} title="清空">✕</button>}
+              </div>
 
               {fields.some(f => f.key === 'variableName') && (
-                <div>
-                  <label className="modal-label">变量</label>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <select className="modal-input" style={{ width:100, flexShrink:0 }} value={(formCfg.variableName||'').split(':')[0]||''}
-                      onChange={e => { const dbName=e.target.value; const rest=(formCfg.variableName||'').split(':').slice(1).join(':'); setFormCfg(c => ({...c, variableName: dbName?`${dbName}:${rest}`:rest })) }}>
-                      <option value="">--</option>
-                      {importedDBs.map(d => <option key={d.dbName} value={d.dbName}>{d.dbName}</option>)}
-                    </select>
-                    <input className="modal-input" placeholder="变量名" value={(formCfg.variableName||'').split(':').slice(1).join(':')}
-                      onChange={e => { const dbName=(formCfg.variableName||'').split(':')[0]||''; setFormCfg(c => ({...c, variableName: dbName?`${dbName}:${e.target.value}`:e.target.value })) }} />
-                  </div>
-                </div>
+                <VariablePicker
+                  dbName={(formCfg.variableName||'').split(':')[0]||''}
+                  varName={(formCfg.variableName||'').split(':').slice(1).join(':')}
+                  importedDBs={importedDBs}
+                  onChange={(dbName, varName) => {
+                    setFormCfg(c => {
+                      // 判断 label 是否还是默认值（取 CONFIG_FIELDS 中 label 字段的 default）
+                      const labelDefault = CONFIG_FIELDS[formType]?.find(f => f.key === 'label')?.default
+                      const isLabelDefault = !c.label || c.label === labelDefault
+                      return {
+                        ...c,
+                        variableName: dbName ? `${dbName}:${varName}` : varName,
+                        ...(varName ? { label: isLabelDefault ? varName : c.label } : {}),
+                      }
+                    })
+                    if (varName) {
+                      setFormTitle(prev => {
+                        const titleDefault = WIDGET_META[formType]?.label
+                        return (!prev || prev === titleDefault) ? `${dbName}_${varName}` : prev
+                      })
+                    }
+                  }}
+                />
               )}
 
               {fields.some(f => f.key === 'min') && (
@@ -238,7 +262,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                 return (<div key={f.key}>
                   {f.type === 'boolean' ? (<label className="modal-label" style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}><input type="checkbox" checked={!!formCfg[f.key]} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.checked}))} />{f.label}</label>)
                   : f.type === 'select' ? (<><label className="modal-label">{f.label}</label><select className="modal-input" value={formCfg[f.key]??f.default} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.value}))}>{f.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></>)
-                  : (<><label className="modal-label">{f.label}</label><input className="modal-input" type={f.type==='number'?'number':'text'} value={formCfg[f.key]??''} onChange={e => setFormCfg(c => ({...c, [f.key]:f.type==='number'?Number(e.target.value):e.target.value}))} /></>)}
+                  : (<><label className="modal-label">{f.label}</label><div className="modal-field-row">{f.type === 'text' ? (<><input className="modal-input" type="text" value={formCfg[f.key]??''} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.value}))} />{formCfg[f.key] ? <button className="modal-clear-btn" onClick={() => setFormCfg(c => ({...c, [f.key]:''}))} title="清空">✕</button> : null}</>) : <input className="modal-input" type="number" value={formCfg[f.key]??''} onChange={e => setFormCfg(c => ({...c, [f.key]:Number(e.target.value)}))} />}</div></>)}
                 </div>)})}
               <div className="modal-actions"><button className="btn btn--ghost" onClick={() => setEditing(null)}>取消</button><button className="btn btn--primary" onClick={saveWidget}>保存</button></div>
             </div>
@@ -256,4 +280,83 @@ function EscapeHandler({ onEscape }: { onEscape: () => void }) {
     return () => document.removeEventListener('keydown', handler)
   }, [onEscape])
   return null
+}
+
+/** 带搜索过滤的变量选择器：选 DB → 搜变量名 → 点击选中 */
+function VariablePicker({ dbName, varName, importedDBs, onChange }: {
+  dbName: string; varName: string; importedDBs: { dbNumber: number; dbName: string }[]
+  onChange: (dbName: string, varName: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState(varName)
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
+  const inputRef = useRef<HTMLInputElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  // 当前选中的 DB 下的所有变量
+  const allVars = useMemo(() => {
+    if (!dbName) return []
+    const dbs = loadAllDBData()
+    const db = dbs.find(d => d.dbName === dbName)
+    return db?.variables ?? []
+  }, [dbName])
+
+  // 按搜索词过滤
+  const filtered = useMemo(() => {
+    if (!search) return allVars
+    const q = search.toLowerCase()
+    return allVars.filter(v => v.name.toLowerCase().includes(q))
+  }, [allVars, search])
+
+  // 点外部关闭
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false) }
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 0)
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler) }
+  }, [open])
+
+  const openDropdown = useCallback(() => {
+    if (!inputRef.current) return
+    const rect = inputRef.current.getBoundingClientRect()
+    setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+    setOpen(true)
+  }, [])
+
+  return (
+    <div>
+      <label className="modal-label">变量</label>
+      <div ref={wrapRef} style={{ display: 'flex', gap: 8 }}>
+        <select className="modal-input" style={{ width: 100, flexShrink: 0 }} value={dbName}
+          onChange={e => { onChange(e.target.value, ''); setSearch(''); setOpen(false) }}>
+          <option value="">--</option>
+          {importedDBs.map(d => <option key={d.dbName} value={d.dbName}>{d.dbName}</option>)}
+        </select>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <input ref={inputRef} className="modal-input" style={{ width: '100%' }} placeholder={dbName ? '搜索变量名...' : '先选择 DB'}
+            value={dbName ? search : ''} disabled={!dbName}
+            onFocus={openDropdown}
+            onInput={openDropdown}
+            onChange={e => { setSearch(e.target.value); openDropdown() }}
+            onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && filtered.length === 1) { onChange(dbName, filtered[0].name); setSearch(filtered[0].name); setOpen(false) } }} />
+          {search && <button className="modal-clear-btn" onClick={() => { setSearch(''); onChange(dbName, ''); }} title="清空">✕</button>}
+        </div>
+      </div>
+      {open && dbName && (
+        <div className="vdb-var-picker__dropdown" style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 99999 }}>
+          {filtered.length === 0 ? (
+            <div className="vdb-var-picker__empty">无匹配变量</div>
+          ) : (
+            filtered.map(v => (
+              <button key={v.name} className={`vdb-var-picker__item${v.name === varName ? ' vdb-var-picker__item--active' : ''}`}
+                onMouseDown={() => { onChange(dbName, v.name); setSearch(v.name); setOpen(false) }}>
+                <span className="vdb-var-picker__name">{v.name}</span>
+                <span className="vdb-var-picker__type">{v.type.toUpperCase()} @{v.offset}{v.bit !== undefined ? `.${v.bit}` : ''}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
 }

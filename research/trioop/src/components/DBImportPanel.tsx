@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../hooks/useToast'
-import { loadMapping, saveMapping, saveDBData, writePLC } from '../hooks/useDBMapping'
+import { loadMapping, saveMapping, saveDBData, saveUDTContent, loadAllUDTContent, clearUDTCache, loadAllDBData, writePLC } from '../hooks/useDBMapping'
 
 interface ParsedVar {
   name: string
@@ -35,35 +35,60 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   const [udtNames, setUdtNames] = useState<string[]>([])
   const [udtLoading, setUdtLoading] = useState(false)
 
-  const loadImported = async () => {
+  const loadImported = async (): Promise<ImportedDB[]> => {
     try {
       const res = await fetch('/api/plc/imported-dbs')
       const dbs: ImportedDB[] = await res.json()
       const m = loadMapping()
       for (const db of dbs) { if (m[db.dbName] !== undefined) db.dbNumber = m[db.dbName] }
       setImportedDBs(dbs)
-    } catch {}
+      return dbs
+    } catch { return [] }
   }
 
-  const loadUdts = async () => {
+  const loadUdts = async (): Promise<string[]> => {
     try {
       const res = await fetch('/api/plc/imported-udts')
-      if (res.ok) setUdtNames(await res.json())
+      if (res.ok) { const names = await res.json(); setUdtNames(names); return names }
     } catch {}
+    return []
   }
 
-  useState(() => { loadImported(); loadUdts() })
+  // 启动时从后端加载，若后端无数据则从 localStorage 自动恢复
+  useEffect(() => {
+    (async () => {
+      const dbs = await loadImported()
+      if (dbs.length > 0) return
+      // 后端无 UDT → 从 localStorage 恢复
+      const udtContent = loadAllUDTContent()
+      if (udtContent) {
+        try { await fetch('/api/plc/import-udt', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: udtContent }) } catch {}
+      }
+      // 后端无 DB → 从 localStorage 恢复
+      const localDBs = loadAllDBData()
+      for (const db of localDBs) {
+        try {
+          const content = localStorage.getItem(`trioop_db_raw_${db.dbName}`)
+          if (content) await fetch('/api/plc/import-db', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: content })
+        } catch {}
+      }
+      await loadImported()
+      await loadUdts()
+    })()
+  }, [])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setLoading(true); setError('')
     try {
-      // 直接发原始文件内容，避免 file.text() + JSON.stringify 阻塞主线程
-      const res = await fetch('/api/plc/import-db', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file })
+      const content = await file.text()
+      const res = await fetch('/api/plc/import-db', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: content })
       const data = await res.json()
       if (data.success) {
         saveDBData({ dbNumber: data.dbNumber, dbName: data.dbName, variables: data.variables })
+        // 存原始内容到 localStorage
+        try { localStorage.setItem(`trioop_db_raw_${data.dbName}`, content) } catch {}
         await loadImported(); onImport()
       }
       else setError(data.error || '导入失败')
@@ -82,9 +107,11 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
     if (!file) return
     setUdtLoading(true); setError('')
     try {
-      const res = await fetch('/api/plc/import-udt', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file })
+      const content = await file.text()
+      const res = await fetch('/api/plc/import-udt', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: content })
       const data = await res.json()
       if (data.success) {
+        saveUDTContent(content)
         toast(`已导入 ${data.count} 个 UDT: ${data.names.join(', ')}`, 'success')
         await loadUdts()
       } else {
@@ -102,6 +129,8 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   async function handleRemoveUdt(name: string) {
     try {
       await fetch(`/api/plc/imported-udts/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      // localStorage 里的 UDT 内容无法按名称删除，只能全清
+      clearUDTCache()
       await loadUdts()
     } catch {}
   }
@@ -131,6 +160,7 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
     try {
       const dbName = key.split('_').slice(1).join('_')
       await fetch(`/api/plc/imported-dbs/${encodeURIComponent(key)}?dbName=${encodeURIComponent(dbName)}`, { method: 'DELETE' })
+      try { localStorage.removeItem(`trioop_db_raw_${dbName}`) } catch {}
       await loadImported(); onImport()
     } catch {}
   }
