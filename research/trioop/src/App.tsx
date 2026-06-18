@@ -161,11 +161,11 @@ export default function App() {
             </CollapsibleSection>
           )}
 
-          <CollapsibleSection title="🟡 输入点 (I 区)" storageKey="io-input">
+          <CollapsibleSection title="🟡 输入点 (I 区)" storageKey="io-input" keepMounted>
             <IOGrid label="" data={io.i} prefix="I" bytes={ioBytes.i} />
           </CollapsibleSection>
 
-          <CollapsibleSection title="🔵 输出点 (Q 区)" storageKey="io-output">
+          <CollapsibleSection title="🔵 输出点 (Q 区)" storageKey="io-output" keepMounted>
             <IOGrid label="" data={io.q} prefix="Q" bytes={ioBytes.q} onToggle={handleQToggle} />
           </CollapsibleSection>
 
