@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Threshold } from '@altara/core';
+import type { Threshold } from './altara/core/adapters/types';
 
 export interface AltaraGaugeProps {
   dataSource?: { subscribe: (cb: (v: { value: number }) => void) => () => void; getHistory: () => { value: number }[] }

@@ -16,8 +16,7 @@ import DiagnosticsPanel from './components/DiagnosticsPanel'
 import CollapsibleSection from './components/CollapsibleSection'
 import RecipePanel from './components/RecipePanel'
 import AlarmAnnunciator from './components/AlarmAnnunciator'
-import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, TrendRecorder } from '@altara/industrial'
-import { Gauge } from '@altara/core'
+// @altara 组件已全部本地化，不再直接引用第三方包
 import type { PLCConfig } from '../shared/types'
 
 interface DBBlockConfig {

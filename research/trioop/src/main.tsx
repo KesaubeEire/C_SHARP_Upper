@@ -4,7 +4,7 @@ import App from './App'
 import { AuthProvider } from './hooks/useAuth'
 import { ToastProvider } from './hooks/useToast'
 import { ThemeProvider, useTheme } from './hooks/useTheme'
-import { AltaraProvider } from '@altara/core'
+import { AltaraProvider } from './components/altara/core/AltaraProvider'
 import './App.css'
 
 function AltaraThemeWrapper({ children }: { children: React.ReactNode }) {

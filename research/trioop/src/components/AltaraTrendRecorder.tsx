@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import type { TrendChannel, TrendTimeScale } from '@altara/industrial';
+import type { TrendChannel, TrendTimeScale } from './altara/industrial/types';
 
 export interface AltaraTrendRecorderProps {
   channels?: TrendChannel[];
