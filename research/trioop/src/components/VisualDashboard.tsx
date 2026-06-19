@@ -220,7 +220,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                     <button className="btn btn--destructive btn--sm" onClick={() => removeWidget(w.id)}>✕</button>
                   </div>
                 </div>
-                <div className="vdb-widget__body">{renderWidget(w.type, w.config, liveData)}</div>
+                <div className="vdb-widget__body" onMouseDown={e => e.stopPropagation()}>{renderWidget(w.type, w.config, liveData)}</div>
               </div>
             ))}
           </Responsive></div>
