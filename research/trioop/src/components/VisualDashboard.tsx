@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import CollapsibleSection from './CollapsibleSection'
+import Tooltip from './Tooltip'
 import { Responsive } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import { AltaraGauge } from '../components/AltaraGauge'
@@ -27,6 +28,76 @@ const STORAGE_KEY = 'trioop_vdb_v4'
 function loadData(): { widgets: Widget[]; layouts: Record<string, any[]> } {
   try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw) } catch {}
   return { widgets: [], layouts: { lg: [] } }
+}
+
+const WIDGET_HELP: Record<WidgetType, string> = {
+  value: `绑定一个 PLC 变量，显示实时数值。
+
+• 变量名：选择已导入的 DB 块和变量
+• 单位：显示在数值右侧，如 ℃、MPa、rpm`,
+  lamp: `绑定一个 Bool 变量，显示状态灯。
+
+• ON 时显示绿色，OFF 时显示灰色
+• 适合显示运行状态、报警信号`,
+  button: `绑定一个 Bool 变量，点击即可写入。
+
+• 按1松0：按下鼠标写 1，松开写 0
+• 取反：点一次翻转当前值（0→1 或 1→0）
+• 按钮文字：自定义按键显示名称`,
+  gauge: `指针式仪表盘，适合显示实时数值。
+
+• 变量名：选择要显示的 PLC 变量
+• 量程：设置表盘的最小值和最大值
+• 预警值/危险值：在表盘上显示彩色弧线段
+• 缓动时长：指针摆动动画速度，0=瞬间跳转`,
+  trend: `实时趋势曲线，支持多通道对比。
+
+• 演示模式：开=显示 4 条模拟曲线
+• 每个通道可独立配置变量/颜色/量程
+• 采样标记：在每个数据点画小圆点
+• 关闭演示模式后，按配置的变量名采集实时数据`,
+  oee: `OEE 综合仪表盘（设备综合效率）。
+
+• 可用率：设备实际运行时间占比
+• 性能率：实际生产速度与设计速度之比
+• 质量率：合格产品占总产量之比
+• OEE = 可用率 × 性能率 × 质量率`,
+  motor: `电机监控面板。
+
+• 转速：电机当前转速（RPM）
+• 扭矩：输出扭矩（Nm）
+• 电流：相电流（A）
+• 温度：绕组温度（°C）`,
+  predictive: `预测维护表盘。
+
+• 健康指数：0~100，越高越健康
+• 剩余寿命：预计可继续使用天数`,
+  alarm: `报警瓷砖面板，类似控制室报警墙。
+
+• 列数：每行显示几个报警瓷砖
+• 闪烁频率：未确认报警的闪烁速度
+• 分组：按指定字段分组显示`,
+  pid: `PID 调谐参数面板。
+
+• Kp：比例增益
+• Ki：积分增益
+• Kd：微分增益`,
+  signal: `双通道信号面板，每个通道独立配置。
+
+• 通道1/2 分别设置标签、数值、单位
+• 适合显示成对的测量值（如温度+压力）`,
+  eventlog: `事件日志，显示系统事件。
+
+• 每条记录包含时间戳、级别和消息
+• 支持 info/warn/error 三种级别`,
+  connectionbar: `连接状态条，显示 PLC 通信状态。
+
+• 连接地址：PLC 的标识名称
+• 状态：已连接/未连接`,
+  process: `工艺流程图，开演示模式显示 3 罐体工艺动画。
+
+• 演示模式：开=显示内置动画
+• 后续可绑定实际设备点位数据`,
 }
 
 const WIDGET_META: Record<WidgetType, { label: string; icon: string; w: number; h: number }> = {
@@ -122,12 +193,50 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
 }
 
 export default function VisualDashboard({ liveData }: { liveData?: Record<string, { value: number | boolean }> }) {
-  const [data, setData] = useState(() => loadData())
+  const [data, setDataRaw] = useState(() => loadData())
   const [showPalette, setShowPalette] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const [helpWidget, setHelpWidget] = useState<WidgetType | null>(null)
   const [formTitle, setFormTitle] = useState(''); const [formCfg, setFormCfg] = useState<Record<string, any>>({}); const [formType, setFormType] = useState<WidgetType>('value')
   const [rowH, setRowH] = useState(() => { try { return Number(localStorage.getItem(ROW_HEIGHT_KEY)) || 120 } catch { return 120 } })
   const paletteRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  // ─── 撤销 / 重做 ─────────────────────────────────────
+  const historyRef = useRef<{ stack: any[]; idx: number }>({ stack: [], idx: -1 })
+  const setData = useCallback((fn: (prev: any) => any) => {
+    setDataRaw(prev => {
+      const next = fn(prev)
+      const h = historyRef.current
+      // 剪掉当前位置之后的历史
+      h.stack = h.stack.slice(0, h.idx + 1)
+      h.stack.push(JSON.parse(JSON.stringify(prev)))
+      if (h.stack.length > 50) h.stack.shift()
+      h.idx = h.stack.length - 1
+      return next
+    })
+  }, [])
+  const undo = useCallback(() => {
+    const h = historyRef.current
+    if (h.idx < 0) return
+    setDataRaw(_ => { const prev = h.stack[h.idx]; h.idx--; return JSON.parse(JSON.stringify(prev)) })
+  }, [])
+  const redo = useCallback(() => {
+    const h = historyRef.current
+    if (h.idx + 1 >= h.stack.length) return
+    setDataRaw(_ => { h.idx++; return JSON.parse(JSON.stringify(h.stack[h.idx])) })
+  }, [])
+
+  // ─── 导入 / 导出 ─────────────────────────────────────
+  const exportData = useCallback(() => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'dashboard.json'; a.click()
+  }, [data])
+  const importData = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
+    file.text().then(text => { try { setDataRaw(JSON.parse(text)) } catch {} }).catch(() => {})
+    if (fileRef.current) fileRef.current.value = ''
+  }, [setDataRaw])
 
   const containerRef = useRef<HTMLDivElement>(null); const [containerWidth, setContainerWidth] = useState(0)
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }, [data])
@@ -178,6 +287,11 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   return (
     <CollapsibleSection title="🎛️ 可视化仪表盘" storageKey="visual-dashboard" keepMounted
       actions={<><span style={{ whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-muted)' }}>{data.widgets.length} 组件</span>
+        <Tooltip content="撤销"><button className="btn btn--ghost btn--sm" onClick={undo} style={{ fontSize: 14 }}>↩</button></Tooltip>
+        <Tooltip content="重做"><button className="btn btn--ghost btn--sm" onClick={redo} style={{ fontSize: 14 }}>↪</button></Tooltip>
+        <Tooltip content="导出 JSON"><button className="btn btn--ghost btn--sm" onClick={exportData}>📤</button></Tooltip>
+        <input ref={fileRef} type="file" accept=".json" onChange={importData} style={{ display:'none' }} />
+        <Tooltip content="导入 JSON"><button className="btn btn--ghost btn--sm" onClick={() => fileRef.current?.click()}>📥</button></Tooltip>
         <div style={{ position: 'relative' }} ref={paletteRef}>
           <button className="btn btn--sm btn--primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setShowPalette(p => !p)}>
             <span>+ 添加</span>
@@ -226,6 +340,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
             {data.widgets.map(w => (
               <div key={w.id} className="vdb-widget" onContextMenu={e => ctx.show(e, [
                 { label: '编辑', icon: '✏️', action: () => openEdit(w) },
+                { label: '帮助', icon: '❓', action: () => setHelpWidget(w.type) },
                 { label: '删除', icon: '✕', action: () => removeWidget(w.id), danger: true },
               ])}>
                 <div className="vdb-widget__bar">
@@ -235,7 +350,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                     <button className="btn btn--destructive btn--sm" onClick={() => removeWidget(w.id)}>✕</button>
                   </div>
                 </div>
-                <div className="vdb-widget__body" onMouseDown={e => e.stopPropagation()}>{renderWidget(w.type, w.config, liveData)}</div>
+                <div className="vdb-widget__body" onMouseDown={e => e.stopPropagation()}><ResizeWrapper>{renderWidget(w.type, w.config, liveData)}</ResizeWrapper></div>
               </div>
             ))}
           </Responsive></div>
@@ -314,6 +429,19 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
               {formType === 'trend' && <TrendChannelConfig formCfg={formCfg} setFormCfg={setFormCfg} importedDBs={importedDBs} />}
 
               <div className="modal-actions"><button className="btn btn--ghost" onClick={() => setEditing(null)}>取消</button><button className="btn btn--primary" onClick={saveWidget}>保存</button></div>
+            </div>
+          </div>
+        </div>
+      )}
+      {helpWidget && (
+        <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setHelpWidget(null) }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ width: 420 }}>
+            <h3 className="modal-title">❓ {WIDGET_META[helpWidget]?.icon} {WIDGET_META[helpWidget]?.label} 帮助</h3>
+            <div className="modal-form">
+              <div style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--foreground)', whiteSpace: 'pre-wrap' }}>{WIDGET_HELP[helpWidget] || '暂无帮助说明'}</div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn--primary" onClick={() => setHelpWidget(null)}>知道了</button>
             </div>
           </div>
         </div>
@@ -573,3 +701,24 @@ const TrendRecorderCell = React.memo(function TrendRecorderCell({ channels, time
     </div>
   )
 })
+
+/** 响应式容器：ResizeObserver 监测尺寸变化，强制子元素撑满 */
+function ResizeWrapper({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let raf: number
+    const ro = new ResizeObserver(entries => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        // 强制刷新，让子组件的 useEffect 重新计算尺寸
+        setTick(t => t + 1)
+      })
+    })
+    ro.observe(el)
+    return () => { ro.disconnect(); cancelAnimationFrame(raf) }
+  }, [])
+  return <div ref={ref} style={{ width: '100%', height: '100%', minHeight: 0, overflow: 'hidden' }}>{children}</div>
+}

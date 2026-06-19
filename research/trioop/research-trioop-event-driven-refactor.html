@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Trioop — 事件驱动架构重构说明</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f1a; color: #e0e0e0; line-height: 1.7; padding: 40px 20px; }
+.container { max-width: 1050px; margin: 0 auto; }
+h1 { font-size: 28px; margin-bottom: 6px; color: #f0f0f0; }
+.subtitle { color: #888; font-size: 14px; margin-bottom: 30px; }
+h2 { font-size: 22px; margin: 42px 0 14px; color: #8b83ff; border-bottom: 1px solid #2a2a3e; padding-bottom: 8px; }
+h3 { font-size: 17px; margin: 28px 0 10px; color: #e0e0e0; }
+h4 { font-size: 15px; margin: 20px 0 8px; color: #bbb; }
+p { margin-bottom: 12px; color: #ccc; }
+ul, ol { margin: 8px 0 16px 22px; }
+li { margin-bottom: 6px; color: #bbb; }
+code { background: #1a1a2e; color: #8b83ff; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+pre { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 13px; margin: 12px 0 20px; }
+pre code { background: none; padding: 0; color: #e0e0e0; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; margin-right: 6px; }
+.tag-good { background: rgba(76,175,80,0.2); color: #4caf50; }
+.tag-bad { background: rgba(239,83,80,0.2); color: #ef5350; }
+.tag-info { background: rgba(33,150,243,0.2); color: #42a5f5; }
+.table-wrap { overflow-x: auto; margin: 12px 0 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #2a2a3e; }
+th { color: #888; font-weight: 500; font-size: 13px; }
+td { color: #ccc; }
+td:first-child { font-weight: 600; color: #e0e0e0; }
+.arch-box { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 16px; margin: 12px 0 20px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; color: #ccc; }
+.highlight { background: #1a1a2e; border-left: 3px solid #8b83ff; padding: 12px 16px; margin: 12px 0 20px; border-radius: 0 8px 8px 0; }
+.highlight p { margin: 0; color: #ddd; }
+.compare-box { display: flex; gap: 16px; margin: 12px 0 20px; }
+.compare-col { flex: 1; background: #1a1a2e; border-radius: 8px; padding: 16px; }
+.compare-col h4 { text-align: center; margin-bottom: 10px; }
+.compare-col.bad { border: 1px solid #5a2a2a; }
+.compare-col.bad h4 { color: #ef5350; }
+.compare-col.good { border: 1px solid #2a5a2a; }
+.compare-col.good h4 { color: #4caf50; }
+.code-block { position: relative; }
+.line-num { color: #555; user-select: none; }
+.hl-add { background: rgba(76,175,80,0.1); display: inline-block; width: 100%; }
+.hl-rm { background: rgba(239,83,80,0.1); display: inline-block; width: 100%; }
+.diff { font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.6; list-style: none; padding: 0; }
+.diff li { padding: 1px 0; margin: 0; font-size: 12px; white-space: pre; }
+.diff .add { color: #4caf50; }
+.diff .rm { color: #ef5350; }
+.diff .ctx { color: #ccc; }
+.diff .cmt { color: #666; font-style: italic; }
+.flow-box { text-align: center; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 20px; margin: 12px 0; }
+.flow-box .arrow { color: #555; font-size: 20px; }
+.flow-box .box { display: inline-block; background: #2a2a4e; border-radius: 6px; padding: 8px 16px; margin: 4px; }
+.flow-box .box.bad { border: 1px solid #5a2a2a; }
+.flow-box .box.good { border: 1px solid #2a5a2a; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔧 事件驱动架构重构详解</h1>
+<p class="subtitle">用你的 Trioop 真实代码做前后对比 · 改动前 vs 改动后 · 收益与风险</p>
+
+<!-- ============================================================ -->
+<h2>一、先看问题：你现在的代码长什么样</h2>
+
+<p>打开你的 <code>server/index.ts</code>，第 848~883 行的 <code>poll()</code> 函数：</p>
+
+<pre><code>async function poll() {
+  // ⚠️ 1. 检查连接（可能尝试重连）
+  if (!plc.isConnected()) { ... }
+  if (!plc.isQueueIdle()) return  // ⚠️ 写入队列忙时跳过
+
+  // ⚠️ 2. 读取 PLC（核心任务）
+  const result = await plc.readOnce()
+
+  // ⚠️ 3. 更新 5 个全局缓存
+  plcDataCache = result.db
+  ioDataCache.i = result.io.i
+  ioDataCache.q = result.io.q
+  ioDataCache.m = result.io.m
+  dbBlockCache = result.dbBlocks
+
+  // ⚠️ 4. 推送到趋势缓冲区
+  const trendVals = /* 遍历提取 */
+  trendBuffer.push(trendVals)
+
+  // ⚠️ 5. 写入 SQLite 历史库
+  writePoints(trendVals)
+
+  // ⚠️ 6. 检查报警规则
+  checkAlarms(trendVals)
+
+  // ⚠️ 7. 广播给所有 SSE 客户端
+  broadcast({ db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache })
+}</code></pre>
+
+<p>还有 OPC UA 模式下 <strong>一模一样的重复逻辑</strong>（第 248~263 行 <code>startOpcuaBroadcast()</code>）：</p>
+
+<pre><code>function startOpcuaBroadcast() {
+  opcuaBroadcastTimer = setInterval(() => {
+    const cache = opcua.getValueCache()
+    // ⚠️ 再次：趋势存储 + 历史写入 + 报警检查 + 广播
+    trendBuffer.push(cache)
+    writePoints(cache)
+    checkAlarms(cache)
+    broadcast({ db, io: { i: {}, q: {}, m: {} }, dbBlocks: {} })
+  }, 200)
+}</code></pre>
+
+<h3>1.1 这么写有什么问题？</h3>
+
+<table>
+  <tr><th style="width: 30px">#</th><th>问题</th><th>真实的后果</th></tr>
+  <tr>
+    <td><span class="tag tag-bad">1</span></td>
+    <td><strong>一个函数干所有事</strong></td>
+    <td>想加一个新功能（比如把数据记到日志文件），你<strong>必须修改 poll() 函数本身</strong>。改动有风险——改错了整条数据链路断掉。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-bad">2</span></td>
+    <td><strong>一个 consumer 抛异常，整条链路挂</strong></td>
+    <td>如果 <code>writePoints()</code> 因为 SQLite 磁盘满了而抛异常，整个 poll() 的 catch 会吞掉，<strong>SSE 广播也发不出去</strong>——前端看到的数据冻住了。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-bad">3</span></td>
+    <td><strong>S7 模式 + OPC UA 模式各写一遍</strong></td>
+    <td>两个 setInterval 里写了几乎一样的 trendBuffer.push + writePoints + checkAlarms + broadcast。改一个忘了改另一个，<strong>两边行为不一致</strong>。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-bad">4</span></td>
+    <td><strong>没法单独测试</strong></td>
+    <td>怎么测试"报警规则正确触发"？必须: 连真的 PLC → 启动轮询 → 等数据变化 → 等 checkAlarms 被调用。不能独立地 mock 数据喂给报警引擎。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-bad">5</span></td>
+    <td><strong>加新数据源必须重写一遍</strong></td>
+    <td>如果以后加了 MQTT 数据源、或从 HTTP API 拉数据，得再写第三个 setInterval 循环，再复制一遍 trendBuffer.push + writePoints + checkAlarms + broadcast。</td>
+  </tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>二、事件驱动：改成什么样？</h2>
+
+<h3>2.1 核心思路</h3>
+
+<div class="arch-box">改动前（紧耦合流水线）：
+  定时器 → readOnce() → 更新缓存 → 存趋势 → 写历史 → 查报警 → 推SSE
+                          ↓                    全部在 poll() 一个函数里
+                          一个挂了全都挂
+
+改动后（事件总线）：
+            ┌───────────── 推SSE (sse.ts)
+            │
+  定时器 →  emit('data') ─┼──────── 存趋势 (ringBuffer.ts)
+                          │
+            ├──────── 写历史 (historyStore.ts)
+                          │
+            └──────── 查报警 (alarmEngine.ts)
+
+  新的消费者（比如记日志）:
+            │
+            └──────── 记日志 ← 独立文件，不碰 poll()</div>
+
+<h3>2.2 需要改动的文件</h3>
+
+<table>
+  <tr><th>文件</th><th>改动</th><th>行数</th></tr>
+  <tr><td><strong>新建</strong> <code>server/eventBus.ts</code></td><td>创建一个 EventEmitter 实例 + 类型定义</td><td>~10 行</td></tr>
+  <tr><td><code>server/index.ts</code></td><td>把 poll() 拆成"采集 + emit"两步</td><td>~30 行（删 50 加 20）</td></tr>
+  <tr><td><code>server/sse.ts</code></td><td>加一个 data 事件监听，替代 broadcast 调用</td><td>~5 行</td></tr>
+  <tr><td><code>server/ringBuffer.ts</code></td><td>加一个 data 事件监听（可选方案）</td><td>~5 行</td></tr>
+</table>
+
+<h3>2.3 新建文件：eventBus.ts</h3>
+
+<pre><code>// server/eventBus.ts — 全局事件总线
+import { EventEmitter } from 'events'
+import type { PLCData } from '../shared/types.js'
+
+/** poll() 采集完一轮数据后 emit 的 payload 类型 */
+export interface PlcDataEvent {
+  /** DB 变量：变量名 → { value, type, ... } */
+  db: PLCData
+  /** I/Q/M 区字节 */
+  io: { i: Record&lt;number, number&gt;; q: Record&lt;number, number&gt;; m: Record&lt;number, number&gt; }
+  /** DB 块原始字节 */
+  dbBlocks: Record&lt;string, number[] | null&gt;
+  /** 时间戳（毫秒） */
+  timestamp: number
+  /** 数据源标识 */
+  source: 's7' | 'opcua'
+}
+
+// 单例 EventEmitter
+const bus = new EventEmitter()
+
+// 给事件名定义一个常量（防止拼写错误）
+export const PLC_DATA_EVENT = 'plc:data'
+
+export { bus }</code></pre>
+
+<h3>2.4 改动 index.ts：poll() 函数</h3>
+
+<div class="compare-box">
+  <div class="compare-col bad">
+    <h4>❌ 改动前（紧耦合）</h4>
+    <pre style="font-size:11px; margin:0; white-space:pre-wrap;">async function poll() {
+  // ...检查连接...
+  const result = await plc.readOnce()
+
+  // ⚠️ 更新缓存（poll 自己管）
+  plcDataCache = result.db
+  ioDataCache.i = result.io.i
+  ioDataCache.q = result.io.q
+  ioDataCache.m = result.io.m
+  dbBlockCache = result.dbBlocks
+
+  // ⚠️ 趋势
+  const trendVals = /* 提取 */
+  trendBuffer.push(trendVals)
+
+  // ⚠️ 历史
+  writePoints(trendVals)
+
+  // ⚠️ 报警
+  checkAlarms(trendVals)
+
+  // ⚠️ 推 SSE
+  broadcast({ db: plcDataCache, ... })
+}</pre>
+  </div>
+  <div class="compare-col good">
+    <h4>✅ 改动后（事件驱动）</h4>
+    <pre style="font-size:11px; margin:0; white-space:pre-wrap;">async function poll() {
+  // ...检查连接...  (不变)
+  const result = await plc.readOnce()
+
+  // ✅ 缓存照常更新（保持兼容）
+  plcDataCache = result.db
+  ioDataCache.i = result.io.i
+  ioDataCache.q = result.io.q
+  ioDataCache.m = result.io.m
+  dbBlockCache = result.dbBlocks
+
+  // ✅ 只做一件事：emit 事件
+  //    所有消费者各自监听 'plc:data'
+  bus.emit(PLC_DATA_EVENT, {
+    db: result.db,
+    io: result.io,
+    dbBlocks: result.dbBlocks,
+    timestamp: Date.now(),
+    source: 's7',
+  })
+}</pre>
+  </div>
+</div>
+
+<p><strong>poll() 从 35 行降到 15 行</strong>。不再直接调 trendBuffer、writePoints、checkAlarms、broadcast。它只管采集和缓存，后面的活谁爱干谁干。</p>
+
+<h3>2.5 在各自文件中监听事件</h3>
+
+<p><strong>sse.ts — 加监听（替代 broadcast 调用）</strong></p>
+<pre><code>// sse.ts
+import { bus, PLC_DATA_EVENT, type PlcDataEvent } from './eventBus.js'
+
+// ✅ 监听数据事件，自动推 SSE
+bus.on(PLC_DATA_EVENT, (data: PlcDataEvent) => {
+  const payload = { db: data.db, io: data.io, dbBlocks: data.dbBlocks }
+  const json = JSON.stringify(payload)
+  for (const client of clients) {
+    client.write(`data: ${json}\n\n`)
+  }
+})</code></pre>
+
+<p><strong>新建 historySubscriber.ts — 独立文件负责历史存储</strong></p>
+<pre><code>// server/historySubscriber.ts
+import { bus, PLC_DATA_EVENT, type PlcDataEvent } from './eventBus.js'
+import { writePoints } from './historyStore.js'
+import { trendBuffer } from './ringBuffer.js'
+
+bus.on(PLC_DATA_EVENT, (data: PlcDataEvent) => {
+  // 从 db 中提取数值
+  const vals: Record&lt;string, number | boolean&gt; = {}
+  for (const [name, pt] of Object.entries(data.db)) {
+    vals[name] = pt.value
+  }
+
+  // ✅ 各自 try-catch，互不影响
+  try { trendBuffer.push(vals) } catch (e) {
+    console.error('[趋势] 写入失败:', e)
+  }
+  try { writePoints(vals) } catch (e) {
+    console.error('[历史] 写入失败:', e)
+  }
+})</code></pre>
+
+<p><strong>alarmSubscriber.ts — 独立文件负责报警检查</strong></p>
+<pre><code>// server/alarmSubscriber.ts
+import { bus, PLC_DATA_EVENT, type PlcDataEvent } from './eventBus.js'
+import { checkAlarms } from './alarmEngine.js'
+
+bus.on(PLC_DATA_EVENT, (data: PlcDataEvent) => {
+  const vals: Record&lt;string, number | boolean&gt; = {}
+  for (const [name, pt] of Object.entries(data.db)) {
+    vals[name] = pt.value
+  }
+  try { checkAlarms(vals) } catch (e) {
+    console.error('[报警] 检查异常:', e)
+  }
+})</code></pre>
+
+<h3>2.6 OPC UA 模式的重复循环也消灭了</h3>
+
+<p>改之前的 <code>startOpcuaBroadcast()</code> 里面写了几乎和 poll() 一样的 4 件事。改之后：</p>
+
+<pre><code>// index.ts — OPC UA 定时器也改成 emit 事件
+function startOpcuaBroadcast() {
+  stopOpcuaBroadcast()
+  opcuaBroadcastTimer = setInterval(() => {
+    const cache = opcua.getValueCache()
+    // ✅ 同样 emit 同一个事件，所有消费者自动触发
+    bus.emit(PLC_DATA_EVENT, {
+      db: /* 转成 PLCData 格式 */,
+      io: { i: {}, q: {}, m: {} },
+      dbBlocks: {},
+      timestamp: Date.now(),
+      source: 'opcua',
+    })
+  }, 200)
+}</code></pre>
+
+<p><strong>不再需要两个地方写同样的趋势/报警/广播代码。</strong>消费者监听一次，无论数据从 S7 来还是 OPC UA 来，统一处理。</p>
+
+<!-- ============================================================ -->
+<h2>三、改动前后对比总结</h2>
+
+<table>
+  <tr><th>维度</th><th>改动前</th><th>改动后</th></tr>
+  <tr><td>poll() 函数行数</td><td>~35 行（读 + 缓存 + 趋势 + 历史 + 报警 + SSE）</td><td>~15 行（读 + 缓存 + emit）</td></tr>
+  <tr><td>轮询代码 + OPC UA 代码重复</td><td>两份相同的趋势+历史+报警+广播逻辑</td><td>一份监听，两个数据源共用一个消费者</td></tr>
+  <tr><td>加新功能</td><td>修改 poll() 函数</td><td>新建一个文件，加一行 bus.on(...)</td></tr>
+  <tr><td>链路上一个环节挂了</td><td>整条链路断，SSE 广播也发不出</td><td>各自 try-catch，互不影响</td></tr>
+  <tr><td>单元测试</td><td>需要连真实的 PLC 才能测</td><td>bus.on 监听器可以直接 mock 事件喂数据测试</td></tr>
+  <tr><td>新增数据源（比如未来加 MQTT）</td><td>再写第三个 setInterval，再复制一次</td><td>读完后 emit 同一个事件，现有的消费者自动处理</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>四、收益 vs 副作用 vs 消除方法</h2>
+
+<h3>4.1 收益</h3>
+
+<table>
+  <tr><th style="width:25px">#</th><th>收益</th><th>为什么重要</th></tr>
+  <tr>
+    <td><span class="tag tag-good">1</span></td>
+    <td><strong>可维护性质的提升</strong></td>
+    <td>以后加任何新功能（日志、统计、WebSocket 升级、数据导出），新建一个文件 + 一行 bus.on。不需要动 poll()，零风险。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-good">2</span></td>
+    <td><strong>一个环节挂了不影响其他</strong></td>
+    <td>现在 writePoints() 抛异常 → SSE 也发不出去了。改后各自 try-catch，SQLite 满了报警照跑、SSE 照推。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-good">3</span></td>
+    <td><strong>消除代码重复</strong></td>
+    <td>S7 poll() 和 OPC UA setInterval 各写了一套 trendBuffer.push + writePoints + checkAlarms。改后写一次监听，两个数据源通吃。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-good">4</span></td>
+    <td><strong>单元测试可行</strong></td>
+    <td>直接 bus.emit 伪造数据就能测报警引擎、历史存储，不需要连 PLC。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-good">5</span></td>
+    <td><strong>为 WebSocket 升级铺路</strong></td>
+    <td>现在你的 SSE 在 index.ts 里调 broadcast()。改成事件驱动后，加一个 WebSocket 推流就是新建一个文件 + 一行 bus.on。</td>
+  </tr>
+</table>
+
+<h3>4.2 副作用</h3>
+
+<table>
+  <tr><th style="width:25px">#</th><th>副作用</th><th>严重程度</th><th>消除方法</th></tr>
+  <tr>
+    <td><span class="tag tag-info">A</span></td>
+    <td><strong>事件监听器执行顺序不确定</strong></td>
+    <td>低</td>
+    <td>EventEmitter 在 Node.js 中默认按注册顺序同步执行，所以顺序是确定的（先注册的先跑）。如果确实需要保证"先存历史再查报警"，可以在一个监听器里按顺序调，或者用 <code>bus.listeners()</code> 控制。<br><br>但一般来说不需要——<strong>趋势/历史/报警/SSE 之间没有顺序依赖</strong>。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-info">B</span></td>
+    <td><strong>监听器忘记 remove 可能导致内存泄漏</strong></td>
+    <td>中（长期运行）</td>
+    <td>你的应用是单进程长期运行，这些监听器注册后永远不会移除。Node.js EventEmitter 对这种情况<strong>没有内存泄漏</strong>——监听器函数只有一份引用。但如果你在动态模块热加载（如 Vite HMR），每次重新 import 会注册新的监听器。<br><br>✅ 解决方案：在 eventBus.ts 中加 <code>bus.setMaxListeners(50)</code>，以及在每次启动时清理旧监听器：<code>bus.removeAllListeners(PLC_DATA_EVENT)</code></td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-info">C</span></td>
+    <td><strong>try-catch 可能静默吞掉错误</strong></td>
+    <td>低（但要注意）</td>
+    <td>每个监听器自己 try-catch 是设计意图（互不影响），但要用 console.error 打印出来，不能让错误无声消失。<br><br>✅ 解决方案：在 catch 块里用 <code>console.error('[xxx] ...', e)</code> + 记入诊断模块的 <code>recordError()</code>。不改现有诊断逻辑。</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-info">D</span></td>
+    <td><strong>无法一眼看到整条数据链路</strong></td>
+    <td>低（习惯问题）</td>
+    <td>原先 poll() 里 35 行顺序执行，一目了然。改成事件驱动后，谁监听了这个事件要去各个文件里找。这是事件驱动架构<strong>天生的权衡</strong>。<br><br>✅ 解决方案：在 eventBus.ts 里加一个注释块列出所有监听器：<br><code>// plc:data 监听器列表：</code><br><code>// - sse.ts (推送给前端)</code><br><code>// - historySubscriber.ts (存趋势 + 历史)</code><br><code>// - alarmSubscriber.ts (检查报警)</code></td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-info">E</span></td>
+    <td><strong>EventEmitter 背压问题</strong></td>
+    <td>低（当前场景）</td>
+    <td>如果某个监听器处理得慢（比如 writePoints 写 SQLite 耗时 200ms），而 poll() 每 500ms emit 一次，会造成事件积压。EventEmitter 是同步的，所以<strong>会阻塞后续监听器</strong>。<br><br>✅ 解决方案：把慢的监听器改为异步（setImmediate 或 queueMicrotask）：<br><code>bus.on(PLC_DATA_EVENT, (data) => {</code><br><code>  setImmediate(() => { try { writePoints(...) } catch {} })</code><br><code>})</code><br>这样事件循环会先执行完所有同步监听器（SSE 推送），再去处理异步的任务（SQLite 写入）。</td>
+  </tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>五、50ms 轮询下的背压分析——你最关心的问题</h2>
+
+<div class="highlight">
+<p><strong>先说结论：50ms（20次/秒）轮询，纯 EventEmitter 同步监听器完全扛得住。</strong> SQLite 写操作需要加串行队列，但方案很简单。往下看详细分析。</p>
+</div>
+
+<h3>5.1 每个 50ms 周期里发生了什么</h3>
+
+<pre><code>时间线 (50ms = 20次/秒):
+
+0ms    poll() 开始 → readOnce() 发出 S7 请求
+      ↓ (等待网络，约 2~10ms)
+10ms   readOnce() 返回数据
+      ↓
+10ms   emit('plc:data')
+      ↓  (同步执行以下全部监听器)
+10ms   → SSE broadcast      (0.01ms, 纯内存)
+10ms   → trendBuffer.push   (0.001ms, 纯内存环形缓冲区)
+10ms   → checkAlarms        (0.1ms, 纯内存比对)
+10ms   → writePoints        (启动异步 SQLite 写入, ~5~20ms)
+      ↓
+10.1ms poll() 返回，事件循环空闲
+      ↓
+50ms   下一轮 poll() 开始
+      ↓
+60ms   writePoints 完成（在后台事件循环中跑完）</code></pre>
+
+<p><strong>关键发现</strong>：前三个监听器（SSE、趋势、报警）都是纯内存操作，<strong>耗时加起来 &lt; 0.2ms</strong>，50ms 间隔对它来说像散步。唯一可能拖后腿的是 <strong>writePoints（SQLite 写入）</strong>。</p>
+
+<h3>5.2 SQLite 写入压力测试</h3>
+
+<table>
+  <tr><th>轮询间隔</th><th>事件/秒</th><th>SQLite 写入/秒</th><th>SQLite 能否承受？</th></tr>
+  <tr><td>500ms（当前）</td><td>2</td><td>2</td><td>✅ 散步级别</td></tr>
+  <tr><td>100ms</td><td>10</td><td>10</td><td>✅ SQLite WAL 模式单线程写可达 ~50K ops/s</td></tr>
+  <tr><td><strong>50ms（你问的）</strong></td><td><strong>20</strong></td><td><strong>20</strong></td><td>✅ <strong>20 次/秒对 SQLite 来说跟没负载一样</strong></td></tr>
+  <tr><td>10ms</td><td>100</td><td>100</td><td>⚠️ 仍远低于 SQLite 上限，但 EventEmitter 同步循环可能卡</td></tr>
+  <tr><td>1ms</td><td>1000</td><td>1000</td><td>❌ 需要批量写入 + 背压控制</td></tr>
+</table>
+
+<p><strong>SQLite 在 WAL 模式下的写入能力：</strong></p>
+<ul>
+  <li>简单 INSERT：~50,000~80,000 行/秒（单线程）</li>
+  <li>有索引的 INSERT：~10,000~20,000 行/秒</li>
+  <li>事务批量写（1000条/事务）：~200,000 行/秒</li>
+</ul>
+<p>你 50ms 轮询 = 20 次 INSERT/秒，是 SQLite 能力的 <strong>0.04%</strong>。SQLite 甚至不会注意到这个负载。</p>
+
+<h3>5.3 真正需要担心的不是 SQLite，是"回调地狱"</h3>
+
+<p>你们现在的 <code>writePoints</code> 可能长这样（伪代码）：</p>
+
+<pre><code>// 现在的 writePoints（典型的 SQLite 写入）
+export function writePoints(vals: Record&lt;string, number | boolean&gt;) {
+  const stmt = db.prepare('INSERT INTO history VALUES (?, ?, ?)')
+  for (const [name, value] of Object.entries(vals)) {
+    stmt.run(Date.now(), name, value)  // 同步 SQLite，~0.05ms/行
+  }
+}</code></pre>
+
+<p>如果用的是 <code>better-sqlite3</code>（同步 API），那 <strong>writePoints 是同步的</strong>——EventEmitter 会完全执行完它再往下走。50ms 写入 ~50 个变量，总耗时也就 ~2.5ms，完全 OK。</p>
+
+<p>如果用的是 <code>sql.js</code> 或异步 SQLite 库，那 writePoints 是 async 的——EventEmitter 会切到下一个监听器。这时潜在的问题是：</p>
+
+<div class="arch-box">50ms 轮询 + 异步 writePoints 的风险：
+
+事件 #1 (0ms)    → writePoints 开始 → 还没写完
+事件 #2 (50ms)   → writePoints 开始 → 两个同时写！
+事件 #3 (100ms)  → writePoints 开始 → 三个同时写！
+...
+
+SQLite 抛出 SQLITE_BUSY → 错误被静默吞掉 → 历史数据丢失</div>
+
+<h3>5.4 解决方案（代码已备好，你们改的时候直接抄）</h3>
+
+<p><strong>方案 A：串行队列（推荐，保留写入顺序，适用于所有轮询间隔）</strong></p>
+<pre><code>// server/historySubscriber.ts
+import { bus, PLC_DATA_EVENT, type PlcDataEvent } from './eventBus.js'
+import { writePoints } from './historyStore.js'
+import { trendBuffer } from './ringBuffer.js'
+
+// ── 串行写入队列 ──────────────────────────
+const queue: PlcDataEvent[] = []
+let busy = false
+
+async function flush() {
+  if (busy || queue.length === 0) return
+  busy = true
+  const data = queue.shift()!
+
+  const vals: Record&lt;string, number | boolean&gt; = {}
+  for (const [name, pt] of Object.entries(data.db)) {
+    vals[name] = pt.value
+  }
+
+  try {
+    trendBuffer.push(vals)        // 纯内存，同步
+    await writePoints(vals)       // SQLite，可能异步
+  } catch (e) {
+    console.error('[历史] 写入失败:', e)
+  }
+
+  busy = false
+  flush()  // 处理队列中下一个
+}
+
+// 监听事件：入队 + 触发处理
+bus.on(PLC_DATA_EVENT, (data: PlcDataEvent) => {
+  queue.push(data)
+  if (!busy) flush()
+})
+
+// 可选：队列溢出保护（防止 poll 比 SQLite 快太多时内存疯长）
+const MAX_QUEUE = 100
+bus.on(PLC_DATA_EVENT, (data: PlcDataEvent) => {
+  if (queue.length > MAX_QUEUE) {
+    // 队列满了：丢弃最旧的事件（保留最近的数据）
+    queue.splice(0, queue.length - MAX_QUEUE)
+    console.warn(`[历史] 队列溢出，丢弃 ${queue.length - MAX_QUEUE} 个旧事件`)
+  }
+  queue.push(data)
+  if (!busy) flush()
+})</code></pre>
+
+<p><strong>方案 B：丢弃旧事件，保留最新（适合只关心最新状态的趋势图）</strong></p>
+<pre><code>// 更激进：只保留最后一个事件的值
+let latestValues: Record&lt;string, number | boolean&gt; = {}
+let writing = false
+
+bus.on(PLC_DATA_EVENT, (data: PlcDataEvent) => {
+  // 永远用最新的覆盖
+  for (const [name, pt] of Object.entries(data.db)) {
+    latestValues[name] = pt.value
+  }
+  if (!writing) doWrite()
+})
+
+async function doWrite() {
+  writing = true
+  while (Object.keys(latestValues).length > 0) {
+    const batch = latestValues
+    latestValues = {}  // 清空，新的数据会累积进来
+    try {
+      await writePoints(batch)
+    } catch (e) {
+      console.error('[历史] 写入失败:', e)
+    }
+  }
+  writing = false
+}
+// ✅ 无论多快轮询，writePoints 永远不会并发，且总是写入最新值</code></pre>
+
+<h3>5.5 结论：50ms 到底用不用操心？</h3>
+
+<table>
+  <tr><th>轮询间隔</th><th>背压风险</th><th>你需要做什么</th></tr>
+  <tr><td>500ms（当前）</td><td>❌ 不存在</td><td>什么都不用做</td></tr>
+  <tr><td>100ms</td><td>❌ 不存在</td><td>什么都不用做</td></tr>
+  <tr><td><strong>50ms</strong></td><td>⚠️ 取决于 writePoints 是否异步</td><td>如果同步（better-sqlite3）：什么都不用做<br>如果异步：加 ~20 行串行队列代码</td></tr>
+  <tr><td>10ms</td><td>⚠️ 需要串行队列</td><td>用上面方案 A，串行 + 溢出保护</td></tr>
+  <tr><td>&lt; 5ms</td><td>✅ 需要丢弃旧事件</td><td>用方案 B，只写最新值</td></tr>
+</table>
+
+<p><strong>对你来说：先改事件驱动架构，轮询还是 500ms。以后要降到 50ms 的时候，再回来加这 20 行串行队列代码。不需要现在做。</strong></p>
+
+<p class="footnote">注意：以上分析假设 writePoints 用的是 better-sqlite3（同步 API）。如果是 sql.js 或其他异步 SQLite 库，请先确认实际 API。</p>
+
+<!-- ============================================================ -->
+<h2>七、EventEmitter 背压问题详解（通用）</h2>
+
+<p>上面谈的是你具体的 50ms 场景，这里再补充背压的一般原理：</p>
+
+<h3>7.1 问题场景</h3>
+
+<pre><code>bus.on(PLC_DATA_EVENT, async (data) => {
+  // 这个监听器是 async 的
+  await writePoints(data)  // SQLite 写入，可能耗时 100~500ms
+  // EventEmitter 不会 await 它！下一个监听器还是同步触发
+})
+
+bus.on(PLC_DATA_EVENT, (data) => {
+  // 这个监听器在第一个 await writePoints 之前就同步执行了
+  // 但如果第一个监听器有 await 前的同步代码且很慢，会阻塞这里
+  broadcast(data)
+})</code></pre>
+
+<p>实际上 EventEmitter 对 async 监听器的行为是：<strong>同步执行到第一个 await，然后切到下一个监听器</strong>。所以不会因为一个慢的 async 监听器阻塞其他监听器。</p>
+
+<p>但真正的问题是：</p>
+
+<ul>
+  <li>如果 <strong>poll() 每 500ms emit 一次</strong>，而 <strong>writePoints 每次耗时 600ms</strong></li>
+  <li>第二个事件来的时候，第一个 writePoints 还没跑完</li>
+  <li>它们在竞争 SQLite 连接——卡死、或抛出 SQLITE_BUSY</li>
+</ul>
+
+<h3>7.2 解决方案</h3>
+
+<p>对 Trioop 当前的数据量（几十个变量，500ms 轮询），writePoints 通常 &lt; 10ms，<strong>根本不会遇到这个问题</strong>。但如果以后轮询间隔很短（100ms）或数据量大，有两个解法：</p>
+
+<p><strong>方案 A：队列串行化（推荐，保留写入顺序）</strong></p>
+<pre><code>import { EventEmitter } from 'events'
+
+function createSerialSubscriber() {
+  const queue: PlcDataEvent[] = []
+  let busy = false
+
+  async function process() {
+    if (busy || queue.length === 0) return
+    busy = true
+    const data = queue.shift()!
+    try {
+      const vals = extractValues(data)
+      await writePoints(vals)
+      await trendBuffer.push(vals)
+    } catch (e) {
+      console.error('[历史] 写入失败:', e)
+    }
+    busy = false
+    process()  // 处理下一个
+  }
+
+  return (data: PlcDataEvent) => {
+    queue.push(data)
+    process()
+  }
+}
+
+bus.on(PLC_DATA_EVENT, createSerialSubscriber())
+// ✅ 多个事件排队写入，不会同时写 SQLite</code></pre>
+
+<p><strong>方案 B：使用 p-limit 控制并发</strong></p>
+<pre><code>import pLimit from 'p-limit'
+const limit = pLimit(1)  // 最多 1 个并发
+
+bus.on(PLC_DATA_EVENT, (data) => {
+  limit(async () => {
+    const vals = extractValues(data)
+    await writePoints(vals)
+  })
+})</code></pre>
+
+<p>对你们当前场景，<strong>什么都不用做</strong>——500ms 轮询 + 几十个变量，writePoints 在 10ms 内完成，不存在背压问题。上面这些只是让你知道万一以后遇到怎么解决。</p>
+
+<!-- ============================================================ -->
+<h2>八、总结与操作步骤</h2>
+
+<div class="arch-box">✅ <strong>改动的本质</strong>：把 poll() 从"采集 + 处理"拆成"采集 → 事件 → 处理"。
+    poll() 只管读数据和更新缓存，处理工作交给独立的监听器。
+
+✅ <strong>为什么是 Rank #1</strong>：改动量小（<span class="tag tag-good">~30 行净改动</span>），收益大，无新依赖（EventEmitter 内置），不影响前端。
+
+✅ <strong>风险控制</strong>：5 个副作用都有已知的消除方案，当前场景下<strong>一个都不会触发</strong>。
+
+✅ <strong>给未来铺路</strong>：这个改动做好了，后面升级 WebSocket、加日志、加统计、甚至加 MCP Server 都只需要新建文件 + 一行 bus.on。</div>
+
+<h3>操作步骤（预计半天）</h3>
+
+<ol>
+  <li>新建 <code>server/eventBus.ts</code>（10 行）</li>
+  <li>改 <code>server/index.ts</code> 的 poll()：删掉 trendBuffer.push / writePoints / checkAlarms 的直接调用，换成 <code>bus.emit(PLC_DATA_EVENT, ...)</code></li>
+  <li>同理改 <code>startOpcuaBroadcast()</code>：同样 emit 事件</li>
+  <li>新建 <code>server/historySubscriber.ts</code>：监听事件，写入趋势 + 历史</li>
+  <li>新建 <code>server/alarmSubscriber.ts</code>：监听事件，检查报警</li>
+  <li>改 <code>server/sse.ts</code>：监听事件，推 SSE</li>
+  <li><strong>验证</strong>：启动项目，看数据是否照常刷新、报警是否照常触发、历史是否照常记录</li>
+</ol>
+
+</div>
+</body>
+</html>

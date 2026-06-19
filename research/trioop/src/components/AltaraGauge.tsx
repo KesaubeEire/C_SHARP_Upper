@@ -121,7 +121,23 @@ export function AltaraGauge({
     return () => clearInterval(id);
   }, [mockMode, dataSource, min, max]);
 
-  const sizePx = SIZE_PX[size as keyof typeof SIZE_PX];
+  const gaugeRef = useRef<HTMLDivElement>(null);
+  const [px, setPx] = useState<number>(SIZE_PX[size as keyof typeof SIZE_PX] || 180);
+  useEffect(() => {
+    const el = gaugeRef.current?.parentElement;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) {
+        const w = Math.min(e.contentRect.width, e.contentRect.height);
+        if (w > 20) setPx(w);
+      }
+    });
+    ro.observe(el);
+    const w = el.clientWidth;
+    if (w > 20) setPx(Math.min(w, el.clientHeight));
+    return () => ro.disconnect();
+  }, [size]);
+  const sizePx = px;
   const targetAngle = valueToAngle(value, min, max);
   const segments = thresholdSegments(thresholds, min, max);
   const baseArc = arcPath(-HALF_SWEEP, HALF_SWEEP);
@@ -147,7 +163,7 @@ export function AltaraGauge({
   }, [targetAngle, easingMs]);
 
   return (
-    <div
+    <div ref={gaugeRef}
       className={['vt-gauge', className].filter(Boolean).join(' ')}
       style={{ width: sizePx, height: sizePx }}
       role="img"
