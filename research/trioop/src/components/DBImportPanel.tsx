@@ -285,9 +285,9 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
                       <span className="db-import__r-ctrl">
                         {v.type === 'bool' ? (<>
                           <button className="db-import__momentary"
-                            onMouseDown={() => writeVal(db.dbName, db.dbNumber, v.name, 1)}
-                            onMouseUp={() => writeVal(db.dbName, db.dbNumber, v.name, 0)}
-                            onMouseLeave={() => writeVal(db.dbName, db.dbNumber, v.name, 0)}
+                            onMouseDown={e => { (e.currentTarget as HTMLElement).dataset.pressed = '1'; writeVal(db.dbName, db.dbNumber, v.name, 1) }}
+                            onMouseUp={e => { (e.currentTarget as HTMLElement).dataset.pressed = ''; writeVal(db.dbName, db.dbNumber, v.name, 0) }}
+                            onMouseLeave={e => { if ((e.currentTarget as HTMLElement).dataset.pressed) { (e.currentTarget as HTMLElement).dataset.pressed = ''; writeVal(db.dbName, db.dbNumber, v.name, 0) } }}
                           >按1松0</button>
                           <button className="db-import__toggle"
                             onClick={() => writeVal(db.dbName, db.dbNumber, v.name, showVal && live.value ? 0 : 1)}

@@ -94,34 +94,27 @@ export function TrendRecorder({
     return () => clearInterval(id);
   }, [mockMode, timeScale, channels]);
 
-  // 实时数据：统一用 ref + setInterval 采样，不依赖 React 重渲染
-  const liveRef = useRef(liveData)
-  liveRef.current = liveData
+  // 实时数据：每次 liveData 更新都采样 + 裁剪
   useEffect(() => {
-    if (mockMode || !varMap) return
-    const id = setInterval(() => {
-      const ld = liveRef.current
-      if (!ld) return
-      const now = performance.now()
-      for (const ch of channels) {
-        const fullName = varMap[ch.key]
-        if (!fullName) continue
-        const pt = ld[fullName]
-        if (pt === undefined || pt.value === null || pt.value === undefined) continue
-        const val = typeof pt.value === 'number' ? pt.value : (pt.value ? 1 : 0)
-        let buf = buffersRef.current.get(ch.key)
-        if (!buf) { buf = []; buffersRef.current.set(ch.key, buf) }
-        buf.push({ t: now, v: val })
-      }
-      // 裁剪过期数据
-      const cutoff = now - SCALE_MS[timeScale] - 1000
-      for (const buf of buffersRef.current.values()) {
-        while (buf.length && buf[0]!.t < cutoff) buf.shift()
-        while (buf.length > 5000) buf.shift()
-      }
-    }, 300)
-    return () => clearInterval(id)
-  }, [mockMode, varMap, channels, timeScale])
+    if (mockMode || !varMap || !liveData) return
+    const now = performance.now()
+    for (const ch of channels) {
+      const fullName = varMap[ch.key]
+      if (!fullName) continue
+      const pt = liveData[fullName]
+      if (pt === undefined || pt.value === null || pt.value === undefined) continue
+      const val = typeof pt.value === 'number' ? pt.value : (pt.value ? 1 : 0)
+      let buf = buffersRef.current.get(ch.key)
+      if (!buf) { buf = []; buffersRef.current.set(ch.key, buf) }
+      buf.push({ t: now, v: val })
+    }
+    // 裁剪过期数据
+    const cutoff = now - SCALE_MS[timeScale] - 1000
+    for (const buf of buffersRef.current.values()) {
+      while (buf.length && buf[0]!.t < cutoff) buf.shift()
+      while (buf.length > 5000) buf.shift()
+    }
+  }, [mockMode, liveData, varMap, channels, timeScale])
 
   // 绘图：width/height 在依赖数组里 → prop 变化时重新设定 canvas 原生分辨率
   useEffect(() => {
