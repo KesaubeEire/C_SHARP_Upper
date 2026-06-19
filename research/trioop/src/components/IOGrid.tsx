@@ -10,7 +10,7 @@ interface IOGridProps {
 
 export default function IOGrid({ label, data, prefix, bytes, onToggle }: IOGridProps) {
   const [controlMode, setControlMode] = useState(false)
-  const isQ = prefix.toUpperCase() === 'Q'
+  const canControl = prefix.toUpperCase() === 'Q' || prefix.toUpperCase() === 'M'
 
   function handleClick(addr: number, bit: number, newVal: boolean) {
     if (!controlMode || !onToggle) return
@@ -21,7 +21,7 @@ export default function IOGrid({ label, data, prefix, bytes, onToggle }: IOGridP
     <div className="io-panel">
       <div className="io-panel__title-row">
         <h3 className="io-panel__title">{label}</h3>
-        {isQ && onToggle && (
+        {canControl && onToggle && (
           <button
             className={`btn btn--${controlMode ? 'danger' : 'primary'} io-panel__ctrl-btn`}
             onClick={() => setControlMode(!controlMode)}

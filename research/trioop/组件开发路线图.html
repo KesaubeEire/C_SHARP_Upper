@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLC 上位机组件开发路线图</title>
+<style>
+  :root { --bg: #0f0f1a; --card: #1a1a2e; --border: #2a2a3e; --text: #e0e0e0; --muted: #888; --primary: #2196f3; --success: #4caf50; --warn: #ff9800; --danger: #ef5350; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 40px; }
+  h1 { font-size: 28px; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .stats { display: flex; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 24px; min-width: 120px; text-align: center; }
+  .stat-card__num { font-size: 32px; font-weight: 700; }
+  .stat-card__label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-card--total .stat-card__num { color: var(--text); }
+  .stat-card--have .stat-card__num { color: var(--success); }
+  .stat-card--altara .stat-card__num { color: var(--primary); }
+  .stat-card--shadcn .stat-card__num { color: var(--warn); }
+  .stat-card--build .stat-card__num { color: var(--danger); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; }
+  th { background: rgba(255,255,255,0.05); padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .badge--have { background: rgba(76,175,80,0.15); color: #4caf50; }
+  .badge--altara { background: rgba(33,150,243,0.15); color: #2196f3; }
+  .badge--shadcn { background: rgba(255,152,0,0.15); color: #ff9800; }
+  .badge--build { background: rgba(239,83,80,0.15); color: #ef5350; }
+  .badge--partial { background: rgba(156,39,176,0.15); color: #9c27b0; }
+  .difficulty { font-size: 12px; }
+  .difficulty--1 { color: #4caf50; } .difficulty--2 { color: #8bc34a; } .difficulty--3 { color: #ff9800; }
+  .difficulty--4 { color: #ff5722; } .difficulty--5 { color: #ef5350; }
+  .note { color: var(--muted); font-size: 12px; }
+  .cat-header td { background: rgba(255,255,255,0.03); font-weight: 600; padding-top: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  .cat-header:hover td { background: rgba(255,255,255,0.03); }
+  .src-cell { font-size: 12px; white-space: nowrap; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+  @media (max-width: 768px) { body { padding: 16px; } table { font-size: 12px; } td, th { padding: 8px; } .stat-card { min-width: 80px; padding: 12px 16px; } .stat-card__num { font-size: 24px; } }
+</style>
+</head>
+<body>
+
+<h1>📊 PLC 上位机 Web 组件开发路线图</h1>
+<p class="subtitle">基于豆包组件清单 · 按实现难度从易到难排列 · 标注现有能力 &amp; 来源</p>
+
+<div class="stats">
+  <div class="stat-card stat-card--total"><div class="stat-card__num">42</div><div class="stat-card__label">组件总数</div></div>
+  <div class="stat-card stat-card--have"><div class="stat-card__num">12</div><div class="stat-card__label">✅ 已有</div></div>
+  <div class="stat-card stat-card--altara"><div class="stat-card__num">10</div><div class="stat-card__label">🔷 @altara</div></div>
+  <div class="stat-card stat-card--shadcn"><div class="stat-card__num">6</div><div class="stat-card__label">🧩 shadcn 风格</div></div>
+  <div class="stat-card stat-card--partial"><div class="stat-card__num">4</div><div class="stat-card__label">🔄 已有的改</div></div>
+  <div class="stat-card stat-card--build"><div class="stat-card__num">10</div><div class="stat-card__label">🔧 需自研</div></div>
+</div>
+
+<table>
+<thead>
+<tr><th style="width:40px">#</th><th style="width:40px">难度</th><th>组件</th><th>分类</th><th style="width:120px">来源</th><th>说明 / 已有配置</th></tr>
+</thead>
+<tbody>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 第一梯队：已有（不需开发） -->
+<!-- ════════════════════════════════════════════════════════ -->
+<tr class="cat-header"><td colspan="6">🟢 第一梯队 — 已有（0 开发量，可直接用）</td></tr>
+
+<tr>
+  <td>1</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>指示灯 · Lamp</strong><br><span class="note">单点位状态圆形灯</span></td>
+  <td>四-6</td>
+  <td class="src-cell"><span class="badge badge--have">✅ 已有</span></td>
+  <td>VisualDashboard 已有 `lamp` widget，显示 ON/OFF 绿色/灰色</td>
+</tr>
+
+<tr>
+  <td>2</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>动态数值 · Value</strong><br><span class="note">实时数值 + 单位 + 小数位</span></td>
+  <td>一-2</td>
+  <td class="src-cell"><span class="badge badge--have">✅ 已有</span></td>
+  <td>VisualDashboard 已有 `value` widget，带单位后缀</td>
+</tr>
+
+<tr>
+  <td>3</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>控制按钮 · Button</strong><br><span class="note">启动/停止/取反</span></td>
+  <td>六-1</td>
+  <td class="src-cell"><span class="badge badge--have">✅ 已有</span></td>
+  <td>VisualDashboard 已有 `button` widget，按1松0 / 取反模式</td>
+</tr>
+
+<tr>
+  <td>4</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>下拉选择框</strong><br><span class="note">多档位选择</span></td>
+  <td>六-2</td>
+  <td class="src-cell"><span class="badge badge--have">✅ 已有</span></td>
+  <td>`Dropdown` 组件，连接类型/网卡选择等</td>
+</tr>
+
+<tr>
+  <td>5</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>复选框 / 开关</strong><br><span class="note">布尔选择</span></td>
+  <td>六-4</td>
+  <td class="src-cell"><span class="badge badge--have">✅ 已有</span></td>
+  <td>原生 checkbox + btn--danger/primary 切换</td>
+</tr>
+
+<tr>
+  <td>6</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>数值输入框</strong><br><span class="note">写入 PLC 参数</span></td>
+  <td>六-3</td>
+  <td class="src-cell"><span class="badge badge--have">✅ 已有</span></td>
+  <td>DBImportPanel 的行编辑模式，点值直接改</td>
+</tr>
+
+<tr>
+  <td>7</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>直线分割线 / 矩形遮罩</strong></td>
+  <td>八</td>
+  <td class="src-cell"><span class="badge badge--have">✅ 已有</span></td>
+  <td>CSS border + card 背景系统</td>
+</tr>
+
+<tr>
+  <td>8</td><td><span class="difficulty difficulty--1">★</span></td>
+  <td><strong>连接状态栏</strong><br><span class="note">ConnectionBar</span></td>
+  <td>一-3</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>`ConnectionBar` from @altara/core，支持连接状态显示</td>
+</tr>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 第二梯队：需扩展配置 -->
+<!-- ════════════════════════════════════════════════════════ -->
+<tr class="cat-header"><td colspan="6">🟡 第二梯队 — 容易（已有框架，需扩展配置）</td></tr>
+
+<tr>
+  <td>9</td><td><span class="difficulty difficulty--2">★★</span></td>
+  <td><strong>趋势图配置增强</strong><br><span class="note">TrendRecorder 更多配置项</span></td>
+  <td>三-1</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>已有 timeScale/showGrid/showLegend/backgroundColor。缺：channels 自定义（颜色/标签/量程）、mockMode 开关</td>
+</tr>
+
+<tr>
+  <td>10</td><td><span class="difficulty difficulty--2">★★</span></td>
+  <td><strong>表盘配置增强</strong><br><span class="note">Gauge 更多配置项</span></td>
+  <td>二-1</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>已有 min/max/unit。缺：阈值色段(color thresholds)、刻度文字、指针样式、半圆/整圆切换</td>
+</tr>
+
+<tr>
+  <td>11</td><td><span class="difficulty difficulty--2">★★</span></td>
+  <td><strong>信号面板配置增强</strong><br><span class="note">SignalPanel 更多通道</span></td>
+  <td>一-2</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>已有 2 通道。缺：动态增减通道、告警色联动、单位独立配置</td>
+</tr>
+
+<tr>
+  <td>12</td><td><span class="difficulty difficulty--2">★★</span></td>
+  <td><strong>告警面板配置增强</strong><br><span class="note">AlarmAnnunciatorPanel</span></td>
+  <td>五-2</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>已有 columns/flashRate/groupBy。缺：告警确认联动、分级颜色、声光联动</td>
+</tr>
+
+<tr>
+  <td>13</td><td><span class="difficulty difficulty--2">★★</span></td>
+  <td><strong>工艺流程图配置增强</strong><br><span class="note">ProcessFlowDiagram</span></td>
+  <td>四</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>已有 tank/pump/valve/pipe 等，缺：绑定实时点位、动态颜色联动</td>
+</tr>
+
+<tr>
+  <td>14</td><td><span class="difficulty difficulty--2">★★</span></td>
+  <td><strong>事件日志配置增强</strong><br><span class="note">EventLog</span></td>
+  <td>五-2</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>已有时间戳/级别/消息。缺：筛选过滤、分页、确认按钮</td>
+</tr>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 第三梯队：中等 -->
+<!-- ════════════════════════════════════════════════════════ -->
+<tr class="cat-header"><td colspan="6">🟠 第三梯队 — 中等（需结合 shadcn 风格开发）</td></tr>
+
+<tr>
+  <td>15</td><td><span class="difficulty difficulty--3">★★★</span></td>
+  <td><strong>静态文本标签</strong><br><span class="note">可配置文字/字体/颜色/对齐</span></td>
+  <td>一-1</td>
+  <td class="src-cell"><span class="badge badge--shadcn">🧩 shadcn</span></td>
+  <td>shadcn 风格 label 组件。需支持：字号/字重/颜色/对齐/旋转/背景/边框/圆角</td>
+</tr>
+
+<tr>
+  <td>16</td><td><span class="difficulty difficulty--3">★★★</span></td>
+  <td><strong>实时数据采集总表</strong><br><span class="note">多行多列带刷新/搜索</span></td>
+  <td>七-1</td>
+  <td class="src-cell"><span class="badge badge--shadcn">🧩 shadcn</span></td>
+  <td>基于 IOGrid 风格扩展。支持：自定义列、排序、搜索筛选、行变色、CSV 导出</td>
+</tr>
+
+<tr>
+  <td>17</td><td><span class="difficulty difficulty--3">★★★</span></td>
+  <td><strong>历史数据表格</strong><br><span class="note">时间筛选 + 分页 + 导出</span></td>
+  <td>七-2</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>调 /api/trend 历史接口。需支持：起止时间、点位筛选、分页、CSV 导出</td>
+</tr>
+
+<tr>
+  <td>18</td><td><span class="difficulty difficulty--3">★★★</span></td>
+  <td><strong>时间日期组件</strong><br><span class="note">自定义格式/来源/倒计时</span></td>
+  <td>一-3</td>
+  <td class="src-cell"><span class="badge badge--shadcn">🧩 shadcn</span></td>
+  <td>shadcn 风格文本 + Date 格式化。支持：多格式、PLC 时间来源、倒计时模式</td>
+</tr>
+
+<tr>
+  <td>19</td><td><span class="difficulty difficulty--3">★★★</span></td>
+  <td><strong>图片 / LOGO 组件</strong><br><span class="note">插入图片，缩放/旋转/透明</span></td>
+  <td>八</td>
+  <td class="src-cell"><span class="badge badge--shadcn">🧩 shadcn</span></td>
+  <td>简单 img 包装 + 配置对象。支持：URL/上传、缩放、旋转、透明度、圆角</td>
+</tr>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 第四梯队：较难 -->
+<!-- ════════════════════════════════════════════════════════ -->
+<tr class="cat-header"><td colspan="6">🔴 第四梯队 — 较难（需 Canvas / D3 自研）</td></tr>
+
+<tr>
+  <td>20</td><td><span class="difficulty difficulty--4">★★★★</span></td>
+  <td><strong>横向/竖向进度条</strong><br><span class="note">柱状量程显示，分段颜色</span></td>
+  <td>二-3</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>纯 CSS 或 Canvas。支持：方向、分段色、动画、双进度对比、刻度标记</td>
+</tr>
+
+<tr>
+  <td>21</td><td><span class="difficulty difficulty--4">★★★★</span></td>
+  <td><strong>液位柱状（水箱/料仓）</strong><br><span class="note">竖向罐体填充，液位标识</span></td>
+  <td>二-4</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>CSS clip-path 或 Canvas。支持：罐体贴图、分层介质、低液位闪烁、百分比</td>
+</tr>
+
+<tr>
+  <td>22</td><td><span class="difficulty difficulty--4">★★★★</span></td>
+  <td><strong>数码管数字显示器</strong><br><span class="note">七段数码管样式</span></td>
+  <td>二-5</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>Canvas 自绘七段码。支持：颜色、位数、补零、灭灯效果、闪烁</td>
+</tr>
+
+<tr>
+  <td>23</td><td><span class="difficulty difficulty--4">★★★★</span></td>
+  <td><strong>多通道对比曲线</strong><br><span class="note">多变量同屏，独立Y轴</span></td>
+  <td>三-2</td>
+  <td class="src-cell"><span class="badge badge--altara">🔷 @altara</span></td>
+  <td>`TimeSeries` / `MultiAxisPlot` 已有，需集成到 VisualDashboard 并打通实时数据</td>
+</tr>
+
+<tr>
+  <td>24</td><td><span class="difficulty difficulty--4">★★★★</span></td>
+  <td><strong>告警滚动条（顶部全局）</strong><br><span class="note">全屏悬浮滚动文字</span></td>
+  <td>五-1</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>需全局 CSS fixed + 动画。支持：级别过滤、滚动速度、音效、高亮闪烁、确认</td>
+</tr>
+
+<tr>
+  <td>25</td><td><span class="difficulty difficulty--4">★★★★</span></td>
+  <td><strong>柱状统计图</strong><br><span class="note">产量/能耗统计，时日月</span></td>
+  <td>三-3</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>Canvas / chart.js。支持：堆叠、横向、极值高亮、数据标签</td>
+</tr>
+
+<tr>
+  <td>26</td><td><span class="difficulty difficulty--4">★★★★</span></td>
+  <td><strong>饼图 / 环形图</strong><br><span class="note">占比统计</span></td>
+  <td>三-4</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>Canvas 或轻量库。支持：环形模式、分离突出、合并"其他"</td>
+</tr>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 第五梯队：困难 -->
+<!-- ════════════════════════════════════════════════════════ -->
+<tr class="cat-header"><td colspan="6">⭕ 第五梯队 — 困难（复杂交互 / 联动逻辑）</td></tr>
+
+<tr>
+  <td>27</td><td><span class="difficulty difficulty--5">★★★★★</span></td>
+  <td><strong>旋钮设定组件</strong><br><span class="note">拖拽调整数值写入 PLC</span></td>
+  <td>二-6</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>Canvas 自绘旋钮 + 拖拽交互。支持：量程、步长、锁定、写入联动、权限</td>
+</tr>
+
+<tr>
+  <td>28</td><td><span class="difficulty difficulty--5">★★★★★</span></td>
+  <td><strong>历史回放曲线</strong><br><span class="note">时间轴进度条 + 播放暂停</span></td>
+  <td>三-6</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>基于 TrendRecorder 改造或自研 Canvas。支持：倍速、时间筛选、同步回放、标记</td>
+</tr>
+
+<tr>
+  <td>29</td><td><span class="difficulty difficulty--5">★★★★★</span></td>
+  <td><strong>告警声光模拟</strong><br><span class="note">闪烁灯 + 蜂鸣音效</span></td>
+  <td>五-3</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>Web Audio API + CSS animation。支持：自定义音频文件、分级触发</td>
+</tr>
+
+<tr>
+  <td>30</td><td><span class="difficulty difficulty--5">★★★★★</span></td>
+  <td><strong>告警阈值配置面板</strong><br><span class="note">多组阈值输入 + 延时防抖</span></td>
+  <td>五-4</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>多表单面板。支持：4 段阈值、延迟时间、权限锁定、自动复位</td>
+</tr>
+
+<tr>
+  <td>31</td><td><span class="difficulty difficulty--5">★★★★★</span></td>
+  <td><strong>条件判断联动组件</strong><br><span class="note">无代码逻辑：条件→动作</span></td>
+  <td>九-1</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>流程图式拖拽逻辑块。支持：> < = 判断、弹窗/告警/变色/音效、与/或组合</td>
+</tr>
+
+<tr>
+  <td>32</td><td><span class="difficulty difficulty--5">★★★★★</span></td>
+  <td><strong>数值换算 / 定时器 / 数据转发</strong><br><span class="note">纯逻辑联动</span></td>
+  <td>九-2/3/4</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>无 UI 表现的后台逻辑。换算 * 系数 + 偏移、定时触发、第三方转发</td>
+</tr>
+
+<tr>
+  <td>33</td><td><span class="difficulty difficulty--5">★★★★★</span></td>
+  <td><strong>散点图</strong><br><span class="note">相关性分析</span></td>
+  <td>三-5</td>
+  <td class="src-cell"><span class="badge badge--build">🔧 需自研</span></td>
+  <td>Canvas / D3。支持：点大小/颜色、阈值区间、趋势拟合线</td>
+</tr>
+
+</tbody>
+</table>
+
+<div class="footer">
+  <p><strong>图例：</strong>
+  <span class="badge badge--have">✅ 已有</span> —
+  <span class="badge badge--altara">🔷 @altara</span> —
+  <span class="badge badge--shadcn">🧩 shadcn 风格</span> —
+  <span class="badge badge--build">🔧 需自研</span> —
+  <span class="badge badge--partial">🔄 已有的改</span>
+  </p>
+  <p style="margin-top:8px"><strong>建议开发顺序：</strong>第二梯队（配置增强）→ 第三梯队（shadcn 风格）→ 第四梯队（Canvas 自绘）→ 第五梯队（联动逻辑）</p>
+  <p style="margin-top:4px">难度 ★→★★★★★ 从易到难，★ 为已有无需开发</p>
+</div>
+
+</body>
+</html>

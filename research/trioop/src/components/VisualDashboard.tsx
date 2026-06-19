@@ -4,7 +4,8 @@ import CollapsibleSection from './CollapsibleSection'
 import { Responsive } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import { Gauge, SignalPanel, EventLog } from '@altara/core'
-import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, TrendRecorder, PIDTuningPanel } from '@altara/industrial'
+import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, PIDTuningPanel } from '@altara/industrial'
+import { TrendRecorder } from '../components/AltaraTrendRecorder'
 import { useContextMenu } from './VDBContextMenu'
 import { resolveVarName, loadMapping, loadAllDBData, writePLC } from '../hooks/useDBMapping'
 
@@ -46,7 +47,16 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
   lamp:       [{ key:'variableName', label:'变量名', type:'text', default:'' }],
   button:     [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'mode', label:'按钮模式', type:'select', default:'momentary', options:[{ label:'按1松0', value:'momentary' },{ label:'按0松1', value:'momentary_off' },{ label:'取反', value:'toggle' }] }, { key:'label', label:'按钮文字', type:'text', default:'运行' }],
   gauge:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'min', label:'量程下限', type:'number', default:0 }, { key:'max', label:'量程上限', type:'number', default:100 }, { key:'unit', label:'单位', type:'text', default:'%' }],
-  trend:      [{ key:'timeScale', label:'时间刻度', type:'select', default:'5m', options:[{ label:'1分钟', value:'1m' },{ label:'5分钟', value:'5m' },{ label:'15分钟', value:'15m' },{ label:'1小时', value:'1h' },{ label:'4小时', value:'4h' },{ label:'8小时', value:'8h' },{ label:'24小时', value:'24h' }] }, { key:'showGrid', label:'网格', type:'boolean', default:true }, { key:'showLegend', label:'图例', type:'boolean', default:true }],
+  trend:      [
+    { key:'timeScale', label:'时间刻度', type:'select', default:'5m', options:[{ label:'1分钟', value:'1m' },{ label:'5分钟', value:'5m' },{ label:'15分钟', value:'15m' },{ label:'1小时', value:'1h' },{ label:'4小时', value:'4h' },{ label:'8小时', value:'8h' },{ label:'24小时', value:'24h' }] },
+    { key:'mockMode', label:'🎲 演示模式', type:'boolean', default:true },
+    { key:'showGrid', label:'网格线', type:'boolean', default:true },
+    { key:'showLegend', label:'图例', type:'boolean', default:true },
+    { key:'showPoints', label:'采样标记', type:'boolean', default:false },
+    { key:'lineWidth', label:'线宽', type:'number', default:1.5 },
+    { key:'backgroundColor', label:'背景色', type:'text', default:'#0E0F10' },
+    { key:'yAxisLabel', label:'Y轴标签', type:'text', default:'' },
+  ],
   oee:        [{ key:'availability', label:'可用率', type:'number', default:0.85 }, { key:'performance', label:'性能率', type:'number', default:0.78 }, { key:'quality', label:'质量率', type:'number', default:0.95 }, { key:'shift', label:'班次', type:'text', default:'A' }],
   motor:      [{ key:'rpm', label:'转速', type:'number', default:2850 }, { key:'torque', label:'扭矩', type:'number', default:42 }, { key:'current', label:'电流', type:'number', default:38 }, { key:'temperature', label:'温度', type:'number', default:72 }],
   predictive: [{ key:'healthScore', label:'健康指数', type:'number', default:74 }, { key:'rulDays', label:'剩余寿命', type:'number', default:45 }],
@@ -61,7 +71,22 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
   const liveVal = pt?.value; const liveNum = typeof liveVal === 'number' ? liveVal : (liveVal ? 1 : 0); const hasLive = liveVal !== undefined && liveVal !== null
   switch (type) {
     case 'gauge': { const ds = hasLive && cfg.variableName ? { subscribe: (cb: any) => { cb({ timestamp: Date.now(), value: liveNum }); return () => {} }, getHistory: () => [{ timestamp: Date.now(), value: liveNum }], status: 'connected' as const, destroy: () => {} } : undefined; return <Gauge min={cfg.min ?? 0} max={cfg.max ?? 100} unit={cfg.unit} label="" size="md" dataSource={ds} mockMode={!ds} /> }
-    case 'trend': return <TrendRecorderCell timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} mockMode />
+    case 'trend': {
+      const channels: { key: string; label: string; color: string; unit: string; min: number; max: number }[] = []
+      for (let i = 1; i <= 4; i++) {
+        const en = cfg[`ch${i}En`] !== undefined ? cfg[`ch${i}En`] : (i <= (cfg.chCount || 4))
+        if (!en) continue
+        channels.push({
+          key: `ch${i}`,
+          label: cfg[`ch${i}Label`] || `CH${i}`,
+          color: cfg[`ch${i}Color`] || CHANNEL_COLORS[i - 1] || '#888',
+          unit: cfg[`ch${i}Unit`] || '',
+          min: cfg[`ch${i}Min`] ?? 0,
+          max: cfg[`ch${i}Max`] ?? 100,
+        })
+      }
+      return <TrendRecorderCell channels={channels} timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} showPoints={!!cfg.showPoints} lineWidth={cfg.lineWidth || 1.5} backgroundColor={cfg.backgroundColor || '#0E0F10'} yAxisLabel={cfg.yAxisLabel || ''} mockMode={cfg.mockMode !== false} liveData={liveData} varMap={channels.reduce((m: Record<string, string>, c, idx) => { m[c.key] = cfg[`ch${idx+1}Var`] || ''; return m }, {})} />
+    }
     case 'oee': return <OEEDashboard availability={cfg.availability ?? 0.85} performance={cfg.performance ?? 0.78} quality={cfg.quality ?? 0.95} shift={cfg.shift || 'A'} mockMode />
     case 'motor': return <MotorDashboard rpm={cfg.rpm ?? 2850} torque={cfg.torque ?? 42} current={cfg.current ?? 38} temperature={cfg.temperature ?? 72} mockMode />
     case 'predictive': return <PredictiveMaintenanceGauge healthScore={cfg.healthScore ?? 74} rulDays={cfg.rulDays ?? 45} size="md" mockMode />
@@ -262,8 +287,12 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                 return (<div key={f.key}>
                   {f.type === 'boolean' ? (<label className="modal-label" style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}><input type="checkbox" checked={!!formCfg[f.key]} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.checked}))} />{f.label}</label>)
                   : f.type === 'select' ? (<><label className="modal-label">{f.label}</label><select className="modal-input" value={formCfg[f.key]??f.default} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.value}))}>{f.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></>)
+                  : f.type === 'separator' ? (<div style={{ borderTop:'1px solid var(--border)', margin:'12px 0 4px', paddingTop:8, fontSize:13, fontWeight:600, color:'var(--foreground)' }}>{f.label}</div>)
                   : (<><label className="modal-label">{f.label}</label><div className="modal-field-row">{f.type === 'text' ? (<><input className="modal-input" type="text" value={formCfg[f.key]??''} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.value}))} />{formCfg[f.key] ? <button className="modal-clear-btn" onClick={() => setFormCfg(c => ({...c, [f.key]:''}))} title="清空">✕</button> : null}</>) : <input className="modal-input" type="number" value={formCfg[f.key]??''} onChange={e => setFormCfg(c => ({...c, [f.key]:Number(e.target.value)}))} />}</div></>)}
                 </div>)})}
+
+              {formType === 'trend' && <TrendChannelConfig formCfg={formCfg} setFormCfg={setFormCfg} importedDBs={importedDBs} />}
+
               <div className="modal-actions"><button className="btn btn--ghost" onClick={() => setEditing(null)}>取消</button><button className="btn btn--primary" onClick={saveWidget}>保存</button></div>
             </div>
           </div>
@@ -280,6 +309,127 @@ function EscapeHandler({ onEscape }: { onEscape: () => void }) {
     return () => document.removeEventListener('keydown', handler)
   }, [onEscape])
   return null
+}
+
+const CHANNEL_COLORS = ['#E24B4A', '#37D3E0', '#1D9E75', '#F4D03F']
+const CHANNEL_LABELS = ['CH1', 'CH2', 'CH3', 'CH4']
+
+/** 通道变量选择器：选 DB → 搜变量 → 点击选中 */
+function ChannelVarPicker({ channel, formCfg, setFormCfg, importedDBs }: {
+  channel: number; formCfg: Record<string, any>; setFormCfg: (fn: (prev: Record<string, any>) => Record<string, any>) => void
+  importedDBs: { dbNumber: number; dbName: string }[]
+}) {
+  const fullName = formCfg[`ch${channel}Var`] || ''
+  const dbName = fullName.split(':')[0] || ''
+  const varName = fullName.split(':').slice(1).join(':')
+  const [search, setSearch] = useState(varName)
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 200 })
+  const ref = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const openDrop = useCallback(() => {
+    if (inputRef.current) {
+      const r = inputRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 2, left: r.left, width: r.width })
+    }
+    setOpen(true)
+  }, [])
+  const allVars = useMemo(() => {
+    if (!dbName) return []
+    const dbs = loadAllDBData()
+    return dbs.find(d => d.dbName === dbName)?.variables ?? []
+  }, [dbName])
+  const filtered = useMemo(() => {
+    if (!search) return allVars
+    const q = search.toLowerCase()
+    return allVars.filter((v: any) => v.name.toLowerCase().includes(q))
+  }, [allVars, search])
+  useEffect(() => {
+    if (!open) return
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const t = setTimeout(() => document.addEventListener('mousedown', h), 0)
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', h) }
+  }, [open])
+
+  return (
+    <div className="vdb-ch-config__row" ref={ref}>
+      <span className="vdb-ch-config__label">变量</span>
+      <select style={{ width: 70, flexShrink: 0, fontSize: 11, height: 26 }} className="modal-input"
+        value={dbName} onChange={e => setFormCfg(c => ({ ...c, [`ch${channel}Var`]: e.target.value ? `${e.target.value}:` : '' }))}>
+        <option value="">--</option>
+        {importedDBs.map(d => <option key={d.dbName} value={d.dbName}>{d.dbName}</option>)}
+      </select>
+      <div style={{ position: 'relative', flex: 1 }}>
+        <input ref={inputRef} style={{ width: '100%', fontSize: 11, height: 26, fontFamily: 'monospace' }}
+          className="modal-input" placeholder={dbName ? '搜索...' : '先选DB'}
+          value={dbName ? search : ''} disabled={!dbName}
+          onFocus={openDrop}
+          onChange={e => { setSearch(e.target.value); openDrop() }}
+          onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && filtered.length === 1) { setFormCfg(c => ({ ...c, [`ch${channel}Var`]: `${dbName}:${filtered[0].name}` })); setSearch(filtered[0].name); setOpen(false) } }} />
+        {open && dbName && (
+          <div style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 99999, maxHeight: 160, overflowY: 'auto', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: '0 4px 20px rgba(0,0,0,0.35)' }}>
+            {filtered.length === 0 ? <div style={{ padding: 8, fontSize: 11, color: 'var(--muted-foreground)' }}>无匹配</div>
+            : filtered.map((v: any) => (
+              <button key={v.name} style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '4px 8px', background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: 11, cursor: 'pointer', textAlign: 'left', fontFamily: 'Consolas, monospace', gap: 8 }}
+                onMouseDown={() => { setFormCfg(c => ({ ...c, [`ch${channel}Var`]: `${dbName}:${v.name}` })); setSearch(v.name); setOpen(false) }}>
+                <span>{v.name}</span>
+                <span style={{ color: 'var(--muted-foreground)', fontSize: 10, flexShrink: 0 }}>{v.type.toUpperCase()} @{v.offset}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** 趋势图通道配置：打勾即展开配置面板 */
+function TrendChannelConfig({ formCfg, setFormCfg, importedDBs }: {
+  formCfg: Record<string, any>; setFormCfg: (fn: (prev: Record<string, any>) => Record<string, any>) => void
+  importedDBs: { dbNumber: number; dbName: string }[]
+}) {
+  return (
+    <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--foreground)' }}>📊 通道配置</div>
+      {[1, 2, 3, 4].map(i => {
+        const enabled = formCfg[`ch${i}En`] !== undefined ? formCfg[`ch${i}En`] : formCfg.chCount ? i <= formCfg.chCount : true
+        return (
+          <div key={i} className="vdb-ch-config">
+            <label className="vdb-ch-config__header">
+              <input type="checkbox" checked={enabled}
+                onChange={e => setFormCfg(c => ({ ...c, [`ch${i}En`]: e.target.checked }))} />
+              <span className="vdb-ch-config__dot" style={{ background: formCfg[`ch${i}Color`] || CHANNEL_COLORS[i - 1] }} />
+              <span className="vdb-ch-config__name">{formCfg[`ch${i}Label`] || CHANNEL_LABELS[i - 1]}</span>
+            </label>
+            {enabled && (
+              <div className="vdb-ch-config__body">
+                <div className="vdb-ch-config__row">
+                  <span className="vdb-ch-config__label">标签</span>
+                  <input value={formCfg[`ch${i}Label`] ?? ''} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Label`]: e.target.value }))} />
+                </div>
+                <div className="vdb-ch-config__row">
+                  <span className="vdb-ch-config__label">颜色</span>
+                  <input style={{ fontFamily:'monospace' }} value={formCfg[`ch${i}Color`] ?? CHANNEL_COLORS[i - 1]} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Color`]: e.target.value }))} />
+                  <input type="color" value={formCfg[`ch${i}Color`] || CHANNEL_COLORS[i - 1]} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Color`]: e.target.value }))} />
+                </div>
+                <ChannelVarPicker channel={i} formCfg={formCfg} setFormCfg={setFormCfg} importedDBs={importedDBs} />
+                <div className="vdb-ch-config__row">
+                  <span className="vdb-ch-config__label">量程</span>
+                  <input type="number" value={formCfg[`ch${i}Min`] ?? 0} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Min`]: Number(e.target.value) }))} />
+                  <span style={{ color:'var(--muted-foreground)' }}>~</span>
+                  <input type="number" value={formCfg[`ch${i}Max`] ?? 100} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Max`]: Number(e.target.value) }))} />
+                </div>
+                <div className="vdb-ch-config__row">
+                  <span className="vdb-ch-config__label">单位</span>
+                  <input value={formCfg[`ch${i}Unit`] ?? ''} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Unit`]: e.target.value }))} placeholder="℃ MPa" />
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 /** 带搜索过滤的变量选择器：选 DB → 搜变量名 → 点击选中 */
@@ -362,8 +512,11 @@ function VariablePicker({ dbName, varName, importedDBs, onChange }: {
 }
 
 /** 趋势图自适应容器：ResizeObserver→width/height→TrendRecorder 原生分辨率渲染 */
-const TrendRecorderCell = React.memo(function TrendRecorderCell({ timeScale, showGrid, showLegend, mockMode }: {
-  timeScale: string; showGrid: boolean; showLegend: boolean; mockMode?: boolean
+const TrendRecorderCell = React.memo(function TrendRecorderCell({ channels, timeScale, showGrid, showLegend, showPoints, lineWidth, backgroundColor, yAxisLabel, mockMode, liveData, varMap }: {
+  channels?: { key: string; label: string; color: string; unit: string; min: number; max: number }[]
+  timeScale: string; showGrid: boolean; showLegend: boolean; showPoints: boolean; lineWidth: number; backgroundColor?: string; yAxisLabel?: string; mockMode?: boolean
+  liveData?: Record<string, { value: number | boolean }>
+  varMap?: Record<string, string>
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 400, h: 200 })
@@ -383,12 +536,19 @@ const TrendRecorderCell = React.memo(function TrendRecorderCell({ timeScale, sho
   return (
     <div ref={ref} style={{ width: '100%', height: '100%' }}>
       <TrendRecorder
+        channels={channels}
         width={size.w}
         height={size.h}
         timeScale={timeScale as any}
         showGrid={showGrid}
         showLegend={showLegend}
+        showPoints={showPoints}
+        lineWidth={lineWidth}
+        backgroundColor={backgroundColor}
+        yAxisLabel={yAxisLabel}
         mockMode={mockMode}
+        liveData={liveData}
+        varMap={varMap}
       />
     </div>
   )

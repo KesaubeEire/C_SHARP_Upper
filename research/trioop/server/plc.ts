@@ -50,8 +50,8 @@ interface AddrEntry {
 let addrTable: AddrEntry[] = []
 let dbBlockTable: { label: string; dbNumber: number; startOffset: number; byteCount: number }[] = []
 
-/** 注册 I/O 字节（按配置的范围注册，不传则默认 0-8） */
-function registerIO(ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[] }) {
+/** 注册 I/O/M 字节（按配置的范围注册，不传则默认 0-8） */
+function registerIO(ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[]; m?: { start: number; end: number }[] }) {
   const expandRanges = (ranges?: { start: number; end: number }[]): number[] => {
     if (!ranges || ranges.length === 0) return [0, 1, 2, 3, 4, 5, 6, 7, 8]
     const bytes = new Set<number>()
@@ -66,6 +66,9 @@ function registerIO(ioRanges?: { i?: { start: number; end: number }[]; q?: { sta
   }
   for (const b of expandRanges(ioRanges?.q)) {
     addrTable.push({ tag: `QB${b}`, s7addr: `QB${b}`, type: 'q' })
+  }
+  for (const b of expandRanges(ioRanges?.m)) {
+    addrTable.push({ tag: `MB${b}`, s7addr: `MB${b}`, type: 'm' })
   }
 }
 
@@ -107,7 +110,7 @@ function unregisterDBBlock(label: string) {
 function initAddrTable(
   variables: PLCVariable[],
   dbBlocks: { label: string; dbNumber: number; startOffset: number; byteCount: number }[],
-  ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[] },
+  ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[]; m?: { start: number; end: number }[] },
 ) {
   addrTable = []
   registerIO(ioRanges)
@@ -124,7 +127,7 @@ export async function connect(
   localAddress?: string, connType?: number,
   variables?: PLCVariable[],
   dbBlocks?: { label: string; dbNumber: number; startOffset: number; byteCount: number }[],
-  ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[] },
+  ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[]; m?: { start: number; end: number }[] },
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (client) {
@@ -256,7 +259,7 @@ export async function readAll(variables: PLCVariable[]): Promise<PLCData> {
  */
 export interface ReadOnceResult {
   db: PLCData
-  io: { i: Record<number, number>; q: Record<number, number> }
+  io: { i: Record<number, number>; q: Record<number, number>; m: Record<number, number> }
   dbBlocks: Record<string, number[] | null>
 }
 
@@ -264,7 +267,7 @@ export async function readOnce(): Promise<ReadOnceResult> {
   const values = await readAllItems()
   const result: ReadOnceResult = {
     db: {},
-    io: { i: {}, q: {} },
+    io: { i: {}, q: {}, m: {} },
     dbBlocks: {},
   }
 
@@ -296,6 +299,11 @@ export async function readOnce(): Promise<ReadOnceResult> {
       const byteNum = parseInt(entry.tag.replace('QB', ''))
       const val = values[entry.tag]
       if (val !== undefined && val !== null) result.io.q[byteNum] = val
+    }
+    if (entry.type === 'm') {
+      const byteNum = parseInt(entry.tag.replace('MB', ''))
+      const val = values[entry.tag]
+      if (val !== undefined && val !== null) result.io.m[byteNum] = val
     }
     // 解析 DB 块
     if (entry.type === 'db_block') {
@@ -385,6 +393,7 @@ export async function writeVariable(varCfg: PLCVariable, value: number): Promise
 // ─── I/O 写入队列（串行处理，防止并发冲突） ────────────────
 
 interface WriteJob {
+  area: string
   byteAddr: number
   bit: number
   value: boolean
@@ -401,7 +410,7 @@ async function processWriteQueue() {
 
   const job = writeQueue.shift()!
   try {
-    await doWriteIOBit(job.byteAddr, job.bit, job.value)
+    await doWriteIOBit(job.area, job.byteAddr, job.bit, job.value)
     job.resolve()
   } catch (err) {
     job.reject(err as Error)
@@ -412,11 +421,12 @@ async function processWriteQueue() {
 }
 
 /** 实际执行写入（读当前字节 → 改位 → 写回整个字节） */
-async function doWriteIOBit(byteAddr: number, bit: number, value: boolean): Promise<void> {
+async function doWriteIOBit(area: string, byteAddr: number, bit: number, value: boolean): Promise<void> {
   if (!client || !_connected) throw new Error('PLC 未连接')
+  const prefix = area.toUpperCase()
   return new Promise((resolve, reject) => {
-    const tag = `_q_write_${byteAddr}`
-    const s7addr = `QB${byteAddr}`
+    const tag = `_${area}_write_${byteAddr}`
+    const s7addr = `${prefix}B${byteAddr}`
     const origCB = client!.translationCB
     client!.setTranslationCB((t: string) => t === tag ? s7addr : origCB(t))
     client!.addItems([tag])
@@ -424,11 +434,11 @@ async function doWriteIOBit(byteAddr: number, bit: number, value: boolean): Prom
       client!.readAllItems((err: any, values: Record<string, any>) => {
         client!.removeItems([tag])
         client!.setTranslationCB(origCB)
-        if (err) { reject(new Error(`读取 Q${byteAddr} 失败: ${err}`)); return }
+        if (err) { reject(new Error(`读取 ${prefix}${byteAddr} 失败: ${err}`)); return }
         const currByte = (values[tag] as number) ?? 0
         const newByte = value ? (currByte | (1 << bit)) : (currByte & ~(1 << bit))
         client!.writeItems(s7addr, newByte, (writeErr: any) => {
-          if (writeErr) reject(new Error(`写入 Q${byteAddr}.${bit} 失败: ${writeErr}`))
+          if (writeErr) reject(new Error(`写入 ${prefix}${byteAddr}.${bit} 失败: ${writeErr}`))
           else resolve()
         })
       })
@@ -437,21 +447,22 @@ async function doWriteIOBit(byteAddr: number, bit: number, value: boolean): Prom
 }
 
 /**
- * 写入 Q 区（输出点）的某个位（入队列，串行执行）
+ * 写入 I/O/M 区的某个位（入队列，串行执行）
  */
-export async function writeIOBit(byteAddr: number, bit: number, value: boolean): Promise<void> {
+export async function writeIOBit(area: string, byteAddr: number, bit: number, value: boolean): Promise<void> {
   return new Promise((resolve, reject) => {
-    writeQueue.push({ byteAddr, bit, value, resolve, reject })
+    writeQueue.push({ area, byteAddr, bit, value, resolve, reject })
     processWriteQueue()
   })
 }
 
-/** 直接写 Q 区一个字节（前端已算好新值，无需读-改-写） */
-export async function writeByte(byteAddr: number, value: number): Promise<void> {
+/** 直接写一个字节（前端已算好新值，无需读-改-写），兼容 Q/M 区 */
+export async function writeByte(area: string, byteAddr: number, value: number): Promise<void> {
   if (!client || !_connected) throw new Error('PLC 未连接')
+  const prefix = area.toUpperCase()
   return new Promise((resolve, reject) => {
-    client!.writeItems(`QB${byteAddr}`, value, (err: any) => {
-      if (err) reject(new Error(`写入 QB${byteAddr} 失败: ${err}`))
+    client!.writeItems(`${prefix}B${byteAddr}`, value, (err: any) => {
+      if (err) reject(new Error(`写入 ${prefix}B${byteAddr} 失败: ${err}`))
       else resolve()
     })
   })

@@ -13,6 +13,7 @@ const RECONNECT_DELAY = 3000
 export interface IOData {
   i: Record<number, number>
   q: Record<number, number>
+  m: Record<number, number>
 }
 
 interface StreamPayload {
@@ -23,7 +24,7 @@ interface StreamPayload {
 
 export function usePLCData() {
   const [db, setDb] = useState<PLCData>({})
-  const [io, setIo] = useState<IOData>({ i: {}, q: {} })
+  const [io, setIo] = useState<IOData>({ i: {}, q: {}, m: {} })
   const [dbBlocks, setDbBlocks] = useState<Record<string, number[] | null>>({})
   const [connected, setConnected] = useState(false)
   const [lastDataTime, setLastDataTime] = useState(0)
@@ -45,7 +46,7 @@ export function usePLCData() {
       try {
         const payload: StreamPayload = JSON.parse(event.data)
         setDb(payload.db ?? {})
-        setIo({ i: payload.io?.i ?? {}, q: payload.io?.q ?? {} })
+        setIo({ i: payload.io?.i ?? {}, q: payload.io?.q ?? {}, m: payload.io?.m ?? {} })
         setDbBlocks(payload.dbBlocks ?? {})
         setLastDataTime(Date.now())
       } catch { /* ignore malformed data */ }

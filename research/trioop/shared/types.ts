@@ -24,12 +24,14 @@ export interface PLCConfig {
   plc: PLCConnection
   pollInterval: number
   variables: PLCVariable[]
-  /** I/Q 区读取的字节段列表 */
+  /** I/Q/M 区读取的字节段列表 */
   ioRanges?: {
     /** I 区字节段，如 [{ start: 0, end: 1 }, { start: 8, end: 8 }] */
     i?: { start: number; end: number }[]
     /** Q 区字节段 */
     q?: { start: number; end: number }[]
+    /** M 区字节段 */
+    m?: { start: number; end: number }[]
   }
 }
 

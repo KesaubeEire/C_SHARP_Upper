@@ -46,12 +46,9 @@ let runtimePlcIp: string = config.plc.ip
 let runtimeLocalAddr: string | undefined
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let plcDataCache: Record<string, unknown> = {}
-let ioDataCache: { i: Record<number, number>; q: Record<number, number> } = { i: {}, q: {} }
+let ioDataCache: { i: Record<number, number>; q: Record<number, number>; m: Record<number, number> } = { i: {}, q: {}, m: {} }
 let runtimeConnType = 3
 let runtimePollInterval = 1000
-let runtimeIOSource: 'io' | 'db' = 'io'    // 'io'=直读I/Q, 'db'=从DB读
-let runtimeIODbConfig = { dbNumber: 5, startOffset: 0, byteCount: 8 }
-
 /** DB 块列表：用户在前端配置的要读取的 DB 块 */
 interface DBBlockConfig {
   label: string
@@ -92,8 +89,6 @@ app.post('/api/plc/connect', async (req, res) => {
   runtimeConnType = CONN_TYPE_MAP[connType as string] ?? 3
   runtimePollInterval = Math.max(50, Math.min(10000, (pollInterval as number) || 1000))
   runtimeMode = 's7'
-  if (req.body.ioSource === 'io' || req.body.ioSource === 'db') runtimeIOSource = req.body.ioSource
-  if (req.body.ioDbConfig) runtimeIODbConfig = { ...runtimeIODbConfig, ...req.body.ioDbConfig }
   if (ioRanges) runtimeIORanges = ioRanges
 
   plc.disconnect()
@@ -129,7 +124,6 @@ app.get('/api/plc/status', (_req, res) => {
     localAddress: runtimeLocalAddr ?? null,
     connType: runtimeConnType,
     pollInterval: runtimePollInterval,
-    ioSource: runtimeIOSource,
     ioRanges: runtimeIORanges ?? config.ioRanges ?? null,
   })
 })
@@ -137,7 +131,7 @@ app.get('/api/plc/status', (_req, res) => {
 // ─── OPC UA 连接 ────────────────────────────────────────
 let runtimeMode: 's7' | 'opcua' = 's7'
 /** 前端传过来的 I/Q 字节范围（做实时显示用，OPC UA 模式也存着） */
-let runtimeIORanges: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[] } | null = null
+let runtimeIORanges: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[]; m?: { start: number; end: number }[] } | null = null
 
 app.post('/api/opcua/connect', async (req, res) => {
   const { plcIp, port, username, password, ioRanges } = req.body
@@ -159,7 +153,7 @@ app.post('/api/opcua/disconnect', async (_req, res) => {
   await opcua.unsubscribeAll()
   await opcua.disconnect()
   opcuaDataCache = {}
-  broadcast({ db: {}, io: { i: {}, q: {} }, dbBlocks: {} })
+  broadcast({ db: {}, io: { i: {}, q: {}, m: {} }, dbBlocks: {} })
   res.json({ success: true })
 })
 
@@ -234,7 +228,7 @@ app.post('/api/opcua/unsubscribe', async (_req, res) => {
   await opcua.unsubscribeAll()
   stopOpcuaBroadcast()
   opcuaDataCache = {}
-  broadcast({ db: {}, io: { i: {}, q: {} }, dbBlocks: {} })
+  broadcast({ db: {}, io: { i: {}, q: {}, m: {} }, dbBlocks: {} })
   res.json({ success: true })
 })
 
@@ -305,7 +299,7 @@ app.get('/api/plc/data', (_req, res) => {
 app.get('/api/plc/config', (_req, res) => {
   res.json({
     pollInterval: config.pollInterval,
-    ioRanges: config.ioRanges ?? { i: [{ start: 0, end: 1 }, { start: 8, end: 8 }], q: [{ start: 0, end: 1 }, { start: 8, end: 8 }] },
+    ioRanges: config.ioRanges ?? { i: [{ start: 0, end: 1 }, { start: 8, end: 8 }], q: [{ start: 0, end: 1 }, { start: 8, end: 8 }], m: [{ start: 0, end: 8 }] },
     variables: config.variables.map(v => ({
       name: v.name,
       area: v.area,
@@ -491,6 +485,12 @@ app.get('/api/plc/imported-udts', (_req, res) => {
   res.json(Object.keys(udtDefs))
 })
 
+app.get('/api/plc/imported-udts/:name', (req, res) => {
+  const fields = udtDefs[req.params.name]
+  if (!fields) return res.status(404).json({ error: '未找到 UDT' })
+  res.json({ name: req.params.name, fields })
+})
+
 app.delete('/api/plc/imported-udts/:name', (req, res) => {
   delete udtDefs[req.params.name]
   res.json({ success: true })
@@ -589,7 +589,7 @@ app.post('/api/plc/imported-db-write', async (req, res) => {
 // ─── API: 写入 I/O 点 ──────────────────────────────────
 app.post('/api/plc/write-io', async (req, res) => {
   const { area, byte: byteAddr, bit, value, currentByte } = req.body
-  if (area !== 'q') return res.status(400).json({ error: '仅支持 Q 区写入' })
+  if (area !== 'q' && area !== 'm') return res.status(400).json({ error: '仅支持 Q/M 区写入' })
   if (byteAddr === undefined || bit === undefined || value === undefined) {
     return res.status(400).json({ error: '请提供 byte、bit 和 value' })
   }
@@ -598,9 +598,9 @@ app.post('/api/plc/write-io', async (req, res) => {
     // 前端传 currentByte 则直接算新值写整个字节，避免读-改-写冲突
     if (typeof currentByte === 'number') {
       const newByte = value ? (currentByte | (1 << bit)) : (currentByte & ~(1 << bit))
-      await plc.writeByte(Number(byteAddr), newByte)
+      await plc.writeByte(area, Number(byteAddr), newByte)
     } else {
-      await plc.writeIOBit(Number(byteAddr), Number(bit), !!value)
+      await plc.writeIOBit(area, Number(byteAddr), Number(bit), !!value)
     }
     res.json({ success: true })
   } catch (err) {
@@ -838,7 +838,7 @@ app.get('/api/plc/stream', (req, res) => {
   })
   // OPC UA 模式下推送 OPC UA 数据缓存的快照
   const payload = runtimeMode === 'opcua'
-    ? { db: opcuaDataCache, io: { i: {}, q: {} }, dbBlocks: {} }
+    ? { db: opcuaDataCache, io: { i: {}, q: {}, m: {} }, dbBlocks: {} }
     : { db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache }
   res.write(`data: ${JSON.stringify(payload)}\n\n`)
   addClient(res)
@@ -862,6 +862,7 @@ async function poll() {
     plcDataCache = result.db
     ioDataCache.i = result.io.i
     ioDataCache.q = result.io.q
+    ioDataCache.m = result.io.m
     dbBlockCache = result.dbBlocks
 
     // 写入趋势缓冲区

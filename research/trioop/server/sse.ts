@@ -8,7 +8,7 @@ import type { PLCData } from '../shared/types.js'
 /** SSE 推送的完整数据包结构 */
 export interface StreamPayload {
   db: Record<string, unknown>
-  io: { i: Record<number, number>; q: Record<number, number> }
+  io: { i: Record<number, number>; q: Record<number, number>; m: Record<number, number> }
   dbBlocks: Record<string, number[] | null>
 }
 

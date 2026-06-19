@@ -60,24 +60,24 @@ export default function App() {
     fetch('/api/plc/db-blocks').then(r => r.json()).then(setBlocks).catch(() => {})
   }, [])
 
-  const handleQToggle = useCallback(async (byteAddr: number, bit: number, value: boolean) => {
+  const handleIoToggle = useCallback(async (area: 'q' | 'm', byteAddr: number, bit: number, value: boolean) => {
     // 乐观更新：先改界面
     setIo(prev => {
-      const q = { ...prev.q }
-      const oldByte = q[byteAddr] ?? 0
-      q[byteAddr] = value ? (oldByte | (1 << bit)) : (oldByte & ~(1 << bit))
-      return { ...prev, q }
+      const copy = { ...prev[area] }
+      const oldByte = copy[byteAddr] ?? 0
+      copy[byteAddr] = value ? (oldByte | (1 << bit)) : (oldByte & ~(1 << bit))
+      return { ...prev, [area]: copy }
     })
     // 后台写 PLC（带当前字节值，直接写整字节）
-    const currentByte = io.q[byteAddr] ?? 0
+    const currentByte = io[area][byteAddr] ?? 0
     try {
       await fetch('/api/plc/write-io', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ area: 'q', byte: byteAddr, bit, value, currentByte }),
+        body: JSON.stringify({ area, byte: byteAddr, bit, value, currentByte }),
       })
     } catch {}
-  }, [setIo, io.q])
+  }, [setIo, io.q, io.m])
 
   const addBlock = useCallback(async (block: DBBlockConfig) => {
     try {
@@ -109,13 +109,13 @@ export default function App() {
   const variables = config?.variables ?? []
   const pointCount = Object.keys(db).length
 
-  // I/Q 字节地址：localStorage 最优先（用户在 ConnectionPanel 改了即时生效），无则 fallback 到后端 config
+  // I/Q/M 字节地址：localStorage 最优先（用户在 ConnectionPanel 改了即时生效），无则 fallback 到后端 config
   const ioRanges = (() => {
     try {
       const raw = localStorage.getItem('trioop_connection')
       if (raw) {
         const s = JSON.parse(raw)
-        if (s.ioIBytes || s.ioQBytes) {
+        if (s.ioIBytes || s.ioQBytes || s.ioMBytes) {
           const toRanges = (v: string) => {
             if (!v) return undefined
             const nums = v.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n))
@@ -130,13 +130,16 @@ export default function App() {
             r.push({ start: st, end: en })
             return r
           }
-          return { i: toRanges(s.ioIBytes), q: toRanges(s.ioQBytes) }
+          const r: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[]; m?: { start: number; end: number }[] } = { i: toRanges(s.ioIBytes), q: toRanges(s.ioQBytes), m: toRanges(s.ioMBytes) }
+          return r
         }
       }
     } catch { /* ignore */ }
-    return config?.ioRanges
+    const cfg = config?.ioRanges
+    if (cfg) return { i: cfg.i, q: cfg.q, m: cfg.m }
+    return undefined
   })()
-  const ioBytes = { i: rangesToBytes(ioRanges?.i), q: rangesToBytes(ioRanges?.q) }
+  const ioBytes = { i: rangesToBytes(ioRanges?.i), q: rangesToBytes(ioRanges?.q), m: rangesToBytes(ioRanges?.m) }
 
   return (
     <div className="app app--with-sidebar">
@@ -166,7 +169,11 @@ export default function App() {
           </CollapsibleSection>
 
           <CollapsibleSection title="🔵 输出点 (Q 区)" storageKey="io-output" keepMounted>
-            <IOGrid label="" data={io.q} prefix="Q" bytes={ioBytes.q} onToggle={handleQToggle} />
+            <IOGrid label="" data={io.q} prefix="Q" bytes={ioBytes.q} onToggle={(addr, bit, val) => handleIoToggle('q', addr, bit, val)} />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="🟣 M 区" storageKey="io-m" keepMounted>
+            <IOGrid label="" data={io.m} prefix="M" bytes={ioBytes.m} onToggle={(addr, bit, val) => handleIoToggle('m', addr, bit, val)} />
           </CollapsibleSection>
 
           {/* 实时趋势 */}

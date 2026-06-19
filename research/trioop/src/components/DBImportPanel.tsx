@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../hooks/useToast'
 import { loadMapping, saveMapping, saveDBData, saveUDTContent, loadAllUDTContent, clearUDTCache, loadAllDBData, writePLC } from '../hooks/useDBMapping'
@@ -34,6 +34,8 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   const udtFileRef = useRef<HTMLInputElement>(null)
   const [udtNames, setUdtNames] = useState<string[]>([])
   const [udtLoading, setUdtLoading] = useState(false)
+  const [udtDetail, setUdtDetail] = useState<{ name: string; fields: { name: string; type: string; bit?: number }[] } | null>(null)
+  const [udtDetailCache, setUdtDetailCache] = useState<Record<string, { name: string; fields: { name: string; type: string; bit?: number }[] }>>({})
 
   const loadImported = async (): Promise<ImportedDB[]> => {
     try {
@@ -125,6 +127,35 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
     if (udtFileRef.current) { udtFileRef.current.value = ''; udtFileRef.current.click() }
   }, [])
 
+  /** 查看 UDT 字段详情 */
+  const handleUdtDetail = useCallback(async (name: string) => {
+    // 先查缓存
+    if (udtDetailCache[name]) { setUdtDetail(udtDetailCache[name]); return }
+    try {
+      const res = await fetch(`/api/plc/imported-udts/${encodeURIComponent(name)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setUdtDetailCache(c => ({ ...c, [name]: data }))
+        // 持久化到 localStorage
+        try { localStorage.setItem(`trioop_udt_detail_${name}`, JSON.stringify(data)) } catch {}
+        setUdtDetail(data)
+      }
+    } catch {}
+  }, [udtDetailCache])
+
+  // 启动时尝试从 localStorage 恢复 UDT 详情缓存
+  useEffect(() => {
+    const names = udtNames
+    const restored: Record<string, any> = {}
+    for (const n of names) {
+      try {
+        const raw = localStorage.getItem(`trioop_udt_detail_${n}`)
+        if (raw) restored[n] = JSON.parse(raw)
+      } catch {}
+    }
+    if (Object.keys(restored).length > 0) setUdtDetailCache(restored)
+  }, [udtNames])
+
   /** 删除单个 UDT */
   async function handleRemoveUdt(name: string) {
     try {
@@ -185,7 +216,9 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   }
 
   return (
-    <CollapsibleSection title="📥 导入 DB 文件" storageKey="db-import">
+    <React.Fragment>
+
+      <CollapsibleSection title="📥 导入 DB 文件" storageKey="db-import">
 
       {/* ─── UDT 定义文件导入 ─────────────────────────────── */}
       <div className="udt-import">
@@ -199,9 +232,9 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
         {udtNames.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
             {udtNames.map(name => (
-              <span key={name} className="udt-tag">
+              <span key={name} className="udt-tag" style={{ cursor: 'pointer' }} onClick={() => handleUdtDetail(name)} title="查看字段详情">
                 {name}
-                <button className="udt-tag__del" onClick={() => handleRemoveUdt(name)} title="删除此 UDT">✕</button>
+                <button className="udt-tag__del" onClick={e => { e.stopPropagation(); handleRemoveUdt(name) }} title="删除此 UDT">✕</button>
               </span>
             ))}
           </div>
@@ -290,7 +323,40 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
           })}
         </div>
       )}
-    </CollapsibleSection>
+      </CollapsibleSection>
+      {udtDetail && (
+        <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setUdtDetail(null) }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ width: 480 }}>
+            <h3 className="modal-title">🔷 {udtDetail.name} 字段列表</h3>
+            <div className="modal-form">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--muted-foreground)' }}>
+                    <th style={{ padding: '6px 8px' }}>字段名</th>
+                    <th style={{ padding: '6px 8px' }}>类型</th>
+                    <th style={{ padding: '6px 8px' }}>位</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {udtDetail.fields.map(f => (
+                    <tr key={f.name} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '6px 8px', fontFamily: 'Consolas, monospace' }}>{f.name}</td>
+                      <td style={{ padding: '6px 8px' }}>
+                        <span style={{ color: typeColor(f.type), fontWeight: 500, fontSize: 12 }}>{f.type.toUpperCase()}</span>
+                      </td>
+                      <td style={{ padding: '6px 8px', color: 'var(--muted-foreground)' }}>{f.bit !== undefined ? `${f.bit}` : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn--primary" onClick={() => setUdtDetail(null)}>关闭</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </React.Fragment>
   )
 }
 
