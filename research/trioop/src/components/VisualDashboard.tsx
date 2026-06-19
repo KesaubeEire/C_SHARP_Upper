@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { Responsive } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
-import { Gauge, SignalPanel, EventLog, ConnectionBar } from '@altara/core'
+import { SignalPanel, EventLog, ConnectionBar } from '@altara/core'
+import { AltaraGauge } from '../components/AltaraGauge'
 import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, PIDTuningPanel, ProcessFlowDiagram } from '@altara/industrial'
 import { TrendRecorder } from '../components/AltaraTrendRecorder'
 import { useContextMenu } from './VDBContextMenu'
@@ -48,7 +49,7 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
   value:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'unit', label:'单位', type:'text', default:'' }],
   lamp:       [{ key:'variableName', label:'变量名', type:'text', default:'' }],
   button:     [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'mode', label:'按钮模式', type:'select', default:'momentary', options:[{ label:'按1松0', value:'momentary' },{ label:'按0松1', value:'momentary_off' },{ label:'取反', value:'toggle' }] }, { key:'label', label:'按钮文字', type:'text', default:'运行' }],
-  gauge:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'min', label:'量程下限', type:'number', default:0 }, { key:'max', label:'量程上限', type:'number', default:100 }, { key:'unit', label:'单位', type:'text', default:'%' }, { key:'threshold1', label:'预警值', type:'number', default:80 }, { key:'threshold2', label:'危险值', type:'number', default:90 }],
+  gauge:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'min', label:'量程下限', type:'number', default:0 }, { key:'max', label:'量程上限', type:'number', default:100 }, { key:'unit', label:'单位', type:'text', default:'%' }, { key:'threshold1', label:'预警值', type:'number', default:80 }, { key:'threshold2', label:'危险值', type:'number', default:90 }, { key:'easingMs', label:'缓动时长(ms)', type:'number', default:500 }],
   trend:      [
     { key:'timeScale', label:'时间刻度', type:'select', default:'5m', options:[{ label:'1分钟', value:'1m' },{ label:'5分钟', value:'5m' },{ label:'15分钟', value:'15m' },{ label:'1小时', value:'1h' },{ label:'4小时', value:'4h' },{ label:'8小时', value:'8h' },{ label:'24小时', value:'24h' }] },
     { key:'mockMode', label:'🎲 演示模式', type:'boolean', default:true },
@@ -78,7 +79,7 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
   const pt = liveData?.[cfg.variableName || '']
   const liveVal = pt?.value; const liveNum = typeof liveVal === 'number' ? liveVal : (liveVal ? 1 : 0); const hasLive = liveVal !== undefined && liveVal !== null
   switch (type) {
-    case 'gauge': { const ds = hasLive && cfg.variableName ? { subscribe: (cb: any) => { cb({ timestamp: Date.now(), value: liveNum }); return () => {} }, getHistory: () => [{ timestamp: Date.now(), value: liveNum }], status: 'connected' as const, destroy: () => {} } : undefined; return <Gauge min={cfg.min ?? 0} max={cfg.max ?? 100} unit={cfg.unit} label="" size="md" dataSource={ds} mockMode={!ds}
+    case 'gauge': { const ds = hasLive && cfg.variableName ? { subscribe: (cb: any) => { cb({ timestamp: Date.now(), value: liveNum }); return () => {} }, getHistory: () => [{ timestamp: Date.now(), value: liveNum }], status: 'connected' as const, destroy: () => {} } : undefined; return <AltaraGauge min={cfg.min ?? 0} max={cfg.max ?? 100} unit={cfg.unit} label="" size="md" dataSource={ds} mockMode={!ds} easingMs={cfg.easingMs ?? 500}
       thresholds={[{ value: cfg.threshold1 ?? 80, color: '#ff9800' }, { value: cfg.threshold2 ?? 90, color: '#ef5350' }].filter(t => t.value > (cfg.min ?? 0))} /> }
     case 'trend': {
       const channels: { key: string; label: string; color: string; unit: string; min: number; max: number }[] = []
