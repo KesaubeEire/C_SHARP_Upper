@@ -8,12 +8,12 @@ interface TooltipProps {
 
 export default function Tooltip({ children, content, side = 'top' }: TooltipProps) {
   const [show, setShow] = useState(false)
-  const timerRef = useRef<any>(null)
   const [pos, setPos] = useState({ top: 0, left: 0 })
-  const triggerRef = useRef<HTMLSpanElement>(null)
+  const timerRef = useRef<any>(null)
+  const wrapRef = useRef<HTMLSpanElement>(null)
 
-  const calcPos = useCallback(() => {
-    const el = triggerRef.current
+  const calc = useCallback(() => {
+    const el = wrapRef.current?.firstElementChild as HTMLElement | null
     if (!el) return
     const r = el.getBoundingClientRect()
     const gap = 6
@@ -25,30 +25,20 @@ export default function Tooltip({ children, content, side = 'top' }: TooltipProp
     }
   }, [side])
 
-  const handleMouseEnter = useCallback(() => {
-    calcPos()
-    timerRef.current = setTimeout(() => setShow(true), 400)
-  }, [calcPos])
-
-  const handleMouseLeave = useCallback(() => {
-    clearTimeout(timerRef.current)
-    setShow(false)
-  }, [])
-
   return (
-    <span ref={triggerRef} style={{ display: 'inline-flex' }}
-      onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onFocus={handleMouseEnter} onBlur={handleMouseLeave}>
+    <span ref={wrapRef} style={{ display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => { calc(); timerRef.current = setTimeout(() => setShow(true), 400) }}
+      onMouseLeave={() => { clearTimeout(timerRef.current); setShow(false) }}
+      onFocus={() => { calc(); timerRef.current = setTimeout(() => setShow(true), 400) }}
+      onBlur={() => { clearTimeout(timerRef.current); setShow(false) }}>
       {children}
       {show && (
-        <span className="tooltip-content" style={{
+        <span style={{
           position: 'fixed', zIndex: 99999, pointerEvents: 'none',
-          top: side === 'top' || side === 'bottom' ? pos.top : undefined,
-          bottom: side === 'top' ? undefined : undefined,
-          left: side === 'left' || side === 'right' ? undefined : pos.left,
-          right: side === 'left' || side === 'right' ? undefined : undefined,
+          top: pos.top, left: pos.left,
           transform: side === 'top' ? 'translate(-50%, -100%)' : side === 'bottom' ? 'translate(-50%, 0)' : side === 'left' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
         }}>
-          {content}
+          <span className="tooltip-content__inner">{content}</span>
         </span>
       )}
     </span>

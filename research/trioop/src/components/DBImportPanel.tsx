@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import CollapsibleSection from './CollapsibleSection'
+import Tooltip from './Tooltip'
 import { useToast } from '../hooks/useToast'
 import { loadMapping, saveMapping, saveDBData, saveUDTContent, loadAllUDTContent, clearUDTCache, loadAllDBData, writePLC } from '../hooks/useDBMapping'
 
@@ -234,7 +235,7 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
             {udtNames.map(name => (
               <span key={name} className="udt-tag" style={{ cursor: 'pointer' }} onClick={() => handleUdtDetail(name)} title="查看字段详情">
                 {name}
-                <button className="udt-tag__del" onClick={e => { e.stopPropagation(); handleRemoveUdt(name) }} title="删除此 UDT">✕</button>
+                <Tooltip content="删除此 UDT"><button className="udt-tag__del" onClick={e => { e.stopPropagation(); handleRemoveUdt(name) }}>✕</button></Tooltip>
               </span>
             ))}
           </div>
@@ -260,8 +261,8 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
                   <span className="db-card__label">{db.dbName}</span>
                   <span className="db-card__info">{db.variableCount} 个变量</span>
                   <DBNumberInput dbName={db.dbName} />
-                  <button className="btn btn--primary db-card__refresh" onClick={() => handleRefresh(key)} title="重新注册到当前连接">↻</button>
-                  <button className="btn btn--danger db-card__del" onClick={() => handleRemove(key)}>✕</button>
+                  <Tooltip content="重新注册到当前连接"><button className="btn btn--primary db-card__refresh" onClick={() => handleRefresh(key)}>↻</button></Tooltip>
+                  <Tooltip content="删除此 DB"><button className="btn btn--danger db-card__del" onClick={() => handleRemove(key)}>✕</button></Tooltip>
                 </div>
                 <div className="db-import__vars">
                   {/* 表头 */}

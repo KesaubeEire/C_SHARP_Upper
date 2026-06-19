@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import CollapsibleSection from './CollapsibleSection'
+import Tooltip from './Tooltip'
 import { Gauge } from '@altara/core'
 import type { AltaraDataSource } from '@altara/core'
 
@@ -78,8 +79,8 @@ export default function Dashboard({ liveData }: { liveData?: Record<string, { va
               <div className="dashboard-card__bar">
                 <span className="dashboard-card__title">{g.name}</span>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <button className="btn btn--ghost btn--sm" onClick={() => openEdit(g)} title="编辑">✏️</button>
-                  <button className="btn btn--danger btn--sm" onClick={() => removeGadget(g.id)}>✕</button>
+                  <Tooltip content="编辑"><button className="btn btn--ghost btn--sm" onClick={() => openEdit(g)}>✏️</button></Tooltip>
+                  <Tooltip content="删除"><button className="btn btn--danger btn--sm" onClick={() => removeGadget(g.id)}>✕</button></Tooltip>
                 </div>
               </div>
               {renderGadget(g, liveData)}

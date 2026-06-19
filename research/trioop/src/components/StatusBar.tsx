@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import Tooltip from './Tooltip'
 import type { PLCConfig } from '../../shared/types'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
@@ -41,9 +42,11 @@ export default function StatusBar({ config, connected, pointCount, lastDataTime,
     <header className="status-bar">
       <div className="status-bar__left">
         {onToggleSidebar && (
-          <button className="status-bar__menu-btn" onClick={onToggleSidebar} title={sidebarOpen ? '收起侧栏' : '展开侧栏'}>
-            ☰
-          </button>
+          <Tooltip content={sidebarOpen ? '收起侧栏' : '展开侧栏'} side="bottom">
+            <button className="status-bar__menu-btn" onClick={onToggleSidebar}>
+              ☰
+            </button>
+          </Tooltip>
         )}
         <h1 className="status-bar__title">🔌 PLC 实时监控</h1>
       </div>
