@@ -3,14 +3,14 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { Responsive } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
-import { Gauge, SignalPanel, EventLog } from '@altara/core'
-import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, PIDTuningPanel } from '@altara/industrial'
+import { Gauge, SignalPanel, EventLog, ConnectionBar } from '@altara/core'
+import { OEEDashboard, MotorDashboard, PredictiveMaintenanceGauge, AlarmAnnunciatorPanel, PIDTuningPanel, ProcessFlowDiagram } from '@altara/industrial'
 import { TrendRecorder } from '../components/AltaraTrendRecorder'
 import { useContextMenu } from './VDBContextMenu'
 import { resolveVarName, loadMapping, loadAllDBData, writePLC } from '../hooks/useDBMapping'
 
 
-type WidgetType = 'value' | 'lamp' | 'button' | 'gauge' | 'trend' | 'oee' | 'motor' | 'predictive' | 'alarm' | 'pid' | 'signal' | 'eventlog'
+type WidgetType = 'value' | 'lamp' | 'button' | 'gauge' | 'trend' | 'oee' | 'motor' | 'predictive' | 'alarm' | 'pid' | 'signal' | 'eventlog' | 'connectionbar' | 'process'
 
 interface Widget { id: string; type: WidgetType; title: string; config: Record<string, any> }
 
@@ -34,6 +34,8 @@ const WIDGET_META: Record<WidgetType, { label: string; icon: string; w: number; 
   pid:        { label: 'PID调谐', icon: '🎛️', w: 4, h: 3 },
   signal:     { label: '信号面板', icon: '📡', w: 3, h: 3 },
   eventlog:   { label: '事件日志', icon: '📋', w: 4, h: 3 },
+  connectionbar: { label: '连接状态', icon: '🔌', w: 3, h: 1 },
+  process:    { label: '工艺流程图', icon: '🏗️', w: 5, h: 4 },
 }
 
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }
@@ -46,7 +48,7 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
   value:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'unit', label:'单位', type:'text', default:'' }],
   lamp:       [{ key:'variableName', label:'变量名', type:'text', default:'' }],
   button:     [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'mode', label:'按钮模式', type:'select', default:'momentary', options:[{ label:'按1松0', value:'momentary' },{ label:'按0松1', value:'momentary_off' },{ label:'取反', value:'toggle' }] }, { key:'label', label:'按钮文字', type:'text', default:'运行' }],
-  gauge:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'min', label:'量程下限', type:'number', default:0 }, { key:'max', label:'量程上限', type:'number', default:100 }, { key:'unit', label:'单位', type:'text', default:'%' }],
+  gauge:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'min', label:'量程下限', type:'number', default:0 }, { key:'max', label:'量程上限', type:'number', default:100 }, { key:'unit', label:'单位', type:'text', default:'%' }, { key:'threshold1', label:'预警值', type:'number', default:80 }, { key:'threshold2', label:'危险值', type:'number', default:90 }],
   trend:      [
     { key:'timeScale', label:'时间刻度', type:'select', default:'5m', options:[{ label:'1分钟', value:'1m' },{ label:'5分钟', value:'5m' },{ label:'15分钟', value:'15m' },{ label:'1小时', value:'1h' },{ label:'4小时', value:'4h' },{ label:'8小时', value:'8h' },{ label:'24小时', value:'24h' }] },
     { key:'mockMode', label:'🎲 演示模式', type:'boolean', default:true },
@@ -68,13 +70,16 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
   pid:        [{ key:'kp', label:'Kp', type:'number', default:2.5 }, { key:'ki', label:'Ki', type:'number', default:0.8 }, { key:'kd', label:'Kd', type:'number', default:0.3 }],
   signal:     [{ key:'ch1Label', label:'通道1', type:'text', default:'电流' }, { key:'ch1Val', label:'通道1值', type:'number', default:38 }, { key:'ch1Unit', label:'通道1单位', type:'text', default:'A' }, { key:'ch2Label', label:'通道2', type:'text', default:'温度' }, { key:'ch2Val', label:'通道2值', type:'number', default:72 }, { key:'ch2Unit', label:'通道2单位', type:'text', default:'°C' }],
   eventlog:   [],
+  connectionbar: [{ key:'title', label:'连接地址', type:'text', default:'PLC-1200' }, { key:'status', label:'状态', type:'select', default:'connected', options:[{ label:'已连接', value:'connected' },{ label:'未连接', value:'disconnected' }] }],
+  process:    [{ key:'mockMode', label:'🎲 演示模式', type:'boolean', default:true }],
 }
 
 function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Record<string, { value: number | boolean }>) {
   const pt = liveData?.[cfg.variableName || '']
   const liveVal = pt?.value; const liveNum = typeof liveVal === 'number' ? liveVal : (liveVal ? 1 : 0); const hasLive = liveVal !== undefined && liveVal !== null
   switch (type) {
-    case 'gauge': { const ds = hasLive && cfg.variableName ? { subscribe: (cb: any) => { cb({ timestamp: Date.now(), value: liveNum }); return () => {} }, getHistory: () => [{ timestamp: Date.now(), value: liveNum }], status: 'connected' as const, destroy: () => {} } : undefined; return <Gauge min={cfg.min ?? 0} max={cfg.max ?? 100} unit={cfg.unit} label="" size="md" dataSource={ds} mockMode={!ds} /> }
+    case 'gauge': { const ds = hasLive && cfg.variableName ? { subscribe: (cb: any) => { cb({ timestamp: Date.now(), value: liveNum }); return () => {} }, getHistory: () => [{ timestamp: Date.now(), value: liveNum }], status: 'connected' as const, destroy: () => {} } : undefined; return <Gauge min={cfg.min ?? 0} max={cfg.max ?? 100} unit={cfg.unit} label="" size="md" dataSource={ds} mockMode={!ds}
+      thresholds={[{ value: cfg.threshold1 ?? 80, color: '#ff9800' }, { value: cfg.threshold2 ?? 90, color: '#ef5350' }].filter(t => t.value > (cfg.min ?? 0))} /> }
     case 'trend': {
       const channels: { key: string; label: string; color: string; unit: string; min: number; max: number }[] = []
       for (let i = 1; i <= 4; i++) {
@@ -98,6 +103,8 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
     case 'pid': return <PIDTuningPanel kp={cfg.kp ?? 2.5} ki={cfg.ki ?? 0.8} kd={cfg.kd ?? 0.3} mockMode />
     case 'signal': return <SignalPanel signals={[{ key:'ch1', label:cfg.ch1Label||'CH1', value:cfg.ch1Val, unit:cfg.ch1Unit },{ key:'ch2', label:cfg.ch2Label||'CH2', value:cfg.ch2Val, unit:cfg.ch2Unit }] as any} />
     case 'eventlog': return <EventLog entries={[{ timestamp: Date.now()-5000, message:'系统启动', severity:'info' },{ timestamp: Date.now()-3000, message:'温度警告', severity:'warn' },{ timestamp: Date.now()-1000, message:'通信超时', severity:'error' }]} maxEntries={100} />
+    case 'connectionbar': return <ConnectionBar url={cfg.title || 'PLC'} status={cfg.status === 'connected' ? 'connected' : 'disconnected'} />
+    case 'process': return <ProcessFlowDiagram mockMode={cfg.mockMode !== false} />
     case 'button': return (<div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100%'}}><button className="btn btn--primary" style={{padding:'12px 32px',fontSize:16,fontWeight:600}}
       onMouseDown={()=>{if(!cfg.variableName)return;writePLC(cfg.variableName,cfg.mode==='momentary_off'?0:1).catch(()=>{})}}
       onMouseUp={()=>{if(!cfg.variableName||cfg.mode==='toggle')return;writePLC(cfg.variableName,cfg.mode==='momentary_off'?1:0).catch(()=>{})}}>{cfg.label||'按钮'}</button></div>)
