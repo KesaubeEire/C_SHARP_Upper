@@ -54,7 +54,7 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
     { key:'showLegend', label:'图例', type:'boolean', default:true },
     { key:'showPoints', label:'采样标记', type:'boolean', default:false },
     { key:'lineWidth', label:'线宽', type:'number', default:1.5 },
-    { key:'backgroundColor', label:'背景色', type:'text', default:'#0E0F10' },
+    { key:'backgroundColor', label:'背景色', type:'text', default:'' },
     { key:'yAxisLabel', label:'Y轴标签', type:'text', default:'' },
     { key:'ch1En', label:'', type:'hidden', default:true }, { key:'ch1Label', label:'', type:'hidden', default:'CH1' }, { key:'ch1Color', label:'', type:'hidden', default:'#E24B4A' }, { key:'ch1Min', label:'', type:'hidden', default:0 }, { key:'ch1Max', label:'', type:'hidden', default:100 }, { key:'ch1Unit', label:'', type:'hidden', default:'' },
     { key:'ch2En', label:'', type:'hidden', default:true }, { key:'ch2Label', label:'', type:'hidden', default:'CH2' }, { key:'ch2Color', label:'', type:'hidden', default:'#37D3E0' }, { key:'ch2Min', label:'', type:'hidden', default:0 }, { key:'ch2Max', label:'', type:'hidden', default:16 }, { key:'ch2Unit', label:'', type:'hidden', default:'' },
@@ -89,7 +89,7 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
           max: cfg[`ch${i}Max`] ?? 100,
         })
       }
-      return <TrendRecorderCell channels={channels} timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} showPoints={!!cfg.showPoints} lineWidth={cfg.lineWidth || 1.5} backgroundColor={cfg.backgroundColor || '#0E0F10'} yAxisLabel={cfg.yAxisLabel || ''} mockMode={cfg.mockMode !== false} liveData={liveData} varMap={channels.reduce((m: Record<string, string>, c) => { const num = c.key.replace('ch', ''); m[c.key] = cfg[`ch${num}Var`] || ''; return m }, {})} />
+      return <TrendRecorderCell channels={channels} timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} showPoints={!!cfg.showPoints} lineWidth={cfg.lineWidth || 1.5} backgroundColor={cfg.backgroundColor || undefined} yAxisLabel={cfg.yAxisLabel || ''} mockMode={cfg.mockMode !== false} liveData={liveData} varMap={channels.reduce((m: Record<string, string>, c) => { const num = c.key.replace('ch', ''); m[c.key] = cfg[`ch${num}Var`] || ''; return m }, {})} />
     }
     case 'oee': return <OEEDashboard availability={cfg.availability ?? 0.85} performance={cfg.performance ?? 0.78} quality={cfg.quality ?? 0.95} shift={cfg.shift || 'A'} mockMode />
     case 'motor': return <MotorDashboard rpm={cfg.rpm ?? 2850} torque={cfg.torque ?? 42} current={cfg.current ?? 38} temperature={cfg.temperature ?? 72} mockMode />
@@ -410,23 +410,23 @@ function TrendChannelConfig({ formCfg, setFormCfg, importedDBs }: {
               <div className="vdb-ch-config__body">
                 <div className="vdb-ch-config__row">
                   <span className="vdb-ch-config__label">标签</span>
-                  <input value={formCfg[`ch${i}Label`] ?? ''} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Label`]: e.target.value }))} />
+                  <input className="modal-input" value={formCfg[`ch${i}Label`] ?? ''} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Label`]: e.target.value }))} />
                 </div>
                 <div className="vdb-ch-config__row">
                   <span className="vdb-ch-config__label">颜色</span>
-                  <input style={{ fontFamily:'monospace' }} value={formCfg[`ch${i}Color`] ?? CHANNEL_COLORS[i - 1]} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Color`]: e.target.value }))} />
+                  <input className="modal-input" style={{ fontFamily:'monospace' }} value={formCfg[`ch${i}Color`] ?? CHANNEL_COLORS[i - 1]} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Color`]: e.target.value }))} />
                   <input type="color" value={formCfg[`ch${i}Color`] || CHANNEL_COLORS[i - 1]} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Color`]: e.target.value }))} />
                 </div>
                 <ChannelVarPicker channel={i} formCfg={formCfg} setFormCfg={setFormCfg} importedDBs={importedDBs} />
                 <div className="vdb-ch-config__row">
                   <span className="vdb-ch-config__label">量程</span>
-                  <input type="number" value={formCfg[`ch${i}Min`] ?? 0} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Min`]: Number(e.target.value) }))} />
-                  <span style={{ color:'var(--muted-foreground)' }}>~</span>
-                  <input type="number" value={formCfg[`ch${i}Max`] ?? 100} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Max`]: Number(e.target.value) }))} />
+                  <input className="modal-input" type="number" value={formCfg[`ch${i}Min`] ?? 0} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Min`]: Number(e.target.value) }))} />
+                  <span className="vdb-ch-config__range-sep">~</span>
+                  <input className="modal-input" type="number" value={formCfg[`ch${i}Max`] ?? 100} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Max`]: Number(e.target.value) }))} />
                 </div>
                 <div className="vdb-ch-config__row">
                   <span className="vdb-ch-config__label">单位</span>
-                  <input value={formCfg[`ch${i}Unit`] ?? ''} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Unit`]: e.target.value }))} placeholder="℃ MPa" />
+                  <input className="modal-input" value={formCfg[`ch${i}Unit`] ?? ''} onChange={e => setFormCfg(c => ({ ...c, [`ch${i}Unit`]: e.target.value }))} placeholder="℃ MPa" />
                 </div>
               </div>
             )}
@@ -517,7 +517,7 @@ function VariablePicker({ dbName, varName, importedDBs, onChange }: {
 }
 
 /** 趋势图自适应容器：ResizeObserver→width/height→TrendRecorder 原生分辨率渲染 */
-const TrendRecorderCell = React.memo(function TrendRecorderCell({ channels, timeScale, showGrid, showLegend, showPoints, lineWidth, backgroundColor, yAxisLabel, mockMode, liveData, varMap }: {
+const TrendRecorderCell = React.memo(function TrendRecorderCell({ channels, timeScale, showGrid, showLegend, showPoints, lineWidth, backgroundColor: bg, yAxisLabel, mockMode, liveData, varMap }: {
   channels?: { key: string; label: string; color: string; unit: string; min: number; max: number }[]
   timeScale: string; showGrid: boolean; showLegend: boolean; showPoints: boolean; lineWidth: number; backgroundColor?: string; yAxisLabel?: string; mockMode?: boolean
   liveData?: Record<string, { value: number | boolean }>
@@ -549,7 +549,7 @@ const TrendRecorderCell = React.memo(function TrendRecorderCell({ channels, time
         showLegend={showLegend}
         showPoints={showPoints}
         lineWidth={lineWidth}
-        backgroundColor={backgroundColor}
+        backgroundColor={bg}
         yAxisLabel={yAxisLabel}
         mockMode={mockMode}
         liveData={liveData}

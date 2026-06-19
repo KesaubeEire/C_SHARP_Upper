@@ -1569,7 +1569,17 @@ body {
 .vdb-ch-config__row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+}
+.vdb-ch-config__row input[type="number"] {
+  min-width: 0;
+  width: 0;  /* 让 flex:1 真正生效 */
+}
+.vdb-ch-config__row .vdb-ch-config__range-sep {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  font-size: 11px;
 }
 .vdb-ch-config__label {
   min-width: 36px;
@@ -1577,21 +1587,9 @@ body {
   color: var(--muted-foreground);
   flex-shrink: 0;
 }
-.vdb-ch-config__row input[type="text"],
-.vdb-ch-config__row input[type="number"] {
+.vdb-ch-config__row .modal-input {
   flex: 1;
-  background: var(--input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--foreground);
-  padding: 4px 8px;
-  font-size: 12px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.vdb-ch-config__row input[type="text"]:focus,
-.vdb-ch-config__row input[type="number"]:focus {
-  border-color: var(--ring);
+  min-width: 0;
 }
 .vdb-ch-config__row input[type="color"] {
   width: 30px; height: 30px;

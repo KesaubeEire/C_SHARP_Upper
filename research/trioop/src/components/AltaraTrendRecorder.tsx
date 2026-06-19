@@ -47,7 +47,7 @@ export function TrendRecorder({
   showPoints = false,
   lineWidth = 1.5,
   yAxisLabel = '',
-  backgroundColor = '#0E0F10',
+  backgroundColor,
   mockMode,
   className,
   width,
@@ -58,7 +58,7 @@ export function TrendRecorder({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const buffersRef = useRef<Map<string, Sample[]>>(new Map());
   const channels = useMemo(
-    () => channelsProp ?? (mockMode ? DEFAULT_CHANNELS : []),
+    () => mockMode ? DEFAULT_CHANNELS : channelsProp ?? [],
     [channelsProp, mockMode],
   );
 
@@ -116,25 +116,44 @@ export function TrendRecorder({
     }
   }, [mockMode, liveData, varMap, channels, timeScale])
 
-  // 绘图：width/height 在依赖数组里 → prop 变化时重新设定 canvas 原生分辨率
+  // 绘图：初始化 canvas 像素缓冲，draw 时仅读尺寸不设宽高（防频闪）
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const W = width ?? 720;
-    const H = height ?? 280;
+
+    // 一次性初始化 canvas 像素缓冲
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width = `${W}px`;
-    canvas.style.height = `${H}px`;
+    const initW = width ?? 720;
+    const initH = height ?? 280;
+    canvas.width = Math.max(initW, 1) * dpr;
+    canvas.height = Math.max(initH, 1) * dpr;
+    canvas.style.width = initW + 'px';
+    canvas.style.height = initH + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     let raf = 0;
+    let lastTokens: Record<string, string> | null = null;
     const draw = () => {
       raf = requestAnimationFrame(draw);
-      ctx.fillStyle = backgroundColor;
+      const W = canvas.width / dpr;
+      const H = canvas.height / dpr;
+
+      // 主题 tokens：每 500ms 重读一次，不每帧读（防样式重算频闪）
+      if (!lastTokens || performance.now() % 500 < 16) {
+        const s = getComputedStyle(container);
+        lastTokens = {
+          bg: s.getPropertyValue('--vt-bg-panel').trim() || '#181A1B',
+          textPrimary: s.getPropertyValue('--vt-text-primary').trim() || '#E8E6DF',
+          textMuted: s.getPropertyValue('--vt-text-muted').trim() || '#7A7872',
+          border: s.getPropertyValue('--vt-border').trim() || '#2E3133',
+        };
+      }
+
+      ctx.fillStyle = backgroundColor || lastTokens.bg;
       ctx.fillRect(0, 0, W, H);
 
       const padX = 8;
@@ -143,9 +162,22 @@ export function TrendRecorder({
       const plotH = H - padTop - legendH - 4;
       const plotY = padTop;
 
-      // Grid
+      // Y 轴标签
+      if (yAxisLabel) {
+        ctx.save()
+        ctx.translate(12, padTop + plotH / 2)
+        ctx.rotate(-Math.PI / 2)
+        ctx.fillStyle = lastTokens.textMuted
+        ctx.font = '11px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(yAxisLabel, 0, 0)
+        ctx.restore()
+      }
+
+      // 网格
       if (showGrid) {
-        ctx.strokeStyle = 'rgba(46,49,51,0.7)';
+        ctx.strokeStyle = lastTokens.border;
         ctx.lineWidth = 1;
         for (let i = 0; i <= 4; i++) {
           const yy = plotY + (plotH / 4) * i;
@@ -155,19 +187,6 @@ export function TrendRecorder({
           const xx = padX + ((W - 2 * padX) / 6) * i;
           ctx.beginPath(); ctx.moveTo(xx, plotY); ctx.lineTo(xx, plotY + plotH); ctx.stroke();
         }
-      }
-
-      // Y 轴标签
-      if (yAxisLabel) {
-        ctx.save()
-        ctx.translate(12, padTop + plotH / 2)
-        ctx.rotate(-Math.PI / 2)
-        ctx.fillStyle = '#888'
-        ctx.font = '11px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(yAxisLabel, 0, 0)
-        ctx.restore()
       }
 
       const now = performance.now();
@@ -186,7 +205,6 @@ export function TrendRecorder({
           const x = padX + ((s.t - start) / windowMs) * (W - 2 * padX);
           const y = plotY + plotH * (1 - (s.v - ch.min) / Math.max(0.0001, ch.max - ch.min));
           if (!started) { ctx.moveTo(x, y); started = true; } else { ctx.lineTo(x, y); }
-          // 采样标记
           if (showPoints) {
             ctx.fillStyle = ch.color;
             ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
@@ -195,6 +213,7 @@ export function TrendRecorder({
         ctx.stroke();
       }
 
+      // 图例
       if (showLegend) {
         ctx.font = '11px monospace';
         ctx.textBaseline = 'middle';
@@ -205,11 +224,11 @@ export function TrendRecorder({
           const last = buf[buf.length - 1]?.v;
           ctx.fillStyle = ch.color;
           ctx.fillRect(lx, ly - 4, 10, 8);
-          ctx.fillStyle = '#FFFFFF';
-          const text = `${ch.label}${last !== undefined ? ` ${last.toFixed(1)}${ch.unit ?? ''}` : ''}`;
+          ctx.fillStyle = lastTokens.textPrimary;
           ctx.textAlign = 'left';
-          ctx.fillText(text, lx + 14, ly + 1);
-          lx += 18 + ctx.measureText(text).width + 14;
+          const label = `${ch.label}${last !== undefined ? ` ${last.toFixed(1)}${ch.unit ?? ''}` : ''}`;
+          ctx.fillText(label, lx + 14, ly + 1);
+          lx += 18 + ctx.measureText(label).width + 14;
         }
       }
     };
@@ -218,13 +237,13 @@ export function TrendRecorder({
   }, [channels, timeScale, showGrid, showLegend, showPoints, lineWidth, yAxisLabel, backgroundColor, width, height]);
 
   return (
-    <div
+    <div ref={containerRef}
       className={['vt-component vt-trend', className].filter(Boolean).join(' ')}
       style={{
         display: 'block',
         width: width ?? 720,
         height: height ?? 280,
-        background: backgroundColor,
+        background: backgroundColor || 'var(--vt-bg-panel)',
         border: '1px solid var(--vt-border)',
         borderRadius: 4,
       }}
