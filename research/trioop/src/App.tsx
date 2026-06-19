@@ -61,15 +61,14 @@ export default function App() {
   }, [])
 
   const handleIoToggle = useCallback(async (area: 'q' | 'm', byteAddr: number, bit: number, value: boolean) => {
-    // 乐观更新：先改界面
+    let currentByte = 0
+    // 乐观更新：先改界面，同时 capture 当前字节值用于后端写入
     setIo(prev => {
       const copy = { ...prev[area] }
-      const oldByte = copy[byteAddr] ?? 0
-      copy[byteAddr] = value ? (oldByte | (1 << bit)) : (oldByte & ~(1 << bit))
+      currentByte = copy[byteAddr] ?? 0
+      copy[byteAddr] = value ? (currentByte | (1 << bit)) : (currentByte & ~(1 << bit))
       return { ...prev, [area]: copy }
     })
-    // 后台写 PLC（带当前字节值，直接写整字节）
-    const currentByte = io[area][byteAddr] ?? 0
     try {
       await fetch('/api/plc/write-io', {
         method: 'POST',
@@ -77,7 +76,7 @@ export default function App() {
         body: JSON.stringify({ area, byte: byteAddr, bit, value, currentByte }),
       })
     } catch {}
-  }, [setIo, io.q, io.m])
+  }, [setIo])
 
   const addBlock = useCallback(async (block: DBBlockConfig) => {
     try {

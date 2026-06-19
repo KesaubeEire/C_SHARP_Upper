@@ -31,7 +31,7 @@ export default function IOGrid({ label, data, prefix, bytes, onToggle }: IOGridP
         )}
       </div>
       {controlMode && (
-        <div className="io-panel__ctrl-hint">⚡ 点击 Q 点位可切换 ON/OFF</div>
+        <div className="io-panel__ctrl-hint">⚡ 点击 {prefix} 点位可切换 ON/OFF</div>
       )}
       <div className="io-table">
         <div className="io-table__header">

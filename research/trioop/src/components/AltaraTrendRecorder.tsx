@@ -94,29 +94,9 @@ export function TrendRecorder({
     return () => clearInterval(id);
   }, [mockMode, timeScale, channels]);
 
-  // 实时数据采集：每次 liveData 更新都采样 + 兜底定时器
+  // 实时数据：统一用 ref + setInterval 采样，不依赖 React 重渲染
   const liveRef = useRef(liveData)
   liveRef.current = liveData
-
-  // 核心：每次数据更新都记录一个点
-  useEffect(() => {
-    if (mockMode || !varMap) return
-    const ld = liveData
-    if (!ld) return
-    const now = performance.now()
-    for (const ch of channels) {
-      const fullName = varMap[ch.key]
-      if (!fullName) continue
-      const pt = ld[fullName]
-      if (pt === undefined || pt.value === null || pt.value === undefined) continue
-      const val = typeof pt.value === 'number' ? pt.value : (pt.value ? 1 : 0)
-      let buf = buffersRef.current.get(ch.key)
-      if (!buf) { buf = []; buffersRef.current.set(ch.key, buf) }
-      buf.push({ t: now, v: val })
-    }
-  }, [mockMode, liveData, varMap, channels])
-
-  // 兜底：300ms 固定间隔补采，防止因 React 批处理丢帧
   useEffect(() => {
     if (mockMode || !varMap) return
     const id = setInterval(() => {
@@ -137,7 +117,7 @@ export function TrendRecorder({
       const cutoff = now - SCALE_MS[timeScale] - 1000
       for (const buf of buffersRef.current.values()) {
         while (buf.length && buf[0]!.t < cutoff) buf.shift()
-        if (buf.length > 5000) buf.shift()
+        while (buf.length > 5000) buf.shift()
       }
     }, 300)
     return () => clearInterval(id)

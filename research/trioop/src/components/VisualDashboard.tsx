@@ -56,6 +56,10 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
     { key:'lineWidth', label:'线宽', type:'number', default:1.5 },
     { key:'backgroundColor', label:'背景色', type:'text', default:'#0E0F10' },
     { key:'yAxisLabel', label:'Y轴标签', type:'text', default:'' },
+    { key:'ch1En', label:'', type:'hidden', default:true }, { key:'ch1Label', label:'', type:'hidden', default:'CH1' }, { key:'ch1Color', label:'', type:'hidden', default:'#E24B4A' }, { key:'ch1Min', label:'', type:'hidden', default:0 }, { key:'ch1Max', label:'', type:'hidden', default:100 }, { key:'ch1Unit', label:'', type:'hidden', default:'' },
+    { key:'ch2En', label:'', type:'hidden', default:true }, { key:'ch2Label', label:'', type:'hidden', default:'CH2' }, { key:'ch2Color', label:'', type:'hidden', default:'#37D3E0' }, { key:'ch2Min', label:'', type:'hidden', default:0 }, { key:'ch2Max', label:'', type:'hidden', default:16 }, { key:'ch2Unit', label:'', type:'hidden', default:'' },
+    { key:'ch3En', label:'', type:'hidden', default:true }, { key:'ch3Label', label:'', type:'hidden', default:'CH3' }, { key:'ch3Color', label:'', type:'hidden', default:'#1D9E75' }, { key:'ch3Min', label:'', type:'hidden', default:0 }, { key:'ch3Max', label:'', type:'hidden', default:50 }, { key:'ch3Unit', label:'', type:'hidden', default:'' },
+    { key:'ch4En', label:'', type:'hidden', default:true }, { key:'ch4Label', label:'', type:'hidden', default:'CH4' }, { key:'ch4Color', label:'', type:'hidden', default:'#F4D03F' }, { key:'ch4Min', label:'', type:'hidden', default:0 }, { key:'ch4Max', label:'', type:'hidden', default:100 }, { key:'ch4Unit', label:'', type:'hidden', default:'' },
   ],
   oee:        [{ key:'availability', label:'可用率', type:'number', default:0.85 }, { key:'performance', label:'性能率', type:'number', default:0.78 }, { key:'quality', label:'质量率', type:'number', default:0.95 }, { key:'shift', label:'班次', type:'text', default:'A' }],
   motor:      [{ key:'rpm', label:'转速', type:'number', default:2850 }, { key:'torque', label:'扭矩', type:'number', default:42 }, { key:'current', label:'电流', type:'number', default:38 }, { key:'temperature', label:'温度', type:'number', default:72 }],
@@ -74,7 +78,7 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
     case 'trend': {
       const channels: { key: string; label: string; color: string; unit: string; min: number; max: number }[] = []
       for (let i = 1; i <= 4; i++) {
-        const en = cfg[`ch${i}En`] !== undefined ? cfg[`ch${i}En`] : (i <= (cfg.chCount || 4))
+        const en = cfg[`ch${i}En`] ?? ((cfg.chCount ?? 4) >= i)
         if (!en) continue
         channels.push({
           key: `ch${i}`,
@@ -85,7 +89,7 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
           max: cfg[`ch${i}Max`] ?? 100,
         })
       }
-      return <TrendRecorderCell channels={channels} timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} showPoints={!!cfg.showPoints} lineWidth={cfg.lineWidth || 1.5} backgroundColor={cfg.backgroundColor || '#0E0F10'} yAxisLabel={cfg.yAxisLabel || ''} mockMode={cfg.mockMode !== false} liveData={liveData} varMap={channels.reduce((m: Record<string, string>, c, idx) => { m[c.key] = cfg[`ch${idx+1}Var`] || ''; return m }, {})} />
+      return <TrendRecorderCell channels={channels} timeScale={cfg.timeScale || '5m'} showGrid={cfg.showGrid !== false} showLegend={cfg.showLegend !== false} showPoints={!!cfg.showPoints} lineWidth={cfg.lineWidth || 1.5} backgroundColor={cfg.backgroundColor || '#0E0F10'} yAxisLabel={cfg.yAxisLabel || ''} mockMode={cfg.mockMode !== false} liveData={liveData} varMap={channels.reduce((m: Record<string, string>, c) => { const num = c.key.replace('ch', ''); m[c.key] = cfg[`ch${num}Var`] || ''; return m }, {})} />
     }
     case 'oee': return <OEEDashboard availability={cfg.availability ?? 0.85} performance={cfg.performance ?? 0.78} quality={cfg.quality ?? 0.95} shift={cfg.shift || 'A'} mockMode />
     case 'motor': return <MotorDashboard rpm={cfg.rpm ?? 2850} torque={cfg.torque ?? 42} current={cfg.current ?? 38} temperature={cfg.temperature ?? 72} mockMode />
@@ -284,6 +288,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
 
               {fields.map(f => {
                 if (f.key === 'variableName' || f.key === 'min' || f.key === 'max') return null
+                if (f.type === 'hidden') return null
                 return (<div key={f.key}>
                   {f.type === 'boolean' ? (<label className="modal-label" style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}><input type="checkbox" checked={!!formCfg[f.key]} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.checked}))} />{f.label}</label>)
                   : f.type === 'select' ? (<><label className="modal-label">{f.label}</label><select className="modal-input" value={formCfg[f.key]??f.default} onChange={e => setFormCfg(c => ({...c, [f.key]:e.target.value}))}>{f.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></>)
@@ -392,7 +397,7 @@ function TrendChannelConfig({ formCfg, setFormCfg, importedDBs }: {
     <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12 }}>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--foreground)' }}>📊 通道配置</div>
       {[1, 2, 3, 4].map(i => {
-        const enabled = formCfg[`ch${i}En`] !== undefined ? formCfg[`ch${i}En`] : formCfg.chCount ? i <= formCfg.chCount : true
+        const enabled = formCfg[`ch${i}En`] ?? ((formCfg.chCount ?? 4) >= i)
         return (
           <div key={i} className="vdb-ch-config">
             <label className="vdb-ch-config__header">

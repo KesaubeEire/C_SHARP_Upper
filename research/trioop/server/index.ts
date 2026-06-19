@@ -257,7 +257,7 @@ function startOpcuaBroadcast() {
     trendBuffer.push(cache as Record<string, number | boolean>)
     writePoints(cache as Record<string, number | boolean>)
     checkAlarms(cache as Record<string, number | boolean>)
-    broadcast({ db, io: { i: {}, q: {} }, dbBlocks: {} })
+    broadcast({ db, io: { i: {}, q: {}, m: {} }, dbBlocks: {} })
   }, 200)
 }
 
@@ -289,7 +289,7 @@ app.get('/api/trend', (req, res) => {
 // ─── API: 获取最新数据 ──────────────────────────────────
 app.get('/api/plc/data', (_req, res) => {
   if (runtimeMode === 'opcua') {
-    res.json({ db: opcuaDataCache, io: { i: {}, q: {} }, dbBlocks: {} })
+    res.json({ db: opcuaDataCache, io: { i: {}, q: {}, m: {} }, dbBlocks: {} })
   } else {
     res.json({ db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache })
   }
