@@ -24,7 +24,11 @@ Thumbs.db
 .ionide/
 .localhistory/
 
-## 项目无关目录
+### 本地工具配置
+.claude/settings.local.json
+.nezha/attachments/
+
+# 项目无关目录
 Communication-Protocol-Assistant/
 SharpSCADA/
 *.db
