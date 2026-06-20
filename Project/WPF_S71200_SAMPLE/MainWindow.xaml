@@ -7,7 +7,7 @@
         Width="1060" Height="820"
         MinWidth="900" MinHeight="680"
         WindowStartupLocation="CenterScreen"
-        Background="#0F0F1A" FontFamily="Consolas" Foreground="#E0E0E0">
+        Background="{DynamicResource WindowBackground}" FontFamily="Consolas" Foreground="{DynamicResource TextPrimary}">
 
     <Window.Resources>
         <conv:BoolToBackgroundConverter x:Key="BgConverter"/>
@@ -29,12 +29,12 @@
         </Style>
 
         <Style x:Key="TabHeader" TargetType="TabItem">
-            <Setter Property="Background" Value="#1A1A2E"/>
-            <Setter Property="Foreground" Value="#888"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Padding" Value="16,6"/>
-            <Setter Property="BorderBrush" Value="#2A2A4A"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
@@ -47,7 +47,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="border" Property="BorderBrush" Value="#3498DB"/>
-                                <Setter Property="Foreground" Value="#E0E0E0"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Foreground" Value="#FFF"/>
@@ -257,7 +257,7 @@
                         Padding="0" x:Name="tabControl" Height="34">
                 <TabControl.Resources>
                     <Style TargetType="TabPanel">
-                        <Setter Property="Background" Value="#1A1A2E"/>
+                        <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
                         <Setter Property="Margin" Value="10,0,10,0"/>
                     </Style>
                 </TabControl.Resources>
@@ -277,7 +277,7 @@
                             <StackPanel>
                                 <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#3498DB" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <TextBlock Grid.Column="1" Text="I 区（输入 · 只读）" FontSize="15" FontWeight="Bold" Foreground="#3498DB" VerticalAlignment="Center"/>
@@ -339,7 +339,7 @@
                             <StackPanel>
                                 <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#27AE60" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <TextBlock Grid.Column="1" Text="Q 区（输出 · 可读写）" FontSize="15" FontWeight="Bold" Foreground="#27AE60" VerticalAlignment="Center"/>
@@ -409,7 +409,7 @@
                             <StackPanel>
                                 <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#9B59B6" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <TextBlock Grid.Column="1" Text="M 区（位存储 · 可读写）" FontSize="15" FontWeight="Bold" Foreground="#9B59B6" VerticalAlignment="Center"/>
