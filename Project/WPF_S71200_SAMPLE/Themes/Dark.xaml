@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===== 暗色主题 ===== -->
+    <SolidColorBrush x:Key="WindowBackground" Color="#0F0F1A"/>
+    <SolidColorBrush x:Key="SidebarBackground" Color="#12121E"/>
+    <SolidColorBrush x:Key="CardBackground" Color="#1A1A2E"/>
+    <SolidColorBrush x:Key="CardBorder" Color="#2A2A4A"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#888"/>
+    <SolidColorBrush x:Key="TextDim" Color="#555"/>
+    <SolidColorBrush x:Key="InputBackground" Color="#16213E"/>
+    <SolidColorBrush x:Key="DividerColor" Color="#2A2A4A"/>
+
+</ResourceDictionary>

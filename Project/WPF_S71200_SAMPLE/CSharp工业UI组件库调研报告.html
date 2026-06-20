@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C# 上位机工业 UI 组件库调研报告</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f0f1a; color: #e0e0e0; font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.6; padding: 20px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 6px; background: linear-gradient(135deg, #3498db, #8b83ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 28px; border-bottom: 1px solid #2a2a4a; padding-bottom: 12px; }
+  h2 { font-size: 20px; color: #3498db; margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+  h2 .tag { font-size: 12px; background: #27ae60; color: #fff; padding: 2px 8px; border-radius: 10px; -webkit-text-fill-color: #fff; }
+  h2 .tag.free { background: #27ae60; }
+  h2 .tag.paid { background: #e67e22; }
+  h2 .tag.os { background: #8e44ad; }
+  .card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 20px; margin-bottom: 16px; transition: border-color .2s; }
+  .card:hover { border-color: #3498db; }
+  .card-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .card-title { font-size: 18px; font-weight: 700; color: #fff; }
+  .card-title small { font-size: 13px; font-weight: 400; color: #888; margin-left: 8px; }
+  .card-links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .card-links a { color: #e0e0e0; text-decoration: none; font-size: 12px; padding: 3px 10px; border-radius: 4px; border: 1px solid #2a2a4a; transition: all .2s; }
+  .card-links a:hover { border-color: #3498db; background: #16213e; }
+  .card-desc { color: #aaa; font-size: 14px; margin-bottom: 10px; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 10px 0; }
+  .card-grid .item { background: #12121e; border-radius: 4px; padding: 6px 10px; font-size: 13px; color: #ccc; display: flex; align-items: center; gap: 6px; }
+  .card-grid .item::before { content: "◆"; color: #3498db; font-size: 8px; }
+  .demo-img { width: 100%; border-radius: 4px; border: 1px solid #2a2a4a; margin: 10px 0; max-height: 360px; object-fit: cover; background: #0a0a14; }
+  .code-block { background: #0a0a14; border: 1px solid #2a2a4a; border-radius: 4px; padding: 12px 16px; font-family: 'Consolas', 'JetBrains Mono', monospace; font-size: 13px; overflow-x: auto; margin: 8px 0; color: #a8d8ea; }
+  .code-block .cm { color: #6a9955; }
+  .code-block .kw { color: #569cd6; }
+  .code-block .str { color: #ce9178; }
+  .code-block .nu { color: #b5cea8; }
+  .divider { height: 1px; background: #2a2a4a; margin: 28px 0; }
+  .footer { text-align: center; color: #555; font-size: 12px; margin-top: 32px; padding: 16px 0; border-top: 1px solid #2a2a4a; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 8px; margin-left: 6px; }
+  .badge.green { background: #1a4731; color: #4caf50; }
+  .badge.orange { background: #47311a; color: #e67e22; }
+  .badge.purple { background: #2a1a47; color: #9b59b6; }
+  .compare-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .compare-table th { background: #12121e; color: #888; padding: 8px 10px; text-align: left; border-bottom: 1px solid #2a2a4a; font-weight: 600; }
+  .compare-table td { padding: 8px 10px; border-bottom: 1px solid #1e1e30; }
+  .compare-table tr:hover td { background: #12121e; }
+  .compare-table td:first-child { font-weight: 700; color: #fff; }
+  .imp { color: #f39c12; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚙ C# .NET 上位机工业 UI 组件库调研报告</h1>
+  <div class="subtitle">2026-06 · 适用平台: WPF / WinForms · .NET 6.0 ~ 10.0</div>
+
+  <!-- ===== 快速对比表 ===== -->
+  <div class="card">
+    <div class="card-title">📊 速览对比</div>
+    <table class="compare-table">
+      <tr><th>库</th><th>平台</th><th>许可</th><th>仪表</th><th>曲线</th><th>工控图形</th><th>UI 美化</th></tr>
+      <tr><td>HslControls</td><td>WPF/WinForms</td><td class="badge orange">商业(有试用)</td><td>✅</td><td>✅</td><td class="imp">✅ 30+种</td><td>❌</td></tr>
+      <tr><td>LiveCharts2</td><td>WPF/WinForms</td><td class="badge green">MIT 免费</td><td>✅</td><td class="imp">✅ 主力</td><td>❌</td><td>❌</td></tr>
+      <tr><td>HandyControl</td><td>WPF</td><td class="badge green">MIT 免费</td><td>❌</td><td>❌</td><td>❌</td><td class="imp">✅ 80+控件</td></tr>
+      <tr><td>ScottPlot.WPF</td><td>WPF/WinForms</td><td class="badge green">MIT 免费</td><td>❌</td><td>✅ 科学绘图</td><td>❌</td><td>❌</td></tr>
+      <tr><td>C1.WPF.Gauge</td><td>WPF</td><td class="badge orange">商业</td><td class="imp">✅ 专业级</td><td>❌</td><td>❌</td><td>✅</td></tr>
+      <tr><td>MaterialDesign</td><td>WPF</td><td class="badge green">MIT 免费</td><td>❌</td><td>❌</td><td>❌</td><td class="imp">✅ Material</td></tr>
+      <tr><td>WPF-UI</td><td>WPF</td><td class="badge green">MIT 免费</td><td>❌</td><td>❌</td><td>❌</td><td>✅ 现代风</td></tr>
+    </table>
+  </div>
+
+  <!-- ===== 1. HslControls ===== -->
+  <h2><span>🏭 HslControls</span> <span class="tag paid">商业(试用8h)</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">工业物联网控件库 <small>dathlin/HslControls</small></div>
+      <div class="card-links">
+        <a href="https://github.com/dathlin/HslControlsDemo" target="_blank">📦 GitHub</a>
+        <a href="http://www.hsltechnology.cn:7900/Home/HslControls" target="_blank">🌐 官网</a>
+        <a href="https://www.nuget.org/packages/HslControls/" target="_blank">📎 NuGet</a>
+        <a href="https://github.com/RightFS/HslControlsDemo" target="_blank">🖼 Demo</a>
+      </div>
+    </div>
+    <div class="card-desc">
+      <strong>专为工控上位机设计，C# 生态最全的工业图形控件库。</strong> 配合 HslCommunication 可以快速连接 Siemens/Modbus/Omron 等 PLC。
+    </div>
+    <div class="card-grid">
+      <div class="item">仪表盘 Gauge</div>
+      <div class="item">实时曲线 Curve</div>
+      <div class="item">管道 PipeLine</div>
+      <div class="item">阀门 Valve</div>
+      <div class="item">鼓风机 Blower</div>
+      <div class="item">传送带 Conveyor</div>
+      <div class="item">信号灯 SignalLamp</div>
+      <div class="item">温度计 Thermometer</div>
+      <div class="item">数码管 DigitalTube</div>
+      <div class="item">液位瓶 Bottle</div>
+      <div class="item">饼图/柱状图</div>
+      <div class="item">电池/进度条</div>
+    </div>
+    <div class="code-block">
+      <span class="cm">// NuGet</span><br>
+      Install-Package <span class="str">HslControls</span><br><br>
+      <span class="cm">// XAML 使用仪表盘</span><br>
+      &lt;<span class="kw">hsl:HslGauge</span> Value=<span class="str">"{Binding Pressure}"</span><br>
+      &nbsp;&nbsp;&nbsp;Min=<span class="nu">0</span> Max=<span class="nu">100</span> Unit=<span class="str">"MPa"</span> /&gt;
+    </div>
+    <div style="background:#0a0a14; border-radius:4px; padding:20px; text-align:center; margin-top:10px; border:1px solid #2a2a4a;">
+      <span style="color:#555;">▶ 演示截图请访问 </span>
+      <a href="https://github.com/RightFS/HslControlsDemo" target="_blank" style="color:#3498db;">GitHub Demo 仓库</a>
+      <span style="color:#555;"> 查看 README 截图</span>
+    </div>
+  </div>
+
+  <!-- ===== 2. LiveCharts2 ===== -->
+  <h2><span>📈 LiveCharts2</span> <span class="tag free">MIT 免费</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">现代化图表库 <small>LiveChartsCore.SkiaSharpView.Wpf</small></div>
+      <div class="card-links">
+        <a href="https://github.com/beto-rodriguez/LiveCharts2" target="_blank">📦 GitHub</a>
+        <a href="https://livecharts2.dev/" target="_blank">🌐 官网(示例)</a>
+        <a href="https://www.nuget.org/packages/LiveChartsCore.SkiaSharpView.Wpf" target="_blank">📎 NuGet</a>
+      </div>
+    </div>
+    <div class="card-desc">
+      <strong>开箱即用的现代化图表库，支持实时数据流刷新。</strong> 上位机趋势曲线的最佳选择，动画流畅、支持触摸交互。
+    </div>
+    <div class="card-grid">
+      <div class="item">实时折线图</div>
+      <div class="item">面积图</div>
+      <div class="item">柱状图</div>
+      <div class="item">饼图/环形图</div>
+      <div class="item">散点图</div>
+      <div class="item">热力图</div>
+      <div class="item">仪表盘 Gauge</div>
+      <div class="item">地图 Map</div>
+    </div>
+    <div class="code-block">
+      <span class="cm">// NuGet</span><br>
+      Install-Package <span class="str">LiveChartsCore.SkiaSharpView.Wpf</span><br><br>
+      <span class="cm">// XAML</span><br>
+      &lt;<span class="kw">lvc:CartesianChart</span><br>
+      &nbsp;&nbsp;&nbsp;Series=<span class="str">"{Binding Series}"</span><br>
+      &nbsp;&nbsp;&nbsp;XAxes=<span class="str">"{Binding XAxes}"</span><br>
+      &nbsp;&nbsp;&nbsp;YAxes=<span class="str">"{Binding YAxes}"</span> /&gt;<br><br>
+      <span class="cm">// 实时追加数据</span><br>
+      series.<span class="kw">Values</span>.Add(<span class="kw">new</span> ObservablePoint(timestamp, value));
+    </div>
+    <div style="background:#0a0a14; border-radius:4px; padding:20px; text-align:center; margin-top:10px; border:1px solid #2a2a4a;">
+      <span style="color:#555;">▶ 在线 Demo: </span>
+      <a href="https://livecharts2.dev/" target="_blank" style="color:#3498db;">livecharts2.dev</a>
+      <span style="color:#555;"> · GitHub: </span>
+      <a href="https://github.com/beto-rodriguez/LiveCharts2" target="_blank" style="color:#3498db;">github.com/beto-rodriguez/LiveCharts2</a>
+    </div>
+  </div>
+
+  <!-- ===== 3. HandyControl ===== -->
+  <h2><span>🎨 HandyControl</span> <span class="tag free">MIT 免费</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">WPF UI 控件库 <small>80+ 自定义控件，重写原生样式</small></div>
+      <div class="card-links">
+        <a href="https://github.com/handyOrg/HandyControl" target="_blank">📦 GitHub</a>
+        <a href="https://gitee.com/handyorg/HandyControl" target="_blank">🇨🇳 Gitee</a>
+        <a href="https://www.nuget.org/packages/HandyControl" target="_blank">📎 NuGet</a>
+        <a href="https://handyorg.github.io/handycontrol/" target="_blank">📖 文档</a>
+      </div>
+    </div>
+    <div class="card-desc">
+      <strong>开源免费、控件最全的 WPF UI 库。中文文档，社区活跃。</strong> 如果你想把我们的暗色界面做得更精致，这是首选。
+    </div>
+    <div class="card-grid">
+      <div class="item">按钮/输入框 重写样式</div>
+      <div class="item">DataGrid 美化</div>
+      <div class="item">TabControl / Navigation</div>
+      <div class="item">Toast 通知弹窗</div>
+      <div class="item">Card 卡片容器</div>
+      <div class="item">CircleProgress 环形进度</div>
+      <div class="item">WaveProgress 波浪进度</div>
+      <div class="item">FlipClock 翻页时钟</div>
+      <div class="item">Timeline 时间线</div>
+      <div class="item">Growl 全局提示</div>
+      <div class="item">SideMenu 侧边菜单</div>
+      <div class="item">Step 步骤条</div>
+    </div>
+    <div class="code-block">
+      <span class="cm">// NuGet</span><br>
+      Install-Package <span class="str">HandyControl</span><br><br>
+      <span class="cm">// App.xaml 引入主题</span><br>
+      &lt;ResourceDictionary Source=<span class="str">"pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml"</span>/&gt;<br>
+      &lt;ResourceDictionary Source=<span class="str">"pack://application:,,,/HandyControl;component/Themes/Theme.xaml"</span>/&gt;<br><br>
+      <span class="cm">// 切换暗色/亮色</span><br>
+      ThemeManager.<span class="kw">CurrentApplicationMode</span> = ApplicationMode.<span class="kw">Dark</span>;
+    </div>
+    <div style="background:#0a0a14; border-radius:4px; padding:20px; text-align:center; margin-top:10px; border:1px solid #2a2a4a;">
+      <span style="color:#555;">▶ 预览截图: </span>
+      <a href="https://gitee.com/handyorg/HandyControl#%E6%A6%82%E8%A7%88" target="_blank" style="color:#3498db;">Gitee 概览页（含截图）</a>
+      <span style="color:#555;"> · </span>
+      <a href="https://github.com/handyOrg/HandyControl" target="_blank" style="color:#3498db;">GitHub README 截图</a>
+    </div>
+  </div>
+
+  <!-- ===== 4. ScottPlot ===== -->
+  <h2><span>📉 ScottPlot.WPF</span> <span class="tag free">MIT 免费</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">高性能科学绘图 <small>ScottPlot.WPF</small></div>
+      <div class="card-links">
+        <a href="https://scottplot.net/" target="_blank">🌐 官网</a>
+        <a href="https://www.nuget.org/packages/ScottPlot.WPF" target="_blank">📎 NuGet</a>
+      </div>
+    </div>
+    <div class="card-desc">
+      <strong>纯 C# 编写、零依赖的高性能绘图库。</strong> 如果你只需要简单的实时曲线而不想引入大库，ScottPlot 是最轻量的选择。我们之前在 TEST_101 里已经用过 <code>ScottPlot.WinForms</code>。
+    </div>
+    <div class="card-grid">
+      <div class="item">折线/散点/柱状</div>
+      <div class="item">信号图 SignalPlot</div>
+      <div class="item">快速刷新 (10k+/s)</div>
+      <div class="item">鼠标交互缩放</div>
+    </div>
+    <div class="code-block">
+      Install-Package <span class="str">ScottPlot.WPF</span><br><br>
+      <span class="cm">// XAML</span><br>
+      &lt;<span class="kw">WpfPlot</span> x:Name=<span class="str">"plot"</span> /&gt;<br><br>
+      <span class="cm">// 画实时曲线</span><br>
+      plot.Plot.<span class="kw">AddSignal</span>(values, sampleRate: <span class="nu">100</span>);<br>
+      plot.<span class="kw">Refresh</span>();
+    </div>
+  </div>
+
+  <!-- ===== 5. ComponentOne C1.Gauge ===== -->
+  <h2><span>🎯 ComponentOne C1.WPF.Gauge</span> <span class="tag paid">商业</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">专业仪表控件 <small>GrapeCity / MESCIUS</small></div>
+      <div class="card-links">
+        <a href="https://www.nuget.org/packages/C1.WPF.Gauge" target="_blank">📎 NuGet</a>
+        <a href="https://www.componentone.com/" target="_blank">🌐 官网</a>
+      </div>
+    </div>
+    <div class="card-desc">
+      <strong>如果需要精美表盘（指针、圆弧、色标段），这是 WPF 下最成熟的商业方案。</strong> 提供径向、线性、子弹图三种仪表类型，支持 MVVM 绑定。
+    </div>
+    <div class="card-grid">
+      <div class="item">径向仪表 RadialGauge</div>
+      <div class="item">线性仪表 LinearGauge</div>
+      <div class="item">子弹图 BulletGraph</div>
+      <div class="item">多指针/多量程</div>
+      <div class="item">交互式旋钮 Knob</div>
+      <div class="item">区间色标 Range</div>
+    </div>
+    <div class="code-block">
+      Install-Package <span class="str">C1.WPF.Gauge</span><br><br>
+      &lt;<span class="kw">c1:C1RadialGauge</span> Value=<span class="str">"{Binding Pressure}"</span><br>
+      &nbsp;&nbsp;&nbsp;Min=<span class="nu">0</span> Max=<span class="nu">100</span> /&gt;
+    </div>
+  </div>
+
+  <!-- ===== 6. MaterialDesignInXAML ===== -->
+  <h2><span>🧩 MaterialDesignInXAML</span> <span class="tag free">MIT 免费</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Material Design 主题 <small>MaterialDesignThemes</small></div>
+      <div class="card-links">
+        <a href="https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit" target="_blank">📦 GitHub</a>
+        <a href="https://www.nuget.org/packages/MaterialDesignThemes" target="_blank">📎 NuGet</a>
+        <a href="https://materialdesigninxaml.net/" target="_blank">🌐 官网/示例</a>
+      </div>
+    </div>
+    <div class="card-desc">
+      <strong>谷歌 Material Design 风格在 WPF 上的完整实现。</strong> 支持一键暗色/亮色切换（PaletteTheme），内置 Dialog、Snackbar、Card、Tooltip 等现代 UI 模式。
+    </div>
+    <div class="code-block">
+      Install-Package <span class="str">MaterialDesignThemes</span><br><br>
+      <span class="cm">// 切换暗色/亮色</span><br>
+      PaletteHelper.<span class="kw">SetTheme</span>(Theme.<span class="kw">Create</span>(Theme.<span class="kw">Dark</span>, Colors.<span class="kw">Blue</span>));
+    </div>
+  </div>
+
+  <!-- ===== 7. WPF-UI ===== -->
+  <h2><span>🪟 WPF-UI</span> <span class="tag free">MIT 免费</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Windows 11 风格 <small>WPF-UI</small></div>
+      <div class="card-links">
+        <a href="https://github.com/lepoco/wpfui" target="_blank">📦 GitHub</a>
+        <a href="https://www.nuget.org/packages/WPF-UI" target="_blank">📎 NuGet</a>
+        <a href="https://wpfui.lepo.co/" target="_blank">🌐 官网</a>
+      </div>
+    </div>
+    <div class="card-desc">
+      <strong>仿 Windows 11 设计风格的 WPF 控件库。</strong> 导航侧边栏、卡片、现代按钮 —— 和我们的 trioop 侧边栏布局风格非常搭。
+    </div>
+    <div class="card-grid">
+      <div class="item">Navigation 导航侧栏</div>
+      <div class="item">Card / 卡片布局</div>
+      <div class="item">Dialog 弹窗</div>
+      <div class="item">NotifyIcon 托盘</div>
+    </div>
+    <div class="code-block">
+      Install-Package <span class="str">WPF-UI</span><br><br>
+      &lt;<span class="kw">ui:NavigationView</span> x:Name=<span class="str">"NavView"</span>&gt;<br>
+      &nbsp;&nbsp;&lt;<span class="kw">ui:NavigationViewItem</span> Content=<span class="str">"仪表盘"</span> /&gt;<br>
+      &lt;/<span class="kw">ui:NavigationView</span>&gt;
+    </div>
+  </div>
+
+  <!-- ===== 汇总建议 ===== -->
+  <div class="divider"></div>
+  <h2>💡 推荐组合方案</h2>
+  <div class="card" style="border-color:#27ae60; background:#102418;">
+    <div class="card-title" style="color:#4caf60;">✅ 推荐: 轻量实用组合（免费）</div>
+    <div style="margin-top:10px;">
+      <p style="margin-bottom:8px;"><strong>HandyControl</strong> + <strong>LiveCharts2</strong> + 自己画 Bit 指示灯</p>
+      <div class="code-block">
+        <span class="cm"># 装两个包就够了</span><br>
+        dotnet add package <span class="str">HandyControl</span><br>
+        dotnet add package <span class="str">LiveChartsCore.SkiaSharpView.Wpf</span>
+      </div>
+      <table class="compare-table">
+        <tr><th>需求</th><th>用谁</th></tr>
+        <tr><td>暗色/亮色切换</td><td>HandyControl 自带 ApplicationMode</td></tr>
+        <tr><td>按钮/输入框美化</td><td>HandyControl 重写全部原生样式</td></tr>
+        <tr><td>实时趋势曲线</td><td>LiveCharts2</td></tr>
+        <tr><td>I/Q/M 位指示灯</td><td>我们自己画的 Ellipse（已实现）</td></tr>
+        <tr><td>弹窗/Toast</td><td>HandyControl Growl / MessageBox</td></tr>
+        <tr><td>管道/阀门图形</td><td>HslControls（需要时再加）</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:#e67e22; background:#261a0c; margin-top:12px;">
+    <div class="card-title" style="color:#f39c12;">💎 推荐: 工控全功能（商业）</div>
+    <div style="margin-top:10px;">
+      <p><strong>HslControls</strong>（仪表盘/管道/阀门等30+控件）<br>+ <strong>LiveCharts2</strong>（趋势曲线）<br>+ <strong>HandyControl</strong>（UI 美化 + 主题切换）</p>
+      <p style="color:#aaa; font-size:13px; margin-top:6px;">HslControls 试用期 8 小时，正式授权价格不高，适合工业项目交付。</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <h2>🔗 全部链接汇总</h2>
+  <div class="card">
+    <table class="compare-table">
+      <tr><th>库</th><th>NuGet</th><th>GitHub</th><th>Demo/官网</th></tr>
+      <tr><td>HslControls</td><td><a href="https://www.nuget.org/packages/HslControls" target="_blank">HslControls</a></td><td><a href="https://github.com/dathlin/HslControlsDemo" target="_blank">dathlin/HslControlsDemo</a></td><td><a href="http://www.hsltechnology.cn:7900/Home/HslControls" target="_blank">官网</a></td></tr>
+      <tr><td>LiveCharts2</td><td><a href="https://www.nuget.org/packages/LiveChartsCore.SkiaSharpView.Wpf" target="_blank">LiveChartsCore.SkiaSharpView.Wpf</a></td><td><a href="https://github.com/beto-rodriguez/LiveCharts2" target="_blank">beto-rodriguez/LiveCharts2</a></td><td><a href="https://livecharts2.dev/" target="_blank">livecharts2.dev</a></td></tr>
+      <tr><td>HandyControl</td><td><a href="https://www.nuget.org/packages/HandyControl" target="_blank">HandyControl</a></td><td><a href="https://github.com/handyOrg/HandyControl" target="_blank">handyOrg/HandyControl</a></td><td><a href="https://handyorg.github.io/handycontrol/" target="_blank">文档</a></td></tr>
+      <tr><td>ScottPlot</td><td><a href="https://www.nuget.org/packages/ScottPlot.WPF" target="_blank">ScottPlot.WPF</a></td><td><a href="https://github.com/ScottPlot/ScottPlot" target="_blank">ScottPlot/ScottPlot</a></td><td><a href="https://scottplot.net/" target="_blank">scottplot.net</a></td></tr>
+      <tr><td>C1.WPF.Gauge</td><td><a href="https://www.nuget.org/packages/C1.WPF.Gauge" target="_blank">C1.WPF.Gauge</a></td><td>—</td><td><a href="https://www.componentone.com/" target="_blank">componentone.com</a></td></tr>
+      <tr><td>MaterialDesign</td><td><a href="https://www.nuget.org/packages/MaterialDesignThemes" target="_blank">MaterialDesignThemes</a></td><td><a href="https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit" target="_blank">MaterialDesignInXAML</a></td><td><a href="https://materialdesigninxaml.net/" target="_blank">materialdesigninxaml.net</a></td></tr>
+      <tr><td>WPF-UI</td><td><a href="https://www.nuget.org/packages/WPF-UI" target="_blank">WPF-UI</a></td><td><a href="https://github.com/lepoco/wpfui" target="_blank">lepoco/wpfui</a></td><td><a href="https://wpfui.lepo.co/" target="_blank">wpfui.lepo.co</a></td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    报告生成: 2026-06-20 · 基于 .NET 10 + WPF · 应用于 WPF_S71200_SAMPLE 项目
+  </div>
+</div>
+</body>
+</html>

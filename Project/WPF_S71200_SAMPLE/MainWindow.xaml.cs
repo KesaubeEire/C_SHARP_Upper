@@ -19,6 +19,8 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<ByteRowViewModel> _qRows = [];
     private readonly ObservableCollection<ByteRowViewModel> _mRows = [];
     private Dictionary<int, byte> _lastIBytes = [], _lastQBytes = [], _lastMBytes = [];
+    private bool _qWriteMode = false;
+    private bool _mWriteMode = false;
 
     // ─── 自动轮询 ───
     private readonly PollingScheduler _scheduler = new();
@@ -55,6 +57,16 @@ public partial class MainWindow : Window
         bool isAuto = tabControl.SelectedIndex == 1;
         manualPanel.Visibility = isAuto ? Visibility.Collapsed : Visibility.Visible;
         autoPanel.Visibility = isAuto ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ====================== 主题切换 ======================
+
+    private void BtnTheme_Click(object sender, RoutedEventArgs e)
+    {
+        bool isDark = ThemeManager.Current == TestWpf.Services.ThemeMode.Dark;
+        ThemeManager.Toggle();
+        btnTheme.Content = isDark ? "☀" : "🌙";
+        btnTheme.ToolTip = isDark ? "切换到暗色主题" : "切换到亮色主题";
     }
 
     // ====================== 连接管理 ======================
@@ -107,9 +119,9 @@ public partial class MainWindow : Window
         btnDisconnect.IsEnabled = conn;
         btnIRead.IsEnabled = conn;
         btnQRead.IsEnabled = conn;
-        btnQWrite.IsEnabled = conn;
+        btnQWriteMode.IsEnabled = conn;
         btnMRead.IsEnabled = conn;
-        btnMWrite.IsEnabled = conn;
+        btnMWriteMode.IsEnabled = conn;
         btnStartPoll.IsEnabled = conn && !_scheduler.IsRunning;
         btnStopPoll.IsEnabled = conn && _scheduler.IsRunning;
     }
@@ -144,8 +156,14 @@ public partial class MainWindow : Window
         UpdateEmptyState();
     }
 
-    private void BtnQWrite_Click(object sender, RoutedEventArgs e)
-        => WriteAreaChanges(S7Service.AreaQ, _qRows, "Q");
+    private void BtnQWriteMode_Click(object sender, RoutedEventArgs e)
+    {
+        _qWriteMode = !_qWriteMode;
+        btnQWriteMode.Content = _qWriteMode ? "🔓 写入模式 (开)" : "🔒 写入模式 (关)";
+        btnQWriteMode.Background = _qWriteMode
+            ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C))   // 红色-警示
+            : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));  // 灰色
+    }
 
     private void BtnMRead_Click(object sender, RoutedEventArgs e)
     {
@@ -156,28 +174,29 @@ public partial class MainWindow : Window
         UpdateEmptyState();
     }
 
-    private void BtnMWrite_Click(object sender, RoutedEventArgs e)
-        => WriteAreaChanges(S7Service.AreaM, _mRows, "M");
-
-    private void WriteAreaChanges(int area, ObservableCollection<ByteRowViewModel> rows, string label)
+    private void BtnMWriteMode_Click(object sender, RoutedEventArgs e)
     {
-        if (rows.Count == 0) return;
-        int ok = 0, fail = 0;
-        foreach (var row in rows)
-        {
-            if (!row.HasChanges) continue;
-            if (_plc.WriteByte(area, row.ByteAddress, row.ToByte()))
-            { row.HasChanges = false; row.Value = row.ToByte(); ok++; }
-            else fail++;
-        }
-        if (fail > 0) MessageBox.Show(this, $"{label}区写入: {ok} 成功, {fail} 失败\n{_plc.LastError}", "结果");
-        else if (ok > 0) txtStatus.Text = $"{label}区写入成功 ({ok} 字节)";
-        else txtStatus.Text = $"{label}区无更改";
+        _mWriteMode = !_mWriteMode;
+        btnMWriteMode.Content = _mWriteMode ? "🔓 写入模式 (开)" : "🔒 写入模式 (关)";
+        btnMWriteMode.Background = _mWriteMode
+            ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C))
+            : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
     }
 
     private void BitBlock_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is Border b && b.DataContext is BitViewModel bit) bit.Toggle();
+        if (sender is not Border b || b.DataContext is not BitViewModel bit) return;
+        if (bit.Parent == null) return;
+
+        // I 区：只读不响应点击；Q/M 区：仅在写入模式下才响应并立即写入
+        bool canWrite = (bit.Parent.AreaLabel == "Q" && _qWriteMode)
+                     || (bit.Parent.AreaLabel == "M" && _mWriteMode);
+        if (!canWrite) return;
+
+        bit.Toggle();
+        // 立即写入 PLC
+        int area = bit.Parent.AreaLabel == "Q" ? S7Service.AreaQ : S7Service.AreaM;
+        _plc.WriteByte(area, bit.Parent.ByteAddress, bit.Parent.ToByte());
     }
 
     private void UpdateRows(ObservableCollection<ByteRowViewModel> rows, int[] addrs,
