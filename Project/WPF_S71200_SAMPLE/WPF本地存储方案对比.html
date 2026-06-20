@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WPF/.NET 本地存储方案对比</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f0f1a; color: #e0e0e0; font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.6; padding: 20px; }
+  .container { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 26px; margin-bottom: 6px; background: linear-gradient(135deg, #3498db, #9b59b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; border-bottom: 1px solid #2a2a4a; padding-bottom: 12px; }
+  h2 { font-size: 18px; color: #3498db; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+
+  .compare-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .compare-table th { background: #12121e; color: #888; padding: 10px 12px; text-align: left; border-bottom: 2px solid #2a2a4a; font-weight: 600; }
+  .compare-table td { padding: 10px 12px; border-bottom: 1px solid #1e1e30; }
+  .compare-table tr:hover td { background: #12121e; }
+  .compare-table td:first-child { font-weight: 600; color: #e0e0e0; white-space: nowrap; }
+
+  .card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 20px; margin-bottom: 14px; }
+  .card-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+
+  .badge { display: inline-block; font-size: 11px; padding: 2px 10px; border-radius: 10px; font-weight: 600; }
+  .badge.green { background: #1a4731; color: #4caf50; }
+  .badge.orange { background: #47311a; color: #e67e22; }
+  .badge.red { background: #471a1a; color: #e74c3c; }
+  .badge.blue { background: #1a2a47; color: #3498db; }
+  .badge.gray { background: #2a2a3a; color: #999; }
+  .badge.purple { background: #2a1a47; color: #9b59b6; }
+
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 4px; }
+  .tag.ok { background: #1a4731; color: #4caf50; }
+  .tag.warn { background: #47311a; color: #f39c12; }
+  .tag.bad { background: #471a1a; color: #e74c3c; }
+
+  .code-block { background: #0a0a14; border: 1px solid #2a2a4a; border-radius: 4px; padding: 12px 16px; font-family: 'Consolas', 'JetBrains Mono', monospace; font-size: 13px; overflow-x: auto; margin: 8px 0; color: #a8d8ea; }
+  .code-block .cm { color: #6a9955; }
+  .code-block .kw { color: #569cd6; }
+  .code-block .str { color: #ce9178; }
+  .code-block .nu { color: #b5cea8; }
+
+  .verdict { background: #102418; border: 1px solid #27ae60; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .verdict h3 { color: #4caf50; font-size: 15px; margin-bottom: 6px; }
+
+  .flow-box { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #0a0a14; border-radius: 6px; margin: 6px 0; flex-wrap: wrap; }
+  .flow-box .arrow { color: #555; font-size: 18px; }
+
+  .dim { color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>💾 WPF / .NET 本地存储方案对比</h1>
+  <div class="subtitle">对标 Web localStorage · 选型指南 · 2026-06</div>
+
+  <!-- ===== 速览对比表 ===== -->
+  <div class="card">
+    <div class="card-title">📊 四方案速览</div>
+    <table class="compare-table">
+      <tr>
+        <th>方案</th>
+        <th>对标 Web</th>
+        <th>存储位置</th>
+        <th>格式</th>
+        <th>大小限制</th>
+        <th>复杂度</th>
+      </tr>
+      <tr>
+        <td>Properties.Settings</td>
+        <td>📦 localStorage</td>
+        <td>user.config</td>
+        <td>XML</td>
+        <td>~500KB</td>
+        <td><span class="tag ok">极低</span></td>
+      </tr>
+      <tr>
+        <td>JSON 文件</td>
+        <td>📄 IndexedDB</td>
+        <td>你指定路径</td>
+        <td>JSON</td>
+        <td>无（磁盘满为止）</td>
+        <td><span class="tag ok">低</span></td>
+      </tr>
+      <tr>
+        <td>IsolatedStorage</td>
+        <td>🗑️ Web SQL (已废弃)</td>
+        <td>沙箱目录</td>
+        <td>二进制/XML</td>
+        <td>~几 MB</td>
+        <td><span class="tag warn">中</span></td>
+      </tr>
+      <tr>
+        <td>SQLite</td>
+        <td>🗃️ IndexedDB</td>
+        <td>你指定 .db 文件</td>
+        <td>SQL 关系型</td>
+        <td>无（TB 级）</td>
+        <td><span class="tag warn">中</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ===== 1. Properties.Settings ===== -->
+  <h2>📦 方案一：Properties.Settings <span class="badge green">对标 localStorage</span></h2>
+  <div class="card">
+    <div class="card-title">内置键值存储 —— 最简单，但有坑</div>
+    <table class="compare-table">
+      <tr><td style="width:120px;">使用方式</td><td>项目属性 → 设置 → 声明字段 → 代码读写</td></tr>
+      <tr><td>存储路径</td><td><code>C:\Users\你\AppData\Local\项目名\版本号\user.config</code></td></tr>
+      <tr><td>数据格式</td><td>XML 明文（记事本可打开）</td></tr>
+      <tr><td>读写代码</td><td><code>Settings.Default.xxx = value;  Settings.Default.Save();</code></td></tr>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+      <div style="background:#0c1c10; border-radius:6px; padding:10px; border:1px solid #1a4731;">
+        <div style="color:#4caf50; font-weight:700; margin-bottom:4px;">✅ 适合</div>
+        <div style="color:#aaa; font-size:12px;">IP 地址 · 端口 · 机架/槽位 · 窗口位置 · 主题选择 · 是否记住密码</div>
+      </div>
+      <div style="background:#1c0c0c; border-radius:6px; padding:10px; border:1px solid #471a1a;">
+        <div style="color:#e74c3c; font-weight:700; margin-bottom:4px;">❌ 不适合</div>
+        <div style="color:#aaa; font-size:12px;">DB 列表（List无法直存）· 大数据（>1MB）· 动态 key · 多线程高频写</div>
+      </div>
+    </div>
+    <div class="code-block">
+      <span class="cm">// 先在项目属性 → 设置 声明：</span><br>
+      <span class="cm">//   LastConnectedIP (string) = ""</span><br>
+      <span class="cm">//   ThemeMode (string) = "Dark"</span><br>
+      <span class="cm">//   WindowTop (int) = 100</span><br><br>
+      <span class="cm">// 写入</span><br>
+      Properties.Settings.Default.LastConnectedIP = txtIP.Text;<br>
+      Properties.Settings.Default.ThemeMode = <span class="str">"Light"</span>;<br>
+      Properties.Settings.Default.Save();<br><br>
+      <span class="cm">// 读取</span><br>
+      txtIP.Text = Properties.Settings.Default.LastConnectedIP;<br>
+      bool isDark = Properties.Settings.Default.ThemeMode == <span class="str">"Dark"</span>;
+    </div>
+  </div>
+
+  <!-- ===== 2. JSON 文件 ===== -->
+  <h2>📄 方案二：JSON 文件 <span class="badge orange">对标 localStorage + 自定义</span></h2>
+  <div class="card">
+    <div class="card-title">自己读写 JSON 文件 —— 灵活、可控、足够</div>
+    <table class="compare-table">
+      <tr><td style="width:120px;">使用方式</td><td><code>JsonSerializer</code> + <code>File.Read/WriteAllText</code></td></tr>
+      <tr><td>存储路径</td><td><code>AppDomain.CurrentDomain.BaseDirectory + "config.json"</code>（你决定）</td></tr>
+      <tr><td>数据格式</td><td>JSON 明文（可读、可编辑、可版本控制）</td></tr>
+      <tr><td>读写代码</td><td>两行：序列化 → 写文件 / 读文件 → 反序列化</td></tr>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+      <div style="background:#0c1c10; border-radius:6px; padding:10px; border:1px solid #1a4731;">
+        <div style="color:#4caf50; font-weight:700; margin-bottom:4px;">✅ 适合</div>
+        <div style="color:#aaa; font-size:12px;">DB 轮询列表 · I/Q/M 地址范围 · 轮询配置 · 任意复杂结构 · <strong>你项目中大部分数据</strong></div>
+      </div>
+      <div style="background:#1c0c0c; border-radius:6px; padding:10px; border:1px solid #471a1a;">
+        <div style="color:#e74c3c; font-weight:700; margin-bottom:4px;">❌ 不适合</div>
+        <div style="color:#aaa; font-size:12px;">高频写入（每 50ms 写一次会坏文件）· 大量结构化查询（>几万行）· 多线程并发写</div>
+      </div>
+    </div>
+    <div class="code-block">
+      <span class="cm">// 定义你的配置模型</span><br>
+      <span class="kw">public record</span> AppConfig<br>
+      {<br>
+      &nbsp;&nbsp;<span class="kw">public string</span> LastIP { <span class="kw">get; set;</span> } = <span class="str">""</span>;<br>
+      &nbsp;&nbsp;<span class="kw">public bool</span> IsDark { <span class="kw">get; set;</span> } = <span class="kw">true</span>;<br>
+      &nbsp;&nbsp;<span class="kw">public</span> List&lt;DbPollItem&gt; DbItems { <span class="kw">get; set;</span> } = [];<br>
+      }<br><br>
+      <span class="cm">// 写入（startup / 每次配置变化时保存）</span><br>
+      <span class="kw">var</span> cfg = <span class="kw">new</span> AppConfig { LastIP = txtIP.Text, IsDark = isDark, DbItems = ... };<br>
+      File.WriteAllText(<span class="str">"app_config.json"</span>, JsonSerializer.Serialize(cfg, <span class="kw">new</span> JsonSerializerOptions { WriteIndented = <span class="kw">true</span> }));<br><br>
+      <span class="cm">// 读取</span><br>
+      <span class="kw">if</span> (File.Exists(<span class="str">"app_config.json"</span>))<br>
+      &nbsp;&nbsp;cfg = JsonSerializer.Deserialize&lt;AppConfig&gt;(File.ReadAllText(<span class="str">"app_config.json"</span>));
+    </div>
+    <div class="flow-box">
+      <span style="color:#3498db;">你的 DbPollItem 列表</span>
+      <span class="arrow">→</span>
+      <span style="color:#f39c12;">JsonSerializer</span>
+      <span class="arrow">→</span>
+      <span style="color:#27ae60;">app_config.json</span>
+      <span style="color:#555; margin-left:8px;">（可读、可手工编辑、可备份）</span>
+    </div>
+  </div>
+
+  <!-- ===== 3. IsolatedStorage ===== -->
+  <h2>🗑️ 方案三：IsolatedStorage <span class="badge red">不推荐</span></h2>
+  <div class="card">
+    <div class="card-title">过时的沙箱存储 —— .NET 早期方案，已被淘汰</div>
+    <table class="compare-table">
+      <tr><td style="width:120px;">使用方式</td><td><code>IsolatedStorageFile.GetStore()</code></td></tr>
+      <tr><td>存储路径</td><td>深层系统沙箱目录，用户找不到</td></tr>
+      <tr><td>数据格式</td><td>二进制或 XML（你控制）</td></tr>
+      <tr><td>现状</td><td><span class="badge red">微软已不再推荐，.NET 10 仍保留但无新特性</span></td></tr>
+    </table>
+    <div style="background:#1c0c0c; border-radius:6px; padding:10px; margin-top:8px; border:1px solid #471a1a;">
+      <div style="color:#e74c3c; font-weight:700; margin-bottom:4px;">为什么不用</div>
+      <div style="color:#aaa; font-size:12px;">
+        ① API 繁琐（要开流、写字节）<br>
+        ② 文件藏在系统沙箱里，调试想删都找不到<br>
+        ③ JSON 文件两行代码能做到的事，它能写十几行<br>
+        ④ 跨版本升级会丢数据（跟 Settings 一样）
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4. SQLite ===== -->
+  <h2>🗃️ 方案四：SQLite <span class="badge purple">对标 IndexedDB</span></h2>
+  <div class="card">
+    <div class="card-title">轻量嵌入式数据库 —— 本地存储的"重武器"</div>
+    <table class="compare-table">
+      <tr><td style="width:120px;">使用方式</td><td><code>Microsoft.Data.Sqlite</code> NuGet 包</td></tr>
+      <tr><td>存储位置</td><td>一个 .db 文件，你指定路径</td></tr>
+      <tr><td>数据格式</td><td>SQL 关系型表</td></tr>
+      <tr><td>大小限制</td><td>无（TB 级）</td></tr>
+      <tr><td>依赖</td><td>需安装 NuGet 包（本项目中已装了）</td></tr>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+      <div style="background:#0c1c10; border-radius:6px; padding:10px; border:1px solid #1a4731;">
+        <div style="color:#4caf50; font-weight:700; margin-bottom:4px;">✅ 适合</div>
+        <div style="color:#aaa; font-size:12px;">大量结构化数据（历史记录、日志）· 需要 SQL 查询 · 多表关联 · >10MB 数据</div>
+      </div>
+      <div style="background:#1c0c0c; border-radius:6px; padding:10px; border:1px solid #471a1a;">
+        <div style="color:#e74c3c; font-weight:700; margin-bottom:4px;">❌ 大炮打蚊子</div>
+        <div style="color:#aaa; font-size:12px;">存几个 DB 配置和 IP 地址 · 杀鸡用牛刀</div>
+      </div>
+    </div>
+    <div class="code-block">
+      <span class="cm">// NuGet（项目中已装）</span><br>
+      Install-Package Microsoft.Data.Sqlite<br><br>
+      <span class="cm">// 建表 + 写入</span><br>
+      <span class="kw">using</span> <span class="kw">var</span> conn = <span class="kw">new</span> SqliteConnection(<span class="str">"Data Source=plc_data.db"</span>);<br>
+      conn.Open();<br>
+      <span class="kw">var</span> cmd = conn.CreateCommand();<br>
+      cmd.CommandText = <span class="str">"CREATE TABLE IF NOT EXISTS history (time TEXT, value REAL)"</span>;<br>
+      cmd.ExecuteNonQuery();<br><br>
+      cmd.CommandText = <span class="str">"INSERT INTO history VALUES(@t, @v)"</span>;<br>
+      cmd.Parameters.AddWithValue(<span class="str">"@t"</span>, DateTime.Now.ToString());<br>
+      cmd.Parameters.AddWithValue(<span class="str">"@v"</span>, 42.5);<br>
+      cmd.ExecuteNonQuery();
+    </div>
+  </div>
+
+  <!-- ===== 推荐方案 ===== -->
+  <h2>💡 对你项目的建议</h2>
+  <div class="verdict">
+    <h3>🔹 Settings 存元数据 + JSON 文件存配置</h3>
+    <div style="margin-top:8px; color:#ccc;">
+      <p><strong>Settings 存（多少无所谓，简单键值）：</strong></p>
+      <div style="background:#0a0a14; border-radius:4px; padding:8px 12px; margin:6px 0;">
+        <code>LastConnectedIP · WindowLeft/WindowTop · ThemeMode</code>
+      </div>
+      <p style="margin-top:8px;"><strong>JSON 文件存（复杂结构）：</strong></p>
+      <div style="background:#0a0a14; border-radius:4px; padding:8px 12px; margin:6px 0;">
+        <code>app_config.json</code> ← DB 轮询列表 + I/Q/M 地址范围 + 轮询启停状态
+      </div>
+      <p style="margin-top:8px; color:#4caf50;">需要改代码吗？不用 —— 你已有的 <code>DbPollItem</code> 模型直接就能序列化成 JSON。</p>
+      <p style="margin-top:4px; color:#f39c12;">两个方案加起来代码不超过 20 行，零依赖。</p>
+    </div>
+  </div>
+
+  <!-- ===== 决策树 ===== -->
+  <h2>🔀 决策树 —— 按需选择</h2>
+  <div class="card">
+    <div style="background:#0a0a14; border-radius:6px; padding:16px; font-family: Consolas, monospace; line-height: 2;">
+      <div>数据是简单键值对（IP、主题、位置）？</div>
+      <div style="padding-left:20px;">── ✅ Settings &nbsp;<span class="dim">（一行代码）</span></div>
+      <div style="margin-top:6px;">数据是复杂对象（DB列表、配置表）？</div>
+      <div style="padding-left:20px;">── ✅ JSON 文件 &nbsp;<span class="dim">（JsonSerializer 两行代码）</span></div>
+      <div style="margin-top:6px;">数据量 &gt; 10MB 或需要查询历史？</div>
+      <div style="padding-left:20px;">── ✅ SQLite &nbsp;<span class="dim">（项目已装 Sqlite 包）</span></div>
+      <div style="margin-top:6px;">你想用几十年前过时的 API？</div>
+      <div style="padding-left:20px;">── ❌ IsolatedStorage &nbsp;<span class="dim">（别）</span></div>
+    </div>
+  </div>
+
+  <div class="subtitle" style="border-top:1px solid #2a2a4a; padding-top:16px; margin-top:20px; text-align:center;">
+    针对 WPF_S71200_SAMPLE 项目 · 建议：Settings（3 行）+ JSON（10 行），不用加任何新 NuGet 包
+  </div>
+</div>
+</body>
+</html>

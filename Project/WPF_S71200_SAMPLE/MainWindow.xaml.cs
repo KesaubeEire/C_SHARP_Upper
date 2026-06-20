@@ -29,6 +29,8 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<string> _fastLiveItems = [];
     private readonly ObservableCollection<string> _dbLiveItems = [];
 
+    private readonly AppConfig _config = AppConfig.Load();
+
     public MainWindow()
     {
         InitializeComponent();
@@ -48,6 +50,94 @@ public partial class MainWindow : Window
 
         // Tab 切换
         tabControl.SelectionChanged += TabControl_SelectionChanged;
+
+        // ===== 从配置恢复所有用户输入 =====
+        RestoreFromConfig();
+    }
+
+    /// <summary>从配置文件恢复所有 UI 状态</summary>
+    private void RestoreFromConfig()
+    {
+        // 连接
+        txtIP.Text = _config.IP;
+        txtPort.Text = _config.Port.ToString();
+        txtRack.Text = _config.Rack.ToString();
+        txtSlot.Text = _config.Slot.ToString();
+
+        // 手动模式地址
+        txtIAddress.Text = _config.ManualIAddress;
+        txtQAddress.Text = _config.ManualQAddress;
+        txtMAddress.Text = _config.ManualMAddress;
+
+        // 自动轮询范围
+        txtIStart.Text = _config.PollIStart.ToString();
+        txtIEnd.Text = _config.PollIEnd.ToString();
+        txtQStart.Text = _config.PollQStart.ToString();
+        txtQEnd.Text = _config.PollQEnd.ToString();
+        txtMStart.Text = _config.PollMStart.ToString();
+        txtMEnd.Text = _config.PollMEnd.ToString();
+        chkI.IsChecked = _config.PollEnableI;
+        chkQ.IsChecked = _config.PollEnableQ;
+        chkM.IsChecked = _config.PollEnableM;
+
+        // DB 列表
+        _dbItems.Clear();
+        foreach (var item in _config.DbItems)
+            _dbItems.Add(item);
+        UpdateDbEmptyState();
+
+        // 主题
+        if (_config.ThemeMode == "Light")
+        {
+            ThemeManager.Apply(TestWpf.Services.ThemeMode.Light);
+            btnTheme.Content = "☀";
+        }
+
+        // 窗口状态
+        if (_config.WindowLeft >= 0 && _config.WindowTop >= 0)
+        {
+            Left = _config.WindowLeft;
+            Top = _config.WindowTop;
+        }
+        Width = _config.WindowWidth;
+        Height = _config.WindowHeight;
+        if (Enum.TryParse<WindowState>(_config.WindowState, out var ws))
+            WindowState = ws;
+    }
+
+    /// <summary>把当前 UI 状态保存到配置文件</summary>
+    private void SaveConfig()
+    {
+        _config.IP = txtIP.Text;
+        _config.Port = TryParse(txtPort.Text, 102);
+        _config.Rack = TryParse(txtRack.Text, 0);
+        _config.Slot = TryParse(txtSlot.Text, 0);
+
+        _config.ManualIAddress = txtIAddress.Text;
+        _config.ManualQAddress = txtQAddress.Text;
+        _config.ManualMAddress = txtMAddress.Text;
+
+        _config.PollIStart = TryParse(txtIStart.Text, 0);
+        _config.PollIEnd = TryParse(txtIEnd.Text, 2);
+        _config.PollQStart = TryParse(txtQStart.Text, 0);
+        _config.PollQEnd = TryParse(txtQEnd.Text, 1);
+        _config.PollMStart = TryParse(txtMStart.Text, 0);
+        _config.PollMEnd = TryParse(txtMEnd.Text, 10);
+        _config.PollEnableI = chkI.IsChecked == true;
+        _config.PollEnableQ = chkQ.IsChecked == true;
+        _config.PollEnableM = chkM.IsChecked == true;
+
+        _config.DbItems = _dbItems.ToList();
+
+        _config.ThemeMode = ThemeManager.Current == TestWpf.Services.ThemeMode.Dark ? "Dark" : "Light";
+
+        _config.WindowLeft = Left;
+        _config.WindowTop = Top;
+        _config.WindowWidth = Width;
+        _config.WindowHeight = Height;
+        _config.WindowState = WindowState.ToString();
+
+        _config.Save();
     }
 
     // ====================== Tab 切换 ======================
@@ -67,6 +157,7 @@ public partial class MainWindow : Window
         ThemeManager.Toggle();
         btnTheme.Content = isDark ? "☀" : "🌙";
         btnTheme.ToolTip = isDark ? "切换到暗色主题" : "切换到亮色主题";
+        SaveConfig();
     }
 
     // ====================== 连接管理 ======================
@@ -88,6 +179,7 @@ public partial class MainWindow : Window
 
         SetConnected(ip, port);
         UpdateConnectionUI();
+        SaveConfig();
     }
 
     private void BtnDisconnect_Click(object sender, RoutedEventArgs e)
@@ -96,6 +188,7 @@ public partial class MainWindow : Window
         _plc.Disconnect();
         SetDisconnected();
         UpdateConnectionUI();
+        SaveConfig();
     }
 
     private void SetConnected(string ip, int port)
@@ -238,6 +331,7 @@ public partial class MainWindow : Window
         _dbItems.Add(item);
         UpdateDbEmptyState();
         txtNewDbNumber.Text = (dbNum + 1).ToString();
+        SaveConfig();
     }
 
     private void BtnRemoveDb_Click(object sender, RoutedEventArgs e)
@@ -245,6 +339,7 @@ public partial class MainWindow : Window
         if (sender is Button btn && btn.Tag is DbPollItem item)
         {
             _dbItems.Remove(item);
+            SaveConfig();
             UpdateDbEmptyState();
         }
     }
@@ -342,6 +437,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        SaveConfig();
         _scheduler.Dispose();
         _plc.Dispose();
         _liveRefreshTimer.Dispose();

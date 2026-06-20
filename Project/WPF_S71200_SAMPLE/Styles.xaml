@@ -29,19 +29,31 @@
         <Setter Property="CaretBrush" Value="#3498DB"/>
     </Style>
 
-    <!-- ===== 修复：禁用按钮 ===== -->
-    <!-- 全局按钮样式：禁用时降低透明度，保留原色，文字依然可见 -->
+    <!-- ===== 禁用按钮修复 ===== -->
+    <!-- 用一个带 ControlTemplate 的样式覆盖所有按钮，禁用时统一深灰+亮灰文字 -->
     <Style TargetType="Button">
-        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Style.Triggers>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Opacity" Value="0.35"/>
-            </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Opacity" Value="0.85"/>
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border" Background="{TemplateBinding Background}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Background" Value="#2A2A3A"/>
+                            <Setter Property="Foreground" Value="#999999"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>
