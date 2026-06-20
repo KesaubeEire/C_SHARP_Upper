@@ -115,7 +115,7 @@
                     <!-- 连接/断开 -->
                     <StackPanel Margin="14,10,14,0" Orientation="Horizontal">
                         <Button x:Name="btnConnect" Content="● 连接"
-                                Style="{StaticResource MaterialDesignRaisedButton}" Background="#27AE60"
+                                Background="#27AE60"
                                 Padding="0" Height="32" FontWeight="Bold" Click="BtnConnect_Click"
                                 Width="90" Margin="0,0,8,0"/>
                         <Button x:Name="btnDisconnect" Content="○ 断开"
@@ -307,7 +307,7 @@
                     <!-- 启动/停止轮询 -->
                     <StackPanel Margin="14,8,14,0">
                         <Button x:Name="btnStartPoll" Content="▶ 启动轮询"
-                                Style="{StaticResource MaterialDesignRaisedButton}" Background="#27AE60"
+                                Background="#27AE60"
                                 Height="34" FontWeight="Bold" Click="BtnStartPoll_Click"
                                 IsEnabled="False" Margin="0,0,0,6"/>
                         <Button x:Name="btnStopPoll" Content="■ 停止轮询"

@@ -5,6 +5,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- 自定义主题（运行时由 ThemeManager 动态切换） -->
                 <ResourceDictionary Source="Themes/Dark.xaml"/>
                 <ResourceDictionary Source="Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>

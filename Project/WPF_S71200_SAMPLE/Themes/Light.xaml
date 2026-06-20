@@ -11,5 +11,10 @@
     <SolidColorBrush x:Key="TextDim" Color="#999999"/>
     <SolidColorBrush x:Key="InputBackground" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="DividerColor" Color="#D0D0D8"/>
+    <SolidColorBrush x:Key="AccentBlue" Color="#2980B9"/>
+    <SolidColorBrush x:Key="AccentGreen" Color="#1E8449"/>
+    <SolidColorBrush x:Key="AccentRed" Color="#C0392B"/>
+    <SolidColorBrush x:Key="AccentPurple" Color="#8E44AD"/>
+    <SolidColorBrush x:Key="AccentOrange" Color="#D68910"/>
 
 </ResourceDictionary>
