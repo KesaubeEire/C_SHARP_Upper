@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using TestWpf.Models;
+using TestWpf.Controls;
 using TestWpf.Services;
 
 namespace TestWpf;
@@ -25,6 +26,8 @@ public partial class MainWindow : Window
     // ─── 自动轮询 ───
     private readonly PollingScheduler _scheduler = new();
     private readonly ObservableCollection<DbPollItem> _dbItems = [];
+    private readonly ObservableCollection<DbStructure> _importedDbs = [];
+    private readonly ObservableCollection<UdtStructure> _importedUdts = [];
     private readonly System.Timers.Timer _liveRefreshTimer = new(200); // 200ms 刷新实时显示
     private readonly ObservableCollection<string> _fastLiveItems = [];
     private readonly ObservableCollection<string> _dbLiveItems = [];
@@ -43,6 +46,8 @@ public partial class MainWindow : Window
 
         // 自动轮询
         listDbItems.ItemsSource = _dbItems;
+        listImportedDb.ItemsSource = _importedDbs;
+        listImportedUdt.ItemsSource = _importedUdts;
         listFastLive.ItemsSource = _fastLiveItems;
         listDbLive.ItemsSource = _dbLiveItems;
         _liveRefreshTimer.Elapsed += (_, _) => Dispatcher.Invoke(RefreshLiveData);
@@ -79,11 +84,39 @@ public partial class MainWindow : Window
         chkI.IsChecked = _config.PollEnableI;
         chkQ.IsChecked = _config.PollEnableQ;
         chkM.IsChecked = _config.PollEnableM;
+        txtPollInterval.Text = _config.PollIntervalMs.ToString();
 
         // DB 列表
         _dbItems.Clear();
         foreach (var item in _config.DbItems)
             _dbItems.Add(item);
+
+        // 导入的 DB 结构
+        _importedDbs.Clear();
+        foreach (var info in _config.ImportedDbs)
+        {
+            var db = new DbStructure
+            {
+                DbNumber = info.DbNumber,
+                DbName = info.DbName,
+                SourceFile = info.SourceFile,
+                Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(info.VariablesJson) ?? []
+            };
+            _importedDbs.Add(db);
+        }
+
+        // 导入的 UDT 结构
+        _importedUdts.Clear();
+        foreach (var info in _config.ImportedUdts)
+        {
+            var udt = new UdtStructure
+            {
+                UdtName = info.UdtName,
+                SourceFile = info.SourceFile,
+                Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(info.VariablesJson) ?? []
+            };
+            _importedUdts.Add(udt);
+        }
         UpdateDbEmptyState();
 
         // 主题
@@ -126,8 +159,26 @@ public partial class MainWindow : Window
         _config.PollEnableI = chkI.IsChecked == true;
         _config.PollEnableQ = chkQ.IsChecked == true;
         _config.PollEnableM = chkM.IsChecked == true;
+        _config.PollIntervalMs = TryParse(txtPollInterval.Text, 50);
 
         _config.DbItems = _dbItems.ToList();
+
+        // 导入的 DB 结构
+        _config.ImportedDbs = _importedDbs.Select(d => new ImportedDbInfo
+        {
+            DbNumber = d.DbNumber,
+            DbName = d.DbName,
+            SourceFile = d.SourceFile,
+            VariablesJson = System.Text.Json.JsonSerializer.Serialize(d.Variables)
+        }).ToList();
+
+        // 导入的 UDT 结构
+        _config.ImportedUdts = _importedUdts.Select(u => new ImportedUdtInfo
+        {
+            UdtName = u.UdtName,
+            SourceFile = u.SourceFile,
+            VariablesJson = System.Text.Json.JsonSerializer.Serialize(u.Variables)
+        }).ToList();
 
         _config.ThemeMode = ThemeManager.Current == TestWpf.Services.ThemeMode.Dark ? "Dark" : "Light";
 
@@ -346,6 +397,107 @@ public partial class MainWindow : Window
 
     private void UpdateDbEmptyState()
         => txtDbEmpty.Visibility = _dbItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    // ====================== 导入 DB/UDT ======================
+
+    private void BtnImportDb_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "DB 文件 (*.db)|*.db|所有文件 (*.*)|*.*",
+            Title = "选择 TIA Portal 导出的 .db 文件",
+            Multiselect = false
+        };
+
+        if (dlg.ShowDialog(this) != true) return;
+
+        var db = DbFileParser.Parse(dlg.FileName);
+        if (db.HasUnknownType)
+        {
+            MessageBox.Show(this, $"解析失败: {db.ParseError}", "未知数据类型",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (db.ParseError != null)
+        {
+            MessageBox.Show(this, $"解析失败: {db.ParseError}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // 让用户输入 DB 号
+        var inputDlg = new InputDialog($"请输入 DB{db.DbName} 的 DB 编号:", "1");
+        if (inputDlg.ShowDialog() != true) return;
+        if (!int.TryParse(inputDlg.InputText, out int dbNum) || dbNum <= 0)
+        {
+            MessageBox.Show(this, "无效的 DB 编号", "错误");
+            return;
+        }
+
+        // 检查是否已存在
+        if (_importedDbs.Any(d => d.DbNumber == dbNum))
+        {
+            MessageBox.Show(this, $"DB{dbNum} 已导入，请先删除再重新导入", "提示");
+            return;
+        }
+
+        db.DbNumber = dbNum;
+        _importedDbs.Add(db);
+        SaveConfig();
+    }
+
+    private void BtnImportUdt_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "UDT 文件 (*.udt)|*.udt|所有文件 (*.*)|*.*",
+            Title = "选择 TIA Portal 导出的 .udt 文件",
+            Multiselect = false
+        };
+
+        if (dlg.ShowDialog(this) != true) return;
+
+        var udt = UdtFileParser.Parse(dlg.FileName);
+        if (udt.HasUnknownType)
+        {
+            MessageBox.Show(this, $"解析失败: {udt.ParseError}", "未知数据类型",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (udt.ParseError != null)
+        {
+            MessageBox.Show(this, $"解析失败: {udt.ParseError}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        if (_importedUdts.Any(u => u.UdtName == udt.UdtName))
+        {
+            MessageBox.Show(this, $"UDT \"{udt.UdtName}\" 已导入", "提示");
+            return;
+        }
+
+        _importedUdts.Add(udt);
+        SaveConfig();
+    }
+
+    private void BtnDeleteImportedDb_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is DbStructure db)
+        {
+            _importedDbs.Remove(db);
+            SaveConfig();
+        }
+    }
+
+    private void BtnDeleteImportedUdt_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is UdtStructure udt)
+        {
+            _importedUdts.Remove(udt);
+            SaveConfig();
+        }
+    }
 
     // ====================== 自动轮询：启动/停止 ======================
 

@@ -35,8 +35,17 @@ public sealed class AppConfig
     public bool PollEnableQ { get; set; } = true;
     public bool PollEnableM { get; set; } = true;
 
-    // ===== DB 轮询列表（复杂结构，序列化为 JSON） =====
+    // ===== 轮询间隔 =====
+    public int PollIntervalMs { get; set; } = 50;
+
+    // ===== DB 轮询列表 =====
     public List<DbPollItem> DbItems { get; set; } = [];
+
+    // ===== 导入的 DB 结构 =====
+    public List<ImportedDbInfo> ImportedDbs { get; set; } = [];
+
+    // ===== 导入的 UDT 结构 =====
+    public List<ImportedUdtInfo> ImportedUdts { get; set; } = [];
 
     // ===== 主题 =====
     public string ThemeMode { get; set; } = "Dark";

@@ -226,6 +226,84 @@
                     <!-- 分割线 -->
                     <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,10,14,0"/>
 
+                    <!-- 轮询间隔 -->
+                    <StackPanel Margin="14,8,14,0">
+                        <TextBlock Text="⏱ 轮询间隔" FontSize="13" FontWeight="Bold" Foreground="#AAA" Margin="0,0,0,4"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="txtPollInterval" Text="50" Style="{StaticResource SidebarInput}" Height="24"/>
+                            <TextBlock Grid.Column="1" Text="ms" Foreground="#888" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- 分割线 -->
+                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,10,14,0"/>
+
+                    <!-- 导入 DB/UDT -->
+                    <StackPanel Margin="14,8,14,0">
+                        <TextBlock Text="📂 导入 DB 结构" FontSize="13" FontWeight="Bold" Foreground="#AAA" Margin="0,0,0,4"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/><ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="📄 导入 .db" Background="#3498DB" Foreground="White"
+                                    BorderThickness="0" Height="28" FontWeight="Bold" Click="BtnImportDb_Click"/>
+                            <Button Grid.Column="2" Content="📄 导入 .udt" Background="#8e44ad" Foreground="White"
+                                    BorderThickness="0" Height="28" FontWeight="Bold" Click="BtnImportUdt_Click"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- 已导入的 DB 列表 -->
+                    <StackPanel Margin="14,8,14,0">
+                        <TextBlock Text="已导入 DB" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                        <ItemsControl x:Name="listImportedDb" MaxHeight="120">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="11" VerticalAlignment="Center" Foreground="#AAA"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TotalSize, StringFormat='{}{0}B'}" FontSize="10" Foreground="#666" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <Button Grid.Column="2" Content="×" Background="Transparent" Foreground="#E74C3C"
+                                                    BorderThickness="0" FontSize="12" Width="20" Height="20" Padding="0"
+                                                    Click="BtnDeleteImportedDb_Click" Tag="{Binding}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- 已导入的 UDT 列表 -->
+                    <StackPanel Margin="14,6,14,0">
+                        <TextBlock Text="已导入 UDT" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                        <ItemsControl x:Name="listImportedUdt" MaxHeight="120">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding UdtName}" FontSize="11" VerticalAlignment="Center" Foreground="#AAA"/>
+                                            <Button Grid.Column="1" Content="×" Background="Transparent" Foreground="#E74C3C"
+                                                    BorderThickness="0" FontSize="12" Width="20" Height="20" Padding="0"
+                                                    Click="BtnDeleteImportedUdt_Click" Tag="{Binding}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- 分割线 -->
+                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,10,14,0"/>
+
                     <!-- 启动/停止轮询 -->
                     <StackPanel Margin="14,8,14,0">
                         <Button x:Name="btnStartPoll" Content="▶ 启动轮询"
