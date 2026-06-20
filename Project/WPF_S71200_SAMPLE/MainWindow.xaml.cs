@@ -122,7 +122,7 @@ public partial class MainWindow : Window
         // 主题
         if (_config.ThemeMode == "Light")
         {
-            ThemeManager.Apply(TestWpf.Services.ThemeMode.Light);
+            ThemeManager.Apply(TestWpf.Services.AppThemeMode.Light);
             btnTheme.Content = "☀";
         }
 
@@ -180,7 +180,7 @@ public partial class MainWindow : Window
             VariablesJson = System.Text.Json.JsonSerializer.Serialize(u.Variables)
         }).ToList();
 
-        _config.ThemeMode = ThemeManager.Current == TestWpf.Services.ThemeMode.Dark ? "Dark" : "Light";
+        _config.ThemeMode = ThemeManager.Current == TestWpf.Services.AppThemeMode.Dark ? "Dark" : "Light";
 
         _config.WindowLeft = Left;
         _config.WindowTop = Top;
@@ -204,7 +204,7 @@ public partial class MainWindow : Window
 
     private void BtnTheme_Click(object sender, RoutedEventArgs e)
     {
-        bool isDark = ThemeManager.Current == TestWpf.Services.ThemeMode.Dark;
+        bool isDark = ThemeManager.Current == TestWpf.Services.AppThemeMode.Dark;
         ThemeManager.Toggle();
         btnTheme.Content = isDark ? "☀" : "🌙";
         btnTheme.ToolTip = isDark ? "切换到暗色主题" : "切换到亮色主题";

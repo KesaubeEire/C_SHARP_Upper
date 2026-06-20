@@ -30,30 +30,24 @@
     </Style>
 
     <!-- ===== 禁用按钮修复 ===== -->
-    <!-- 用一个带 ControlTemplate 的样式覆盖所有按钮，禁用时统一深灰+亮灰文字 -->
-    <Style TargetType="Button">
+    <!-- 覆盖 MaterialDesign 按钮样式：禁用时用深灰背景 + 亮灰文字 -->
+    <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="border" Background="{TemplateBinding Background}"
-                            CornerRadius="4">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="border" Property="Background" Value="#2A2A3A"/>
-                            <Setter Property="Foreground" Value="#999999"/>
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Opacity" Value="0.85"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="#2A2A3A"/>
+                <Setter Property="Foreground" Value="#999"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Flat 按钮变体 -->
+    <Style TargetType="Button" x:Key="FlatButton" BasedOn="{StaticResource MaterialDesignFlatButton}">
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="#666"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
 </ResourceDictionary>

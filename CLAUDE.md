@@ -50,6 +50,12 @@ VS_Dev/
 - **WinForms 模式**：启动 `ModbusForm` 图形界面
 - **控制台模式**：通过 `ConsoleRunner` 在终端运行，便于调试
 
+## 协作规则（重要）
+
+- **不自动 commit**：改完代码先给用户检查，用户确认后再提交
+- **不自动 push**：未经用户允许绝不推送到任何远程仓库（internal / origin 等）
+- **git 操作前先问**：commit、push、merge、branch 等操作必须用户明确指令
+
 ## 关键注意事项
 
 ### C# / .NET 约定
