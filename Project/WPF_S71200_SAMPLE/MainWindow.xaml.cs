@@ -199,22 +199,35 @@ public partial class MainWindow : Window
 
     private void BtnAddDb_Click(object sender, RoutedEventArgs e)
     {
+        int dbNum = TryParse(txtNewDbNumber.Text, 1);
+        int offset = TryParse(txtNewDbOffset.Text, 0);
+        int length = TryParse(txtNewDbLen.Text, 100);
+
+        if (_dbItems.Any(d => d.DbNumber == dbNum && d.Offset == offset))
+        {
+            MessageBox.Show(this, $"DB{dbNum} @{offset} 已在列表中", "提示");
+            return;
+        }
+
         var item = new DbPollItem
         {
-            DbNumber = _dbItems.Count > 0 ? _dbItems.Max(d => d.DbNumber) + 1 : 1,
-            Offset = 0,
-            Length = 100,
+            DbNumber = dbNum,
+            Offset = offset,
+            Length = Math.Min(length, 222),
             Status = "待启动"
         };
         _dbItems.Add(item);
         UpdateDbEmptyState();
+        txtNewDbNumber.Text = (dbNum + 1).ToString();
     }
 
     private void BtnRemoveDb_Click(object sender, RoutedEventArgs e)
     {
-        var toRemove = _dbItems.Where(d => !d.Enabled).ToList(); // 未勾选的删除
-        foreach (var item in toRemove) _dbItems.Remove(item);
-        UpdateDbEmptyState();
+        if (sender is Button btn && btn.Tag is DbPollItem item)
+        {
+            _dbItems.Remove(item);
+            UpdateDbEmptyState();
+        }
     }
 
     private void UpdateDbEmptyState()
