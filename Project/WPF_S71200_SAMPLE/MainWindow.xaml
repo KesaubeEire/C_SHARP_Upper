@@ -4,39 +4,63 @@
         xmlns:conv="clr-namespace:TestWpf.Converters"
         xmlns:models="clr-namespace:TestWpf.Models"
         Title="S7-1200 读写工具"
-        Width="920" Height="780"
-        MinWidth="820" MinHeight="650"
+        Width="960" Height="820"
+        MinWidth="840" MinHeight="680"
         WindowStartupLocation="CenterScreen"
-        Background="#0F0F1A"
-        FontFamily="Consolas"
-        Foreground="#E0E0E0">
+        Background="#0F0F1A" FontFamily="Consolas" Foreground="#E0E0E0">
 
     <Window.Resources>
         <conv:BoolToBackgroundConverter x:Key="BgConverter"/>
         <conv:BoolToIndicatorConverter x:Key="IndicatorConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <Style x:Key="TabHeader" TargetType="TabItem">
+            <Setter Property="Background" Value="#1A1A2E"/>
+            <Setter Property="Foreground" Value="#888"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="BorderBrush" Value="#2A2A4A"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="border" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="0,0,0,2" Padding="{TemplateBinding Padding}"
+                                Cursor="Hand">
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#3498DB"/>
+                                <Setter Property="Foreground" Value="#E0E0E0"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#FFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ========== 连接栏 ========== -->
+        <!-- ===== 连接栏 ===== -->
         <Border Grid.Row="0" Background="#1A1A2E" BorderBrush="#2A2A4A"
                 BorderThickness="0,0,0,1" Padding="12,8">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <Ellipse Grid.Column="0" x:Name="indicator" Width="12" Height="12"
@@ -50,306 +74,414 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0">
                     <TextBlock Text="端口" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#888"/>
                     <TextBox x:Name="txtPort" Text="102" Width="60"
-                             Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A"
-                             BorderThickness="1" Padding="6,3"/>
+                             Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="6,3"/>
                 </StackPanel>
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="0,0,10,0">
                     <TextBlock Text="机架" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#888"/>
                     <TextBox x:Name="txtRack" Text="0" Width="40"
-                             Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A"
-                             BorderThickness="1" Padding="6,3"/>
+                             Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="6,3"/>
                 </StackPanel>
                 <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="0,0,16,0">
                     <TextBlock Text="槽位" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#888"/>
                     <TextBox x:Name="txtSlot" Text="0" Width="40"
-                             Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A"
-                             BorderThickness="1" Padding="6,3"/>
+                             Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="6,3"/>
                 </StackPanel>
                 <Button Grid.Column="5" x:Name="btnConnect" Content="● 连接"
                         Background="#27AE60" Foreground="White" BorderThickness="0"
-                        Padding="14,6" FontWeight="Bold" Margin="0,0,6,0"
-                        Click="BtnConnect_Click"/>
+                        Padding="14,6" FontWeight="Bold" Margin="0,0,6,0" Click="BtnConnect_Click"/>
                 <Button Grid.Column="6" x:Name="btnDisconnect" Content="○ 断开"
                         Background="#E74C3C" Foreground="White" BorderThickness="0"
-                        Padding="14,6" FontWeight="Bold" IsEnabled="False"
-                        Click="BtnDisconnect_Click"/>
+                        Padding="14,6" FontWeight="Bold" IsEnabled="False" Click="BtnDisconnect_Click"/>
                 <TextBlock Grid.Column="8" x:Name="txtStatus" Text="未连接"
                            Foreground="#555" VerticalAlignment="Center" FontWeight="Bold"/>
             </Grid>
         </Border>
 
-        <!-- ========== 内容区 ========== -->
-        <ScrollViewer Grid.Row="1" Padding="10,8" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+        <!-- ===== Tab 栏 ===== -->
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0"
+                    Padding="0" x:Name="tabControl">
+            <TabControl.Resources>
+                <Style TargetType="TabPanel">
+                    <Setter Property="Background" Value="#1A1A2E"/>
+                    <Setter Property="Margin" Value="10,4,10,0"/>
+                </Style>
+            </TabControl.Resources>
 
-                <!-- ===== I 区 ===== -->
-                <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1"
-                        CornerRadius="6" Padding="12" Margin="0,0,0,8">
-                    <StackPanel>
-                        <Grid Margin="0,0,0,6">
+            <!-- Tab 1: 手动 -->
+            <TabItem Header="📋 手动读写" Style="{StaticResource TabHeader}">
+            </TabItem>
+
+            <!-- Tab 2: 自动轮询 -->
+            <TabItem Header="⚡ 自动轮询" Style="{StaticResource TabHeader}">
+            </TabItem>
+        </TabControl>
+
+        <!-- ===== 内容区 ===== -->
+        <Grid Grid.Row="2">
+            <!-- 手动模式内容 -->
+            <ScrollViewer x:Name="manualPanel" Padding="10,4" VerticalScrollBarVisibility="Auto" Visibility="Visible">
+                <StackPanel>
+                    <!-- I 区 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1"
+                            CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#3498DB" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Grid.Column="1" Text="I 区（输入 · 只读）" FontSize="15" FontWeight="Bold" Foreground="#3498DB" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="2" x:Name="txtIAddress" Text="0,1" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="6,3" HorizontalAlignment="Left" Width="180" Margin="12,0,0,0"/>
+                                <TextBlock Grid.Column="2" Text="字节地址（逗号分隔）" Foreground="#555" FontSize="11" VerticalAlignment="Center" Margin="198,0,0,0"/>
+                                <Button Grid.Column="3" x:Name="btnIRead" Content="▶ 读取" Background="#3498DB" Foreground="White" BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnIRead_Click"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,2" Height="20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="地址" Foreground="#666" FontSize="11"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <ItemsControl x:Name="listIRows">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:ByteRowViewModel">
+                                        <Border BorderBrush="#2A2A4A" BorderThickness="0,0,0,1" Padding="2,2">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
+                                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
+                                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate DataType="models:BitViewModel">
+                                                            <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="#2A2A4A"
+                                                                    Background="{Binding IsSet, Converter={StaticResource BgConverter}}" ToolTip="{Binding Index, StringFormat='位 {0}'}">
+                                                                <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="txtIEmpty" Text="输入字节地址后点击 [读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Q 区 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#27AE60" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Grid.Column="1" Text="Q 区（输出 · 可读写）" FontSize="15" FontWeight="Bold" Foreground="#27AE60" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="2" x:Name="txtQAddress" Text="0" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="6,3" HorizontalAlignment="Left" Width="180" Margin="12,0,0,0"/>
+                                <TextBlock Grid.Column="2" Text="字节地址（逗号分隔）" Foreground="#555" FontSize="11" VerticalAlignment="Center" Margin="198,0,0,0"/>
+                                <Button Grid.Column="3" x:Name="btnQRead" Content="▶ 读取" Background="#3498DB" Foreground="White" BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnQRead_Click" Margin="0,0,6,0"/>
+                                <Button Grid.Column="4" x:Name="btnQWrite" Content="✎ 写入" Background="#27AE60" Foreground="White" BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnQWrite_Click"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,2" Height="20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="地址" Foreground="#666" FontSize="11"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="状态" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <ItemsControl x:Name="listQRows">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:ByteRowViewModel">
+                                        <Border BorderBrush="#2A2A4A" BorderThickness="0,0,0,1" Padding="2,2">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
+                                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
+                                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate DataType="models:BitViewModel">
+                                                            <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="#2A2A4A"
+                                                                    Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
+                                                                    MouseDown="BitBlock_MouseDown" ToolTip="{Binding Index, StringFormat='位 {0}（点击切换）'}">
+                                                                <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="3" Text="已修改" FontSize="11" Foreground="#E74C3C" HorizontalAlignment="Center"
+                                                           Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="txtQEmpty" Text="输入字节地址后点击 [读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- M 区 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#9B59B6" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Grid.Column="1" Text="M 区（位存储 · 可读写）" FontSize="15" FontWeight="Bold" Foreground="#9B59B6" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="2" x:Name="txtMAddress" Text="0,1" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="6,3" HorizontalAlignment="Left" Width="180" Margin="12,0,0,0"/>
+                                <TextBlock Grid.Column="2" Text="字节地址（逗号分隔）" Foreground="#555" FontSize="11" VerticalAlignment="Center" Margin="198,0,0,0"/>
+                                <Button Grid.Column="3" x:Name="btnMRead" Content="▶ 读取" Background="#3498DB" Foreground="White" BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnMRead_Click" Margin="0,0,6,0"/>
+                                <Button Grid.Column="4" x:Name="btnMWrite" Content="✎ 写入" Background="#27AE60" Foreground="White" BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnMWrite_Click"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,2" Height="20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="地址" Foreground="#666" FontSize="11"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                    <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="状态" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <ItemsControl x:Name="listMRows">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:ByteRowViewModel">
+                                        <Border BorderBrush="#2A2A4A" BorderThickness="0,0,0,1" Padding="2,2">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
+                                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
+                                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate DataType="models:BitViewModel">
+                                                            <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="#2A2A4A"
+                                                                    Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
+                                                                    MouseDown="BitBlock_MouseDown" ToolTip="{Binding Index, StringFormat='位 {0}（点击切换）'}">
+                                                                <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="3" Text="已修改" FontSize="11" Foreground="#E74C3C" HorizontalAlignment="Center"
+                                                           Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="txtMEmpty" Text="输入字节地址后点击 [读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- DB 占位 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1" CornerRadius="6" Padding="12" Opacity="0.5">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#888" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Grid.Column="1" Text="DB 区（数据块 · 请切换到自动轮询面板）" FontSize="15" Foreground="#888" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <Rectangle Height="20" Fill="Transparent"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ===== 自动轮询面板 ===== -->
+            <ScrollViewer x:Name="autoPanel" Padding="10,4" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                <StackPanel>
+
+                    <!-- Fast Path 配置 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="Fast Path 配置（I/Q/M）" FontSize="15" FontWeight="Bold" Foreground="#3498DB" Margin="0,0,0,8"/>
+
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#3498DB" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="I区" Foreground="#AAA" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="起始" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="3" x:Name="txtIStart" Text="0" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="4,2"/>
+                                <TextBlock Grid.Column="4" Text="结束" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="5" x:Name="txtIEnd" Text="2" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="4,2"/>
+                                <CheckBox Grid.Column="6" x:Name="chkI" Content="启用" IsChecked="True" Foreground="#AAA" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#27AE60" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Q区" Foreground="#AAA" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="起始" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="3" x:Name="txtQStart" Text="0" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="4,2"/>
+                                <TextBlock Grid.Column="4" Text="结束" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="5" x:Name="txtQEnd" Text="1" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="4,2"/>
+                                <CheckBox Grid.Column="6" x:Name="chkQ" Content="启用" IsChecked="True" Foreground="#AAA" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="40"/><ColumnDefinition Width="60"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#9B59B6" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="M区" Foreground="#AAA" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="起始" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="3" x:Name="txtMStart" Text="0" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="4,2"/>
+                                <TextBlock Grid.Column="4" Text="结束" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="5" x:Name="txtMEnd" Text="10" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="4,2"/>
+                                <CheckBox Grid.Column="6" x:Name="chkM" Content="启用" IsChecked="True" Foreground="#AAA" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- DB 轮询列表 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="DB 轮询列表" FontSize="15" FontWeight="Bold" Foreground="#F39C12" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="（每个 tick 轮转读取 1~2 个 DB）" Foreground="#555" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <Button Grid.Column="2" Content="＋ 添加" Background="#3498DB" Foreground="White" BorderThickness="0" Padding="10,4" FontWeight="Bold" Click="BtnAddDb_Click" Margin="0,0,6,0"/>
+                                <Button Grid.Column="3" Content="× 删除选中" Background="#E74C3C" Foreground="White" BorderThickness="0" Padding="10,4" FontWeight="Bold" Click="BtnRemoveDb_Click"/>
+                            </Grid>
+
+                            <!-- DB 列表表头 -->
+                            <Grid Margin="0,0,0,2" Height="20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="" Foreground="#666" FontSize="11"/>
+                                <TextBlock Grid.Column="1" Text="DB 号" Foreground="#666" FontSize="11"/>
+                                <TextBlock Grid.Column="2" Text="偏移" Foreground="#666" FontSize="11"/>
+                                <TextBlock Grid.Column="3" Text="长度" Foreground="#666" FontSize="11"/>
+                                <TextBlock Grid.Column="4" Text="状态" Foreground="#666" FontSize="11"/>
+                                <TextBlock Grid.Column="5" Text="" Foreground="#666" FontSize="11"/>
+                            </Grid>
+
+                            <ItemsControl x:Name="listDbItems">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:DbPollItem">
+                                        <Border BorderBrush="#2A2A4A" BorderThickness="0,0,0,1" Padding="2,3">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="30"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" Foreground="#AAA" VerticalAlignment="Center"/>
+                                                <TextBox Grid.Column="1" Text="{Binding DbNumber}" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="3,2"/>
+                                                <TextBox Grid.Column="2" Text="{Binding Offset}" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="3,2"/>
+                                                <TextBox Grid.Column="3" Text="{Binding Length}" Width="50" Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A" BorderThickness="1" Padding="3,2"/>
+                                                <TextBlock Grid.Column="4" Text="{Binding Status}" Foreground="#AAA" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                <Button Grid.Column="5" Content="×" Background="Transparent" Foreground="#E74C3C" BorderThickness="0" FontSize="14" Cursor="Hand"
+                                                        Command="{Binding RemoveCommand}" Width="24" Height="24" Padding="0"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock x:Name="txtDbEmpty" Text="点击 [＋ 添加] 增加 DB 轮询条目" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 启动停止 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#3498DB"
-                                     VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Grid.Column="1" Text="I 区（输入 · 只读）"
-                                       FontSize="15" FontWeight="Bold" Foreground="#3498DB"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="2" x:Name="txtIAddress" Text="0,1"
-                                     Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A"
-                                     BorderThickness="1" Padding="6,3"
-                                     HorizontalAlignment="Left" Width="180" Margin="12,0,0,0"/>
-                            <TextBlock Grid.Column="2" Text="字节地址（逗号分隔）"
-                                       Foreground="#555" FontSize="11"
-                                       VerticalAlignment="Center" Margin="198,0,0,0"/>
-                            <Button Grid.Column="3" x:Name="btnIRead" Content="▶ 读取"
-                                    Background="#3498DB" Foreground="White" BorderThickness="0"
-                                    Padding="14,5" FontWeight="Bold" IsEnabled="False"
-                                    Click="BtnIRead_Click"/>
+                            <Button Grid.Column="0" x:Name="btnStartPoll" Content="▶ 启动轮询" Background="#27AE60" Foreground="White" BorderThickness="0" Padding="16,8" FontWeight="Bold" Click="BtnStartPoll_Click" Margin="0,0,10,0"/>
+                            <Button Grid.Column="1" x:Name="btnStopPoll" Content="■ 停止轮询" Background="#E74C3C" Foreground="White" BorderThickness="0" Padding="16,8" FontWeight="Bold" IsEnabled="False" Click="BtnStopPoll_Click"/>
+                            <TextBlock Grid.Column="3" x:Name="txtPollStatus" Text="未启动" Foreground="#555" FontSize="13" VerticalAlignment="Center" FontWeight="Bold"/>
                         </Grid>
+                    </Border>
 
-                        <Grid Margin="0,0,0,2" Height="20">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="地址" Foreground="#666" FontSize="11"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
-                        </Grid>
+                    <!-- 实时数据监视 -->
+                    <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="实时数据监视" FontSize="15" FontWeight="Bold" Foreground="#27AE60" Margin="0,0,0,8"/>
 
-                        <ItemsControl x:Name="listIRows">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="models:ByteRowViewModel">
-                                    <Border BorderBrush="#2A2A4A" BorderThickness="0,0,0,1" Padding="2,2">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
-                                            <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="models:BitViewModel">
-                                                        <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="#2A2A4A"
-                                                                Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
-                                                                ToolTip="{Binding Index, StringFormat='位 {0}'}">
-                                                            <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                       Foreground="White" FontWeight="Bold" FontSize="14"/>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <TextBlock x:Name="txtIEmpty" Text="输入字节地址后点击 [读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                    </StackPanel>
-                </Border>
+                            <!-- Fast Path -->
+                            <TextBlock Text="I / Q / M 区" Foreground="#3498DB" FontSize="12" Margin="0,0,0,4"/>
+                            <ItemsControl x:Name="listFastLive" MaxHeight="120">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#1E1E3A" CornerRadius="3" Padding="6,3" Margin="2">
+                                            <TextBlock Text="{Binding}" Foreground="#AAA" FontSize="12"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
-                <!-- ===== Q 区 ===== -->
-                <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1"
-                        CornerRadius="6" Padding="12" Margin="0,0,0,8">
-                    <StackPanel>
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#27AE60"
-                                     VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Grid.Column="1" Text="Q 区（输出 · 可读写）"
-                                       FontSize="15" FontWeight="Bold" Foreground="#27AE60" VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="2" x:Name="txtQAddress" Text="0"
-                                     Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A"
-                                     BorderThickness="1" Padding="6,3"
-                                     HorizontalAlignment="Left" Width="180" Margin="12,0,0,0"/>
-                            <TextBlock Grid.Column="2" Text="字节地址（逗号分隔）" Foreground="#555" FontSize="11"
-                                       VerticalAlignment="Center" Margin="198,0,0,0"/>
-                            <Button Grid.Column="3" x:Name="btnQRead" Content="▶ 读取"
-                                    Background="#3498DB" Foreground="White" BorderThickness="0"
-                                    Padding="14,5" FontWeight="Bold" IsEnabled="False"
-                                    Click="BtnQRead_Click" Margin="0,0,6,0"/>
-                            <Button Grid.Column="4" x:Name="btnQWrite" Content="✎ 写入"
-                                    Background="#27AE60" Foreground="White" BorderThickness="0"
-                                    Padding="14,5" FontWeight="Bold" IsEnabled="False"
-                                    Click="BtnQWrite_Click"/>
-                        </Grid>
+                            <!-- DB -->
+                            <TextBlock Text="DB 区" Foreground="#F39C12" FontSize="12" Margin="0,8,0,4"/>
+                            <ItemsControl x:Name="listDbLive" MaxHeight="180">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#1E1E3A" CornerRadius="3" Padding="6,3" Margin="2">
+                                            <TextBlock Text="{Binding}" Foreground="#AAA" FontSize="12"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
-                        <Grid Margin="0,0,0,2" Height="20">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="地址" Foreground="#666" FontSize="11"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="状态" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
-                        </Grid>
+                            <TextBlock x:Name="txtLiveEmpty" Text="启动轮询后自动显示数据" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
 
-                        <ItemsControl x:Name="listQRows">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="models:ByteRowViewModel">
-                                    <Border BorderBrush="#2A2A4A" BorderThickness="0,0,0,1" Padding="2,2">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
-                                            <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="models:BitViewModel">
-                                                        <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="#2A2A4A"
-                                                                Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
-                                                                MouseDown="BitBlock_MouseDown"
-                                                                ToolTip="{Binding Index, StringFormat='位 {0}（点击切换）'}">
-                                                            <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                       Foreground="White" FontWeight="Bold" FontSize="14"/>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
-                                            <TextBlock Grid.Column="3" Text="已修改" FontSize="11" Foreground="#E74C3C" HorizontalAlignment="Center"
-                                                       Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <TextBlock x:Name="txtQEmpty" Text="输入字节地址后点击 [读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- ===== M 区 ===== -->
-                <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1"
-                        CornerRadius="6" Padding="12" Margin="0,0,0,8">
-                    <StackPanel>
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#9B59B6"
-                                     VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Grid.Column="1" Text="M 区（位存储 · 可读写）"
-                                       FontSize="15" FontWeight="Bold" Foreground="#9B59B6" VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="2" x:Name="txtMAddress" Text="0,1"
-                                     Background="#16213E" Foreground="#E0E0E0" BorderBrush="#2A2A4A"
-                                     BorderThickness="1" Padding="6,3"
-                                     HorizontalAlignment="Left" Width="180" Margin="12,0,0,0"/>
-                            <TextBlock Grid.Column="2" Text="字节地址（逗号分隔）" Foreground="#555" FontSize="11"
-                                       VerticalAlignment="Center" Margin="198,0,0,0"/>
-                            <Button Grid.Column="3" x:Name="btnMRead" Content="▶ 读取"
-                                    Background="#3498DB" Foreground="White" BorderThickness="0"
-                                    Padding="14,5" FontWeight="Bold" IsEnabled="False"
-                                    Click="BtnMRead_Click" Margin="0,0,6,0"/>
-                            <Button Grid.Column="4" x:Name="btnMWrite" Content="✎ 写入"
-                                    Background="#27AE60" Foreground="White" BorderThickness="0"
-                                    Padding="14,5" FontWeight="Bold" IsEnabled="False"
-                                    Click="BtnMWrite_Click"/>
-                        </Grid>
-
-                        <Grid Margin="0,0,0,2" Height="20">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="地址" Foreground="#666" FontSize="11"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="状态" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
-                        </Grid>
-
-                        <ItemsControl x:Name="listMRows">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="models:ByteRowViewModel">
-                                    <Border BorderBrush="#2A2A4A" BorderThickness="0,0,0,1" Padding="2,2">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
-                                            <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="models:BitViewModel">
-                                                        <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="#2A2A4A"
-                                                                Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
-                                                                MouseDown="BitBlock_MouseDown"
-                                                                ToolTip="{Binding Index, StringFormat='位 {0}（点击切换）'}">
-                                                            <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                       Foreground="White" FontWeight="Bold" FontSize="14"/>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
-                                            <TextBlock Grid.Column="3" Text="已修改" FontSize="11" Foreground="#E74C3C" HorizontalAlignment="Center"
-                                                       Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <TextBlock x:Name="txtMEmpty" Text="输入字节地址后点击 [读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- ===== DB 区占位 ===== -->
-                <Border Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1"
-                        CornerRadius="6" Padding="12" Opacity="0.5">
-                    <StackPanel>
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#888" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Grid.Column="1" Text="DB 区（数据块 · 待实现）" FontSize="15" Foreground="#888" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Border Background="#1E1E3A" CornerRadius="4" Padding="12,14">
-                            <StackPanel>
-                                <TextBlock Text="⏳ DB 块功能开发中" FontSize="13" Foreground="#555" HorizontalAlignment="Center"/>
-                                <TextBlock Text="支持方案: 非优化块直读 / .db.udt 导出解析 / OPC UA 符号寻址" FontSize="11" Foreground="#444" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </Border>
-
-                <Rectangle Height="20" Fill="Transparent"/>
-            </StackPanel>
-        </ScrollViewer>
+                    <Rectangle Height="20" Fill="Transparent"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>
