@@ -121,11 +121,16 @@
         </Style.Triggers>
     </Style>
 
-    <!-- MaterialDesign 禁用态修复：去掉 Opacity 遮罩，用暗灰背景代替 -->
+    <!-- MaterialDesign 禁用态修复：
+         MD5 默认把禁用按钮 Opacity 降到 0.3~0.5，
+         暗色背景上按钮发白/看不清。Override 为 Opaque，
+         改用暗灰底色 + 亮灰文字表示禁用态 -->
     <Style TargetType="Button">
         <Style.Triggers>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="1"/>
+                <Setter Property="Background" Value="#2A2A3A"/>
+                <Setter Property="Foreground" Value="#777"/>
             </Trigger>
         </Style.Triggers>
     </Style>
