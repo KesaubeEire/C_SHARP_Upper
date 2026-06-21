@@ -108,8 +108,7 @@ public partial class MainWindow : Window
         {
             if (v <= 0 || v > 1e18 || double.IsNaN(v) || double.IsInfinity(v))
                 return "";
-            try { return new DateTime((long)v).ToString("HH:mm:ss"); }
-            catch { return ""; }
+            return new DateTime((long)v).ToLocalTime().ToString("HH:mm:ss");
         }
 
         cartesianTrend.Series = _trendSeries;
