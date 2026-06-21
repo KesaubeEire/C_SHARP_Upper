@@ -78,6 +78,18 @@ public partial class GaugePanel : UserControl
         double range = max - min;
         double normalized = range > 0 ? Math.Clamp((value - min) / range * 100.0, 0, 100) : 0;
 
+        // 更新弧（彩色填充段）
+        if (gaugeArc != null)
+        {
+            gaugeArc.GaugeValue = normalized;
+            // 首次设置颜色：随值变化的渐变色（低→绿, 中→黄, 高→红）
+            if (gaugeArc.Fill == null)
+            {
+                gaugeArc.Fill = new SolidColorPaint(SKColors.Cyan);
+            }
+        }
+
+        // 更新指针
         gaugeNeedle.Value = normalized;
     }
 

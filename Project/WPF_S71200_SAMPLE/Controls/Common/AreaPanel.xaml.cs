@@ -34,8 +34,17 @@ public partial class AreaPanel : UserControl
     public Brush AreaColor { get => (Brush)GetValue(AreaColorProperty); set => SetValue(AreaColorProperty, value); }
     public bool IsReadOnly { get => (bool)GetValue(IsReadOnlyProperty); set => SetValue(IsReadOnlyProperty, value); }
 
-    /// <summary>地址输入框的当前文本（供 MainWindow 轮询启动时读取）</summary>
-    public string AddressText => txtAddress.Text;
+    /// <summary>地址输入框的当前文本（供 MainWindow 保存/恢复）</summary>
+    public string AddressText
+    {
+        get => txtAddress.Text;
+        set
+        {
+            txtAddress.Text = value;
+            _manualSet = !string.IsNullOrEmpty(value);
+        }
+    }
+    private bool _manualSet;
 
     // ===== 构造 =====
 
@@ -75,8 +84,8 @@ public partial class AreaPanel : UserControl
         // I 区没有写模式按钮和状态列
         btnWriteMode.Visibility = IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
         colStatusHeader.Visibility = IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
-        // I 区地址默认值
-        if (string.IsNullOrEmpty(txtAddress.Text))
+        // I 区地址默认值（仅当没有手动设置过时才填）
+        if (!_manualSet && string.IsNullOrEmpty(txtAddress.Text))
             txtAddress.Text = AreaType.ToUpper() == "I" ? "0,1" : "0";
     }
 

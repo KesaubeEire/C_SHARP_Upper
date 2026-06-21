@@ -23,6 +23,15 @@
                                   MinValue="0" MaxValue="100"
                                   Width="360" Height="280" Margin="10"
                                   TooltipPosition="Hidden">
+                        <lvc:PieChart.Series>
+                            <lvc:SeriesCollection>
+                                <!-- 值弧：显示填充部分，颜色和 GaugeValue 在 C# 中设置 -->
+                                <lvc:XamlAngularGaugeSeries x:Name="gaugeArc"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="25"
+                                    CornerRadius="4"/>
+                            </lvc:SeriesCollection>
+                        </lvc:PieChart.Series>
                         <lvc:PieChart.VisualElements>
                             <lvc:VisualsCollection>
                                 <lvc:XamlNeedle x:Name="gaugeNeedle" Width="20"/>

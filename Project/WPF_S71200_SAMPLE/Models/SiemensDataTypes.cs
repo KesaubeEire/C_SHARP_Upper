@@ -23,10 +23,21 @@ public static class SiemensDataTypes
         ["REAL"]   = new("REAL",   4, 4),
         ["LREAL"]  = new("LREAL",  8, 8),
         ["TIME"]   = new("TIME",   4, 4),
-        ["DATE"]   = new("DATE",   4, 4),
+        ["DATE"]   = new("DATE",   2, 2),
         ["TOD"]    = new("TOD",    4, 4),
+        ["S5TIME"] = new("S5TIME", 4, 2),
         ["DT"]     = new("DT",     8, 8),
         ["DTL"]    = new("DTL",   12, 4),
+        ["LWORD"]  = new("LWORD",  8, 2),
+        ["LINT"]   = new("LINT",   8, 2),
+        ["ULINT"]  = new("ULINT",  8, 2),
+        ["IEC_TIMER"]    = new("IEC_TIMER",    16, 2),
+        ["IEC_LTIMER"]   = new("IEC_LTIMER",   20, 2),
+        ["IEC_SCOUNTER"] = new("IEC_SCOUNTER", 16, 2),
+        ["IEC_COUNTER"]  = new("IEC_COUNTER",  16, 2),
+        ["IEC_DCOUNTER"] = new("IEC_DCOUNTER", 16, 2),
+        ["IEC_LCOUNTER"] = new("IEC_LCOUNTER", 24, 2),
+        ["IEC_SSCOUNTER"]= new("IEC_SSCOUNTER",22, 2),
     };
 
     /// <summary>字符串默认长度</summary>
@@ -65,7 +76,7 @@ public static class SiemensDataTypes
                 int lo = int.Parse(m.Groups[1].Value);
                 int hi = int.Parse(m.Groups[2].Value);
                 int count = hi - lo + 1;
-                string elemType = m.Groups[3].Value.Trim();
+                string elemType = m.Groups[3].Value.Trim().Trim('"');
                 if (TryResolve(elemType, out int elemSize, out int elemAlign))
                 {
                     size = count * elemSize;

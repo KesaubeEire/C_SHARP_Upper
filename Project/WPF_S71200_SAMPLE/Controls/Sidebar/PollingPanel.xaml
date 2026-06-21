@@ -19,26 +19,27 @@
                        VerticalAlignment="Center"/>
         </Grid>
 
-        <Grid Margin="0,0,0,8">
+        <Grid Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="txtInterval" Text="50" Style="{StaticResource SidebarInput}" Height="28"/>
+            <TextBox x:Name="txtInterval" Text="50" Style="{StaticResource SidebarInput}" Height="28" Margin="20,10,10,10"/>
             <TextBlock Grid.Column="1" Text="ms" Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+                       VerticalAlignment="Center" Margin="8,0,20,0"/>
         </Grid>
 
         <Button x:Name="btnStartPoll" Content="▶ 启动轮询"
                 Style="{StaticResource MaterialDesignRaisedButton}"
                 Background="{DynamicResource AccentGreen}" Foreground="White"
                 Height="36" FontWeight="Bold" Click="OnStartPoll"
+                Margin="20,0"
                 IsEnabled="False"/>
         <Button x:Name="btnStopPoll" Content="■ 停止轮询"
                 Style="{StaticResource MaterialDesignRaisedButton}"
                 Background="{DynamicResource AccentRed}" Foreground="White"
-                Height="36" FontWeight="Bold" Click="OnStopPoll"
-                IsEnabled="False" Margin="0,8,0,0"/>
+                Height="36" FontWeight="Bold" Click="OnStopPoll" 
+                IsEnabled="False" Margin="20,8,20,0"/>
 
         <Border Background="{DynamicResource CardBackground}" CornerRadius="4"
                 Padding="8,6" Margin="0,8,0,0">

@@ -8,6 +8,7 @@
         xmlns:sidebar="clr-namespace:TestWpf.Controls.Sidebar"
         xmlns:trend="clr-namespace:TestWpf.Controls.Trend"
         xmlns:gauge="clr-namespace:TestWpf.Controls.Gauge"
+        xmlns:dbpanel="clr-namespace:TestWpf.Controls.DbPanel"
         mc:Ignorable="d"
         d:DesignWidth="1060" d:DesignHeight="820"
         Title="S7-1200 读写工具"
@@ -83,6 +84,7 @@
                     <TabItem Header="📋 I/Q/M 区" Style="{StaticResource TabHeader}"/>
                     <TabItem Header="📈 趋势图" Style="{StaticResource TabHeader}"/>
                     <TabItem Header="📊 仪表盘" Style="{StaticResource TabHeader}"/>
+                    <TabItem Header="📦 DB 块" Style="{StaticResource TabHeader}"/>
                 </TabControl>
             </Border>
 
@@ -113,6 +115,9 @@
 
                 <!-- Tab 2: 仪表盘 -->
                 <gauge:GaugePanel x:Name="gaugePanel" Visibility="Collapsed"/>
+
+                <!-- Tab 3: DB 块读取 -->
+                <dbpanel:DbPanel x:Name="dbPanel" Visibility="Collapsed"/>
             </Grid>
         </Grid>
     </Grid>

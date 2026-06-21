@@ -16,6 +16,11 @@ namespace TestWpf.Controls.Trend;
 
 /// <summary>
 /// 趋势图面板 — 通道列表 + 趋势图 + 时间范围 + 水平仪表 + 柱状图
+///
+/// 数据模型：ObservableValue（只有 Y 值，X 自动按序号索引）
+///   - 每个数据点只存归一化的 double，X 轴 = 点在缓冲中的序号
+///   - 时间窗口 → 点数：100ms 间隔下 1min=600点, 5min=3000点, ...
+///   - X 轴标签显示相对时间：索引 × 100ms → "mm:ss" 格式
 /// </summary>
 public partial class TrendPanel : UserControl
 {
@@ -23,14 +28,21 @@ public partial class TrendPanel : UserControl
     private readonly ObservableCollection<TrendChannelConfig> _trendChannels = [];
     private readonly ObservableCollection<ISeries> _trendSeries = [];
     private readonly ObservableCollection<ISeries> _barSeriesColl = [];
-    private readonly Dictionary<string, ObservableCollection<DateTimePoint>> _trendNormBuffers = [];
+    private readonly Dictionary<string, ObservableCollection<ObservableValue>> _trendBuffers = [];
 
-    private static readonly (string label, int windowMs)[] TimeRangeOptions = [
-        ("1 分钟",   60_000), ("5 分钟",   300_000), ("30 分钟",  1_800_000),
-        ("1 小时",   3_600_000), ("12 小时",  43_200_000), ("24 小时",  86_400_000),
+    /// <summary>Mock 数据间隔，用于 X 轴标签的时间推算</summary>
+    private const int MockIntervalMs = 100;
+
+    /// <summary>时间范围选项：标签 / 毫秒窗口 / 对应点数(100ms间隔)</summary>
+    private static readonly (string label, int windowMs, int maxPoints)[] TimeRangeOptions = [
+        ("1 分钟",   60_000,     600),
+        ("5 分钟",   300_000,    3_000),
+        ("30 分钟",  1_800_000,  18_000),
+        ("1 小时",   3_600_000,  36_000),
+        ("12 小时",  43_200_000, 432_000),
+        ("24 小时",  86_400_000, 864_000),
     ];
-    private int _trendTimeWindowMs = 60_000;
-    private const int MaxBufferPoints = 864000;
+    private int _trendWindowPoints = 600;   // 当前窗口对应的最大点数
 
     /// <summary>缓存的 X 轴引用，避免每帧重建 Axis[]</summary>
     private Axis? _cachedXAxis;
@@ -48,29 +60,95 @@ public partial class TrendPanel : UserControl
         InitTrend();
     }
 
+    // ===== 公开 API：外部数据源接入 =====
+
+    /// <summary>
+    /// 注册一个动态通道（例如来自 DB 变量监控的数据）。
+    /// 自动扩展柱状图。
+    /// </summary>
+    public void AddChannel(string key, string label, double min, double max, string unit, SKColor color)
+    {
+        if (_trendBuffers.ContainsKey(key)) return;
+
+        var buf = new ObservableCollection<ObservableValue>();
+        _trendBuffers[key] = buf;
+        _trendChannels.Add(new TrendChannelConfig
+        {
+            Key = key, Label = label, Color = color.ToString(), Unit = unit,
+            Min = min, Max = max, Variable = key
+        });
+        _trendSeries.Add(new LineSeries<ObservableValue>
+        {
+            Values = buf,
+            Stroke = new SolidColorPaint(color) { StrokeThickness = 2 },
+            Fill = null, GeometrySize = 0, LineSmoothness = 0.3, Name = label
+        });
+
+        // 扩展柱状图（追加一条柱 + 标签）
+        var col = (ColumnSeries<double>)_barSeriesColl[0];
+        var vals = (ObservableCollection<double>)col.Values!;
+        vals.Add(0);
+        var axis = cartesianBars.XAxes?.FirstOrDefault() as Axis;
+        if (axis?.Labels != null)
+        {
+            var labels = axis.Labels.ToList();
+            labels.Add(label);
+            axis.Labels = labels;
+        }
+    }
+
+    /// <summary>
+    /// 从外部数据源（VariableMonitor 等）喂数据。
+    /// 自动归一化、缓冲、裁剪、滑动 X 轴、更新柱状图。
+    /// </summary>
+    public void FeedData(string key, double val, DateTime ts)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => FeedData(key, val, ts));
+            return;
+        }
+
+        var cfg = _trendChannels.FirstOrDefault(c => c.Key == key);
+        if (cfg == null) return;
+        double range = cfg.Max - cfg.Min;
+        double norm = range > 0 ? Math.Clamp((val - cfg.Min) / range * 100.0, 0, 100) : 50;
+        if (!_trendBuffers.TryGetValue(key, out var buf)) return;
+        buf.Add(new ObservableValue(norm));
+        TrimBuffer(buf);
+        cfg.CurrentValue = val;
+        SlideTrendXAxis();
+
+        // 更新柱状图：把所有通道的最新值填入
+        var col = (ColumnSeries<double>)_barSeriesColl[0];
+        var vals = (ObservableCollection<double>)col.Values!;
+        int idx = _trendChannels.IndexOf(cfg);
+        if (idx >= 0 && idx < vals.Count)
+            vals[idx] = val;
+    }
+
+    // ===== 初始化 =====
+
     private void InitTrend()
     {
+        // 去掉 temp/press/level，保留 flow/servo/current + DB 通道动态添加
         var defs = new (string key, string label, string color, string unit, double min, double max)[]
         {
-            ("ch_temp",   "Reactor Temp",   "#E24B4A", "°C",    60.0, 110.0),
-            ("ch_press",  "Pressure",        "#37D3E0", "bar",    0.0,  16.0),
             ("ch_flow",   "Feed Flow",       "#1D9E75", "m³/h",   0.0,  50.0),
-            ("ch_level",  "Tank Level",      "#F4D03F", "%",      0.0, 100.0),
             ("ch_servo",  "Servo Pos",       "#3498DB", "mm",   -10.0,  90.0),
             ("ch_current","Motor Current",   "#9B59B6", "A",      0.0,  25.0),
         };
         int idx = 0;
         foreach (var (key, label, color, unit, min, max) in defs)
         {
-            var buf = new ObservableCollection<DateTimePoint>();
-            _trendNormBuffers[key] = buf;
+            var buf = new ObservableCollection<ObservableValue>();
+            _trendBuffers[key] = buf;
             _trendChannels.Add(new TrendChannelConfig
             {
                 Key = key, Label = label, Color = color, Unit = unit,
                 Min = min, Max = max, Variable = key
             });
-            double range = max - min;
-            _trendSeries.Add(new LineSeries<DateTimePoint>
+            _trendSeries.Add(new LineSeries<ObservableValue>
             {
                 Values = buf,
                 Stroke = new SolidColorPaint(TrendColors[idx++ % TrendColors.Length]) { StrokeThickness = 2 },
@@ -80,11 +158,10 @@ public partial class TrendPanel : UserControl
         listTrendChannels.ItemsSource = _trendChannels;
         cmbTrendTimeRange.ItemsSource = TimeRangeOptions.Select(o => o.label).ToList();
         cmbTrendTimeRange.SelectedIndex = 0;
-        _trendTimeWindowMs = TimeRangeOptions[0].windowMs;
+        _trendWindowPoints = TimeRangeOptions[0].maxPoints;
         cartesianTrend.Series = _trendSeries;
 
         // ── Y 轴配置 ──
-        // 归一化后显示 0~100%，Labeler 格式化刻度标签
         cartesianTrend.YAxes = [
             new Axis
             {
@@ -98,11 +175,11 @@ public partial class TrendPanel : UserControl
         cartesianTrend.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
         cartesianTrend.TooltipBackgroundPaint = new SolidColorPaint(new SKColor(40, 40, 40, 230));
 
-        // 首次创建 X 轴并缓存引用
-        _cachedXAxis = MakeAxis(DateTime.Now.Ticks - TimeSpan.FromMilliseconds(_trendTimeWindowMs).Ticks, DateTime.Now.Ticks, _trendTimeWindowMs);
+        // 首次创建 X 轴（基于点数，非 DateTime）
+        _cachedXAxis = MakeAxis(0, _trendWindowPoints, _trendWindowPoints);
         cartesianTrend.XAxes = [_cachedXAxis];
 
-        var barVals = new ObservableCollection<double> { 0, 0, 0, 0, 0, 0 };
+        var barVals = new ObservableCollection<double> { 0, 0, 0 };
         _barSeriesColl.Add(new ColumnSeries<double>
         {
             Values = barVals,
@@ -112,7 +189,7 @@ public partial class TrendPanel : UserControl
         cartesianBars.Series = _barSeriesColl;
         cartesianBars.XAxes = [new Axis
         {
-            Labels = ["Temp", "Press", "Flow", "Level", "Servo", "Curr."],
+            Labels = ["Flow", "Servo", "Curr."],
             LabelsRotation = 45,
             LabelsPaint = new SolidColorPaint(SKColors.LightGray),
         }];
@@ -128,6 +205,8 @@ public partial class TrendPanel : UserControl
         _gaugeDrawn = false;
     }
 
+    // ===== 数据到达 =====
+
     private void OnSample(string key, double val, DateTime ts)
     {
         Dispatcher.Invoke(() =>
@@ -136,34 +215,30 @@ public partial class TrendPanel : UserControl
             if (cfg == null) return;
             double range = cfg.Max - cfg.Min;
             double norm = range > 0 ? Math.Clamp((val - cfg.Min) / range * 100.0, 0, 100) : 50;
-            if (!_trendNormBuffers.TryGetValue(key, out var buf)) return;
-            buf.Add(new DateTimePoint(ts, norm));
+            if (!_trendBuffers.TryGetValue(key, out var buf)) return;
 
-            // 按时间窗口裁剪缓冲：只保留当前窗口 2 倍范围内的数据
-            TrimBufferByTime(buf);
-
+            buf.Add(new ObservableValue(norm));
+            TrimBuffer(buf);
             cfg.CurrentValue = val;
-
-            // 滑动 X 轴：复用缓存的 Axis 对象，不新建数组
             SlideTrendXAxis();
 
             var col = (ColumnSeries<double>)_barSeriesColl[0];
             var vals = (ObservableCollection<double>)col.Values!;
-            int bi = key switch
-            {
-                "ch_temp" => 0, "ch_press" => 1, "ch_flow" => 2,
-                "ch_level" => 3, "ch_servo" => 4, "ch_current" => 5, _ => -1
-            };
-            if (bi >= 0) vals[bi] = val;
+            // 更新柱状图：按通道在列表中的动态索引
+            int bi = _trendChannels.IndexOf(cfg);
+            if (bi >= 0 && bi < vals.Count) vals[bi] = val;
             if (key == "ch_servo") UpdateGaugeNeedle(val);
         });
     }
 
-    /// <summary>按时间窗口裁剪缓冲，只保留当前窗口 2 倍的数据</summary>
-    private void TrimBufferByTime(ObservableCollection<DateTimePoint> buf)
+    /// <summary>
+    /// 裁剪缓冲：只保留当前窗口 2 倍的点数。
+    /// ObservableValue 没有时间戳，直接用 Count 判断。
+    /// </summary>
+    private void TrimBuffer(ObservableCollection<ObservableValue> buf)
     {
-        var cutoff = DateTime.Now - TimeSpan.FromMilliseconds(_trendTimeWindowMs * 2L);
-        while (buf.Count > 0 && buf[0].DateTime < cutoff)
+        int maxKeep = _trendWindowPoints * 2;
+        while (buf.Count > maxKeep)
             buf.RemoveAt(0);
     }
 
@@ -189,51 +264,64 @@ public partial class TrendPanel : UserControl
     {
         int idx = cmbTrendTimeRange.SelectedIndex;
         if (idx < 0 || idx >= TimeRangeOptions.Length) return;
-        _trendTimeWindowMs = TimeRangeOptions[idx].windowMs;
+        _trendWindowPoints = TimeRangeOptions[idx].maxPoints;
 
-        // 重新创建 X 轴（窗口变了，标签格式也要变）
-        var window = TimeSpan.FromMilliseconds(_trendTimeWindowMs);
-        double now = DateTime.Now.Ticks;
-        _cachedXAxis = MakeAxis(now - window.Ticks, now, _trendTimeWindowMs);
+        // 重建 X 轴：范围 0 ~ maxPoints，标签格式按窗口自适应
+        _cachedXAxis = MakeAxis(0, _trendWindowPoints, _trendWindowPoints);
         cartesianTrend.XAxes = [_cachedXAxis];
     }
 
     /// <summary>
     /// 创建 X 轴实例。
-    /// 使用 TimeSpan 避免 int 乘法溢出（_trendTimeWindowMs × 10_000 超过 int.MaxValue）。
-    /// 标签格式根据时间窗口自适应。
+    /// X 轴数据 = 点的序号索引（0, 1, 2, ...），
+    /// Labeler 将序号转为相对时间字符串（索引 × 100ms）。
     /// </summary>
-    private static Axis MakeAxis(double min, double max, int timeWindowMs)
+    private static Axis MakeAxis(double min, double max, int windowPoints)
     {
         // 根据窗口大小选择时间格式
-        string format = timeWindowMs switch
+        // 每点 = 100ms，所以 totalSeconds = windowPoints / 10
+        int totalSeconds = windowPoints / 10;
+        string format = totalSeconds switch
         {
-            <= 300_000  => "HH:mm:ss",       // ≤5分钟：显示秒
-            <= 3_600_000 => "HH:mm",          // ≤1小时：显示分
-            _            => "MM/dd HH:mm",    // >1小时：显示日期+时分
+            <= 300    => @"mm\:ss",       // ≤5分钟：分:秒
+            <= 3600   => @"mm\:ss",       // ≤1小时：分:秒
+            _         => @"hh\:mm\:ss",   // >1小时：时:分:秒
         };
 
         return new Axis
         {
             MinLimit = min,
             MaxLimit = max,
-            Labeler = v => new DateTime((long)v).ToLocalTime().ToString(format),
+            // 序号 → 相对时间：索引 × 100ms
+            Labeler = v =>
+            {
+                long ms = (long)(v * MockIntervalMs);
+                var span = TimeSpan.FromMilliseconds(ms);
+                // 超过1小时显示 hh:mm:ss，否则显示 mm:ss
+                if (span.TotalHours >= 1)
+                    return span.ToString(@"hh\:mm\:ss");
+                return span.ToString(@"mm\:ss");
+            },
         };
     }
 
     /// <summary>
-    /// 滑动 X 轴时间窗口。
-    /// 复用 _cachedXAxis 对象（修改现有属性），
-    /// 不创建新 Axis 数组，减少 LiveCharts2 内部重布局开销。
+    /// 滑动 X 轴窗口。
+    /// 以当前所有通道中最大的点数为 MaxLimit，往前推窗口大小。
     /// </summary>
     private void SlideTrendXAxis()
     {
         if (_cachedXAxis == null) return;
 
-        var window = TimeSpan.FromMilliseconds(_trendTimeWindowMs);
-        double now = DateTime.Now.Ticks;
-        _cachedXAxis.MinLimit = now - window.Ticks;
-        _cachedXAxis.MaxLimit = now;
+        // 找到所有通道中最新的点数
+        int maxCount = 0;
+        foreach (var buf in _trendBuffers.Values)
+        {
+            if (buf.Count > maxCount) maxCount = buf.Count;
+        }
+
+        _cachedXAxis.MinLimit = Math.Max(0, maxCount - _trendWindowPoints);
+        _cachedXAxis.MaxLimit = Math.Max(maxCount, _trendWindowPoints);
     }
 
     // ===== 水平轴仪表 =====
