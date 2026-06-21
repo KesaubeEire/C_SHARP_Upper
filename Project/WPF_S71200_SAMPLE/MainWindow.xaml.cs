@@ -1,11 +1,15 @@
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
+using LiveChartsCore;
+using LiveChartsCore.Defaults;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using LiveChartsCore.SkiaSharpView.WPF;
+using SkiaSharp;
 using TestWpf.Models;
 using TestWpf.Controls;
 using TestWpf.Services;
@@ -28,23 +32,35 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<DbPollItem> _dbItems = [];
     private readonly ObservableCollection<DbStructure> _importedDbs = [];
     private readonly ObservableCollection<UdtStructure> _importedUdts = [];
-    private readonly System.Timers.Timer _liveRefreshTimer = new(200); // 200ms 刷新实时显示
+    private readonly System.Timers.Timer _liveRefreshTimer = new(200);
     private readonly ObservableCollection<string> _fastLiveItems = [];
     private readonly ObservableCollection<string> _dbLiveItems = [];
 
+    // ─── 趋势图 ───
+    private readonly MockTrendService _mockTrend = new(100);
+    private readonly ObservableCollection<TrendChannelConfig> _trendChannels = [];
+    private readonly ObservableCollection<ISeries> _trendSeries = [];
+    private readonly ObservableCollection<ISeries> _barSeriesColl = [];
+    private readonly Dictionary<string, ObservableCollection<DateTimePoint>> _trendBuffers = [];
+    private readonly int _trendMaxPoints = 300;
+
     private readonly AppConfig _config = AppConfig.Load();
+    private static readonly SKColor[] TrendColors =
+    [
+        SKColors.Crimson, SKColors.Cyan, SKColors.SeaGreen,
+        SKColors.Gold, SKColors.DodgerBlue, SKColors.MediumPurple,
+    ];
 
     public MainWindow()
     {
         InitializeComponent();
+        InitTrendPanel();
 
-        // 手动
         listIRows.ItemsSource = _iRows;
         listQRows.ItemsSource = _qRows;
         listMRows.ItemsSource = _mRows;
         UpdateEmptyState();
 
-        // 自动轮询
         listDbItems.ItemsSource = _dbItems;
         listImportedDb.ItemsSource = _importedDbs;
         listImportedUdt.ItemsSource = _importedUdts;
@@ -53,142 +69,137 @@ public partial class MainWindow : Window
         _liveRefreshTimer.Elapsed += (_, _) => Dispatcher.Invoke(RefreshLiveData);
         UpdateDbEmptyState();
 
-        // Tab 切换
         tabControl.SelectionChanged += TabControl_SelectionChanged;
-
-        // ===== 从配置恢复所有用户输入 =====
         RestoreFromConfig();
     }
 
-    /// <summary>从配置文件恢复所有 UI 状态</summary>
-    private void RestoreFromConfig()
+    // ====================== 趋势图 ======================
+
+    private void InitTrendPanel()
     {
-        // 连接
-        txtIP.Text = _config.IP;
-        txtPort.Text = _config.Port.ToString();
-        txtRack.Text = _config.Rack.ToString();
-        txtSlot.Text = _config.Slot.ToString();
-
-        // 手动模式地址
-        txtIAddress.Text = _config.ManualIAddress;
-        txtQAddress.Text = _config.ManualQAddress;
-        txtMAddress.Text = _config.ManualMAddress;
-
-        // 自动轮询范围
-        txtIStart.Text = _config.PollIStart.ToString();
-        txtIEnd.Text = _config.PollIEnd.ToString();
-        txtQStart.Text = _config.PollQStart.ToString();
-        txtQEnd.Text = _config.PollQEnd.ToString();
-        txtMStart.Text = _config.PollMStart.ToString();
-        txtMEnd.Text = _config.PollMEnd.ToString();
-        chkI.IsChecked = _config.PollEnableI;
-        chkQ.IsChecked = _config.PollEnableQ;
-        chkM.IsChecked = _config.PollEnableM;
-        txtPollInterval.Text = _config.PollIntervalMs.ToString();
-
-        // DB 列表
-        _dbItems.Clear();
-        foreach (var item in _config.DbItems)
-            _dbItems.Add(item);
-
-        // 导入的 DB 结构
-        _importedDbs.Clear();
-        foreach (var info in _config.ImportedDbs)
+        var defs = new[]
         {
-            var db = new DbStructure
+            ("ch_temp",  "Reactor Temp",  "#E24B4A", "°C",   60.0, 110.0),
+            ("ch_press", "Pressure",      "#37D3E0", "bar",    0.0,  16.0),
+            ("ch_flow",  "Feed Flow",     "#1D9E75", "m³/h",  0.0,  50.0),
+            ("ch_level", "Tank Level",    "#F4D03F", "%",     0.0, 100.0),
+        };
+
+        int idx = 0;
+        foreach (var (key, label, color, unit, min, max) in defs)
+        {
+            var buf = new ObservableCollection<DateTimePoint>();
+            _trendBuffers[key] = buf;
+            _trendChannels.Add(new TrendChannelConfig { Key = key, Label = label, Color = color, Unit = unit, Min = min, Max = max, Variable = key });
+            _trendSeries.Add(new LineSeries<DateTimePoint>
             {
-                DbNumber = info.DbNumber,
-                DbName = info.DbName,
-                SourceFile = info.SourceFile,
-                Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(info.VariablesJson) ?? []
-            };
-            _importedDbs.Add(db);
+                Values = buf,
+                Stroke = new SolidColorPaint(TrendColors[idx % TrendColors.Length]) { StrokeThickness = 2 },
+                Fill = null, GeometrySize = 0, LineSmoothness = 0.3, Name = label,
+            });
+            idx++;
         }
 
-        // 导入的 UDT 结构
-        _importedUdts.Clear();
-        foreach (var info in _config.ImportedUdts)
+        _trendBuffers["ch_servo"] = new ObservableCollection<DateTimePoint>();
+        _trendChannels.Add(new TrendChannelConfig { Key = "ch_servo", Label = "Servo Pos", Color = "#3498DB", Unit = "mm", Min = -10, Max = 90, Variable = "ch_servo" });
+        _trendBuffers["ch_current"] = new ObservableCollection<DateTimePoint>();
+        _trendChannels.Add(new TrendChannelConfig { Key = "ch_current", Label = "Motor Current", Color = "#9B59B6", Unit = "A", Min = 0, Max = 25, Variable = "ch_current" });
+
+        listTrendChannels.ItemsSource = _trendChannels;
+
+        cartesianTrend.Series = _trendSeries;
+        cartesianTrend.XAxes = [new Axis
         {
-            var udt = new UdtStructure
+            Labeler = l =>
             {
-                UdtName = info.UdtName,
-                SourceFile = info.SourceFile,
-                Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(info.VariablesJson) ?? []
-            };
-            _importedUdts.Add(udt);
-        }
-        UpdateDbEmptyState();
+                if (l > DateTime.MaxValue.Ticks) return "";
+                if (l < DateTime.MinValue.Ticks) return "";
+                return new DateTime((long)l).ToString("HH:mm:ss");
+            },
+        }];
+        cartesianTrend.YAxes = [new Axis()];
+        cartesianTrend.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
 
-        // 主题
-        if (_config.ThemeMode == "Light")
-        {
-            ThemeManager.Apply(TestWpf.Services.AppThemeMode.Light);
-            btnTheme.Content = "☀";
-        }
+        var barVals = new ObservableCollection<double> { 0, 0, 0, 0, 0, 0 };
+        _barSeriesColl.Add(new ColumnSeries<double> { Values = barVals, Fill = new SolidColorPaint(SKColor.Parse("#3498DB")), Padding = 2, MaxBarWidth = 40 });
+        cartesianBars.Series = _barSeriesColl;
+        cartesianBars.XAxes = [new Axis { Labels = ["Temp", "Press", "Flow", "Level", "Servo", "Curr."], LabelsRotation = 45 }];
+        cartesianBars.YAxes = [new Axis { MinLimit = 0 }];
 
-        // 窗口状态
-        if (_config.WindowLeft >= 0 && _config.WindowTop >= 0)
-        {
-            Left = _config.WindowLeft;
-            Top = _config.WindowTop;
-        }
-        Width = _config.WindowWidth;
-        Height = _config.WindowHeight;
-        if (Enum.TryParse<WindowState>(_config.WindowState, out var ws))
-            WindowState = ws;
+        _mockTrend.SampleGenerated += OnTrendSample;
+        DrawGaugeScale(45.0);
     }
 
-    /// <summary>把当前 UI 状态保存到配置文件</summary>
-    private void SaveConfig()
+    private void OnTrendSample(string key, double val, DateTime ts)
     {
-        _config.IP = txtIP.Text;
-        _config.Port = TryParse(txtPort.Text, 102);
-        _config.Rack = TryParse(txtRack.Text, 0);
-        _config.Slot = TryParse(txtSlot.Text, 0);
-
-        _config.ManualIAddress = txtIAddress.Text;
-        _config.ManualQAddress = txtQAddress.Text;
-        _config.ManualMAddress = txtMAddress.Text;
-
-        _config.PollIStart = TryParse(txtIStart.Text, 0);
-        _config.PollIEnd = TryParse(txtIEnd.Text, 2);
-        _config.PollQStart = TryParse(txtQStart.Text, 0);
-        _config.PollQEnd = TryParse(txtQEnd.Text, 1);
-        _config.PollMStart = TryParse(txtMStart.Text, 0);
-        _config.PollMEnd = TryParse(txtMEnd.Text, 10);
-        _config.PollEnableI = chkI.IsChecked == true;
-        _config.PollEnableQ = chkQ.IsChecked == true;
-        _config.PollEnableM = chkM.IsChecked == true;
-        _config.PollIntervalMs = TryParse(txtPollInterval.Text, 50);
-
-        _config.DbItems = _dbItems.ToList();
-
-        // 导入的 DB 结构
-        _config.ImportedDbs = _importedDbs.Select(d => new ImportedDbInfo
+        Dispatcher.Invoke(() =>
         {
-            DbNumber = d.DbNumber,
-            DbName = d.DbName,
-            SourceFile = d.SourceFile,
-            VariablesJson = System.Text.Json.JsonSerializer.Serialize(d.Variables)
-        }).ToList();
+            if (!_trendBuffers.TryGetValue(key, out var buf)) return;
+            buf.Add(new DateTimePoint(ts, val));
+            while (buf.Count > _trendMaxPoints) buf.RemoveAt(0);
 
-        // 导入的 UDT 结构
-        _config.ImportedUdts = _importedUdts.Select(u => new ImportedUdtInfo
+            var col = (ColumnSeries<double>)_barSeriesColl[0];
+            var vals = (ObservableCollection<double>)col.Values!;
+            int bi = key switch { "ch_temp" => 0, "ch_press" => 1, "ch_flow" => 2, "ch_level" => 3, "ch_servo" => 4, "ch_current" => 5, _ => -1 };
+            if (bi >= 0) vals[bi] = val;
+            if (key == "ch_servo") DrawGaugeScale(val);
+        });
+    }
+
+    private void BtnTrendMock_Click(object sender, RoutedEventArgs e)
+    {
+        if (_mockTrend.IsRunning) { _mockTrend.Stop(); btnTrendMock.Content = "▶ 启动 Mock"; }
+        else { _mockTrend.Start(); btnTrendMock.Content = "■ 停止 Mock"; }
+    }
+
+    private void DrawGaugeScale(double needlePos)
+    {
+        var canvas = canvasGauge;
+        if (canvas.ActualWidth < 10) return;
+        double w = canvas.ActualWidth, h = canvas.ActualHeight;
+        double left = double.TryParse(txtGaugeLeft.Text, out var l) ? l : 0;
+        double right = double.TryParse(txtGaugeRight.Text, out var r) ? r : 100;
+        int ticks = int.TryParse(txtGaugeTicks.Text, out var tc) ? tc : 10;
+        if (ticks < 2) ticks = 2;
+        txtGaugePos.Text = $"{needlePos:F1} mm";
+        canvas.Children.Clear();
+
+        double pad = 20, drawW = w - pad * 2, range = right - left;
+        if (range <= 0) range = 100;
+
+        for (int i = 0; i <= ticks; i++)
         {
-            UdtName = u.UdtName,
-            SourceFile = u.SourceFile,
-            VariablesJson = System.Text.Json.JsonSerializer.Serialize(u.Variables)
-        }).ToList();
+            double frac = (double)i / ticks, x = pad + drawW * frac;
+            var tick = new Line { X1 = x, Y1 = 0, X2 = x, Y2 = h * 0.35, Stroke = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)), StrokeThickness = 1 };
+            canvas.Children.Add(tick);
+            if (ticks <= 10 || i % 2 == 0)
+            {
+                double val = left + range * frac;
+                var lbl = new TextBlock { Text = $"{val:F0}", FontSize = 8, Foreground = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)) };
+                Canvas.SetLeft(lbl, x - 12); Canvas.SetTop(lbl, h * 0.38);
+                canvas.Children.Add(lbl);
+            }
+        }
 
-        _config.ThemeMode = ThemeManager.Current == TestWpf.Services.AppThemeMode.Dark ? "Dark" : "Light";
+        double nFrac = Math.Clamp((needlePos - left) / range, 0, 1), nx = pad + drawW * nFrac;
 
-        _config.WindowLeft = Left;
-        _config.WindowTop = Top;
-        _config.WindowWidth = Width;
-        _config.WindowHeight = Height;
-        _config.WindowState = WindowState.ToString();
+        var needle = new System.Windows.Shapes.Rectangle
+        {
+            Width = 3, Height = h * 0.55, Fill = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)), RadiusX = 2, RadiusY = 2,
+        };
+        Canvas.SetLeft(needle, nx - 1.5); Canvas.SetTop(needle, h * 0.4);
+        canvas.Children.Add(needle);
 
-        _config.Save();
+        var tri = new Polygon
+        {
+            Points = new PointCollection { new(nx - 5, h * 0.4 + 10), new(nx + 5, h * 0.4 + 10), new(nx, h * 0.4 - 2) },
+            Fill = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)),
+        };
+        canvas.Children.Add(tri);
+
+        var valLbl = new TextBlock { Text = $"{needlePos:F1}", FontSize = 10, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)) };
+        Canvas.SetLeft(valLbl, Math.Clamp(nx - 15, 0, w - 35)); Canvas.SetTop(valLbl, 0);
+        canvas.Children.Add(valLbl);
     }
 
     // ====================== Tab 切换 ======================
@@ -196,15 +207,17 @@ public partial class MainWindow : Window
     private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         bool isAuto = tabControl.SelectedIndex == 1;
-        manualPanel.Visibility = isAuto ? Visibility.Collapsed : Visibility.Visible;
+        bool isTrend = tabControl.SelectedIndex == 2;
+        manualPanel.Visibility = (isAuto || isTrend) ? Visibility.Collapsed : Visibility.Visible;
         autoPanel.Visibility = isAuto ? Visibility.Visible : Visibility.Collapsed;
+        trendPanel.Visibility = isTrend ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ====================== 主题切换 ======================
 
     private void BtnTheme_Click(object sender, RoutedEventArgs e)
     {
-        bool isDark = ThemeManager.Current == TestWpf.Services.AppThemeMode.Dark;
+        bool isDark = ThemeManager.Current == AppThemeMode.Dark;
         ThemeManager.Toggle();
         btnTheme.Content = isDark ? "☀" : "🌙";
         btnTheme.ToolTip = isDark ? "切换到暗色主题" : "切换到亮色主题";
@@ -219,28 +232,12 @@ public partial class MainWindow : Window
         if (!int.TryParse(txtPort.Text.Trim(), out int port)) port = 102;
         if (!int.TryParse(txtRack.Text.Trim(), out int rack)) rack = 0;
         if (!int.TryParse(txtSlot.Text.Trim(), out int slot)) slot = 0;
-
         int result = _plc.Connect(ip, port, rack, slot);
-        if (result != 0)
-        {
-            MessageBox.Show(this, $"连接失败:\n{_plc.LastError ?? "错误码: " + result}", "连接错误");
-            UpdateConnectionUI();
-            return;
-        }
-
-        SetConnected(ip, port);
-        UpdateConnectionUI();
-        SaveConfig();
+        if (result != 0) { MessageBox.Show(this, $"连接失败:\n{_plc.LastError ?? "错误码: " + result}", "连接错误"); UpdateConnectionUI(); return; }
+        SetConnected(ip, port); UpdateConnectionUI(); SaveConfig();
     }
 
-    private void BtnDisconnect_Click(object sender, RoutedEventArgs e)
-    {
-        StopPolling();
-        _plc.Disconnect();
-        SetDisconnected();
-        UpdateConnectionUI();
-        SaveConfig();
-    }
+    private void BtnDisconnect_Click(object sender, RoutedEventArgs e) { StopPolling(); _plc.Disconnect(); SetDisconnected(); UpdateConnectionUI(); SaveConfig(); }
 
     private void SetConnected(string ip, int port)
     {
@@ -259,13 +256,9 @@ public partial class MainWindow : Window
     private void UpdateConnectionUI()
     {
         bool conn = _plc.IsConnected;
-        btnConnect.IsEnabled = !conn;
-        btnDisconnect.IsEnabled = conn;
-        btnIRead.IsEnabled = conn;
-        btnQRead.IsEnabled = conn;
-        btnQWriteMode.IsEnabled = conn;
-        btnMRead.IsEnabled = conn;
-        btnMWriteMode.IsEnabled = conn;
+        btnConnect.IsEnabled = !conn; btnDisconnect.IsEnabled = conn;
+        btnIRead.IsEnabled = conn; btnQRead.IsEnabled = conn; btnQWriteMode.IsEnabled = conn;
+        btnMRead.IsEnabled = conn; btnMWriteMode.IsEnabled = conn;
         btnStartPoll.IsEnabled = conn && !_scheduler.IsRunning;
         btnStopPoll.IsEnabled = conn && _scheduler.IsRunning;
     }
@@ -275,20 +268,16 @@ public partial class MainWindow : Window
     private static int[] ParseAddrs(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return [];
-        return input.Split(',', '，', ';', '；', ' ')
-            .Select(s => s.Trim()).Where(s => int.TryParse(s, out _))
-            .Select(int.Parse).Distinct().OrderBy(a => a).ToArray();
+        return input.Split(',', '，', ';', '；', ' ').Select(s => s.Trim())
+            .Where(s => int.TryParse(s, out _)).Select(int.Parse).Distinct().OrderBy(a => a).ToArray();
     }
-
-    // ====================== 手动：I 区 ======================
 
     private void BtnIRead_Click(object sender, RoutedEventArgs e)
     {
         int[] addrs = ParseAddrs(txtIAddress.Text);
         if (addrs.Length == 0) { MessageBox.Show(this, "请输入有效的字节地址", "提示"); return; }
         _lastIBytes = _plc.ReadBytes(S7Service.AreaI, addrs);
-        UpdateRows(_iRows, addrs, _lastIBytes, "I", true);
-        UpdateEmptyState();
+        UpdateRows(_iRows, addrs, _lastIBytes, "I", true); UpdateEmptyState();
     }
 
     private void BtnQRead_Click(object sender, RoutedEventArgs e)
@@ -296,8 +285,7 @@ public partial class MainWindow : Window
         int[] addrs = ParseAddrs(txtQAddress.Text);
         if (addrs.Length == 0) { MessageBox.Show(this, "请输入有效的字节地址", "提示"); return; }
         _lastQBytes = _plc.ReadBytes(S7Service.AreaQ, addrs);
-        UpdateRows(_qRows, addrs, _lastQBytes, "Q", false);
-        UpdateEmptyState();
+        UpdateRows(_qRows, addrs, _lastQBytes, "Q", false); UpdateEmptyState();
     }
 
     private void BtnQWriteMode_Click(object sender, RoutedEventArgs e)
@@ -305,8 +293,8 @@ public partial class MainWindow : Window
         _qWriteMode = !_qWriteMode;
         btnQWriteMode.Content = _qWriteMode ? "🔓 写入模式 (开)" : "🔒 写入模式 (关)";
         btnQWriteMode.Background = _qWriteMode
-            ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C))   // 红色-警示
-            : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));  // 灰色
+            ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C))
+            : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
     }
 
     private void BtnMRead_Click(object sender, RoutedEventArgs e)
@@ -314,8 +302,7 @@ public partial class MainWindow : Window
         int[] addrs = ParseAddrs(txtMAddress.Text);
         if (addrs.Length == 0) { MessageBox.Show(this, "请输入有效的字节地址", "提示"); return; }
         _lastMBytes = _plc.ReadBytes(S7Service.AreaM, addrs);
-        UpdateRows(_mRows, addrs, _lastMBytes, "M", false);
-        UpdateEmptyState();
+        UpdateRows(_mRows, addrs, _lastMBytes, "M", false); UpdateEmptyState();
     }
 
     private void BtnMWriteMode_Click(object sender, RoutedEventArgs e)
@@ -331,24 +318,17 @@ public partial class MainWindow : Window
     {
         if (sender is not Border b || b.DataContext is not BitViewModel bit) return;
         if (bit.Parent == null) return;
-
-        // I 区：只读不响应点击；Q/M 区：仅在写入模式下才响应并立即写入
-        bool canWrite = (bit.Parent.AreaLabel == "Q" && _qWriteMode)
-                     || (bit.Parent.AreaLabel == "M" && _mWriteMode);
+        bool canWrite = (bit.Parent.AreaLabel == "Q" && _qWriteMode) || (bit.Parent.AreaLabel == "M" && _mWriteMode);
         if (!canWrite) return;
-
         bit.Toggle();
-        // 立即写入 PLC
         int area = bit.Parent.AreaLabel == "Q" ? S7Service.AreaQ : S7Service.AreaM;
         _plc.WriteByte(area, bit.Parent.ByteAddress, bit.Parent.ToByte());
     }
 
-    private void UpdateRows(ObservableCollection<ByteRowViewModel> rows, int[] addrs,
-                            Dictionary<int, byte> data, string label, bool ro)
+    private void UpdateRows(ObservableCollection<ByteRowViewModel> rows, int[] addrs, Dictionary<int, byte> data, string label, bool ro)
     {
         rows.Clear();
-        foreach (int a in addrs)
-            rows.Add(new ByteRowViewModel(a, label, ro) { Value = data.GetValueOrDefault(a, (byte)0) });
+        foreach (int a in addrs) rows.Add(new ByteRowViewModel(a, label, ro) { Value = data.GetValueOrDefault(a, (byte)0) });
     }
 
     private void UpdateEmptyState()
@@ -358,241 +338,146 @@ public partial class MainWindow : Window
         txtMEmpty.Visibility = _mRows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    // ====================== 自动轮询：DB 增删 ======================
+    // ====================== 自动轮询 ======================
 
     private void BtnAddDb_Click(object sender, RoutedEventArgs e)
     {
-        int dbNum = TryParse(txtNewDbNumber.Text, 1);
-        int offset = TryParse(txtNewDbOffset.Text, 0);
-        int length = TryParse(txtNewDbLen.Text, 100);
-
-        if (_dbItems.Any(d => d.DbNumber == dbNum && d.Offset == offset))
-        {
-            MessageBox.Show(this, $"DB{dbNum} @{offset} 已在列表中", "提示");
-            return;
-        }
-
-        var item = new DbPollItem
-        {
-            DbNumber = dbNum,
-            Offset = offset,
-            Length = Math.Min(length, 222),
-            Status = "待启动"
-        };
-        _dbItems.Add(item);
+        int dbNum = TryParse(txtNewDbNumber.Text, 1), offset = TryParse(txtNewDbOffset.Text, 0), length = TryParse(txtNewDbLen.Text, 100);
+        if (_dbItems.Any(d => d.DbNumber == dbNum && d.Offset == offset)) { MessageBox.Show(this, $"DB{dbNum} @{offset} 已在列表中", "提示"); return; }
+        _dbItems.Add(new DbPollItem { DbNumber = dbNum, Offset = offset, Length = Math.Min(length, 222), Status = "待启动" });
         UpdateDbEmptyState();
-        txtNewDbNumber.Text = (dbNum + 1).ToString();
-        SaveConfig();
+        txtNewDbNumber.Text = (dbNum + 1).ToString(); SaveConfig();
     }
 
     private void BtnRemoveDb_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is DbPollItem item)
-        {
-            _dbItems.Remove(item);
-            SaveConfig();
-            UpdateDbEmptyState();
-        }
+        if (sender is Button btn && btn.Tag is DbPollItem item) { _dbItems.Remove(item); SaveConfig(); UpdateDbEmptyState(); }
     }
 
-    private void UpdateDbEmptyState()
-        => txtDbEmpty.Visibility = _dbItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-
-    // ====================== 导入 DB/UDT ======================
+    private void UpdateDbEmptyState() => txtDbEmpty.Visibility = _dbItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     private void BtnImportDb_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new Microsoft.Win32.OpenFileDialog
-        {
-            Filter = "DB 文件 (*.db)|*.db|所有文件 (*.*)|*.*",
-            Title = "选择 TIA Portal 导出的 .db 文件",
-            Multiselect = false
-        };
-
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "DB 文件 (*.db)|*.db|所有文件 (*.*)|*.*", Title = "选择 TIA Portal 导出的 .db 文件", Multiselect = false };
         if (dlg.ShowDialog(this) != true) return;
-
         var db = DbFileParser.Parse(dlg.FileName);
-        if (db.HasUnknownType)
-        {
-            MessageBox.Show(this, $"解析失败: {db.ParseError}", "未知数据类型",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-        if (db.ParseError != null)
-        {
-            MessageBox.Show(this, $"解析失败: {db.ParseError}", "错误",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
-        // 让用户输入 DB 号
+        if (db.HasUnknownType) { MessageBox.Show(this, $"解析失败: {db.ParseError}", "未知数据类型", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (db.ParseError != null) { MessageBox.Show(this, $"解析失败: {db.ParseError}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return; }
         var inputDlg = new InputDialog($"请输入 DB{db.DbName} 的 DB 编号:", "1");
         if (inputDlg.ShowDialog() != true) return;
-        if (!int.TryParse(inputDlg.InputText, out int dbNum) || dbNum <= 0)
-        {
-            MessageBox.Show(this, "无效的 DB 编号", "错误");
-            return;
-        }
-
-        // 检查是否已存在
-        if (_importedDbs.Any(d => d.DbNumber == dbNum))
-        {
-            MessageBox.Show(this, $"DB{dbNum} 已导入，请先删除再重新导入", "提示");
-            return;
-        }
-
-        db.DbNumber = dbNum;
-        _importedDbs.Add(db);
-        SaveConfig();
+        if (!int.TryParse(inputDlg.InputText, out int dbNum) || dbNum <= 0) { MessageBox.Show(this, "无效的 DB 编号", "错误"); return; }
+        if (_importedDbs.Any(d => d.DbNumber == dbNum)) { MessageBox.Show(this, $"DB{dbNum} 已导入，请先删除再重新导入", "提示"); return; }
+        db.DbNumber = dbNum; _importedDbs.Add(db); SaveConfig();
     }
 
     private void BtnImportUdt_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new Microsoft.Win32.OpenFileDialog
-        {
-            Filter = "UDT 文件 (*.udt)|*.udt|所有文件 (*.*)|*.*",
-            Title = "选择 TIA Portal 导出的 .udt 文件",
-            Multiselect = false
-        };
-
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "UDT 文件 (*.udt)|*.udt|所有文件 (*.*)|*.*", Title = "选择 TIA Portal 导出的 .udt 文件", Multiselect = false };
         if (dlg.ShowDialog(this) != true) return;
-
         var udt = UdtFileParser.Parse(dlg.FileName);
-        if (udt.HasUnknownType)
-        {
-            MessageBox.Show(this, $"解析失败: {udt.ParseError}", "未知数据类型",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-        if (udt.ParseError != null)
-        {
-            MessageBox.Show(this, $"解析失败: {udt.ParseError}", "错误",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
-        if (_importedUdts.Any(u => u.UdtName == udt.UdtName))
-        {
-            MessageBox.Show(this, $"UDT \"{udt.UdtName}\" 已导入", "提示");
-            return;
-        }
-
-        _importedUdts.Add(udt);
-        SaveConfig();
+        if (udt.HasUnknownType) { MessageBox.Show(this, $"解析失败: {udt.ParseError}", "未知数据类型", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (udt.ParseError != null) { MessageBox.Show(this, $"解析失败: {udt.ParseError}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+        if (_importedUdts.Any(u => u.UdtName == udt.UdtName)) { MessageBox.Show(this, $"UDT \"{udt.UdtName}\" 已导入", "提示"); return; }
+        _importedUdts.Add(udt); SaveConfig();
     }
 
-    private void BtnDeleteImportedDb_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is DbStructure db)
-        {
-            _importedDbs.Remove(db);
-            SaveConfig();
-        }
-    }
-
-    private void BtnDeleteImportedUdt_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is UdtStructure udt)
-        {
-            _importedUdts.Remove(udt);
-            SaveConfig();
-        }
-    }
-
-    // ====================== 自动轮询：启动/停止 ======================
+    private void BtnDeleteImportedDb_Click(object sender, RoutedEventArgs e) { if (sender is Button btn && btn.Tag is DbStructure db) { _importedDbs.Remove(db); SaveConfig(); } }
+    private void BtnDeleteImportedUdt_Click(object sender, RoutedEventArgs e) { if (sender is Button btn && btn.Tag is UdtStructure udt) { _importedUdts.Remove(udt); SaveConfig(); } }
 
     private void BtnStartPoll_Click(object sender, RoutedEventArgs e)
     {
-        if (!_plc.IsConnected)
-        {
-            MessageBox.Show(this, "请先连接 PLC", "提示");
-            return;
-        }
-
-        // 读取 Fast Path 配置
-        int iS = TryParse(txtIStart.Text, 0), iE = TryParse(txtIEnd.Text, 2);
-        int qS = TryParse(txtQStart.Text, 0), qE = TryParse(txtQEnd.Text, 1);
-        int mS = TryParse(txtMStart.Text, 0), mE = TryParse(txtMEnd.Text, 10);
-
+        if (!_plc.IsConnected) { MessageBox.Show(this, "请先连接 PLC", "提示"); return; }
+        int iS = TryParse(txtIStart.Text, 0), iE = TryParse(txtIEnd.Text, 2), qS = TryParse(txtQStart.Text, 0), qE = TryParse(txtQEnd.Text, 1), mS = TryParse(txtMStart.Text, 0), mE = TryParse(txtMEnd.Text, 10);
         var cfg = _scheduler.Config;
         cfg.Fast.IStart = iS; cfg.Fast.IEnd = iE; cfg.Fast.EnableI = chkI.IsChecked == true;
         cfg.Fast.QStart = qS; cfg.Fast.QEnd = qE; cfg.Fast.EnableQ = chkQ.IsChecked == true;
         cfg.Fast.MStart = mS; cfg.Fast.MEnd = mE; cfg.Fast.EnableM = chkM.IsChecked == true;
-
-        // 同步 DB 配置
         cfg.DbItems.Clear();
-        foreach (var item in _dbItems)
-            cfg.DbItems.Add(item);
-
-        // 启动（通过已有连接的信息）
-        string ip = txtIP.Text.Trim();
-        int port = TryParse(txtPort.Text, 102);
-        int rack = TryParse(txtRack.Text, 0);
-        int slot = TryParse(txtSlot.Text, 0);
-
-        _scheduler.Start(ip, port, rack, slot);
-        if (!_scheduler.IsConnected)
-        {
-            MessageBox.Show(this, $"轮询连接失败:\n{_scheduler.LastError}", "错误");
-            return;
-        }
-
-        // 启动实时显示刷新
+        foreach (var item in _dbItems) cfg.DbItems.Add(item);
+        _scheduler.Start(txtIP.Text.Trim(), TryParse(txtPort.Text, 102), TryParse(txtRack.Text, 0), TryParse(txtSlot.Text, 0));
+        if (!_scheduler.IsConnected) { MessageBox.Show(this, $"轮询连接失败:\n{_scheduler.LastError}", "错误"); return; }
         _liveRefreshTimer.Start();
-        txtPollStatus.Text = "● 轮询中";
-        txtPollStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x27, 0xAE, 0x60));
+        txtPollStatus.Text = "● 轮询中"; txtPollStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x27, 0xAE, 0x60));
         UpdateConnectionUI();
     }
 
-    private void BtnStopPoll_Click(object sender, RoutedEventArgs e)
-    {
-        StopPolling();
-    }
+    private void BtnStopPoll_Click(object sender, RoutedEventArgs e) { StopPolling(); }
 
     private void StopPolling()
     {
-        _scheduler.Stop();
-        _liveRefreshTimer.Stop();
-        txtPollStatus.Text = "■ 已停止";
-        txtPollStatus.Foreground = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C));
+        _scheduler.Stop(); _liveRefreshTimer.Stop();
+        txtPollStatus.Text = "■ 已停止"; txtPollStatus.Foreground = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C));
         UpdateConnectionUI();
     }
-
-    // ====================== 实时数据刷新 ======================
 
     private void RefreshLiveData()
     {
         var values = _scheduler.LastValues;
         if (values.Count == 0) { txtLiveEmpty.Visibility = Visibility.Visible; return; }
         txtLiveEmpty.Visibility = Visibility.Collapsed;
-
-        // Fast Path (I/Q/M)
         _fastLiveItems.Clear();
-        var fastKeys = values.Keys.Where(k => k.StartsWith('I') || k.StartsWith('Q') || k.StartsWith('M'))
-                                  .OrderBy(k => k).Take(50);
-        foreach (var key in fastKeys)
-            _fastLiveItems.Add($"{key}: 0x{values[key]:X2}");
-
-        // DB
+        foreach (var key in values.Keys.Where(k => k[0] is 'I' or 'Q' or 'M').OrderBy(k => k).Take(50)) _fastLiveItems.Add($"{key}: 0x{values[key]:X2}");
         _dbLiveItems.Clear();
-        var dbKeys = values.Keys.Where(k => k.StartsWith("DB")).OrderBy(k => k).Take(80);
-        foreach (var key in dbKeys)
-            _dbLiveItems.Add($"{key}: 0x{values[key]:X2}");
+        foreach (var key in values.Keys.Where(k => k.StartsWith("DB")).OrderBy(k => k).Take(80)) _dbLiveItems.Add($"{key}: 0x{values[key]:X2}");
     }
 
-    // ====================== 工具 ======================
+    // ====================== 工具 + 关闭 ======================
 
-    private static int TryParse(string s, int def) =>
-        int.TryParse(s?.Trim(), out int r) ? r : def;
-
-    // ====================== 窗口关闭 ======================
+    private static int TryParse(string s, int def) => int.TryParse(s?.Trim(), out int r) ? r : def;
 
     protected override void OnClosed(EventArgs e)
     {
-        SaveConfig();
-        _scheduler.Dispose();
-        _plc.Dispose();
-        _liveRefreshTimer.Dispose();
+        _mockTrend.SampleGenerated -= OnTrendSample;
+        SaveConfig(); _scheduler.Dispose(); _plc.Dispose(); _liveRefreshTimer.Dispose(); _mockTrend.Dispose();
         base.OnClosed(e);
+    }
+
+    // ====================== 配置持久化 ======================
+
+    private void RestoreFromConfig()
+    {
+        txtIP.Text = _config.IP; txtPort.Text = _config.Port.ToString();
+        txtRack.Text = _config.Rack.ToString(); txtSlot.Text = _config.Slot.ToString();
+        txtIAddress.Text = _config.ManualIAddress; txtQAddress.Text = _config.ManualQAddress; txtMAddress.Text = _config.ManualMAddress;
+        txtIStart.Text = _config.PollIStart.ToString(); txtIEnd.Text = _config.PollIEnd.ToString();
+        txtQStart.Text = _config.PollQStart.ToString(); txtQEnd.Text = _config.PollQEnd.ToString();
+        txtMStart.Text = _config.PollMStart.ToString(); txtMEnd.Text = _config.PollMEnd.ToString();
+        chkI.IsChecked = _config.PollEnableI; chkQ.IsChecked = _config.PollEnableQ; chkM.IsChecked = _config.PollEnableM;
+        txtPollInterval.Text = _config.PollIntervalMs.ToString();
+        _dbItems.Clear(); foreach (var item in _config.DbItems) _dbItems.Add(item);
+        _importedDbs.Clear();
+        foreach (var info in _config.ImportedDbs)
+        {
+            var db = new DbStructure { DbNumber = info.DbNumber, DbName = info.DbName, SourceFile = info.SourceFile, Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(info.VariablesJson) ?? [] };
+            _importedDbs.Add(db);
+        }
+        _importedUdts.Clear();
+        foreach (var info in _config.ImportedUdts)
+        {
+            var udt = new UdtStructure { UdtName = info.UdtName, SourceFile = info.SourceFile, Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(info.VariablesJson) ?? [] };
+            _importedUdts.Add(udt);
+        }
+        UpdateDbEmptyState();
+        if (_config.ThemeMode == "Light") { ThemeManager.Apply(AppThemeMode.Light); btnTheme.Content = "☀"; }
+        if (_config.WindowLeft >= 0 && _config.WindowTop >= 0) { Left = _config.WindowLeft; Top = _config.WindowTop; }
+        Width = _config.WindowWidth; Height = _config.WindowHeight;
+        if (Enum.TryParse<WindowState>(_config.WindowState, out var ws)) WindowState = ws;
+    }
+
+    private void SaveConfig()
+    {
+        _config.IP = txtIP.Text; _config.Port = TryParse(txtPort.Text, 102); _config.Rack = TryParse(txtRack.Text, 0); _config.Slot = TryParse(txtSlot.Text, 0);
+        _config.ManualIAddress = txtIAddress.Text; _config.ManualQAddress = txtQAddress.Text; _config.ManualMAddress = txtMAddress.Text;
+        _config.PollIStart = TryParse(txtIStart.Text, 0); _config.PollIEnd = TryParse(txtIEnd.Text, 2);
+        _config.PollQStart = TryParse(txtQStart.Text, 0); _config.PollQEnd = TryParse(txtQEnd.Text, 1);
+        _config.PollMStart = TryParse(txtMStart.Text, 0); _config.PollMEnd = TryParse(txtMEnd.Text, 10);
+        _config.PollEnableI = chkI.IsChecked == true; _config.PollEnableQ = chkQ.IsChecked == true; _config.PollEnableM = chkM.IsChecked == true;
+        _config.PollIntervalMs = TryParse(txtPollInterval.Text, 50);
+        _config.DbItems = _dbItems.ToList();
+        _config.ImportedDbs = _importedDbs.Select(d => new ImportedDbInfo { DbNumber = d.DbNumber, DbName = d.DbName, SourceFile = d.SourceFile, VariablesJson = System.Text.Json.JsonSerializer.Serialize(d.Variables) }).ToList();
+        _config.ImportedUdts = _importedUdts.Select(u => new ImportedUdtInfo { UdtName = u.UdtName, SourceFile = u.SourceFile, VariablesJson = System.Text.Json.JsonSerializer.Serialize(u.Variables) }).ToList();
+        _config.ThemeMode = ThemeManager.Current == AppThemeMode.Dark ? "Dark" : "Light";
+        _config.WindowLeft = Left; _config.WindowTop = Top; _config.WindowWidth = Width; _config.WindowHeight = Height; _config.WindowState = WindowState.ToString();
+        _config.Save();
     }
 }
