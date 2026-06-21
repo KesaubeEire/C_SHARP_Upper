@@ -1,9 +1,12 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace TestWpf.Models;
 
 /// <summary>
 /// 趋势图通道配置（对标 Trioop TrendChannel）
 /// </summary>
-public class TrendChannelConfig
+public class TrendChannelConfig : INotifyPropertyChanged
 {
     public string Key { get; set; } = "";
     public string Label { get; set; } = "";
@@ -15,7 +18,19 @@ public class TrendChannelConfig
     public bool Enabled { get; set; } = true;
     public int DbNumber { get; set; }
     public int ByteOffset { get; set; }
-    public string DataType { get; set; } = "real"; // real / int / dint / word / bool
+    public string DataType { get; set; } = "real";
+
+    private double _currentValue;
+    public double CurrentValue
+    {
+        get => _currentValue;
+        set { _currentValue = value; OnPropertyChanged(); OnPropertyChanged(nameof(CurrentValueText)); }
+    }
+
+    public string CurrentValueText => $"{_currentValue:F1}{Unit}";
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? n = null) => PropertyChanged?.Invoke(this, new(n));
 }
 
 /// <summary>

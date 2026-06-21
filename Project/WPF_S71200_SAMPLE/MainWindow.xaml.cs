@@ -40,8 +40,19 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<TrendChannelConfig> _trendChannels = [];
     private readonly ObservableCollection<ISeries> _trendSeries = [];
     private readonly ObservableCollection<ISeries> _barSeriesColl = [];
-    private readonly Dictionary<string, ObservableCollection<DateTimePoint>> _trendBuffers = [];
-    private const int TrendMaxPoints = 300;
+    // Normalized 0-100 buffers — 每个通道独立归一化到全图高度
+    private readonly Dictionary<string, ObservableCollection<DateTimePoint>> _trendNormBuffers = [];
+
+    private static readonly (string label, int windowMs)[] TimeRangeOptions = [
+        ("1 分钟",   60_000),
+        ("5 分钟",   300_000),
+        ("30 分钟",  1_800_000),
+        ("1 小时",   3_600_000),
+        ("12 小时",  43_200_000),
+        ("24 小时",  86_400_000),
+    ];
+    private int _trendTimeWindowMs = 60_000;
+    private const int MaxBufferPoints = 864000; // 24h @ 100ms
 
     private readonly AppConfig _config = AppConfig.Load();
     private static readonly SKColor[] TrendColors = [SKColors.Crimson, SKColors.Cyan, SKColors.SeaGreen, SKColors.Gold, SKColors.DodgerBlue, SKColors.MediumPurple];
@@ -76,45 +87,45 @@ public partial class MainWindow : Window
     {
         var defs = new (string key, string label, string color, string unit, double min, double max)[]
         {
-            ("ch_temp",  "Reactor Temp",  "#E24B4A", "°C",   60.0, 110.0),
-            ("ch_press", "Pressure",      "#37D3E0", "bar",    0.0,  16.0),
-            ("ch_flow",  "Feed Flow",     "#1D9E75", "m³/h",  0.0,  50.0),
-            ("ch_level", "Tank Level",    "#F4D03F", "%",     0.0, 100.0),
+            ("ch_temp",   "Reactor Temp",   "#E24B4A", "°C",    60.0, 110.0),
+            ("ch_press",  "Pressure",        "#37D3E0", "bar",    0.0,  16.0),
+            ("ch_flow",   "Feed Flow",       "#1D9E75", "m³/h",   0.0,  50.0),
+            ("ch_level",  "Tank Level",      "#F4D03F", "%",      0.0, 100.0),
+            ("ch_servo",  "Servo Pos",       "#3498DB", "mm",   -10.0,  90.0),
+            ("ch_current","Motor Current",   "#9B59B6", "A",      0.0,  25.0),
         };
 
         int idx = 0;
         foreach (var (key, label, color, unit, min, max) in defs)
         {
-            var buf = new ObservableCollection<DateTimePoint>();
-            _trendBuffers[key] = buf;
+            var normBuf = new ObservableCollection<DateTimePoint>();
+            _trendNormBuffers[key] = normBuf;
             _trendChannels.Add(new TrendChannelConfig { Key = key, Label = label, Color = color, Unit = unit, Min = min, Max = max, Variable = key });
+            // Captured in closure for tooltip, no extra field needed
+            double range = max - min;
             _trendSeries.Add(new LineSeries<DateTimePoint>
             {
-                Values = buf,
+                Values = normBuf,
                 Stroke = new SolidColorPaint(TrendColors[idx % TrendColors.Length]) { StrokeThickness = 2 },
                 Fill = null, GeometrySize = 0, LineSmoothness = 0.3, Name = label,
             });
             idx++;
         }
-        _trendBuffers["ch_servo"] = new ObservableCollection<DateTimePoint>();
-        _trendChannels.Add(new TrendChannelConfig { Key = "ch_servo", Label = "Servo Pos", Color = "#3498DB", Unit = "mm", Min = -10, Max = 90, Variable = "ch_servo" });
-        _trendBuffers["ch_current"] = new ObservableCollection<DateTimePoint>();
-        _trendChannels.Add(new TrendChannelConfig { Key = "ch_current", Label = "Motor Current", Color = "#9B59B6", Unit = "A", Min = 0, Max = 25, Variable = "ch_current" });
 
         listTrendChannels.ItemsSource = _trendChannels;
 
-        // X 轴 Labeler：防御 LiveCharts 传入越界/NaN/Inf ticks
-        static string SafeTimeLabel(double v)
-        {
-            if (v <= 0 || v > 1e18 || double.IsNaN(v) || double.IsInfinity(v))
-                return "";
-            return new DateTime((long)v).ToLocalTime().ToString("HH:mm:ss");
-        }
+        // 时间范围下拉
+        cmbTrendTimeRange.ItemsSource = TimeRangeOptions.Select(o => o.label).ToList();
+        cmbTrendTimeRange.SelectedIndex = 0;
+        _trendTimeWindowMs = TimeRangeOptions[0].windowMs;
 
         cartesianTrend.Series = _trendSeries;
-        cartesianTrend.XAxes = [new Axis { Labeler = SafeTimeLabel }];
-        cartesianTrend.YAxes = [new Axis()];
+        // Y 轴固定 0-100：每条通道各自将 [min,max] 归一化到全图高度
+        cartesianTrend.YAxes = [new Axis { MinLimit = 0, MaxLimit = 100, Labeler = _ => "" }];
         cartesianTrend.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
+
+        // 初始显示当前时间范围的 X 轴窗口
+        UpdateTrendXAxis();
 
         var barVals = new ObservableCollection<double> { 0, 0, 0, 0, 0, 0 };
         _barSeriesColl.Add(new ColumnSeries<double> { Values = barVals, Fill = new SolidColorPaint(SKColor.Parse("#3498DB")), Padding = 2, MaxBarWidth = 40 });
@@ -130,9 +141,22 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
-            if (!_trendBuffers.TryGetValue(key, out var buf)) return;
-            buf.Add(new DateTimePoint(ts, val));
-            while (buf.Count > TrendMaxPoints) buf.RemoveAt(0);
+            var cfg = _trendChannels.FirstOrDefault(c => c.Key == key);
+            if (cfg == null) return;
+
+            // 按 Trioop TrendRecorder 方式：每个通道 [min,max] 归一化到 [0,100]
+            double range = cfg.Max - cfg.Min;
+            double norm = range > 0 ? Math.Clamp((val - cfg.Min) / range * 100.0, 0, 100) : 50;
+
+            if (!_trendNormBuffers.TryGetValue(key, out var buf)) return;
+            buf.Add(new DateTimePoint(ts, norm));
+            while (buf.Count > MaxBufferPoints) buf.RemoveAt(0);
+
+            // 更新通道配置的 CurrentValue（左侧列表实时显示）
+            cfg.CurrentValue = val;
+
+            // 滑动 X 轴窗口
+            SlideTrendXAxis();
 
             var col = (ColumnSeries<double>)_barSeriesColl[0];
             var vals = (ObservableCollection<double>)col.Values!;
@@ -146,6 +170,38 @@ public partial class MainWindow : Window
     {
         if (_mockTrend.IsRunning) { _mockTrend.Stop(); btnTrendMock.Content = "▶ 启动 Mock"; }
         else { _mockTrend.Start(); btnTrendMock.Content = "■ 停止 Mock"; }
+    }
+
+    private void CmbTrendTimeRange_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        int idx = cmbTrendTimeRange.SelectedIndex;
+        if (idx < 0 || idx >= TimeRangeOptions.Length) return;
+        _trendTimeWindowMs = TimeRangeOptions[idx].windowMs;
+        UpdateTrendXAxis();
+    }
+
+    private void UpdateTrendXAxis()
+    {
+        double now = DateTime.Now.Ticks;
+        double start = now - _trendTimeWindowMs * 10_000;
+        cartesianTrend.XAxes = [MakeTrendAxis(start, now)];
+    }
+
+    private void SlideTrendXAxis()
+    {
+        double now = DateTime.Now.Ticks;
+        double start = now - _trendTimeWindowMs * 10_000;
+        cartesianTrend.XAxes = [MakeTrendAxis(start, now)];
+    }
+
+    private static Axis MakeTrendAxis(double min, double max)
+    {
+        static string Labeler(double v)
+        {
+            if (v <= 0 || v > 1e18 || double.IsNaN(v) || double.IsInfinity(v)) return "";
+            return new DateTime((long)v).ToLocalTime().ToString("HH:mm:ss");
+        }
+        return new Axis { MinLimit = min, MaxLimit = max, Labeler = Labeler };
     }
 
     private void DrawGaugeScale(double needlePos)

@@ -682,7 +682,14 @@
                                 <!-- Channel 列表 -->
                                 <StackPanel>
                                     <TextBlock Text="📡 通道配置" FontSize="15" FontWeight="Bold"
-                                               Foreground="{DynamicResource AccentBlue}" Margin="0,0,0,10"/>
+                                               Foreground="{DynamicResource AccentBlue}" Margin="0,0,0,8"/>
+                                    <ComboBox x:Name="cmbTrendTimeRange"
+                                              Background="{DynamicResource InputBackground}"
+                                              Foreground="{DynamicResource TextPrimary}"
+                                              BorderBrush="{DynamicResource CardBorder}"
+                                              Height="28" Padding="6,2"
+                                              Margin="0,0,0,8"
+                                              SelectionChanged="CmbTrendTimeRange_Changed"/>
                                     <ItemsControl x:Name="listTrendChannels">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -691,12 +698,13 @@
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="14"/>
+                                                            <ColumnDefinition Width="Auto"/>
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
                                                         <Ellipse Grid.Column="0" Width="10" Height="10"
                                                                  Fill="{Binding Color}" VerticalAlignment="Center"/>
-                                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                                        <StackPanel Grid.Column="1" Margin="6,0,4,0">
                                                             <TextBlock Text="{Binding Label}" FontSize="12"
                                                                        FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
                                                             <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}">
@@ -707,9 +715,11 @@
                                                                 <Run Text="{Binding Unit}"/>
                                                             </TextBlock>
                                                         </StackPanel>
-                                                        <CheckBox Grid.Column="2"
-                                                                  IsChecked="{Binding Enabled}"
-                                                                  VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                                        <TextBlock Grid.Column="3"
+                                                                   Text="{Binding CurrentValueText}"
+                                                                   FontSize="14" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource AccentBlue}"
+                                                                   VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                                     </Grid>
                                                 </Border>
                                             </DataTemplate>
@@ -727,7 +737,7 @@
                                 <lvc:CartesianChart Grid.Column="1" x:Name="cartesianTrend"
                                                     Margin="16,0,0,0"
                                                     AnimationsSpeed="00:00:00.100"
-                                                    MinHeight="300"/>
+                                                    MinHeight="420"/>
                             </Grid>
                         </Border>
 
