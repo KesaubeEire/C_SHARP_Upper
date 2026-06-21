@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WPF 专业开发完全指南 + AI Agent 驱动开发（2025–2026）</title>
+<style>
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-hover: #f0edff;
+  --text: #1a1a2e;
+  --text-secondary: #555577;
+  --text-muted: #8888aa;
+  --primary: #6c5ce7;
+  --primary-light: #a29bfe;
+  --primary-soft: #f0edff;
+  --accent: #00b894;
+  --border: #e2e2ec;
+  --code-bg: #f4f4fa;
+  --shadow: rgba(0,0,0,.06);
+  --shadow-hover: rgba(108,92,231,.12);
+  --header-start: #6c5ce7;
+  --header-end: #a29bfe;
+  --ai-bg: #fffdf5;
+  --ai-border: #ffb300;
+  --tag-free: #e3faf5;
+  --tag-free-text: #00b894;
+  --tag-hot: #ffe0e0;
+  --tag-hot-text: #d63031;
+  --tag-ms: #e3f2fd;
+  --tag-ms-text: #1565c0;
+  --tag-ai: #fff8e1;
+  --tag-ai-text: #e67e22;
+  --toggle-bg: #e2e2ec;
+  --toggle-dot: #fff;
+  --scrollbar: #d0d0dd;
+}
+[data-theme="dark"] {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --surface-hover: #252540;
+  --text: #e4e4f0;
+  --text-secondary: #a0a0c0;
+  --text-muted: #6a6a8a;
+  --primary: #a29bfe;
+  --primary-light: #6c5ce7;
+  --primary-soft: #252540;
+  --accent: #00d2a0;
+  --border: #2a2a44;
+  --code-bg: #12121e;
+  --shadow: rgba(0,0,0,.25);
+  --shadow-hover: rgba(162,155,254,.15);
+  --header-start: #252540;
+  --header-end: #6c5ce7;
+  --ai-bg: #1a1a2e;
+  --ai-border: #e67e22;
+  --tag-free: #003d2e;
+  --tag-free-text: #00d2a0;
+  --tag-hot: #3d0000;
+  --tag-hot-text: #ff6b6b;
+  --tag-ms: #001a3d;
+  --tag-ms-text: #64b5f6;
+  --tag-ai: #3d2e00;
+  --tag-ai-text: #ffb74d;
+  --toggle-bg: #3a3a5a;
+  --toggle-dot: #a29bfe;
+  --scrollbar: #3a3a5a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  padding: 40px 20px;
+  transition: background .3s, color .3s;
+}
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
+::selection { background: var(--primary-light); color: #fff; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 1000px; margin: 0 auto; }
+
+.theme-toggle {
+  position: fixed; top: 20px; right: 20px; z-index: 999;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 30px; padding: 6px 14px 6px 18px;
+  cursor: pointer; font-size: .82rem;
+  color: var(--text-secondary);
+  box-shadow: 0 2px 12px var(--shadow);
+  transition: background .3s, border .3s, box-shadow .3s, color .3s;
+  user-select: none;
+}
+.theme-toggle:hover { box-shadow: 0 4px 20px var(--shadow-hover); }
+.theme-toggle .switch {
+  width: 36px; height: 20px;
+  background: var(--toggle-bg);
+  border-radius: 10px;
+  position: relative;
+  transition: background .3s;
+  flex-shrink: 0;
+}
+.theme-toggle .switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: var(--toggle-dot);
+  border-radius: 50%;
+  transition: transform .3s, background .3s;
+}
+[data-theme="dark"] .theme-toggle .switch::after { transform: translateX(16px); }
+.theme-toggle .icon { font-size: 1rem; line-height: 1; }
+
+.header {
+  text-align: center;
+  padding: 60px 30px 50px;
+  background: linear-gradient(135deg, var(--header-start) 0%, var(--header-end) 100%);
+  border-radius: 16px;
+  color: #fff;
+  margin-bottom: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(255,255,255,.08) 0%, transparent 50%);
+}
+.header h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: .5px; position: relative; }
+.header p { margin-top: 10px; opacity: .9; font-size: 1.05rem; position: relative; }
+.header .badge-row { margin-top: 16px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; position: relative; }
+.header .badge {
+  display: inline-block; padding: 5px 18px; border-radius: 20px;
+  background: rgba(255,255,255,.18); backdrop-filter: blur(4px);
+  font-size: .82rem; font-weight: 500;
+}
+.header .badge-ai {
+  display: inline-block; padding: 5px 18px; border-radius: 20px;
+  background: #ffb300; color: #1a1a2e; font-size: .82rem; font-weight: 700;
+}
+
+section {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  box-shadow: 0 1px 4px var(--shadow);
+  border: 1px solid var(--border);
+  transition: background .3s, border .3s, box-shadow .3s, transform .2s;
+}
+section:hover { box-shadow: 0 4px 24px var(--shadow-hover); }
+section.ai-section { border-left: 5px solid var(--ai-border); background: var(--ai-bg); }
+
+h2 {
+  font-size: 1.4rem;
+  color: var(--primary);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid var(--primary-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+h2 .num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--primary); color: #fff;
+  font-size: .85rem; font-weight: 700; flex-shrink: 0;
+}
+h2 .num-ai { background: var(--ai-border); color: #1a1a2e; }
+h3 { font-size: 1.1rem; margin: 24px 0 10px; color: var(--text); }
+h4 { font-size: .95rem; margin: 18px 0 8px; color: var(--text-secondary); }
+p { margin-bottom: 12px; color: var(--text-secondary); }
+ul, ol { padding-left: 22px; margin: 10px 0; }
+li { margin-bottom: 6px; color: var(--text-secondary); }
+
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .91rem; }
+thead th {
+  background: var(--primary-soft);
+  color: var(--primary);
+  text-align: left; padding: 11px 14px;
+  font-weight: 600; border-bottom: 2px solid var(--primary-light);
+}
+tbody td {
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  vertical-align: top; color: var(--text-secondary);
+}
+tbody tr { transition: background .15s; }
+tbody tr:hover { background: var(--surface-hover); }
+
+.tag {
+  display: inline-block; padding: 2px 10px; border-radius: 5px;
+  font-size: .76rem; font-weight: 600; margin-right: 4px; white-space: nowrap;
+}
+.tag-free { background: var(--tag-free); color: var(--tag-free-text); }
+.tag-rec { background: var(--primary); color: #fff; }
+.tag-hot { background: var(--tag-hot); color: var(--tag-hot-text); }
+.tag-ms { background: var(--tag-ms); color: var(--tag-ms-text); }
+.tag-ai { background: var(--tag-ai); color: var(--tag-ai-text); }
+.tag-new { background: var(--tag-ms); color: var(--tag-ms-text); }
+
+pre {
+  background: var(--code-bg); border-radius: 10px;
+  padding: 18px 20px; overflow-x: auto;
+  font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: .82rem; line-height: 1.6;
+  margin: 14px 0; border: 1px solid var(--border);
+  color: var(--text);
+  white-space: pre;
+}
+code {
+  font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: .85em; background: var(--code-bg);
+  padding: 2px 6px; border-radius: 4px; color: var(--primary);
+}
+
+.rec-box {
+  background: linear-gradient(135deg, var(--primary-soft) 0%, transparent 100%);
+  border-left: 5px solid var(--primary);
+  border-radius: 10px; padding: 18px 22px; margin: 18px 0;
+}
+.rec-box strong { color: var(--primary); }
+.rec-box.ai-rec {
+  background: linear-gradient(135deg, var(--tag-ai) 0%, transparent 100%);
+  border-left-color: var(--ai-border);
+}
+.rec-box.ai-rec strong { color: var(--tag-ai-text); }
+
+.file-tree {
+  font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  font-size: .81rem; line-height: 1.7;
+  background: var(--code-bg); border-radius: 10px;
+  padding: 16px 20px; margin: 14px 0;
+  border: 1px solid var(--border);
+  white-space: pre;
+}
+.file-tree .dir { color: var(--primary); }
+.file-tree .file { color: var(--text); }
+.file-tree .comment { color: var(--text-muted); font-style: italic; }
+
+.stack-card {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0; border: 2px solid var(--border);
+  border-radius: 10px; overflow: hidden; margin: 16px 0;
+}
+.stack-card .layer {
+  padding: 13px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.stack-card .layer:last-child { border-bottom: none; }
+.stack-card .layer:nth-child(even) { background: var(--surface-hover); }
+.stack-card .layer-name { font-weight: 600; color: var(--primary); font-size: .88rem; min-width: 100px; }
+.stack-card .layer-val { text-align: right; font-size: .87rem; color: var(--text-secondary); }
+.stack-card.ai-card { border-color: var(--ai-border); }
+.stack-card.ai-card .layer-name { color: var(--tag-ai-text); }
+
+.footer {
+  text-align: center; padding: 20px;
+  color: var(--text-muted); font-size: .84rem;
+}
+.footer a { color: var(--text-muted); }
+.footer a:hover { color: var(--primary); }
+
+.back-top {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-secondary); font-size: 1.1rem;
+  cursor: pointer; box-shadow: 0 2px 12px var(--shadow);
+  transition: opacity .3s, transform .3s;
+  opacity: 0; transform: translateY(10px); pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.back-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.back-top:hover { box-shadow: 0 4px 20px var(--shadow-hover); }
+
+@media (max-width: 768px) {
+  body { padding: 20px 12px; }
+  .header h1 { font-size: 1.5rem; }
+  .header { padding: 40px 20px 36px; }
+  section { padding: 22px 18px; }
+  .stack-card { grid-template-columns: 1fr; }
+  .stack-card .layer { flex-direction: column; align-items: flex-start; }
+  .stack-card .layer-val { text-align: left; }
+  .theme-toggle { top: 12px; right: 12px; padding: 4px 12px 4px 14px; font-size: .76rem; }
+}
+@media (max-width: 640px) {
+  table { font-size: .82rem; }
+  table thead { display: none; }
+  table tbody tr {
+    display: block; border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 10px; padding: 10px;
+  }
+  table tbody td { display: block; border: none; padding: 3px 0; }
+  table tbody td::before {
+    content: attr(data-label); font-weight: 600;
+    display: block; font-size: .78rem; color: var(--text-muted); margin-bottom: 1px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="theme-toggle" onclick="toggleTheme()" title="切换深浅色主题">
+  <span class="icon" id="themeIcon">☀️</span>
+  <span class="switch"></span>
+</div>
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <h1>WPF 专业开发完全指南</h1>
+  <p>MVVM 框架 · UI 组件库 · 项目模板 · AI Agent 驱动开发 · 完整选型</p>
+  <div class="badge-row">
+    <span class="badge">2025 – 2026 版</span>
+    <span class="badge-ai">🤖 AI Agent 驱动开发专题</span>
+  </div>
+</div>
+
+<!-- 1. MVVM FRAMEWORKS -->
+<section>
+<h2><span class="num">1</span> MVVM 框架选型</h2>
+<table>
+<thead><tr><th>框架</th><th>GitHub</th><th>适合场景</th><th>核心特点</th></tr></thead>
+<tbody>
+<tr><td data-label="框架"><strong>Prism</strong> <span class="tag tag-rec">推荐</span></td><td data-label="GitHub"><a href="https://github.com/PrismLibrary/Prism" target="_blank">PrismLibrary/Prism</a></td><td data-label="适合场景">大型企业级应用</td><td data-label="核心特点">模块化、Region 导航、DI、EventAggregator</td></tr>
+<tr><td data-label="框架"><strong>CommunityToolkit.Mvvm</strong> <span class="tag tag-ms">官方</span></td><td data-label="GitHub"><a href="https://github.com/CommunityToolkit/dotnet" target="_blank">dotnet/CommunityToolkit</a></td><td data-label="适合场景">中小型项目</td><td data-label="核心特点">Roslyn 源生成器、零反射、轻量</td></tr>
+<tr><td data-label="框架"><strong>ReactiveUI</strong></td><td data-label="GitHub"><a href="https://github.com/reactiveui/ReactiveUI" target="_blank">reactiveui/ReactiveUI</a></td><td data-label="适合场景">复杂异步 / 实时数据</td><td data-label="核心特点">Rx 响应式、ReactiveCommand、强类型绑定</td></tr>
+<tr><td data-label="框架"><strong>Catel</strong></td><td data-label="GitHub"><a href="https://github.com/Catel/Catel" target="_blank">Catel/Catel</a></td><td data-label="适合场景">全栈 Line-of-Business</td><td data-label="核心特点">IoC + MVVM + 日志 + 序列化 全家桶</td></tr>
+<tr><td data-label="框架"><strong>WAF</strong></td><td data-label="GitHub"><a href="https://github.com/jbe2277/waf" target="_blank">jbe2277/waf</a></td><td data-label="适合场景">强制架构规范</td><td data-label="核心特点">轻量、Validator、WeakEvent、ThrottledAction</td></tr>
+</tbody></table>
+<div class="rec-box">
+<strong>最佳组合（生产环境）</strong>：<code>Prism（导航/模块） + ReactiveUI（ViewModel 逻辑）</code>
+或 <code>Prism + CommunityToolkit.Mvvm</code>。<br><br>
+<strong>AI Agent 时代推荐</strong>：<code>CommunityToolkit.Mvvm</code> + 源生成器。Agent 生成 partial class 代码时比 Prism 的 boilerplate 错误率更低，编译器反馈更快。
+</div>
+</section>
+
+<!-- 2. UI LIBRARIES -->
+<section>
+<h2><span class="num">2</span> UI 控件库 / 主题框架</h2>
+<h3>开源免费（MIT License）</h3>
+<table>
+<thead><tr><th>库</th><th>Stars</th><th>设计风格</th><th>特点</th></tr></thead>
+<tbody>
+<tr><td data-label="库"><a href="https://github.com/lepoco/wpfui" target="_blank">WPF UI</a> <span class="tag tag-hot">HOT</span></td><td data-label="Stars">~9.4k</td><td data-label="设计风格">Windows 11 / Fluent Design</td><td data-label="特点">最热门现代 UI 库，导航/主题/控件齐全</td></tr>
+<tr><td data-label="库"><a href="https://github.com/MahApps/MahApps.Metro" target="_blank">MahApps.Metro</a></td><td data-label="Stars">~9.3k</td><td data-label="设计风格">Metro / Modern UI</td><td data-label="特点">13M+ NuGet 下载，稳定成熟</td></tr>
+<tr><td data-label="库"><a href="https://github.com/HandyOrg/HandyControl" target="_blank">HandyControl</a></td><td data-label="Stars">~7.1k</td><td data-label="设计风格">扁平现代</td><td data-label="特点">80+ 控件，dark/light 主题</td></tr>
+<tr><td data-label="库"><a href="https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit" target="_blank">MaterialDesignInXaml</a></td><td data-label="Stars">~4.4k</td><td data-label="设计风格">Material Design</td><td data-label="特点">10M+ 下载，动画丰富</td></tr>
+<tr><td data-label="库"><a href="https://github.com/Kinnara/ModernWpf" target="_blank">ModernWpf</a></td><td data-label="Stars">~4.9k</td><td data-label="设计风格">Win10/Win11 Fluent</td><td data-label="特点">一键现代化 WPF 应用</td></tr>
+<tr><td data-label="库"><a href="https://github.com/xceedsoftware/wpftoolkit" target="_blank">Extended WPF Toolkit</a></td><td data-label="Stars">~3.9k</td><td data-label="设计风格">企业控件集</td><td data-label="特点">"WPF 缺失控件"集合</td></tr>
+<tr><td data-label="库"><a href="https://github.com/ButchersBoy/Dragablz" target="_blank">Dragablz</a></td><td data-label="Stars">~2.2k</td><td data-label="设计风格">可拖拽 Tab</td><td data-label="特点">撕裂式 Tab + Docking</td></tr>
+<tr><td data-label="库"><a href="https://github.com/fluentribbon/Fluent.Ribbon" target="_blank">Fluent.Ribbon</a></td><td data-label="Stars">~2.5k</td><td data-label="设计风格">Office Ribbon</td><td data-label="特点">类似 Office 的 Ribbon 界面</td></tr>
+</tbody></table>
+
+<h3>商业控件套件</h3>
+<table>
+<thead><tr><th>产品</th><th>控件数</th><th>适合场景</th></tr></thead>
+<tbody>
+<tr><td data-label="产品">DevExpress WPF</td><td data-label="控件数">120+</td><td data-label="适合场景">企业级表格/图表/报表，AI 代码生成支持好</td></tr>
+<tr><td data-label="产品">Telerik UI for WPF</td><td data-label="控件数">100+</td><td data-label="适合场景">数据密集型、仪表盘，内置 WinAppDriver 测试支持</td></tr>
+<tr><td data-label="产品">Syncfusion WPF</td><td data-label="控件数">100+</td><td data-label="适合场景">功能全、5 人以下社区版免费，有 AI Coding Assistant + MCP</td></tr>
+<tr><td data-label="产品">SciChart</td><td data-label="控件数">—</td><td data-label="适合场景"><strong>高性能实时图表</strong>（金融/工控首选）</td></tr>
+</tbody></table>
+<div class="rec-box">
+<strong>AI 时代选型建议</strong>：优先选有 <strong>MCP Server</strong> 或 <strong>AI Assistant 插件</strong>的 UI 库。<br>
+Syncfusion 已发布 WPF AI Coding Assistant（MCP 协议），DevExpress 支持 Copilot 上下文感知。纯开源推荐 WPF UI + HandyControl。
+</div>
+</section>
+
+<!-- A. AI AGENT -->
+<section class="ai-section">
+<h2><span class="num num-ai">A</span> AI Agent 驱动开发全景</h2>
+<p>2025–2026 年，WPF / WinForms / C# /.NET 的开发范式正在被 AI Agent 重塑。<strong>核心变化</strong>：</p>
+<ul>
+<li>AI 不再是"自动补全"工具，而是<strong>自主 Agent</strong>——能读代码库、跨文件编辑、运行测试、构建、调试</li>
+<li>开发者角色从"写代码的人"转变为<strong>架构师 + 审查者 + 提示工程师</strong></li>
+<li>开发节奏从"线性的写→编→测"转变为<strong>并行的 Agent 协作 + 人工审查</strong></li>
+</ul>
+
+<h3>三大 AI 工具对比</h3>
+<table>
+<thead><tr><th>工具</th><th>平台</th><th>适合 .NET 的场景</th><th>限制</th></tr></thead>
+<tbody>
+<tr><td data-label="工具"><strong>Claude Code</strong> <span class="tag tag-hot">HOT</span></td><td data-label="平台">Terminal / VS Code / Web / Desktop / JetBrains</td><td data-label="适合 .NET 的场景">大规模跨文件重构、Sub-agent 并行、MCP + Skills 体系、CI 集成</td><td data-label="限制">无内置 XAML 设计器；需配置代理</td></tr>
+<tr><td data-label="工具"><strong>Cursor</strong> <span class="tag tag-hot">HOT</span></td><td data-label="平台">VS Code fork</td><td data-label="适合 .NET 的场景">Composer 多文件生成、PRD → 项目骨架、Figma 截图 → XAML</td><td data-label="限制">Token 消耗快；需 VS 辅助调试</td></tr>
+<tr><td data-label="工具"><strong>GitHub Copilot</strong> <span class="tag tag-ms">官方 Agent</span></td><td data-label="平台">VS / VS Code / GitHub</td><td data-label="适合 .NET 的场景">C# Expert + WinForms Expert 官方 Agent、.NET Modernization</td><td data-label="限制">上下文窗口较小；Agent 模式仍在实验</td></tr>
+</tbody></table>
+<div class="rec-box ai-rec">
+<strong>推荐混合方案</strong>：<code>Claude Code（架构/规划） + Cursor（日常编码/XAML 生成） + Visual Studio（调试/设计器） + GitHub Copilot（内联补全 + .NET Agent）</code>
+</div>
+
+<h3>传统 vs AI：开发节奏对比</h3>
+<table>
+<thead><tr><th>传统开发</th><th>AI Agent 辅助开发</th><th>收益</th></tr></thead>
+<tbody>
+<tr><td>手写全部代码</td><td>写 Prompt / PRD → Agent 生成初版 → 人工审查</td><td>2-5×</td></tr>
+<tr><td>逐文件手动编辑</td><td>一次描述 → Agent 跨 5-10 个文件同时编辑</td><td>无上下文切换</td></tr>
+<tr><td>写 → 编译 → 手动排查</td><td>Agent 写完自动 build → 自动修正</td><td>秒级反馈</td></tr>
+<tr><td>手动写测试</td><td>Agent 生成 xUnit 测试 + 运行 + 修失败</td><td>覆盖同步生成</td></tr>
+<tr><td>回忆项目规范</td><td>CLAUDE.md / AGENTS.md 自动注入</td><td>规范执行靠配置</td></tr>
+<tr><td>单线程串行</td><td>Sub-agent 并行：后端 + 前端 + 测试同时</td><td>缩短 40-70%</td></tr>
+<tr><td>翻文档查 API</td><td>MCP 自动查 Microsoft Learn + NuGet</td><td>Agent 自动读取</td></tr>
+</tbody></table>
+</section>
+
+<!-- B. ENV SETUP -->
+<section class="ai-section">
+<h2><span class="num num-ai">B</span> 开发者环境配置清单</h2>
+
+<h3>必备工具</h3>
+<table>
+<thead><tr><th>类别</th><th>工具</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td data-label="类别">.NET 运行时</td><td data-label="工具">.NET 8/9/10 SDK</td><td data-label="用途">目标框架，推荐 LTS 版本</td></tr>
+<tr><td data-label="类别">IDE</td><td data-label="工具">VS 2026 / VS Code + C# Dev Kit / Rider</td><td data-label="用途">XAML 设计器、调试、Profiler</td></tr>
+<tr><td data-label="类别">AI 编码 Agent</td><td data-label="工具">Claude Code + Cursor + GitHub Copilot</td><td data-label="用途">Agent 模式、Sub-agent、Skills、MCP</td></tr>
+<tr><td data-label="类别">MCP 运行器</td><td data-label="工具"><code>npx</code> / <code>uvx</code> / Docker</td><td data-label="用途">运行 MCP 服务器进程</td></tr>
+<tr><td data-label="类别">Git</td><td data-label="工具">Git for Windows（WSL 更佳）</td><td data-label="用途">版本控制、worktree 并行迁移</td></tr>
+<tr><td data-label="类别">包管理</td><td data-label="工具">NuGet / Central Package Management</td><td data-label="用途">统一版本管理</td></tr>
+<tr><td data-label="类别">代码分析</td><td data-label="工具">Meziantou + Sonar + .NET Analyzers</td><td data-label="用途">AI 代码的质量门禁</td></tr>
+<tr><td data-label="类别">测试框架</td><td data-label="工具">xUnit + NSubstitute + FluentAssertions</td><td data-label="用途">单元 + 集成测试</td></tr>
+<tr><td data-label="类别">UI 自动化测试</td><td data-label="工具">WinAppDriver / FlaUI</td><td data-label="用途">WPF/WinForms UI 测试自动化</td></tr>
+<tr><td data-label="类别">日志</td><td data-label="工具">Serilog + Seq</td><td data-label="用途">Agent 调试问题的数据源</td></tr>
+<tr><td data-label="类别">代理（中国大陆）</td><td data-label="工具">Clash（7891/7890）</td><td data-label="用途">Claude Code / NuGet / GitHub 访问</td></tr>
+</tbody></table>
+
+<h3>Claude Code 六文件配置体系</h3>
+<div class="file-tree">
+<span class="dir">~/.claude/</span>
+├── <span class="file">settings.json</span>           <span class="comment">← 个人全局默认</span>
+└── <span class="file">CLAUDE.md</span>                <span class="comment">← 个人全局指令</span>
+
+<span class="dir">your-repo/</span>
+├── <span class="file">CLAUDE.md</span>                   <span class="comment">← 项目级指令（commit）</span>
+├── <span class="file">AGENTS.md</span>                   <span class="comment">← 跨工具便携指令（Cursor/Claude Code 通用）</span>
+├── <span class="dir">.claude/</span>
+│   ├── <span class="file">settings.json</span>               <span class="comment">← 团队共享：权限/hooks/env</span>
+│   ├── <span class="file">settings.local.json</span>        <span class="comment">← 个人覆盖（gitignored）</span>
+│   ├── <span class="dir">hooks/</span>                      <span class="comment">← 自动化脚本（format/build/protect）</span>
+│   ├── <span class="dir">skills/</span>                     <span class="comment">← 按需加载的工作流程</span>
+│   ├── <span class="dir">agents/</span>                     <span class="comment">← Sub-agent 定义</span>
+│   └── <span class="dir">rules/</span>                     <span class="comment">← 路径感知规则</span>
+└── <span class="file">.mcp.json</span>                   <span class="comment">← MCP 服务器注册（commit）</span>
+</div>
+
+<h4>settings.json 权限模板</h4>
+<pre>{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build*)",
+      "Bash(dotnet test*)",
+      "Bash(dotnet format*)",
+      "Bash(dotnet restore*)",
+      "Bash(dotnet ef migrations*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Read(**/*)"
+    ],
+    "ask": [
+      "Bash(dotnet add package*)",
+      "Bash(dotnet remove package*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(dotnet ef database drop*)"
+    ],
+    "deny": [
+      "Bash(rm -rf **/bin*)",
+      "Bash(rm -rf **/obj*)",
+      "Bash(git push --force*)",
+      "Read(**/.env)",
+      "Read(**/*.pfx)",
+      "Read(**/appsettings.Production.json)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [{
+      "hooks": [{
+        "type": "command",
+        "command": "bash",
+        "args": ["-c",
+          "dotnet --version; echo '==='; dotnet sln list 2>/dev/null; echo '==='; git status -sb"]
+      }]
+    }],
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
+      "hooks": [{
+        "type": "command",
+        "if": "Edit(*.cs)|Write(*.cs)",
+        "command": "bash",
+        "args": ["-c",
+          "FILE=$(echo '$INPUT' | jq -r '.tool_input.file_path // empty'); \
+           if [ -n \"$FILE\" ]; then \
+             DIR=$(dirname \"$FILE\"); \
+             PROJ=$(find \"$DIR\" -maxdepth 3 -name '*.csproj' -print -quit); \
+             if [ -n \"$PROJ\" ]; then \
+               dotnet format \"$PROJ\" --include \"$FILE\" --no-restore; \
+               dotnet build \"$PROJ\" --no-restore -v minimal; \
+             fi; \
+           fi"],
+        "timeout": 30000
+      }]
+    }]
+  },
+  "env": {
+    "DOTNET_NOLOGO": "1",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+  }
+}</pre>
+
+<h4>CLAUDE.md 模板</h4>
+<pre># VS_Dev 项目规范
+
+## 技术栈
+- 框架: .NET 10.0-windows (WinForms / WPF)
+- 语言: C# 12+（Nullable + ImplicitUsings）
+- 协议: Modbus RTU/TCP
+- UI: WPF (HandyControl / MahApps / MaterialDesign)
+
+## 架构
+- 分层: UI → ViewModel → Service → Transport/Protocol
+- MVVM: CommunityToolkit.Mvvm（源生成器）
+- DI: Microsoft.Extensions.DependencyInjection
+- 日志: Serilog
+
+## 代码规范
+- 4 空格缩进, nullable 启用, 文件级命名空间
+- 所有 ViewModel 必须是 partial class
+- 异步必传 CancellationToken, 禁止 .Result / .Wait()
+- 测试: xUnit + NSubstitute, AAA 模式
+
+## 工具规则
+- 编辑 .cs → 自动 format + build
+- 添加 NuGet 包前先问我
+- git commit/push 必须先审查
+- 禁止修改 .Designer.cs（除非明确要求）</pre>
+</section>
+
+<!-- C. MCP -->
+<section class="ai-section">
+<h2><span class="num num-ai">C</span> MCP 服务器配置</h2>
+<p>MCP（Model Context Protocol）是 AI Agent 连接外部工具的标准协议。对 .NET 开发，以下 MCP 服务器直接提升 Agent 能力：</p>
+
+<table>
+<thead><tr><th>MCP Server</th><th>用途</th><th>配置</th></tr></thead>
+<tbody>
+<tr><td data-label="MCP Server"><strong>GitHub MCP</strong></td><td data-label="用途">Agent 操作 Issues/PR/Code Review</td><td data-label="配置"><code>npx -y @modelcontextprotocol/server-github</code></td></tr>
+<tr><td data-label="MCP Server"><strong>SQL Server MCP</strong></td><td data-label="用途">查询 schema、生成迁移、分析查询</td><td data-label="配置"><a href="https://github.com/gazisdomain/sql-server-mcp-server" target="_blank">gazisdomain/sql-server-mcp-server</a></td></tr>
+<tr><td data-label="MCP Server"><strong>Microsoft Learn MCP</strong></td><td data-label="用途">获取 .NET 10 / C# 14 最新文档</td><td data-label="配置">Marketplace 插件 microsoft-docs</td></tr>
+<tr><td data-label="MCP Server"><strong>Serena MCP</strong></td><td data-label="用途">符号感知 C# 编辑（Roslyn LSP）</td><td data-label="配置"><code>uvx serena-mcp</code></td></tr>
+<tr><td data-label="MCP Server"><strong>Syncfusion AI Assistant</strong></td><td data-label="用途">WPF/WinForms UI 生成</td><td data-label="配置">MCP 前缀 @syncfusion-wpf</td></tr>
+<tr><td data-label="MCP Server"><strong>Azure MCP</strong></td><td data-label="用途">Azure 资源配置检查（只读）</td><td data-label="配置"><code>npx -y @azure/mcp</code></td></tr>
+</tbody></table>
+
+<h4>.mcp.json 示例</h4>
+<pre>{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": { "GITHUB_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}" }
+    },
+    "sqlserver": {
+      "command": "dotnet",
+      "args": ["run", "--project", "tools/McpSqlServer/"],
+      "env": { "CONNECTION_STRING": "${DB_CONNECTION}" }
+    }
+  }
+}</pre>
+<div class="rec-box ai-rec">
+<strong>安全性原则</strong>：凭证放在 <code>.claude/settings.local.json</code> 的 <code>env</code> 字段或 <code>.env</code>（gitignored），<code>.mcp.json</code> 只引用 <code>${ENV_VAR}</code>
+</div>
+</section>
+
+<!-- D. SKILLS + AGENTS -->
+<section class="ai-section">
+<h2><span class="num num-ai">D</span> Skills &amp; Agents 配置体系</h2>
+
+<h3>Skills：按需加载的工作流程</h3>
+<table>
+<thead><tr><th>Skill</th><th>位置</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td data-label="Skill">迁移 .NET 项目</td><td data-label="位置"><code>.claude/skills/migrate-dotnet-project/</code></td><td data-label="用途">旧 Framework → .NET 10</td></tr>
+<tr><td data-label="Skill">写 xUnit 测试</td><td data-label="位置"><code>.claude/skills/write-xunit-tests/</code></td><td data-label="用途">为目标类生成完整测试套件</td></tr>
+<tr><td data-label="Skill">添加 EF Core 实体</td><td data-label="位置"><code>.claude/skills/add-ef-core-entity/</code></td><td data-label="用途">实体+映射+迁移</td></tr>
+<tr><td data-label="Skill">Modbus 调试助手</td><td data-label="位置"><code>.claude/skills/modbus-debug/</code></td><td data-label="用途">串口/TCP 调试 + 帧分析</td></tr>
+<tr><td data-label="Skill">PR 代码审查</td><td data-label="位置"><code>.claude/skills/pr-review/</code></td><td data-label="用途">自动审查 PR + 报告</td></tr>
+</tbody></table>
+
+<h4>SKILL.md 示例（write-xunit-tests）</h4>
+<pre>---
+description: Write xUnit tests for a .NET class.
+---
+## Instructions
+1. Read the target file to understand the class and its dependencies.
+2. Read AGENTS.md for the project's test naming conventions.
+3. Write tests using xUnit, NSubstitute, FluentAssertions.
+4. Follow: `{MethodName}_{Scenario}_{ExpectedResult}` naming.
+5. Cover: happy path, validation failures, edge cases, async cancellation.
+6. Run `dotnet test` on the test project and fix any failures.</pre>
+
+<h3>Agents：专用 Sub-agent</h3>
+
+<h4>.claude/agents/code-reviewer.md</h4>
+<pre>---
+name: code-reviewer
+description: Reviews .NET code changes for correctness and conventions.
+model: claude-sonnet-4-7
+tools: [Read, Bash]
+---
+You are a senior .NET developer. Before any review comment:
+1. Run `dotnet build --no-restore` and read the output.
+2. Run `dotnet test --no-restore` and read the output.
+3. Only raise issues the build & test didn't catch if high confidence.
+
+When reviewing, check for:
+- DateTime.Now (use TimeProvider), Thread.Sleep (use await Task.Delay)
+- HttpClient outside IHttpClientFactory
+- Missing CancellationToken on async methods
+- EF Core N+1 query pattern</pre>
+
+<div class="rec-box ai-rec">
+<strong>Influence vs. Enforcement（影响 vs 强制）</strong><br>
+• <code>CLAUDE.md</code> / <code>Skills</code> / <code>Agents</code> → <strong>影响</strong>（Agent 通常遵守）<br>
+• <code>Hooks</code> / <code>permissions.deny</code> / 编译分析器（<code>TreatWarningsAsErrors</code>）→ <strong>强制</strong>（Agent 无法绕过）<br>
+• 危险操作放强制，其余放影响
+</div>
+</section>
+
+<!-- E. WORKFLOW -->
+<section class="ai-section">
+<h2><span class="num num-ai">E</span> 混合工具工作流</h2>
+
+<h3>日常开发循环</h3>
+<table>
+<thead><tr><th>阶段</th><th>工具</th><th>活动</th></tr></thead>
+<tbody>
+<tr><td data-label="阶段">1. 架构设计</td><td data-label="工具"><strong>Claude Code</strong></td><td data-label="活动">描述需求 → Claude 生成方案 + 文件计划 + 清单</td></tr>
+<tr><td data-label="阶段">2. 代码生成</td><td data-label="工具"><strong>Cursor Composer</strong> 或 <strong>Claude Code</strong></td><td data-label="活动">粘贴架构计划 → Agent 同时生成 XAML + ViewModel + Service</td></tr>
+<tr><td data-label="阶段">3. 编译修复</td><td data-label="工具"><strong>Agent 自动</strong></td><td data-label="活动">Hook 自动 <code>dotnet build</code> → Agent 自动修复错误</td></tr>
+<tr><td data-label="阶段">4. 测试生成</td><td data-label="工具"><strong>Agent + Skill</strong></td><td data-label="活动">触发 write-xunit-tests → Agent 生成 + 运行 + 修失败</td></tr>
+<tr><td data-label="阶段">5. 人工审查</td><td data-label="工具"><strong>Visual Studio / Rider</strong></td><td data-label="活动">审查 diff、Design Preview、集成测试</td></tr>
+<tr><td data-label="阶段">6. XAML 微调</td><td data-label="工具"><strong>VS 设计器</strong></td><td data-label="活动">拖拽布局 → Agent 生成绑定代码</td></tr>
+<tr><td data-label="阶段">7. 调试</td><td data-label="工具"><strong>VS / dotMemory</strong></td><td data-label="活动">Agent 定位问题 → 人工断点 + 性能分析</td></tr>
+<tr><td data-label="阶段">8. Git 提交</td><td data-label="工具"><strong>Claude Code</strong></td><td data-label="活动">Agent 生成信息 → 审查 → commit + PR</td></tr>
+</tbody></table>
+
+<h3>并行开发模式</h3>
+<div class="rec-box ai-rec">
+<strong>Sub-agent + Worktree：</strong>
+<pre>claude --worktree feature-a "添加 Modbus TCP 读写功能"
+claude --worktree feature-b "重构历史记录管理器"
+claude --worktree feature-c "主题切换添加暗色模式"</pre>
+每个 agent 在自己的 git worktree 中工作，互不干扰，开发者审查合并。
+</div>
+
+<h3>WPF 代码生成 Prompt 模板</h3>
+<div class="rec-box ai-rec">
+<pre>使用 .NET 10 + WPF + CommunityToolkit.Mvvm + HandyControl，生成 [功能名] 模块。
+要求：
+- MVVM 架构，使用源生成器（[ObservableProperty]、[RelayCommand]）
+- DI + Serilog + CancellationToken
+- 生成 XAML + ViewModel + Service
+- 同时生成 xUnit 测试（NSubstitute + FluentAssertions）
+- 完成后运行 dotnet build，修复所有编译错误</pre>
+</div>
+</section>
+
+<!-- 8. CODE QUALITY -->
+<section>
+<h2><span class="num">8</span> Roslyn 代码分析与质量门禁</h2>
+<p>AI 生成的代码必须经过自动化质量门禁。以下配置强制所有代码达到同一标准：</p>
+
+<table>
+<thead><tr><th>分析器</th><th>用途</th><th>配置</th></tr></thead>
+<tbody>
+<tr><td data-label="分析器"><strong>Microsoft.CodeAnalysis.NetAnalyzers</strong></td><td data-label="用途">内置 .NET 平台分析器</td><td data-label="配置"><code>AnalysisMode=All</code></td></tr>
+<tr><td data-label="分析器"><strong>Meziantou.Analyzer</strong> v3.x</td><td data-label="用途">190+ 规则：安全/性能/设计/命名</td><td data-label="配置">PackageReference，最新 3.0.98</td></tr>
+<tr><td data-label="分析器"><strong>SonarAnalyzer.CSharp</strong></td><td data-label="用途">代码异味、认知复杂度、Bug 模式</td><td data-label="配置">PackageReference</td></tr>
+<tr><td data-label="分析器"><strong>Security Code Scan</strong></td><td data-label="用途">硬编码密钥、弱加密、危险 API</td><td data-label="配置">NuGet + CI</td></tr>
+</tbody></table>
+
+<h4>Directory.Build.props（严格模式）</h4>
+<pre>&lt;Project&gt;
+  &lt;PropertyGroup&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;AnalysisLevel&gt;latest&lt;/AnalysisLevel&gt;
+    &lt;AnalysisMode&gt;All&lt;/AnalysisMode&gt;
+    &lt;EnforceCodeStyleInBuild&gt;true&lt;/EnforceCodeStyleInBuild&gt;
+    &lt;TreatWarningsAsErrors&gt;true&lt;/TreatWarningsAsErrors&gt;
+    &lt;CodeAnalysisTreatWarningsAsErrors&gt;true&lt;/CodeAnalysisTreatWarningsAsErrors&gt;
+  &lt;/PropertyGroup&gt;
+  &lt;ItemGroup&gt;
+    &lt;PackageReference Include="Meziantou.Analyzer" Version="3.*"&gt;
+      &lt;PrivateAssets&gt;all&lt;/PrivateAssets&gt;
+      &lt;IncludeAssets&gt;runtime; build; native; contentfiles; analyzers&lt;/IncludeAssets&gt;
+    &lt;/PackageReference&gt;
+    &lt;PackageReference Include="SonarAnalyzer.CSharp" Version="9.*"&gt;
+      &lt;PrivateAssets&gt;all&lt;/PrivateAssets&gt;
+      &lt;IncludeAssets&gt;runtime; build; native; contentfiles; analyzers&lt;/IncludeAssets&gt;
+    &lt;/PackageReference&gt;
+  &lt;/ItemGroup&gt;
+&lt;/Project&gt;</pre>
+<div class="rec-box">
+<strong>效果</strong>：风格/命名/格式违规 = 硬编译错误。<code>dotnet format</code> 可自动修复。<br>
+Agent 第一个 <code>dotnet build</code> 就是质量门禁，无需人工介入格式审查。
+</div>
+</section>
+
+<!-- F. XAML -->
+<section class="ai-section">
+<h2><span class="num num-ai">F</span> WPF/XAML 代码生成专项</h2>
+
+<h3>AI 覆盖度矩阵</h3>
+<table>
+<thead><tr><th>场景</th><th>AI 覆盖度</th><th>推荐工具</th></tr></thead>
+<tbody>
+<tr><td data-label="场景">Figma 截图 → XAML</td><td data-label="AI 覆盖度">60-70%</td><td data-label="推荐工具">Cursor + Claude Vision</td></tr>
+<tr><td data-label="场景">PRD → 完整项目</td><td data-label="AI 覆盖度">70-80%</td><td data-label="推荐工具">Claude Code / Cursor Composer</td></tr>
+<tr><td data-label="场景">自然语言 → XAML</td><td data-label="AI 覆盖度">80-90%</td><td data-label="推荐工具">Claude Code / Copilot Agent</td></tr>
+<tr><td data-label="场景">MVVM 绑定 + ViewModel</td><td data-label="AI 覆盖度">85-95%</td><td data-label="推荐工具">Claude Code + CommunityToolkit</td></tr>
+<tr><td data-label="场景">.Designer.cs 安全修改</td><td data-label="AI 覆盖度">WinForms Expert 保护</td><td data-label="推荐工具">Copilot Agent（官方）</td></tr>
+<tr><td data-label="场景">WPF → Uno Platform</td><td data-label="AI 覆盖度">60-70%</td><td data-label="推荐工具">Uno Platform + Copilot Modernization</td></tr>
+</tbody></table>
+
+<h3>Syncfusion UI Builder（8 阶段编排）</h3>
+<ol>
+<li><strong>Intent Analysis</strong> — 解析需求</li>
+<li><strong>Project Detection</strong> — 检测项目类型</li>
+<li><strong>Component Mapping</strong> — 需求 → 控件</li>
+<li><strong>Theming</strong> — 主题样式</li>
+<li><strong>Code Generation</strong> — XAML + C#</li>
+<li><strong>Dependencies</strong> — NuGet 包</li>
+<li><strong>Validation</strong> — 编译检查</li>
+<li><strong>Code Insertion</strong> — 插入正确位置</li>
+</ol>
+<p>安装：<code>apm install syncfusion/winforms-ui-builder -t claude</code></p>
+</section>
+
+<!-- G. COPILOT AGENTS -->
+<section class="ai-section">
+<h2><span class="num num-ai">G</span> Microsoft 官方 Agent：C# Expert &amp; WinForms Expert</h2>
+<p>2025 年 10 月发布，首批 .NET 专用 Copilot Custom Agent。<br>
+从 <a href="https://github.com/github/awesome-copilot" target="_blank">github/awesome-copilot</a> 下载 <code>.agent.md</code> 放入 <code>.github/agents/</code> 即可。</p>
+
+<table>
+<thead><tr><th>Agent</th><th>能力</th></tr></thead>
+<tbody>
+<tr><td data-label="Agent"><strong>C# Expert</strong></td><td data-label="能力">现代 C# 最佳实践、不生成未使用的接口/参数/方法、正确 async/await + CancellationToken、BDD 测试</td></tr>
+<tr><td data-label="Agent"><strong>WinForms Expert</strong></td><td data-label="能力">MVVM/MVP 模式、复杂事件绑定、<strong>保护 .Designer.cs</strong>、高 DPI / Nullable / .NET 10</td></tr>
+</tbody></table>
+<div class="rec-box ai-rec">
+<strong>对 WPF 开发者的意义</strong>：官方目前只有 WinForms Agent，但 <code>.agent.md</code> 格式开放，可自建 WPF Expert Agent。
+</div>
+</section>
+
+<!-- H. PROMPT -->
+<section class="ai-section">
+<h2><span class="num num-ai">H</span> 提示工程模板库</h2>
+
+<h4>模板 1：生成完整 WPF 模块</h4>
+<pre>使用 .NET 10 + WPF + CommunityToolkit.Mvvm（源生成器）生成 [ModuleName] 模块：
+
+## 功能要求
+- [描述功能需求, 例如: 参数配置页面, 含名称、值、描述三列]
+- [数据来源: Modbus TCP / 本地文件 / 数据库]
+
+## 架构要求
+- MVVM 分层: View + ViewModel + Service
+- DI: Microsoft.Extensions.DependencyInjection
+- 全部 async Task + CancellationToken
+- 统一异常处理 + Serilog 日志
+
+## 文件清单
+1. Views/[ModuleName]Control.xaml + .cs
+2. ViewModels/[ModuleName]ViewModel.cs
+3. Services/Interfaces/I[ModuleName]Service.cs
+4. Services/[ModuleName]Service.cs
+5. Tests/[ModuleName]ViewModelTests.cs (xUnit + NSubstitute)
+
+## 输出要求
+- 生成完整可编译代码
+- XAML 使用 HandyControl 控件库
+- ViewModel 使用 [ObservableProperty] 和 [RelayCommand]
+- 完成后运行 dotnet build 修复所有错误</pre>
+
+<h4>模板 2：添加 Modbus 通信</h4>
+<pre>在现有 WPF 项目中添加 Modbus TCP 通信功能：
+
+现有架构：[描述]
+协议层: ModbusProtocol.cs
+传输层: ModbusTransport.cs
+
+新增：
+1. ViewModel 连接状态 + 命令
+2. ReadHoldingRegistersCommand（地址, 数量）
+3. 间隔 1000ms 自动轮询
+4. 断线自动重连（指数退避）
+5. 错误显示在 UI
+6. xUnit 测试模拟传输层</pre>
+
+<h4>模板 3：批量迁移旧项目</h4>
+<pre>将 [ProjectName] 从 .NET Framework 4.7.2 迁移到 .NET 10，逐个文件进行：
+1. upgrade-assistant 初步迁移
+2. 每个文件后运行 dotnet build
+3. 修复所有错误
+4. 运行全部测试
+5. 生成迁移报告
+约束：不改业务逻辑，保留命名空间</pre>
+
+<h3>编写原则</h3>
+<ul>
+<li><strong>显式指定技术栈</strong>：WPF / CommunityToolkit / HandyControl</li>
+<li><strong>指定文件清单</strong>：Agent 更可能一次生成所有文件</li>
+<li><strong>明确约束</strong>："不改业务逻辑"、"全部 async"、"不要生成未使用的代码"</li>
+<li><strong>要求自检</strong>："完成后运行 dotnet build 并修复所有错误"</li>
+<li><strong>分步提示</strong>：复杂需求分 3-5 个 Prompt，而非一个大 Prompt</li>
+</ul>
+</section>
+
+<!-- 5. STACK -->
+<section>
+<h2><span class="num">5</span> 综合推荐技术栈</h2>
+<div class="stack-card">
+<div class="layer"><span class="layer-name">MVVM 框架</span><span class="layer-val">CommunityToolkit.Mvvm + 源生成器</span></div>
+<div class="layer"><span class="layer-name">UI 主题</span><span class="layer-val">WPF UI / HandyControl / MahApps + MaterialDesign</span></div>
+<div class="layer"><span class="layer-name">图标库</span><span class="layer-val">MahApps.Metro.IconPacks / FontAwesome.WPF</span></div>
+<div class="layer"><span class="layer-name">图表</span><span class="layer-val">LiveCharts2（免费） / SciChart（商业）</span></div>
+<div class="layer"><span class="layer-name">数据/序列化</span><span class="layer-val">System.Text.Json / MessagePack / SQLite</span></div>
+<div class="layer"><span class="layer-name">日志</span><span class="layer-val">Serilog + Seq</span></div>
+<div class="layer"><span class="layer-name">测试</span><span class="layer-val">xUnit + NSubstitute · WinAppDriver / FlaUI</span></div>
+<div class="layer"><span class="layer-name">发布</span><span class="layer-val">MSIX / Squirrel.Windows · dotnet publish</span></div>
+</div>
+<div class="stack-card ai-card">
+<div class="layer"><span class="layer-name">🤖 AI 编码 Agent</span><span class="layer-val">Claude Code + Cursor + Copilot Agent</span></div>
+<div class="layer"><span class="layer-name">🤖 MCP</span><span class="layer-val">GitHub / SQL Server / Microsoft Learn / Serena</span></div>
+<div class="layer"><span class="layer-name">🤖 指令</span><span class="layer-val">CLAUDE.md + AGENTS.md + .agent.md + Skills</span></div>
+<div class="layer"><span class="layer-name">🤖 分析器</span><span class="layer-val">Meziantou + Sonar + .NET Analyzers</span></div>
+<div class="layer"><span class="layer-name">🤖 自动 Hook</span><span class="layer-val">PostToolUse format+build / SessionStart status</span></div>
+<div class="layer"><span class="layer-name">🤖 并行</span><span class="layer-val">git worktree + background agent + Sub-agent</span></div>
+<div class="layer"><span class="layer-name">🤖 CI</span><span class="layer-val">GitHub Actions + Claude Code Action</span></div>
+<div class="layer"><span class="layer-name">🤖 移动端</span><span class="layer-val">Claude Code Web / iOS App / Remote Control</span></div>
+</div>
+</section>
+
+<!-- 4. TEMPLATES -->
+<section>
+<h2><span class="num">4</span> 项目模板</h2>
+<table>
+<thead><tr><th>模板</th><th>来源</th><th>特点</th></tr></thead>
+<tbody>
+<tr><td data-label="模板"><strong>Prism Template Pack</strong></td><td data-label="来源">VSIX</td><td data-label="特点">Prism + DryIoc + Region 导航</td></tr>
+<tr><td data-label="模板"><strong>Calabonga.Wpf.Mvvm.Template</strong></td><td data-label="来源">NuGet</td><td data-label="特点">CommunityToolkit.Mvvm + DI</td></tr>
+<tr><td data-label="模板"><strong>cde-dotnetcc</strong> <span class="tag tag-ai">NEW</span></td><td data-label="来源"><a href="https://github.com/atherio-danp/cde-dotnetcc" target="_blank">GitHub</a></td><td data-label="特点">Claude Code 完整 harness：CLAUDE.md + hooks + agents + skills + 严格构建</td></tr>
+<tr><td data-label="模板"><strong>WPF-Samples</strong></td><td data-label="来源"><a href="https://github.com/microsoft/WPF-Samples" target="_blank">microsoft/WPF-Samples</a></td><td data-label="特点">官方 WPF 示例，5k+ Stars</td></tr>
+</tbody></table>
+</section>
+
+<!-- 6. RESOURCES -->
+<section>
+<h2><span class="num">6</span> 资源索引</h2>
+<table>
+<thead><tr><th>资源</th><th>链接</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td data-label="资源"><strong>awesome-wpf</strong></td><td data-label="链接"><a href="https://github.com/Carlos487/awesome-wpf" target="_blank">Carlos487/awesome-wpf</a></td><td data-label="说明">最全 WPF 资源合集</td></tr>
+<tr><td data-label="资源"><strong>cde-dotnetcc</strong></td><td data-label="链接"><a href="https://github.com/atherio-danp/cde-dotnetcc" target="_blank">atherio-danp/cde-dotnetcc</a></td><td data-label="说明">.NET Claude Code 完整 harness</td></tr>
+<tr><td data-label="资源"><strong>Claude Code .NET 配置</strong></td><td data-label="链接"><a href="https://talkthinkdo.com/guides/development-practice/claude-code-dotnet-configuration-hooks-mcp/" target="_blank">Talk Think Do Guide</a></td><td data-label="说明">最详细的 .NET 配置指南</td></tr>
+<tr><td data-label="资源"><strong>Sub-Agent 实战</strong></td><td data-label="链接"><a href="https://spin.atomicobject.com/claude-code-sub-agent/" target="_blank">Atomic Object</a></td><td data-label="说明">.NET + Angular Sub-agent</td></tr>
+<tr><td data-label="资源"><strong>Copilot Custom Agents</strong></td><td data-label="链接"><a href="https://github.com/github/awesome-copilot" target="_blank">github/awesome-copilot</a></td><td data-label="说明">C# Expert + WinForms Expert</td></tr>
+<tr><td data-label="资源"><strong>Modernization 官方文档</strong></td><td data-label="链接"><a href="https://learn.microsoft.com/en-us/dotnet/core/porting/github-copilot-app-modernization/concepts" target="_blank">Microsoft Learn</a></td><td data-label="说明">Agent 升级 .NET 项目</td></tr>
+<tr><td data-label="资源"><strong>Syncfusion UI Builder</strong></td><td data-label="链接"><a href="https://github.com/syncfusion/winforms-ui-builder" target="_blank">syncfusion/winforms-ui-builder</a></td><td data-label="说明">WPF/WinForms AI Skill</td></tr>
+</tbody></table>
+</section>
+
+<!-- 7. CONCLUSIONS -->
+<section>
+<h2><span class="num">7</span> 关键结论</h2>
+<ol>
+<li><strong>WPF 没有死</strong> — 金融、医疗、工控领域仍然是首选桌面技术</li>
+<li><strong>MVVM 三选一</strong>：小项目 <code>CommunityToolkit.Mvvm</code>，大项目 <code>Prism</code>，实时加 <code>ReactiveUI</code></li>
+<li><strong>UI 三选一</strong>：Win11 → <code>WPF UI</code>，Material → <code>MaterialDesignInXaml</code>，经典 → <code>MahApps.Metro</code></li>
+<li><strong>AI Agent 不是选择题，是必答题</strong> — 标准配置已经是 Claude Code + Cursor + Copilot 三件套</li>
+<li><strong>Agent 配置比写代码更重要</strong> — CLAUDE.md / .mcp.json / settings.json / Skills 决定了 AI 产出质量</li>
+<li><strong>Influence vs Enforcement</strong> — 规范放 CLAUDE.md，危险操作用 hooks+deny，质量用 Analyzer</li>
+<li><strong>DI + 日志 + 测试</strong> — AI Agent 依赖这些基础设施来自动生成和验证</li>
+<li><strong>开发者角色转变</strong>：从"写代码"变为"架构师 + 审查者 + 提示工程师"</li>
+</ol>
+</section>
+
+<div class="footer">
+Generated from web research · 2026-06 · 数据来源包括 GitHub、NuGet、Anthropic 文档、Microsoft .NET Blog<br>
+<a href="https://github.com/Carlos487/awesome-wpf" target="_blank">awesome-wpf</a> ·
+<a href="https://talkthinkdo.com/guides/development-practice/claude-code-dotnet-configuration-hooks-mcp/" target="_blank">TTD Guide</a> ·
+<a href="https://spin.atomicobject.com/claude-code-sub-agent/" target="_blank">Sub-Agent</a> ·
+<a href="https://devblogs.microsoft.com/dotnet/introducing-custom-agents-for-dotnet-developers-csharp-expert-winforms-expert/" target="_blank">.NET Blog</a>
+</div>
+
+</div>
+
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+function toggleTheme() {
+  var h = document.documentElement;
+  var n = h.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  h.setAttribute('data-theme', n);
+  localStorage.setItem('theme', n);
+  document.getElementById('themeIcon').textContent = n === 'dark' ? '🌙' : '☀️';
+}
+(function() {
+  var s = localStorage.getItem('theme');
+  if (s) {
+    document.documentElement.setAttribute('data-theme', s);
+    document.getElementById('themeIcon').textContent = s === 'dark' ? '🌙' : '☀️';
+  }
+})();
+window.addEventListener('scroll', function() {
+  document.getElementById('backTop').classList.toggle('visible', window.scrollY > 400);
+});
+</script>
+
+</body>
+</html>
