@@ -1,0 +1,49 @@
+<UserControl x:Class="TestWpf.Controls.Sidebar.PollingPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="200" d:DesignWidth="270"
+             x:Name="root">
+    <StackPanel>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="⏱ 轮询" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Grid.Column="2" x:Name="txtLatency" Text=""
+                       Foreground="{DynamicResource TextDim}" FontSize="11"
+                       VerticalAlignment="Center"/>
+        </Grid>
+
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="txtInterval" Text="50" Style="{StaticResource SidebarInput}" Height="28"/>
+            <TextBlock Grid.Column="1" Text="ms" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+        </Grid>
+
+        <Button x:Name="btnStartPoll" Content="▶ 启动轮询"
+                Style="{StaticResource MaterialDesignRaisedButton}"
+                Background="{DynamicResource AccentGreen}" Foreground="White"
+                Height="36" FontWeight="Bold" Click="OnStartPoll"
+                IsEnabled="False"/>
+        <Button x:Name="btnStopPoll" Content="■ 停止轮询"
+                Style="{StaticResource MaterialDesignRaisedButton}"
+                Background="{DynamicResource AccentRed}" Foreground="White"
+                Height="36" FontWeight="Bold" Click="OnStopPoll"
+                IsEnabled="False" Margin="0,8,0,0"/>
+
+        <Border Background="{DynamicResource CardBackground}" CornerRadius="4"
+                Padding="8,6" Margin="0,8,0,0">
+            <TextBlock x:Name="txtPollStatus" Text="就绪"
+                       Foreground="{DynamicResource TextDim}" FontSize="12"/>
+        </Border>
+    </StackPanel>
+</UserControl>
