@@ -109,7 +109,8 @@ public partial class MainWindow : Window
             if (v is >= 1e18 or <= 0 or double.NaN or double.NegativeInfinity or double.PositiveInfinity)
                 return "";
             long ticks = (long)v;
-            return ticks > 0 ? new DateTime(ticks).ToString("HH:mm:ss") : "";
+            try { return new DateTime(ticks).ToString("HH:mm:ss"); }
+            catch { return ""; }
         }
 
         cartesianTrend.Series = _trendSeries;
