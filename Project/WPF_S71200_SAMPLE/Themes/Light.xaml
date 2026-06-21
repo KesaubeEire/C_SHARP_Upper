@@ -18,4 +18,13 @@
     <SolidColorBrush x:Key="AccentOrange" Color="#D68910"/>
     <SolidColorBrush x:Key="DisabledBackground" Color="#E0E0E0"/>
 
+    <!-- MaterialDesign 亮色主题覆盖 -->
+    <SolidColorBrush x:Key="MaterialDesignPaper" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="MaterialDesignCardBackground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="MaterialDesignPopupBackground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="MaterialDesignTableAlternateRow" Color="#F5F5F8"/>
+    <SolidColorBrush x:Key="MaterialDesignSelection" Color="#D0D0D8"/>
+    <SolidColorBrush x:Key="MaterialDesignTextFieldBoxBackground" Color="#F0F0F5"/>
+    <SolidColorBrush x:Key="MaterialDesignTextFieldBoxHoverBackground" Color="#E8E8EC"/>
+
 </ResourceDictionary>

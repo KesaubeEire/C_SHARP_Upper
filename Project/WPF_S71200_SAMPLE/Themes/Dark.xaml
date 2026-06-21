@@ -19,4 +19,13 @@
     <SolidColorBrush x:Key="DisabledBackground" Color="#2A2A3A"/>
     <SolidColorBrush x:Key="DisabledForeground" Color="#666666"/>
 
+    <!-- Dropdown/Popup 背景覆盖（MD5 默认在暗色模式太亮） -->
+    <SolidColorBrush x:Key="MaterialDesignPaper" Color="#1A1A2E"/>
+    <SolidColorBrush x:Key="MaterialDesignCardBackground" Color="#1A1A2E"/>
+    <SolidColorBrush x:Key="MaterialDesignPopupBackground" Color="#1A1A2E"/>
+    <SolidColorBrush x:Key="MaterialDesignTableAlternateRow" Color="#12121E"/>
+    <SolidColorBrush x:Key="MaterialDesignSelection" Color="#2A2A4A"/>
+    <SolidColorBrush x:Key="MaterialDesignTextFieldBoxBackground" Color="#16213E"/>
+    <SolidColorBrush x:Key="MaterialDesignTextFieldBoxHoverBackground" Color="#1E2A4A"/>
+
 </ResourceDictionary>

@@ -28,7 +28,6 @@ public partial class MainWindow : Window
 
     // ─── 自动轮询 ───
     private readonly PollingScheduler _scheduler = new();
-    private readonly ObservableCollection<DbPollItem> _dbItems = [];
     private readonly ObservableCollection<DbStructure> _importedDbs = [];
     private readonly ObservableCollection<UdtStructure> _importedUdts = [];
     private readonly System.Timers.Timer _liveRefreshTimer = new(200);
@@ -69,13 +68,15 @@ public partial class MainWindow : Window
         listMRows.ItemsSource = _mRows;
         UpdateEmptyState();
 
-        listDbItems.ItemsSource = _dbItems;
         listImportedDb.ItemsSource = _importedDbs;
         listImportedUdt.ItemsSource = _importedUdts;
         listFastLive.ItemsSource = _fastLiveItems;
         listDbLive.ItemsSource = _dbLiveItems;
         _liveRefreshTimer.Elapsed += (_, _) => Dispatcher.Invoke(RefreshLiveData);
-        UpdateDbEmptyState();
+
+        // 网卡列表
+        var adapters = NetworkAdapter.Enumerate();
+        cmbAdapter.ItemsSource = adapters;
 
         tabControl.SelectionChanged += TabControl_SelectionChanged;
         RestoreFromConfig();
@@ -271,13 +272,15 @@ public partial class MainWindow : Window
 
     // ====================== 连接管理 ======================
 
+    private string LocalIp => (cmbAdapter.SelectedItem as NetworkAdapter)?.Ip ?? "";
+
     private void BtnConnect_Click(object sender, RoutedEventArgs e)
     {
         string ip = txtIP.Text.Trim();
         if (!int.TryParse(txtPort.Text.Trim(), out int port)) port = 102;
         if (!int.TryParse(txtRack.Text.Trim(), out int rack)) rack = 0;
         if (!int.TryParse(txtSlot.Text.Trim(), out int slot)) slot = 0;
-        int result = _plc.Connect(ip, port, rack, slot);
+        int result = _plc.Connect(LocalIp, ip, port, rack, slot);
         if (result != 0) { MessageBox.Show(this, $"连接失败:\n{_plc.LastError ?? "错误码: " + result}", "连接错误"); UpdateConnectionUI(); return; }
         SetConnected(ip, port); UpdateConnectionUI(); SaveConfig();
     }
@@ -380,22 +383,6 @@ public partial class MainWindow : Window
 
     // ====================== 自动轮询 ======================
 
-    private void BtnAddDb_Click(object sender, RoutedEventArgs e)
-    {
-        int dbNum = TryParse(txtNewDbNumber.Text, 1), offset = TryParse(txtNewDbOffset.Text, 0), length = TryParse(txtNewDbLen.Text, 100);
-        if (_dbItems.Any(d => d.DbNumber == dbNum && d.Offset == offset)) { MessageBox.Show(this, $"DB{dbNum} @{offset} 已在列表中", "提示"); return; }
-        _dbItems.Add(new DbPollItem { DbNumber = dbNum, Offset = offset, Length = Math.Min(length, 222), Status = "待启动" });
-        UpdateDbEmptyState();
-        txtNewDbNumber.Text = (dbNum + 1).ToString(); SaveConfig();
-    }
-
-    private void BtnRemoveDb_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is DbPollItem item) { _dbItems.Remove(item); SaveConfig(); UpdateDbEmptyState(); }
-    }
-
-    private void UpdateDbEmptyState() => txtDbEmpty.Visibility = _dbItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-
     private void BtnImportDb_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "DB 文件 (*.db)|*.db|所有文件 (*.*)|*.*", Title = "选择 TIA Portal 导出的 .db 文件", Multiselect = false };
@@ -432,9 +419,7 @@ public partial class MainWindow : Window
         cfg.Fast.IStart = iS; cfg.Fast.IEnd = iE; cfg.Fast.EnableI = chkI.IsChecked == true;
         cfg.Fast.QStart = qS; cfg.Fast.QEnd = qE; cfg.Fast.EnableQ = chkQ.IsChecked == true;
         cfg.Fast.MStart = mS; cfg.Fast.MEnd = mE; cfg.Fast.EnableM = chkM.IsChecked == true;
-        cfg.DbItems.Clear();
-        foreach (var item in _dbItems) cfg.DbItems.Add(item);
-        _scheduler.Start(txtIP.Text.Trim(), TryParse(txtPort.Text, 102), TryParse(txtRack.Text, 0), TryParse(txtSlot.Text, 0));
+        _scheduler.Start(LocalIp, txtIP.Text.Trim(), TryParse(txtPort.Text, 102), TryParse(txtRack.Text, 0), TryParse(txtSlot.Text, 0));
         if (!_scheduler.IsConnected) { MessageBox.Show(this, $"轮询连接失败:\n{_scheduler.LastError}", "错误"); return; }
         _liveRefreshTimer.Start();
         txtPollStatus.Text = "● 轮询中"; txtPollStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x27, 0xAE, 0x60));
@@ -453,8 +438,7 @@ public partial class MainWindow : Window
     private void RefreshLiveData()
     {
         var values = _scheduler.LastValues;
-        if (values.Count == 0) { txtLiveEmpty.Visibility = Visibility.Visible; return; }
-        txtLiveEmpty.Visibility = Visibility.Collapsed;
+        if (values.Count == 0) return;
         _fastLiveItems.Clear();
         foreach (var key in values.Keys.Where(k => k[0] is 'I' or 'Q' or 'M').OrderBy(k => k).Take(50)) _fastLiveItems.Add($"{key}: 0x{values[key]:X2}");
         _dbLiveItems.Clear();
@@ -478,13 +462,18 @@ public partial class MainWindow : Window
     {
         txtIP.Text = _config.IP; txtPort.Text = _config.Port.ToString();
         txtRack.Text = _config.Rack.ToString(); txtSlot.Text = _config.Slot.ToString();
+        // 恢复选中的网卡
+        if (!string.IsNullOrEmpty(_config.LocalIP))
+        {
+            foreach (NetworkAdapter a in cmbAdapter.Items)
+                if (a.Ip == _config.LocalIP) { cmbAdapter.SelectedItem = a; break; }
+        }
         txtIAddress.Text = _config.ManualIAddress; txtQAddress.Text = _config.ManualQAddress; txtMAddress.Text = _config.ManualMAddress;
         txtIStart.Text = _config.PollIStart.ToString(); txtIEnd.Text = _config.PollIEnd.ToString();
         txtQStart.Text = _config.PollQStart.ToString(); txtQEnd.Text = _config.PollQEnd.ToString();
         txtMStart.Text = _config.PollMStart.ToString(); txtMEnd.Text = _config.PollMEnd.ToString();
         chkI.IsChecked = _config.PollEnableI; chkQ.IsChecked = _config.PollEnableQ; chkM.IsChecked = _config.PollEnableM;
         txtPollInterval.Text = _config.PollIntervalMs.ToString();
-        _dbItems.Clear(); foreach (var item in _config.DbItems) _dbItems.Add(item);
         _importedDbs.Clear();
         foreach (var info in _config.ImportedDbs)
         {
@@ -497,7 +486,6 @@ public partial class MainWindow : Window
             var udt = new UdtStructure { UdtName = info.UdtName, SourceFile = info.SourceFile, Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(info.VariablesJson) ?? [] };
             _importedUdts.Add(udt);
         }
-        UpdateDbEmptyState();
         if (_config.ThemeMode == "Light") { ThemeManager.Apply(AppThemeMode.Light); btnTheme.Content = "☀"; }
         if (_config.WindowLeft >= 0 && _config.WindowTop >= 0) { Left = _config.WindowLeft; Top = _config.WindowTop; }
         Width = _config.WindowWidth; Height = _config.WindowHeight;
@@ -507,13 +495,13 @@ public partial class MainWindow : Window
     private void SaveConfig()
     {
         _config.IP = txtIP.Text; _config.Port = TryParse(txtPort.Text, 102); _config.Rack = TryParse(txtRack.Text, 0); _config.Slot = TryParse(txtSlot.Text, 0);
+        _config.LocalIP = LocalIp;
         _config.ManualIAddress = txtIAddress.Text; _config.ManualQAddress = txtQAddress.Text; _config.ManualMAddress = txtMAddress.Text;
         _config.PollIStart = TryParse(txtIStart.Text, 0); _config.PollIEnd = TryParse(txtIEnd.Text, 2);
         _config.PollQStart = TryParse(txtQStart.Text, 0); _config.PollQEnd = TryParse(txtQEnd.Text, 1);
         _config.PollMStart = TryParse(txtMStart.Text, 0); _config.PollMEnd = TryParse(txtMEnd.Text, 10);
         _config.PollEnableI = chkI.IsChecked == true; _config.PollEnableQ = chkQ.IsChecked == true; _config.PollEnableM = chkM.IsChecked == true;
         _config.PollIntervalMs = TryParse(txtPollInterval.Text, 50);
-        _config.DbItems = _dbItems.ToList();
         _config.ImportedDbs = _importedDbs.Select(d => new ImportedDbInfo { DbNumber = d.DbNumber, DbName = d.DbName, SourceFile = d.SourceFile, VariablesJson = System.Text.Json.JsonSerializer.Serialize(d.Variables) }).ToList();
         _config.ImportedUdts = _importedUdts.Select(u => new ImportedUdtInfo { UdtName = u.UdtName, SourceFile = u.SourceFile, VariablesJson = System.Text.Json.JsonSerializer.Serialize(u.Variables) }).ToList();
         _config.ThemeMode = ThemeManager.Current == AppThemeMode.Dark ? "Dark" : "Light";

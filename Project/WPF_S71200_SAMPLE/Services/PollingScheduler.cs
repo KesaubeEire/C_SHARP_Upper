@@ -43,7 +43,7 @@ public sealed class PollingScheduler : IDisposable
 
     // ===== 启动/停止 =====
 
-    public void Start(string ip, int port, int rack, int slot)
+    public void Start(string localIp, string ip, int port, int rack, int slot)
     {
         lock (_lock)
         {
@@ -52,16 +52,13 @@ public sealed class PollingScheduler : IDisposable
             _fastConn = new S7Client();
             _dbConn = new S7Client();
 
-            // 连接1（Fast）
             int r1 = _fastConn.ConnectTo(ip, rack, slot);
+            int r2 = r1 == 0 ? _dbConn.ConnectTo(ip, rack, slot) : 1;
             if (r1 != 0)
             {
                 LastError = $"Fast 连接失败: {_fastConn.ErrorText(r1)}";
                 return;
             }
-
-            // 连接2（DB）
-            int r2 = _dbConn.ConnectTo(ip, rack, slot);
             if (r2 != 0)
             {
                 LastError = $"DB 连接失败: {_dbConn.ErrorText(r2)}";

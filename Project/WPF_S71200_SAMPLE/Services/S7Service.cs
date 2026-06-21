@@ -9,7 +9,7 @@ public sealed class S7Service : IDisposable
     public bool IsConnected => _client.Connected;
     public string? LastError { get; private set; }
 
-    public int Connect(string ip, int port, int rack, int slot)
+    public int Connect(string localIp, string ip, int port, int rack, int slot)
     {
         if (_client.Connected)
             _client.Disconnect();

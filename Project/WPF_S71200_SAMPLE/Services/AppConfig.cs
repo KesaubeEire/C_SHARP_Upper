@@ -15,6 +15,7 @@ public sealed class AppConfig
 
     // ===== 连接 =====
     public string IP { get; set; } = "192.168.0.1";
+    public string LocalIP { get; set; } = "";
     public int Port { get; set; } = 102;
     public int Rack { get; set; } = 0;
     public int Slot { get; set; } = 0;
