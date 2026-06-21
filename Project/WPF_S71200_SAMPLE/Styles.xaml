@@ -120,6 +120,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="disabledOverlay" Property="Visibility" Value="Visible"/>
+                            <Setter Property="Cursor" Value="No"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Opacity" Value="0.85"/>
@@ -154,6 +155,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="disabledOverlay" Property="Visibility" Value="Visible"/>
+                            <Setter Property="Cursor" Value="No"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Opacity" Value="0.85"/>

@@ -6,43 +6,28 @@ namespace TestWpf.Models;
 /// <summary>
 /// 快通道（I/Q/M）轮询配置
 /// </summary>
-public class FastPathConfig : INotifyPropertyChanged
+public class FastPathConfig
 {
-    private bool _enableI = true;
-    private int _iStart;
-    private int _iEnd = 2;
-    private bool _enableQ = true;
-    private int _qStart;
-    private int _qEnd = 1;
-    private bool _enableM = true;
-    private int _mStart;
-    private int _mEnd = 10;
+    public bool EnableI { get; set; } = true;
+    public bool EnableQ { get; set; } = true;
+    public bool EnableM { get; set; } = true;
 
-    public bool EnableI { get => _enableI; set { _enableI = value; OnChanged(); } }
-    public int IStart { get => _iStart; set { _iStart = value; OnChanged(); } }
-    public int IEnd { get => _iEnd; set { _iEnd = value; OnChanged(); } }
-    public bool EnableQ { get => _enableQ; set { _enableQ = value; OnChanged(); } }
-    public int QStart { get => _qStart; set { _qStart = value; OnChanged(); } }
-    public int QEnd { get => _qEnd; set { _qEnd = value; OnChanged(); } }
-    public bool EnableM { get => _enableM; set { _enableM = value; OnChanged(); } }
-    public int MStart { get => _mStart; set { _mStart = value; OnChanged(); } }
-    public int MEnd { get => _mEnd; set { _mEnd = value; OnChanged(); } }
+    /// <summary>逗号分隔的字节地址，如 "0,1,8"</summary>
+    public string PollIAddr { get; set; } = "0,1";
+    public string PollQAddr { get; set; } = "0";
+    public string PollMAddr { get; set; } = "0,1";
 
-    /// <summary>生成 I 区地址数组</summary>
-    public int[] IAddresses => _enableI ? Range(_iStart, _iEnd) : [];
-    public int[] QAddresses => _enableQ ? Range(_qStart, _qEnd) : [];
-    public int[] MAddresses => _enableM ? Range(_mStart, _mEnd) : [];
+    public int[] IAddresses => EnableI ? ParseAddrs(PollIAddr) : [];
+    public int[] QAddresses => EnableQ ? ParseAddrs(PollQAddr) : [];
+    public int[] MAddresses => EnableM ? ParseAddrs(PollMAddr) : [];
 
-    private static int[] Range(int start, int end)
+    private static int[] ParseAddrs(string input)
     {
-        if (start > end) return [];
-        int len = end - start + 1;
-        return len > 200 ? Enumerable.Range(start, 200).ToArray() : Enumerable.Range(start, len).ToArray();
+        if (string.IsNullOrWhiteSpace(input)) return [];
+        return input.Split(',', '，', ';', '；')
+            .Select(s => s.Trim()).Where(s => int.TryParse(s, out _))
+            .Select(int.Parse).Distinct().OrderBy(a => a).ToArray();
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    private void OnChanged([CallerMemberName] string? n = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
 }
 
 /// <summary>
@@ -77,5 +62,7 @@ public class PollingConfig
     public FastPathConfig Fast { get; } = new();
     public List<DbPollItem> DbItems { get; } = [];
     public int FastInterval { get; set; } = 50;   // ms
-    public int DbInterval { get; set; } = 50;     // ms — 分片轮转，每个 tick 读 1~2 个
+    public string DbIp { get; set; } = "";
+    public int DbRack { get; set; }
+    public int DbSlot { get; set; }
 }

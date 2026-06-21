@@ -7,23 +7,26 @@ using Timer = System.Timers.Timer;
 namespace TestWpf.Services;
 
 /// <summary>
-/// 双连接轮询调度器
-/// 连接1（Fast）: I/Q/M 每 tick 必读
-/// 连接2（DB Pool）: DB 列表分片轮转
+/// 单连接轮询调度器 — 复用 S7Service 的连接，不额外占用 PLC 连接数
+/// - I/Q/M 通过共享的 S7Service 读取（跟手动读取用同一连接）
+/// - DB 列表分片轮转（独立连接，一个 DB 连接足够）
+/// - DataUpdated 事件推送
 /// </summary>
 public sealed class PollingScheduler : IDisposable
 {
-    private S7Client? _fastConn;
     private S7Client? _dbConn;
     private Timer? _timer;
+    private S7Service? _s7;
 
     private readonly PollingConfig _config;
     private readonly object _lock = new();
 
-    private int _dbIndex;  // 当前 DB 轮转下标
+    private int _dbIndex;
     private int _tick;
 
-    // 最新一轮读取结果
+    /// <summary>防重入标志 — 前一次还没跑完就跳过本次</summary>
+    private volatile bool _busy;
+
     public ConcurrentDictionary<string, byte> LastValues { get; } = new();
 
     public bool IsRunning { get; private set; }
@@ -31,48 +34,41 @@ public sealed class PollingScheduler : IDisposable
     public string? LastError { get; private set; }
     public PollingConfig Config => _config;
 
-    public PollingScheduler()
-    {
-        _config = new PollingConfig();
-    }
+    public event Action<HashSet<string>>? DataUpdated;
 
-    public PollingScheduler(PollingConfig config)
-    {
-        _config = config;
-    }
+    public PollingScheduler() => _config = new PollingConfig();
+    public PollingScheduler(PollingConfig config) => _config = config;
 
     // ===== 启动/停止 =====
 
-    public void Start(string localIp, string ip, int port, int rack, int slot)
+    /// <summary>使用共享的 S7Service（复用其连接，不额外占 PLC 连接数）</summary>
+    public void Start(S7Service s7, int port)
     {
         lock (_lock)
         {
             Stop();
+            _s7 = s7;
 
-            _fastConn = new S7Client();
-            _dbConn = new S7Client();
-
-            int r1 = _fastConn.ConnectTo(ip, rack, slot);
-            int r2 = r1 == 0 ? _dbConn.ConnectTo(ip, rack, slot) : 1;
-            if (r1 != 0)
+            if (_config.DbItems.Count > 0)
             {
-                LastError = $"Fast 连接失败: {_fastConn.ErrorText(r1)}";
-                return;
-            }
-            if (r2 != 0)
-            {
-                LastError = $"DB 连接失败: {_dbConn.ErrorText(r2)}";
-                _fastConn.Disconnect();
-                return;
+                _dbConn = new S7Client();
+                int portVal = port;
+                _dbConn.SetParam(Sharp7.S7Consts.p_u16_LocalPort, ref portVal);
+                int r = _dbConn.ConnectTo(_config.DbIp, _config.DbRack, _config.DbSlot);
+                if (r != 0)
+                {
+                    LastError = $"DB 连接失败: {_dbConn.ErrorText(r)}";
+                    _dbConn = null;
+                }
             }
 
-            IsConnected = true;
+            IsConnected = s7.IsConnected;
             _dbIndex = 0;
             _tick = 0;
 
             _timer = new Timer(Math.Max(20, Math.Min(_config.FastInterval, 200)));
             _timer.Elapsed += OnTimerElapsed;
-            _timer.AutoReset = true;
+            _timer.AutoReset = false;   // 手动重启，防止重叠
             _timer.Start();
             IsRunning = true;
             LastError = null;
@@ -83,18 +79,9 @@ public sealed class PollingScheduler : IDisposable
     {
         lock (_lock)
         {
-            if (_timer != null)
-            {
-                _timer.Stop();
-                _timer.Dispose();
-                _timer = null;
-            }
-
-            _fastConn?.Disconnect();
-            _dbConn?.Disconnect();
-            _fastConn = null;
-            _dbConn = null;
-
+            if (_timer != null) { _timer.Stop(); _timer.Dispose(); _timer = null; }
+            _dbConn?.Disconnect(); _dbConn = null;
+            _s7 = null;
             IsRunning = false;
             IsConnected = false;
         }
@@ -104,65 +91,72 @@ public sealed class PollingScheduler : IDisposable
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
-        if (!IsConnected) return;
-        _tick++;
+        // 防重入：上次还没跑完就跳过本次 tick，不重启 timer（等下次触发）
+        if (!IsRunning || _busy) return;
+        if (_s7 == null || !_s7.IsConnected) { IsConnected = false; return; }
 
-        // 连接1: 读 I/Q/M
-        ReadFastPath();
+        _busy = true;
+        try
+        {
+            _tick++;
+            var updated = new HashSet<string>();
 
-        // 连接2: 读 DB（分片轮转）
-        ReadDbSlice();
+            ReadFastPath(updated);
+            ReadDbSlice(updated);
+
+            if (updated.Count > 0)
+                DataUpdated?.Invoke(updated);
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+            // 工作完成后再启动下一次定时，绝不重叠
+            if (IsRunning)
+            {
+                try { _timer?.Start(); }
+                catch { /* Dispose 竞争时忽略 */ }
+            }
+        }
     }
 
-    // ===== Fast Path: I/Q/M =====
+    // ===== Fast Path: I/Q/M（复用 S7Service 连接） =====
 
-    private void ReadFastPath()
+    private void ReadFastPath(HashSet<string> updated)
     {
-        var conn = _fastConn;
-        if (conn == null || !conn.Connected) return;
+        var s7 = _s7;
+        if (s7 == null) return;
 
         var cfg = _config.Fast;
 
-        // I 区
-        if (cfg.EnableI)
+        if (cfg.EnableI && cfg.IAddresses.Length > 0)
         {
-            var addrs = cfg.IAddresses;
-            if (addrs.Length > 0)
-            {
-                var data = ReadBytes(conn, S7Area.PE, addrs);
-                foreach (var (addr, val) in data)
-                    LastValues[$"I{addr}"] = val;
-            }
+            var data = s7.ReadBytes(S7Service.AreaI, cfg.IAddresses);
+            foreach (var (addr, val) in data)
+            { LastValues[$"I{addr}"] = val; updated.Add($"I{addr}"); }
         }
 
-        // Q 区
-        if (cfg.EnableQ)
+        if (cfg.EnableQ && cfg.QAddresses.Length > 0)
         {
-            var addrs = cfg.QAddresses;
-            if (addrs.Length > 0)
-            {
-                var data = ReadBytes(conn, S7Area.PA, addrs);
-                foreach (var (addr, val) in data)
-                    LastValues[$"Q{addr}"] = val;
-            }
+            var data = s7.ReadBytes(S7Service.AreaQ, cfg.QAddresses);
+            foreach (var (addr, val) in data)
+            { LastValues[$"Q{addr}"] = val; updated.Add($"Q{addr}"); }
         }
 
-        // M 区
-        if (cfg.EnableM)
+        if (cfg.EnableM && cfg.MAddresses.Length > 0)
         {
-            var addrs = cfg.MAddresses;
-            if (addrs.Length > 0)
-            {
-                var data = ReadBytes(conn, S7Area.MK, addrs);
-                foreach (var (addr, val) in data)
-                    LastValues[$"M{addr}"] = val;
-            }
+            var data = s7.ReadBytes(S7Service.AreaM, cfg.MAddresses);
+            foreach (var (addr, val) in data)
+            { LastValues[$"M{addr}"] = val; updated.Add($"M{addr}"); }
         }
     }
 
     // ===== DB Pool: 分片轮转 =====
 
-    private void ReadDbSlice()
+    private void ReadDbSlice(HashSet<string> updated)
     {
         var conn = _dbConn;
         if (conn == null || !conn.Connected) return;
@@ -170,9 +164,7 @@ public sealed class PollingScheduler : IDisposable
         var items = _config.DbItems.Where(d => d.Enabled).ToList();
         if (items.Count == 0) return;
 
-        // 本轮要读的 DB 个数：尽量让每个 tick 读 ~2 个，但总量不超 ~30ms
         int maxThisTick = 2;
-
         for (int i = 0; i < maxThisTick && items.Count > 0; i++)
         {
             if (_dbIndex >= items.Count) _dbIndex = 0;
@@ -180,94 +172,42 @@ public sealed class PollingScheduler : IDisposable
             _dbIndex++;
 
             int len = Math.Min(item.Length, 222);
-            byte[] buffer = new byte[len];
-            int result = conn.DBRead(item.DbNumber, item.Offset, len, buffer);
+            byte[] buf = new byte[len];
+            int ret = conn.DBRead(item.DbNumber, item.Offset, len, buf);
 
-            if (result == 0)
+            if (ret == 0)
             {
                 for (int j = 0; j < len; j++)
-                    LastValues[$"DB{item.DbNumber}[{item.Offset + j}]"] = buffer[j];
-                item.Status = $"OK 0x{buffer[0]:X2}..";
+                {
+                    string key = $"DB{item.DbNumber}[{item.Offset + j}]";
+                    LastValues[key] = buf[j];
+                    updated.Add(key);
+                }
+                item.Status = $"OK 0x{buf[0]:X2}..";
             }
             else
             {
-                item.Status = $"ERR {result}";
+                item.Status = $"ERR {ret}";
             }
-
-            // 如果这一次耗时已经较多，不再读更多 DB
-            if (i == 0 && len > 100) break; // 大块只读 1 个
+            if (i == 0 && len > 100) break;
         }
     }
 
-    // ===== 读取工具 =====
+    // ===== 写操作（通过 S7Service） =====
 
-    private static Dictionary<int, byte> ReadBytes(S7Client client, S7Area area, int[] addresses)
+    public bool WriteByte(string areaType, int byteAddr, byte value)
     {
-        var result = new Dictionary<int, byte>();
-        var sorted = addresses.Distinct().OrderBy(a => a).ToArray();
-        var groups = GroupConsecutive(sorted);
-
-        foreach (var (start, count) in groups)
-        {
-            byte[] buf = new byte[count];
-            int ret = client.ReadArea(area, 0, start, count, S7WordLength.Byte, buf);
-            if (ret == 0)
-                for (int i = 0; i < count; i++) result[start + i] = buf[i];
-        }
-        return result;
-    }
-
-    private static List<(int Start, int Count)> GroupConsecutive(int[] sorted)
-    {
-        var groups = new List<(int, int)>();
-        if (sorted.Length == 0) return groups;
-
-        int gs = sorted[0], ge = sorted[0];
-        for (int i = 1; i < sorted.Length; i++)
-        {
-            if (sorted[i] == ge + 1) { ge = sorted[i]; }
-            else { groups.Add((gs, ge - gs + 1)); gs = sorted[i]; ge = sorted[i]; }
-        }
-        groups.Add((gs, ge - gs + 1));
-        return groups;
+        if (_s7 == null) return false;
+        int area = areaType.ToUpper() switch { "Q" => S7Service.AreaQ, "M" => S7Service.AreaM, _ => S7Service.AreaQ };
+        bool ok = _s7.WriteByte(area, byteAddr, value);
+        if (ok) LastValues[$"{areaType}{byteAddr}"] = value;
+        return ok;
     }
 
     // ===== 查询最新值 =====
 
     public byte? GetValue(string key) =>
         LastValues.TryGetValue(key, out var val) ? val : null;
-
-    public bool GetBit(string key, int bitIndex)
-    {
-        if (LastValues.TryGetValue(key, out var val))
-            return ((val >> bitIndex) & 1) == 1;
-        return false;
-    }
-
-    // ===== 写操作 =====
-
-    public bool WriteByte(string areaType, int byteAddr, byte value)
-    {
-        var conn = _fastConn;
-        if (conn == null || !conn.Connected) return false;
-
-        S7Area area = areaType.ToUpper() switch
-        {
-            "Q" => S7Area.PA,
-            "M" => S7Area.MK,
-            _ => S7Area.PA
-        };
-
-        byte[] buf = [value];
-        int r = conn.WriteArea(area, 0, byteAddr, 1, S7WordLength.Byte, buf);
-        if (r == 0)
-        {
-            LastValues[$"{areaType}{byteAddr}"] = value;
-            return true;
-        }
-        LastError = conn.ErrorText(r);
-        return false;
-    }
 
     public void Dispose() => Stop();
 }

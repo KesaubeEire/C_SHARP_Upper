@@ -188,12 +188,13 @@
                     </StackPanel>
 
                     <!-- 连接/断开 -->
-                    <StackPanel Margin="16,14,16,0" Orientation="Horizontal">
+                    <StackPanel Margin="16,14,16,0" Orientation="Horizontal" HorizontalAlignment="Center">
+                        
                         <Button x:Name="btnConnect" Content="● 连接"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
                                 Background="{DynamicResource AccentGreen}" Foreground="White"
                                 Padding="0" Height="34" FontWeight="Bold"
-                                Click="BtnConnect_Click" Width="100" Margin="0,0,10,0"/>
+                                Click="BtnConnect_Click" Width="100" Margin="0,0,16,0"/>
                         <Button x:Name="btnDisconnect" Content="○ 断开"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
                                 Background="{DynamicResource AccentRed}" Foreground="White"
@@ -212,82 +213,9 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ====== 轮询范围 ====== -->
-                    <StackPanel Margin="16,16,16,0">
-                        <TextBlock Text="📡 轮询范围" Style="{StaticResource SectionTitle}"/>
-
-                        <!-- I 区 -->
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="6"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource AccentBlue}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="I" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBox Grid.Column="2" x:Name="txtIStart" Text="0" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
-                            <TextBlock Grid.Column="3" Text="~" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" FontSize="11"/>
-                            <TextBox Grid.Column="4" x:Name="txtIEnd" Text="2" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
-                            <CheckBox Grid.Column="5" x:Name="chkI" IsChecked="True" Foreground="{DynamicResource TextSecondary}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                        </Grid>
-
-                        <!-- Q 区 -->
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="6"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource AccentGreen}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="Q" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBox Grid.Column="2" x:Name="txtQStart" Text="0" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
-                            <TextBlock Grid.Column="3" Text="~" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" FontSize="11"/>
-                            <TextBox Grid.Column="4" x:Name="txtQEnd" Text="1" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
-                            <CheckBox Grid.Column="5" x:Name="chkQ" IsChecked="True" Foreground="{DynamicResource TextSecondary}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                        </Grid>
-
-                        <!-- M 区 -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="6"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource AccentPurple}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="M" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBox Grid.Column="2" x:Name="txtMStart" Text="0" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
-                            <TextBlock Grid.Column="3" Text="~" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" FontSize="11"/>
-                            <TextBox Grid.Column="4" x:Name="txtMEnd" Text="10" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
-                            <CheckBox Grid.Column="5" x:Name="chkM" IsChecked="True" Foreground="{DynamicResource TextSecondary}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                        </Grid>
-                    </StackPanel>
-
-
-                    <!-- ====== 轮询间隔 ====== -->
-                    <StackPanel Margin="16,16,16,0">
-                        <TextBlock Text="⏱ 轮询间隔" Style="{StaticResource SectionTitle}"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txtPollInterval" Text="50" Style="{StaticResource SidebarInput}" Height="28"/>
-                            <TextBlock Grid.Column="1" Text="ms" Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </Grid>
-                    </StackPanel>
 
                     <!-- ====== 导入 DB/UDT ====== -->
-                    <StackPanel Margin="16,16,16,0">
+                    <StackPanel Margin="16,16,16,4">
                         <TextBlock Text="📂 导入 DB 结构" Style="{StaticResource SectionTitle}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -359,18 +287,28 @@
                         </ItemsControl>
                     </StackPanel>
 
-                    <!-- ====== 轮询控制 ====== -->
-                    <StackPanel Margin="16,16,16,0">
+                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="16,8,16,0"/>
+
+                    <StackPanel Margin="16,12,16,0">
+                        <TextBlock Text="⏱ 轮询" Style="{StaticResource SectionTitle}"/>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="txtPollInterval" Text="50" Style="{StaticResource SidebarInput}" Height="28"/>
+                            <TextBlock Grid.Column="1" Text="ms" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </Grid>
                         <Button x:Name="btnStartPoll" Content="▶ 启动轮询"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
                                 Background="{DynamicResource AccentGreen}" Foreground="White"
                                 Height="36" FontWeight="Bold" Click="BtnStartPoll_Click"
-                                IsEnabled="False" Margin="0,0,0,8"/>
+                                IsEnabled="False"/>
                         <Button x:Name="btnStopPoll" Content="■ 停止轮询"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
                                 Background="{DynamicResource AccentRed}" Foreground="White"
                                 Height="36" FontWeight="Bold" Click="BtnStopPoll_Click"
-                                IsEnabled="False"/>
+                                IsEnabled="False" Margin="0,8,0,0"/>
                         <Border Background="{DynamicResource CardBackground}" CornerRadius="4"
                                 Padding="8,6" Margin="0,8,0,0">
                             <TextBlock x:Name="txtPollStatus" Text="就绪"
@@ -401,7 +339,6 @@
                         </Style>
                     </TabControl.Resources>
                     <TabItem Header="📋 手动读写" Style="{StaticResource TabHeader}"/>
-                    <TabItem Header="⚡ 自动轮询" Style="{StaticResource TabHeader}"/>
                     <TabItem Header="📈 趋势图" Style="{StaticResource TabHeader}"/>
                 </TabControl>
             </Border>
@@ -857,7 +794,7 @@
                                     <Border Background="{DynamicResource WindowBackground}"
                                             BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                                             CornerRadius="6" Height="60" Padding="8">
-                                        <Canvas x:Name="canvasGauge" HorizontalAlignment="Stretch" Margin="0,5"/>
+                                        <Canvas x:Name="canvasGauge" HorizontalAlignment="Stretch" Margin="0,5" SizeChanged="CanvasGauge_SizeChanged"/>
                                     </Border>
                                 </StackPanel>
                             </Border>
@@ -881,70 +818,6 @@
                     </Grid>
                 </ScrollViewer>
 
-                <!-- ===== 自动轮询模式 ===== -->
-                <ScrollViewer x:Name="autoPanel" Padding="16,8" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-
-                        <!-- DB 轮询列表 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
-                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="已导入 DB 可直接通过导入结构使用" FontSize="13"
-                                           Foreground="{DynamicResource TextDim}" Margin="0,0,0,6"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- 实时数据 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
-                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="实时数据监视" FontSize="16" FontWeight="Bold"
-                                           Foreground="{DynamicResource AccentGreen}" Margin="0,0,0,10"/>
-                                <TextBlock Text="I / Q / M 区" Foreground="{DynamicResource AccentBlue}"
-                                           FontSize="12" Margin="0,0,0,6"/>
-                                <ItemsControl x:Name="listFastLive" MaxHeight="140">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="{DynamicResource InputBackground}" CornerRadius="4"
-                                                    Padding="8,4" Margin="3">
-                                                <TextBlock Text="{Binding}" Foreground="{DynamicResource TextSecondary}"
-                                                           FontSize="12"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock Text="DB 区" Foreground="{DynamicResource AccentOrange}"
-                                           FontSize="12" Margin="0,10,0,6"/>
-                                <ItemsControl x:Name="listDbLive" MaxHeight="200">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="{DynamicResource InputBackground}" CornerRadius="4"
-                                                    Padding="8,4" Margin="3">
-                                                <TextBlock Text="{Binding}" Foreground="{DynamicResource TextSecondary}"
-                                                           FontSize="12"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock x:Name="txtLiveEmpty" Text="启动轮询后自动显示"
-                                           Foreground="{DynamicResource TextDim}" FontSize="12"
-                                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <Rectangle Height="24" Fill="Transparent"/>
-                    </StackPanel>
-                </ScrollViewer>
             </Grid>
         </Grid>
     </Grid>
