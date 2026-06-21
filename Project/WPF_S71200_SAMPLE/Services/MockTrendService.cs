@@ -1,13 +1,12 @@
 using System.Collections.Concurrent;
 using System.Timers;
-using TestWpf.Models;
 using Timer = System.Timers.Timer;
 
 namespace TestWpf.Services;
 
 /// <summary>
-/// Mock 趋势数据生成器（对标 Trioop mockData.ts）
-/// 每 100ms 产生 4 个通道的正弦波/随机游走数据
+/// Mock 趋势数据生成器 — 每 100ms 产生 6 通道正弦波数据
+/// 使用相对毫秒数（_elapsedMs）作为 X 轴值，避开 DateTime.Ticks 溢出问题
 /// </summary>
 public class MockTrendService : IDisposable
 {
@@ -15,8 +14,7 @@ public class MockTrendService : IDisposable
     private readonly ConcurrentDictionary<string, double> _lastValues = new();
     private readonly Random _rng = new();
     private DateTime _startTime = DateTime.Now;
-
-    // 趋势图 X 轴用相对秒数（距启动时刻的秒数），避开 DateTime.Ticks 精度问题
+    private long _elapsedMs;  // 自启动以来的累计毫秒数，用于 X 轴
 
     public bool IsRunning { get; private set; }
     public event Action<string, double, DateTime>? SampleGenerated;
@@ -31,6 +29,7 @@ public class MockTrendService : IDisposable
     public void Start()
     {
         _startTime = DateTime.Now;
+        _elapsedMs = 0;
         _timer.Start();
         IsRunning = true;
     }
@@ -43,16 +42,16 @@ public class MockTrendService : IDisposable
 
     private void Tick()
     {
-        double t = (DateTime.Now - _startTime).TotalSeconds;
+        _elapsedMs += (long)_timer.Interval;
+        double t = _elapsedMs / 1000.0;
         DateTime now = DateTime.Now;
 
-        // 所有通道用绝对 DateTime
-        Emit("ch_temp", 85 + Math.Sin(t * 0.05) * 8 + Math.Sin(t * 0.4) * 1.5, now);
-        Emit("ch_press", 8 + Math.Sin(t * 0.07) * 1.5 + (_rng.NextDouble() - 0.5) * 0.3, now);
-        Emit("ch_flow", 28 + Math.Sin(t * 0.04) * 6 + Math.Sin(t * 0.3) * 1, now);
-        Emit("ch_level", 60 + Math.Sin(t * 0.03) * 18 + (_rng.NextDouble() - 0.5) * 2, now);
-        Emit("ch_servo", 45 + Math.Sin(t * 0.1) * 30 + (_rng.NextDouble() - 0.5) * 3, now);
-        Emit("ch_current", 12 + Math.Sin(t * 0.15) * 4 + (_rng.NextDouble() - 0.5) * 1, now);
+        Emit("ch_temp",   85 + Math.Sin(t * 0.05) * 8 + Math.Sin(t * 0.40) * 1.5, now);
+        Emit("ch_press",   8 + Math.Sin(t * 0.07) * 1.5 + (_rng.NextDouble() - 0.5) * 0.3, now);
+        Emit("ch_flow",   28 + Math.Sin(t * 0.04) * 6 + Math.Sin(t * 0.30) * 1, now);
+        Emit("ch_level",  60 + Math.Sin(t * 0.03) * 18 + (_rng.NextDouble() - 0.5) * 2, now);
+        Emit("ch_servo",  45 + Math.Sin(t * 0.10) * 30 + (_rng.NextDouble() - 0.5) * 3, now);
+        Emit("ch_current",12 + Math.Sin(t * 0.15) * 4 + (_rng.NextDouble() - 0.5) * 1, now);
     }
 
     private void Emit(string key, double value, DateTime ts)
