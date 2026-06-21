@@ -103,15 +103,13 @@ public partial class MainWindow : Window
 
         listTrendChannels.ItemsSource = _trendChannels;
 
-        // X 轴 Labeler：防御 DateTime 越界（LiveCharts 会传边缘值）
+        // X 轴 Labeler：防御 LiveCharts 传入越界/NaN/Inf ticks
         static string SafeTimeLabel(double v)
         {
-            if (v is >= long.MaxValue or <= long.MinValue or double.NaN or double.NegativeInfinity or double.PositiveInfinity)
+            if (v is >= 1e18 or <= 0 or double.NaN or double.NegativeInfinity or double.PositiveInfinity)
                 return "";
             long ticks = (long)v;
-            return ticks is > 0 and <= 3155378975999999999L
-                ? new DateTime(ticks).ToString("HH:mm:ss")
-                : "";
+            return ticks > 0 ? new DateTime(ticks).ToString("HH:mm:ss") : "";
         }
 
         cartesianTrend.Series = _trendSeries;
