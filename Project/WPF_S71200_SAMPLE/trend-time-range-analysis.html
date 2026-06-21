@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>趋势图时间窗口问题分析报告</title>
+<style>
+  body { font-family: Consolas, monospace; max-width: 960px; margin: 0 auto; padding: 30px; background: #1a1a2e; color: #e0e0e0; }
+  h1 { color: #e74c4a; border-bottom: 2px solid #e74c4a; padding-bottom: 8px; }
+  h2 { color: #3498db; margin-top: 30px; }
+  h3 { color: #f4d03f; }
+  .bad { background: #5a1a1a; border-left: 4px solid #e74c4a; padding: 12px 16px; margin: 10px 0; }
+  .good { background: #1a3a2a; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 10px 0; }
+  .info { background: #1a2a3a; border-left: 4px solid #3498db; padding: 12px 16px; margin: 10px 0; }
+  code { background: #2a2a3a; padding: 2px 6px; border-radius: 3px; font-size: 14px; }
+  pre { background: #0d0d1a; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; border: 1px solid #333; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #444; padding: 8px 12px; text-align: left; }
+  th { background: #2a2a3a; color: #f4d03f; }
+  td { background: #1a1a2e; }
+  .over { color: #e74c4a; font-weight: bold; }
+  .ok { color: #27ae60; }
+  .red { color: #e74c4a; }
+  .yellow { color: #f4d03f; }
+  .green { color: #27ae60; }
+  .cyan { color: #37d3e0; }
+  .fix-box { background: #0d1a0d; border: 2px solid #27ae60; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .fix-box h3 { color: #27ae60; margin-top: 0; }
+  .warn-box { background: #1a1a0d; border: 2px solid #f4d03f; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .warn-box h3 { color: #f4d03f; margin-top: 0; }
+  ul { line-height: 1.8; }
+  .step { counter-increment: step; margin-bottom: 16px; }
+  .step::before { content: "步骤 " counter(step) " "; background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; margin-right: 8px; }
+  ol { counter-reset: step; }
+  ol li { list-style: none; margin-bottom: 16px; padding: 12px; background: #0d0d1a; border-radius: 6px; }
+  ol li strong { color: #37d3e0; }
+</style>
+</head>
+<body>
+
+<h1>📈 趋势图时间窗口问题分析报告</h1>
+
+<h2>症状</h2>
+<div class="bad">
+  <strong>现象：</strong>"1 分钟" 时间范围正常显示数据，但切换到 "5 分钟"、"30 分钟"、"1 小时"、"12 小时"、"24 小时" 后，趋势图上看不到数据或数据不更新。
+</div>
+
+<h2>根因分析：int 乘法溢出</h2>
+
+<div class="info">
+  <strong>问题代码位置：</strong><code>MainWindow.xaml.cs</code> — <code>UpdateTrendXAxis()</code> 和 <code>SlideTrendXAxis()</code> 方法
+</div>
+
+<p>关键表达式：</p>
+<pre>double n = DateTime.Now.Ticks;
+cartesianTrend.XAxes = [MakeTrendAxis(<span class="red">n - _trendTimeWindowMs * 10_000</span>, n)];</pre>
+
+<p><code>_trendTimeWindowMs</code> 是 <code>int</code> 类型，<code>10_000</code> 也是 <code>int</code> 字面量。<br>
+在 C# 中 <code>int * int</code> 的结果仍然是 <code>int</code>（32 位有符号），最大值为 2,147,483,647。</p>
+
+<table>
+  <tr><th>时间范围</th><th>_trendTimeWindowMs</th><th>× 10_000</th><th>溢出？</th><th>实际 int32 结果</th></tr>
+  <tr><td>1 分钟</td><td>60,000</td><td>600,000,000</td><td class="ok">✅ 否</td><td>600,000,000</td></tr>
+  <tr><td>5 分钟</td><td>300,000</td><td>3,000,000,000</td><td class="over">💥 溢出</td><td class="red">-1,294,967,296</td></tr>
+  <tr><td>30 分钟</td><td>1,800,000</td><td>18,000,000,000</td><td class="over">💥 溢出</td><td class="red">820,130,816</td></tr>
+  <tr><td>1 小时</td><td>3,600,000</td><td>36,000,000,000</td><td class="over">💥 溢出</td><td class="red">1,640,261,632</td></tr>
+  <tr><td>12 小时</td><td>43,200,000</td><td>432,000,000,000</td><td class="over">💥 溢出</td><td class="red">-1,791,696,896</td></tr>
+  <tr><td>24 小时</td><td>86,400,000</td><td>864,000,000,000</td><td class="over">💥 溢出</td><td class="red">711,573,504</td></tr>
+</table>
+
+<div class="bad">
+  <strong>为什么 1 分钟能工作：</strong>60,000 × 10,000 = 600,000,000，小于 int.MaxValue(2,147,483,647)，不溢出。<br>
+  <strong>为什么 5 分钟以上不工作：</strong>结果溢出变成负数或错误值，导致 X 轴 <code>MinLimit</code> > <code>MaxLimit</code>，LiveCharts2 无法渲染有效范围，数据全部不可见。
+</div>
+
+<h2>官网对比：LiveCharts2 2.0.4 的推荐做法</h2>
+
+<div class="info">
+<p>从 <strong>LiveCharts2 WPF 2.0.4 官方样例</strong>（samples.lines.basic / samples.axes）可以看到：</p>
+<ul>
+  <li>官方实时图表的 X 轴总是用 <strong><code>TimeSpan.Ticks</code></strong> 或 <code>DateTime.Now.Ticks</code> 的 <code>long</code> 类型计算</li>
+  <li>不会在每次数据更新时 <strong>新建</strong> Axis 对象，而是复用已有的 Axis 实例</li>
+  <li>数据源用 <code>ObservableCollection&lt;DateTimePoint&gt;</code>，这是正确的</li>
+</ul>
+</div>
+
+<h2>次要问题</h2>
+
+<table>
+  <tr><th>#</th><th>问题</th><th>影响</th></tr>
+  <tr>
+    <td>2</td>
+    <td><code>SlideTrendXAxis()</code> 每次数据到达（100ms/次）都新建 <code>Axis[]</code> 数组</td>
+    <td>性能浪费，频繁触发 LiveCharts2 内部重布局。大窗口时 UI 线程负担重</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Labeler 显示 <code>HH:mm:ss</code>，对 12h/24h 窗口不够用</td>
+    <td>跨日查看时看不到日期；大窗口刻度太密</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>缓冲裁剪只按数量（864k 点），不按时间窗口</td>
+    <td>切换小窗口后多余数据仍在内存中，但不会导致数据丢失</td>
+  </tr>
+</table>
+
+<h2>修复方案</h2>
+
+<div class="fix-box">
+<h3>🔧 核心修复（必须）</h3>
+<p><strong>修复 int 溢出：</strong>将乘法转为 <code>long</code> 计算</p>
+
+<p><strong>更改 1：<code>UpdateTrendXAxis</code> 和 <code>SlideTrendXAxis</code></strong></p>
+<pre><span class="red">// ❌ 当前代码（int 溢出）
+double n = DateTime.Now.Ticks;
+cartesianTrend.XAxes = [MakeTrendAxis(n - _trendTimeWindowMs * 10_000, n)];</span>
+
+<span class="green">// ✅ 修复：用 TimeSpan 计算，避免手写乘法
+private void UpdateTrendXAxis()
+{
+    var window = TimeSpan.FromMilliseconds(_trendTimeWindowMs);
+    double now = DateTime.Now.Ticks;
+    cartesianTrend.XAxes = [MakeTrendAxis(now - window.Ticks, now)];
+}
+
+private void SlideTrendXAxis()
+{
+    // 更好的做法：复用现有 Axis 对象，不新建数组
+    var window = TimeSpan.FromMilliseconds(_trendTimeWindowMs);
+    double now = DateTime.Now.Ticks;
+    var axis = cartesianTrend.XAxes[0];
+    axis.MinLimit = now - window.Ticks;
+    axis.MaxLimit = now;
+}</span></pre>
+
+<p><strong>或者更简单的单行修复：</strong></p>
+<pre><span class="green">// ✅ 修复：将 _trendTimeWindowMs 转 long 再乘
+double n = DateTime.Now.Ticks;
+cartesianTrend.XAxes = [MakeTrendAxis(n - (long)_trendTimeWindowMs * 10_000, n)];</span></pre>
+</div>
+
+<div class="warn-box">
+<h3>⚡ 性能优化（建议）</h3>
+
+<p><strong>更改 2：不要在每次数据到达时重建 Axis</strong></p>
+<pre><span class="red">// ❌ 当前：每次 OnTrendSample 都新建 Axis[]
+private void OnTrendSample(...)
+{
+    // ...
+    SlideTrendXAxis(); // 每 100ms 执行一次
+}</span>
+
+<span class="green">// ✅ 优化：只在切换时间范围时更新极限值
+// CmbTrendTimeRange_Changed 中调用 UpdateTrendXAxis()
+// OnTrendSample 中只 SlideTrendXAxis() — 复用 Axis 实例
+
+private void SlideTrendXAxis()
+{
+    var window = TimeSpan.FromMilliseconds(_trendTimeWindowMs);
+    double n = DateTime.Now.Ticks;
+    var axis = cartesianTrend.XAxes[0];  // 复用，不 new
+    axis.MinLimit = n - window.Ticks;
+    axis.MaxLimit = n;
+}</span></pre>
+</div>
+
+<div class="warn-box">
+<h3>📅 标签格式化优化（建议）</h3>
+
+<p><strong>更改 3：根据窗口大小自适应时间格式</strong></p>
+<pre><span class="green">// ✅ 优化：根据时间窗口选择不同的时间格式
+private static Axis MakeTrendAxis(double min, double max, int timeWindowMs)
+{
+    string format = timeWindowMs switch
+    {
+        <= 300_000  => "HH:mm:ss",       // ≤5分钟：显示秒
+        <= 3_600_000 => "HH:mm",         // ≤1小时：显示分
+        <= 43_200_000 => "MM/dd HH:mm",  // ≤12小时：显示日期+时分
+        _            => "MM/dd HH:mm",   // >12小时：显示日期+时分
+    };
+
+    return new Axis
+    {
+        MinLimit = min,
+        MaxLimit = max,
+        Labeler = v => new DateTime((long)v).ToLocalTime().ToString(format),
+    };
+}</span></pre>
+
+<p><strong>调用处改为：</strong><code>MakeTrendAxis(n - window.Ticks, n, _trendTimeWindowMs)</code></p>
+</div>
+
+<div class="warn-box">
+<h3>📉 缓冲裁剪优化（建议）</h3>
+
+<p><strong>更改 4：裁剪缓冲区时按时间窗口保留数据</strong></p>
+<pre><span class="green">// ✅ 优化：只保留当前时间窗口内的数据
+private void TrimBuffer(ObservableCollection&lt;DateTimePoint&gt; buf)
+{
+    var cutoff = DateTime.Now - TimeSpan.FromMilliseconds(_trendTimeWindowMs * 2);
+    while (buf.Count > 0 && buf[0].DateTime &lt; cutoff)
+        buf.RemoveAt(0);
+}</span></pre>
+</div>
+
+<h2>改动影响范围</h2>
+
+<table>
+  <tr><th>文件</th><th>改动内容</th><th>风险</th></tr>
+  <tr><td><code>MainWindow.xaml.cs</code></td><td>修复 int 溢出（1 行改 long）</td><td class="green">极低 — 仅类型转换</td></tr>
+  <tr><td><code>MainWindow.xaml.cs</code></td><td>SlideTrendXAxis 复用 Axis</td><td class="green">低 — 但需确保首次 Axis 已创建</td></tr>
+  <tr><td><code>MainWindow.xaml.cs</code></td><td>MakeTrendAxis 自适应格式</td><td class="green">低 — 仅影响标签显示</td></tr>
+  <tr><td><code>MainWindow.xaml.cs</code></td><td>缓冲裁剪优化</td><td class="green">低 — 减少内存占用</td></tr>
+</table>
+
+<h2>验证方法</h2>
+<ol>
+  <li><strong>修复后启动 Mock</strong> → 切换到 "5 分钟" → 曲线应正常滚动显示</li>
+  <li>等待 1 分钟后切换到 "1 小时" → 曲线压缩显示历史数据</li>
+  <li>检查 X 轴标签格式：5 分钟内显示 <code>HH:mm:ss</code>，1 小时以上显示 <code>MM/dd HH:mm</code></li>
+  <li>打开诊断工具检查 CPU 占用 — SlideTrendXAxis 复用后应显著降低</li>
+</ol>
+
+<hr>
+<p style="color: #888; font-size: 12px; margin-top: 30px;">
+分析时间：2026-06-21 | LiveCharts2 版本：2.0.4 | 根因：int 乘法溢出
+</p>
+
+</body>
+</html>

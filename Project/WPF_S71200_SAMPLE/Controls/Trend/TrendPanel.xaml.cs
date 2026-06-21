@@ -32,6 +32,9 @@ public partial class TrendPanel : UserControl
     private int _trendTimeWindowMs = 60_000;
     private const int MaxBufferPoints = 864000;
 
+    /// <summary>缓存的 X 轴引用，避免每帧重建 Axis[]</summary>
+    private Axis? _cachedXAxis;
+
     private bool _gaugeDrawn;
 
     private static readonly SKColor[] TrendColors = [
@@ -79,9 +82,25 @@ public partial class TrendPanel : UserControl
         cmbTrendTimeRange.SelectedIndex = 0;
         _trendTimeWindowMs = TimeRangeOptions[0].windowMs;
         cartesianTrend.Series = _trendSeries;
-        cartesianTrend.YAxes = [new Axis { MinLimit = 0, MaxLimit = 100, Labeler = _ => "" }];
+
+        // ── Y 轴配置 ──
+        // 归一化后显示 0~100%，Labeler 格式化刻度标签
+        cartesianTrend.YAxes = [
+            new Axis
+            {
+                MinLimit = 0,
+                MaxLimit = 100,
+                Labeler = value => $"{value:F0}%",
+                ShowSeparatorLines = true,
+                SeparatorsPaint = new SolidColorPaint(SKColors.Gray) { StrokeThickness = 0.5f },
+            }
+        ];
         cartesianTrend.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
-        UpdateTrendXAxis();
+        cartesianTrend.TooltipBackgroundPaint = new SolidColorPaint(new SKColor(40, 40, 40, 230));
+
+        // 首次创建 X 轴并缓存引用
+        _cachedXAxis = MakeAxis(DateTime.Now.Ticks - TimeSpan.FromMilliseconds(_trendTimeWindowMs).Ticks, DateTime.Now.Ticks, _trendTimeWindowMs);
+        cartesianTrend.XAxes = [_cachedXAxis];
 
         var barVals = new ObservableCollection<double> { 0, 0, 0, 0, 0, 0 };
         _barSeriesColl.Add(new ColumnSeries<double>
@@ -94,9 +113,16 @@ public partial class TrendPanel : UserControl
         cartesianBars.XAxes = [new Axis
         {
             Labels = ["Temp", "Press", "Flow", "Level", "Servo", "Curr."],
-            LabelsRotation = 45
+            LabelsRotation = 45,
+            LabelsPaint = new SolidColorPaint(SKColors.LightGray),
         }];
-        cartesianBars.YAxes = [new Axis { MinLimit = 0 }];
+        cartesianBars.YAxes = [new Axis
+        {
+            MinLimit = 0,
+            Labeler = value => $"{value:F0}",
+            SeparatorsPaint = new SolidColorPaint(SKColors.Gray) { StrokeThickness = 0.5f },
+        }];
+        cartesianBars.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
 
         _mockTrend.SampleGenerated += OnSample;
         _gaugeDrawn = false;
@@ -112,8 +138,13 @@ public partial class TrendPanel : UserControl
             double norm = range > 0 ? Math.Clamp((val - cfg.Min) / range * 100.0, 0, 100) : 50;
             if (!_trendNormBuffers.TryGetValue(key, out var buf)) return;
             buf.Add(new DateTimePoint(ts, norm));
-            while (buf.Count > MaxBufferPoints) buf.RemoveAt(0);
+
+            // 按时间窗口裁剪缓冲：只保留当前窗口 2 倍范围内的数据
+            TrimBufferByTime(buf);
+
             cfg.CurrentValue = val;
+
+            // 滑动 X 轴：复用缓存的 Axis 对象，不新建数组
             SlideTrendXAxis();
 
             var col = (ColumnSeries<double>)_barSeriesColl[0];
@@ -126,6 +157,14 @@ public partial class TrendPanel : UserControl
             if (bi >= 0) vals[bi] = val;
             if (key == "ch_servo") UpdateGaugeNeedle(val);
         });
+    }
+
+    /// <summary>按时间窗口裁剪缓冲，只保留当前窗口 2 倍的数据</summary>
+    private void TrimBufferByTime(ObservableCollection<DateTimePoint> buf)
+    {
+        var cutoff = DateTime.Now - TimeSpan.FromMilliseconds(_trendTimeWindowMs * 2L);
+        while (buf.Count > 0 && buf[0].DateTime < cutoff)
+            buf.RemoveAt(0);
     }
 
     // ===== Mock 控制 =====
@@ -151,26 +190,51 @@ public partial class TrendPanel : UserControl
         int idx = cmbTrendTimeRange.SelectedIndex;
         if (idx < 0 || idx >= TimeRangeOptions.Length) return;
         _trendTimeWindowMs = TimeRangeOptions[idx].windowMs;
-        UpdateTrendXAxis();
+
+        // 重新创建 X 轴（窗口变了，标签格式也要变）
+        var window = TimeSpan.FromMilliseconds(_trendTimeWindowMs);
+        double now = DateTime.Now.Ticks;
+        _cachedXAxis = MakeAxis(now - window.Ticks, now, _trendTimeWindowMs);
+        cartesianTrend.XAxes = [_cachedXAxis];
     }
 
-    private void UpdateTrendXAxis()
+    /// <summary>
+    /// 创建 X 轴实例。
+    /// 使用 TimeSpan 避免 int 乘法溢出（_trendTimeWindowMs × 10_000 超过 int.MaxValue）。
+    /// 标签格式根据时间窗口自适应。
+    /// </summary>
+    private static Axis MakeAxis(double min, double max, int timeWindowMs)
     {
-        double n = DateTime.Now.Ticks;
-        cartesianTrend.XAxes = [MakeAxis(n - _trendTimeWindowMs * 10_000, n)];
+        // 根据窗口大小选择时间格式
+        string format = timeWindowMs switch
+        {
+            <= 300_000  => "HH:mm:ss",       // ≤5分钟：显示秒
+            <= 3_600_000 => "HH:mm",          // ≤1小时：显示分
+            _            => "MM/dd HH:mm",    // >1小时：显示日期+时分
+        };
+
+        return new Axis
+        {
+            MinLimit = min,
+            MaxLimit = max,
+            Labeler = v => new DateTime((long)v).ToLocalTime().ToString(format),
+        };
     }
 
+    /// <summary>
+    /// 滑动 X 轴时间窗口。
+    /// 复用 _cachedXAxis 对象（修改现有属性），
+    /// 不创建新 Axis 数组，减少 LiveCharts2 内部重布局开销。
+    /// </summary>
     private void SlideTrendXAxis()
     {
-        double n = DateTime.Now.Ticks;
-        cartesianTrend.XAxes = [MakeAxis(n - _trendTimeWindowMs * 10_000, n)];
-    }
+        if (_cachedXAxis == null) return;
 
-    private static Axis MakeAxis(double min, double max) => new Axis
-    {
-        MinLimit = min, MaxLimit = max,
-        Labeler = v => v <= 0 || v > 1e18 ? "" : new DateTime((long)v).ToLocalTime().ToString("HH:mm:ss")
-    };
+        var window = TimeSpan.FromMilliseconds(_trendTimeWindowMs);
+        double now = DateTime.Now.Ticks;
+        _cachedXAxis.MinLimit = now - window.Ticks;
+        _cachedXAxis.MaxLimit = now;
+    }
 
     // ===== 水平轴仪表 =====
 
