@@ -121,4 +121,13 @@
         </Style.Triggers>
     </Style>
 
+    <!-- MaterialDesign 禁用态修复：去掉 Opacity 遮罩，用暗灰背景代替 -->
+    <Style TargetType="Button">
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="1"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
 </ResourceDictionary>
