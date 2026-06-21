@@ -3,6 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:conv="clr-namespace:TestWpf.Converters"
         xmlns:models="clr-namespace:TestWpf.Models"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="S7-1200 读写工具"
         Width="1060" Height="820"
         MinWidth="900" MinHeight="680"
@@ -14,43 +16,61 @@
         <conv:BoolToIndicatorConverter x:Key="IndicatorConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
 
+        <!-- ===== 侧边栏组件 ===== -->
         <Style x:Key="SidebarLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#777"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Margin" Value="0,6,0,2"/>
+            <Setter Property="Margin" Value="0,10,0,2"/>
         </Style>
         <Style x:Key="SidebarInput" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource InputBackground}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,3"/>
-            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Height" Value="30"/>
+        </Style>
+        <Style x:Key="SidebarHint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+            <Setter Property="FontSize" Value="11"/>
         </Style>
 
+        <!-- ===== Section 标题 ===== -->
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <!-- ===== TabHeader（MaterialDesign 风格） ===== -->
         <Style x:Key="TabHeader" TargetType="TabItem">
-            <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="16,6"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
                         <Border Name="border" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="0,0,0,2" Padding="{TemplateBinding Padding}"
-                                Cursor="Hand">
-                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                                Cursor="Hand" SnapsToDevicePixels="True">
+                            <Grid>
+                                <ContentPresenter ContentSource="Header"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Center"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="border" Property="BorderBrush" Value="#3498DB"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentBlue}"/>
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#FFF"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBlue}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -62,215 +82,216 @@
     <!-- ===== 主结构：sidebar + 内容区 ===== -->
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="270"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- ====== 侧边栏 ====== -->
-        <Border Grid.Column="0" Background="{DynamicResource SidebarBackground}" BorderBrush="{DynamicResource CardBorder}"
-                BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBackground}"
+                BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,1,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="0,0,0,12">
+                <StackPanel Margin="0,0,0,16">
 
                     <!-- 标题 + 主题切换 -->
-                    <Border Background="{DynamicResource CardBackground}" Padding="14,10" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
+                    <Border Background="{DynamicResource CardBackground}" Padding="14,12"
+                            BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="⚙ PLC 连接" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
-                            <Button Grid.Column="1" x:Name="btnTheme" Content="🌙" Background="Transparent"
-                                    Foreground="{DynamicResource TextSecondary}" FontSize="16" Width="28" Height="28"
-                                    Padding="0" Click="BtnTheme_Click" ToolTip="切换暗色/亮色主题"/>
+                            <TextBlock Text="⚙ PLC 连接" FontSize="16" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimary}"/>
+                            <Button Grid.Column="1" x:Name="btnTheme" Content="🌙"
+                                    Style="{StaticResource FlatButton}"
+                                    Background="Transparent"
+                                    Foreground="{DynamicResource TextSecondary}"
+                                    FontSize="16" Width="32" Height="32" Padding="0"
+                                    Click="BtnTheme_Click" ToolTip="切换暗色/亮色主题"/>
                         </Grid>
                     </Border>
 
                     <!-- 连接配置 -->
-                    <StackPanel Margin="14,8,14,0">
-
+                    <StackPanel Margin="16,12,16,0">
                         <TextBlock Text="IP 地址" Style="{StaticResource SidebarLabel}"/>
                         <TextBox x:Name="txtIP" Text="192.168.0.1" Style="{StaticResource SidebarInput}"/>
 
                         <TextBlock Text="端口（默认 102）" Style="{StaticResource SidebarLabel}"/>
                         <TextBox x:Name="txtPort" Text="102" Style="{StaticResource SidebarInput}"/>
 
-                        <Grid Margin="0,6,0,0">
+                        <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="机架" Foreground="#666" FontSize="11"/>
+                                <TextBlock Text="机架" Style="{StaticResource SidebarHint}"/>
                                 <TextBox x:Name="txtRack" Text="0" Style="{StaticResource SidebarInput}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="槽位" Foreground="#666" FontSize="11"/>
+                                <TextBlock Text="槽位" Style="{StaticResource SidebarHint}"/>
                                 <TextBox x:Name="txtSlot" Text="0" Style="{StaticResource SidebarInput}"/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
 
                     <!-- 连接/断开 -->
-                    <StackPanel Margin="14,10,14,0" Orientation="Horizontal">
+                    <StackPanel Margin="16,14,16,0" Orientation="Horizontal">
                         <Button x:Name="btnConnect" Content="● 连接"
-                                Background="#27AE60"
-                                Padding="0" Height="32" FontWeight="Bold" Click="BtnConnect_Click"
-                                Width="90" Margin="0,0,8,0"/>
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="{DynamicResource AccentGreen}" Foreground="White"
+                                Padding="0" Height="34" FontWeight="Bold"
+                                Click="BtnConnect_Click" Width="100" Margin="0,0,10,0"/>
                         <Button x:Name="btnDisconnect" Content="○ 断开"
-                                Background="#E74C3C" Foreground="White" BorderThickness="0"
-                                Padding="0" Height="32" FontWeight="Bold" IsEnabled="False"
-                                Click="BtnDisconnect_Click" Width="90"/>
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="{DynamicResource AccentRed}" Foreground="White"
+                                Padding="0" Height="34" FontWeight="Bold" IsEnabled="False"
+                                Click="BtnDisconnect_Click" Width="100"/>
                     </StackPanel>
 
-                    <Border Margin="14,4,14,0" Background="{DynamicResource CardBackground}" CornerRadius="4" Padding="8,6">
+                    <!-- 连接状态 -->
+                    <Border Margin="16,10,16,0" Background="{DynamicResource CardBackground}"
+                            CornerRadius="4" Padding="8,6">
                         <StackPanel Orientation="Horizontal">
-                            <Ellipse x:Name="indicator" Width="8" Height="8" Fill="#555" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="txtStatus" Text="未连接" Foreground="#555" FontSize="11" VerticalAlignment="Center"/>
+                            <Ellipse x:Name="indicator" Width="10" Height="10"
+                                     Fill="{DynamicResource TextDim}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="txtStatus" Text="未连接"
+                                       Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- 分割线 -->
-                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,12,14,0"/>
-
-                    <!-- Fast Path 范围配置 -->
-                    <StackPanel Margin="14,10,14,0">
-                        <TextBlock Text="📡 轮询范围" FontSize="13" FontWeight="Bold" Foreground="#AAA" Margin="0,0,0,6"/>
+                    <!-- ====== 轮询范围 ====== -->
+                    <StackPanel Margin="16,16,16,0">
+                        <TextBlock Text="📡 轮询范围" Style="{StaticResource SectionTitle}"/>
 
                         <!-- I 区 -->
-                        <Grid Margin="0,0,0,4">
+                        <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="28"/><ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/>
                                 <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="8" Height="8" Fill="#3498DB" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="I" Foreground="#AAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBox Grid.Column="2" x:Name="txtIStart" Text="0" Style="{StaticResource SidebarInput}" Height="24" Margin="0"/>
-                            <TextBlock Grid.Column="3" Text="~" Foreground="#555" VerticalAlignment="Center" FontSize="11"/>
-                            <TextBox Grid.Column="4" x:Name="txtIEnd" Text="2" Style="{StaticResource SidebarInput}" Height="24" Margin="0"/>
-                            <CheckBox Grid.Column="5" x:Name="chkI" IsChecked="True" Foreground="#AAA" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource AccentBlue}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="I" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Grid.Column="2" x:Name="txtIStart" Text="0" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
+                            <TextBlock Grid.Column="3" Text="~" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" FontSize="11"/>
+                            <TextBox Grid.Column="4" x:Name="txtIEnd" Text="2" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
+                            <CheckBox Grid.Column="5" x:Name="chkI" IsChecked="True" Foreground="{DynamicResource TextSecondary}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
 
                         <!-- Q 区 -->
-                        <Grid Margin="0,0,0,4">
+                        <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="28"/><ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/>
                                 <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="8" Height="8" Fill="#27AE60" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="Q" Foreground="#AAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBox Grid.Column="2" x:Name="txtQStart" Text="0" Style="{StaticResource SidebarInput}" Height="24" Margin="0"/>
-                            <TextBlock Grid.Column="3" Text="~" Foreground="#555" VerticalAlignment="Center" FontSize="11"/>
-                            <TextBox Grid.Column="4" x:Name="txtQEnd" Text="1" Style="{StaticResource SidebarInput}" Height="24" Margin="0"/>
-                            <CheckBox Grid.Column="5" x:Name="chkQ" IsChecked="True" Foreground="#AAA" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource AccentGreen}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="Q" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Grid.Column="2" x:Name="txtQStart" Text="0" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
+                            <TextBlock Grid.Column="3" Text="~" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" FontSize="11"/>
+                            <TextBox Grid.Column="4" x:Name="txtQEnd" Text="1" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
+                            <CheckBox Grid.Column="5" x:Name="chkQ" IsChecked="True" Foreground="{DynamicResource TextSecondary}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
 
                         <!-- M 区 -->
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="28"/><ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/>
                                 <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Ellipse Grid.Column="0" Width="8" Height="8" Fill="#9B59B6" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="M" Foreground="#AAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBox Grid.Column="2" x:Name="txtMStart" Text="0" Style="{StaticResource SidebarInput}" Height="24" Margin="0"/>
-                            <TextBlock Grid.Column="3" Text="~" Foreground="#555" VerticalAlignment="Center" FontSize="11"/>
-                            <TextBox Grid.Column="4" x:Name="txtMEnd" Text="10" Style="{StaticResource SidebarInput}" Height="24" Margin="0"/>
-                            <CheckBox Grid.Column="5" x:Name="chkM" IsChecked="True" Foreground="#AAA" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource AccentPurple}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="M" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Grid.Column="2" x:Name="txtMStart" Text="0" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
+                            <TextBlock Grid.Column="3" Text="~" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" FontSize="11"/>
+                            <TextBox Grid.Column="4" x:Name="txtMEnd" Text="10" Style="{StaticResource SidebarInput}" Height="26" Margin="0"/>
+                            <CheckBox Grid.Column="5" x:Name="chkM" IsChecked="True" Foreground="{DynamicResource TextSecondary}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
                     </StackPanel>
 
-                    <!-- 分割线 -->
-                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,12,14,0"/>
-
-                    <!-- DB 添加 -->
-                    <StackPanel Margin="14,10,14,0">
-                        <TextBlock Text="🗃 DB 添加" FontSize="13" FontWeight="Bold" Foreground="#AAA" Margin="0,0,0,6"/>
+                    <!-- ====== DB 添加 ====== -->
+                    <StackPanel Margin="16,16,16,0">
+                        <TextBlock Text="🗃 DB 添加" Style="{StaticResource SectionTitle}"/>
 
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="DB 号" Foreground="#666" FontSize="11"/>
+                                <TextBlock Text="DB 号" Style="{StaticResource SidebarHint}"/>
                                 <TextBox x:Name="txtNewDbNumber" Text="1" Style="{StaticResource SidebarInput}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="字节数" Foreground="#666" FontSize="11"/>
+                                <TextBlock Text="字节数" Style="{StaticResource SidebarHint}"/>
                                 <TextBox x:Name="txtNewDbLen" Text="100" Style="{StaticResource SidebarInput}"/>
                             </StackPanel>
                         </Grid>
-                        <Grid Margin="0,4,0,0">
+                        <Grid Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="起始偏移" Foreground="#666" FontSize="11"/>
+                                <TextBlock Text="起始偏移" Style="{StaticResource SidebarHint}"/>
                                 <TextBox x:Name="txtNewDbOffset" Text="0" Style="{StaticResource SidebarInput}"/>
                             </StackPanel>
-                            <Button Grid.Column="2" Content="＋ 添加" Background="#3498DB" Foreground="White"
-                                    BorderThickness="0" Height="28" FontWeight="Bold" Margin="0,0,0,0"
+                            <Button Grid.Column="2" Content="＋ 添加"
+                                    Style="{StaticResource MaterialDesignRaisedButton}"
+                                    Background="{DynamicResource AccentBlue}" Foreground="White"
+                                    Height="30" FontWeight="Bold" Margin="0,0,0,0"
                                     Click="BtnAddDb_Click" VerticalAlignment="Bottom"/>
                         </Grid>
                     </StackPanel>
 
-                    <!-- 分割线 -->
-                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,10,14,0"/>
-
-                    <!-- 轮询间隔 -->
-                    <StackPanel Margin="14,8,14,0">
-                        <TextBlock Text="⏱ 轮询间隔" FontSize="13" FontWeight="Bold" Foreground="#AAA" Margin="0,0,0,4"/>
+                    <!-- ====== 轮询间隔 ====== -->
+                    <StackPanel Margin="16,16,16,0">
+                        <TextBlock Text="⏱ 轮询间隔" Style="{StaticResource SectionTitle}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txtPollInterval" Text="50" Style="{StaticResource SidebarInput}" Height="24"/>
-                            <TextBlock Grid.Column="1" Text="ms" Foreground="#888" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                            <TextBox x:Name="txtPollInterval" Text="50" Style="{StaticResource SidebarInput}" Height="28"/>
+                            <TextBlock Grid.Column="1" Text="ms" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </Grid>
                     </StackPanel>
 
-                    <!-- 分割线 -->
-                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,10,14,0"/>
-
-                    <!-- 导入 DB/UDT -->
-                    <StackPanel Margin="14,8,14,0">
-                        <TextBlock Text="📂 导入 DB 结构" FontSize="13" FontWeight="Bold" Foreground="#AAA" Margin="0,0,0,4"/>
+                    <!-- ====== 导入 DB/UDT ====== -->
+                    <StackPanel Margin="16,16,16,0">
+                        <TextBlock Text="📂 导入 DB 结构" Style="{StaticResource SectionTitle}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="6"/><ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Content="📄 导入 .db" Background="#3498DB" Foreground="White"
-                                    BorderThickness="0" Height="28" FontWeight="Bold" Click="BtnImportDb_Click"/>
-                            <Button Grid.Column="2" Content="📄 导入 .udt" Background="#8e44ad" Foreground="White"
-                                    BorderThickness="0" Height="28" FontWeight="Bold" Click="BtnImportUdt_Click"/>
+                            <Button Grid.Column="0" Content="📄 导入 .db"
+                                    Style="{StaticResource MaterialDesignRaisedButton}"
+                                    Background="{DynamicResource AccentBlue}" Foreground="White"
+                                    Height="30" FontWeight="Bold" Click="BtnImportDb_Click"/>
+                            <Button Grid.Column="2" Content="📄 导入 .udt"
+                                    Style="{StaticResource MaterialDesignRaisedButton}"
+                                    Background="{DynamicResource AccentPurple}" Foreground="White"
+                                    Height="30" FontWeight="Bold" Click="BtnImportUdt_Click"/>
                         </Grid>
                     </StackPanel>
 
-                    <!-- 已导入的 DB 列表 -->
-                    <StackPanel Margin="14,8,14,0">
-                        <TextBlock Text="已导入 DB" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
-                        <ItemsControl x:Name="listImportedDb" MaxHeight="120">
+                    <!-- ====== 已导入列表 ====== -->
+                    <StackPanel Margin="16,10,16,0">
+                        <TextBlock Text="已导入 DB" Foreground="{DynamicResource TextSecondary}" FontSize="11" Margin="0,0,0,2"/>
+                        <ItemsControl x:Name="listImportedDb" MaxHeight="100">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,2">
+                                    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="4,3">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="11" VerticalAlignment="Center" Foreground="#AAA"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding TotalSize, StringFormat='{}{0}B'}" FontSize="10" Foreground="#666" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                            <Button Grid.Column="2" Content="×" Background="Transparent" Foreground="#E74C3C"
-                                                    BorderThickness="0" FontSize="12" Width="20" Height="20" Padding="0"
+                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="11"
+                                                       VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TotalSize, StringFormat='{}{0}B'}"
+                                                       FontSize="10" Foreground="{DynamicResource TextDim}"
+                                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <Button Grid.Column="2" Content="×" Style="{StaticResource FlatButton}"
+                                                    Background="Transparent" Foreground="{DynamicResource AccentRed}"
+                                                    FontSize="14" Width="22" Height="22" Padding="0"
                                                     Click="BtnDeleteImportedDb_Click" Tag="{Binding}"/>
                                         </Grid>
                                     </Border>
@@ -279,20 +300,21 @@
                         </ItemsControl>
                     </StackPanel>
 
-                    <!-- 已导入的 UDT 列表 -->
-                    <StackPanel Margin="14,6,14,0">
-                        <TextBlock Text="已导入 UDT" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
-                        <ItemsControl x:Name="listImportedUdt" MaxHeight="120">
+                    <StackPanel Margin="16,6,16,0">
+                        <TextBlock Text="已导入 UDT" Foreground="{DynamicResource TextSecondary}" FontSize="11" Margin="0,0,0,2"/>
+                        <ItemsControl x:Name="listImportedUdt" MaxHeight="100">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,2">
+                                    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="4,3">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding UdtName}" FontSize="11" VerticalAlignment="Center" Foreground="#AAA"/>
-                                            <Button Grid.Column="1" Content="×" Background="Transparent" Foreground="#E74C3C"
-                                                    BorderThickness="0" FontSize="12" Width="20" Height="20" Padding="0"
+                                            <TextBlock Grid.Column="0" Text="{Binding UdtName}" FontSize="11"
+                                                       VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"/>
+                                            <Button Grid.Column="1" Content="×" Style="{StaticResource FlatButton}"
+                                                    Background="Transparent" Foreground="{DynamicResource AccentRed}"
+                                                    FontSize="14" Width="22" Height="22" Padding="0"
                                                     Click="BtnDeleteImportedUdt_Click" Tag="{Binding}"/>
                                         </Grid>
                                     </Border>
@@ -301,21 +323,22 @@
                         </ItemsControl>
                     </StackPanel>
 
-                    <!-- 分割线 -->
-                    <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="14,10,14,0"/>
-
-                    <!-- 启动/停止轮询 -->
-                    <StackPanel Margin="14,8,14,0">
+                    <!-- ====== 轮询控制 ====== -->
+                    <StackPanel Margin="16,16,16,0">
                         <Button x:Name="btnStartPoll" Content="▶ 启动轮询"
-                                Background="#27AE60"
-                                Height="34" FontWeight="Bold" Click="BtnStartPoll_Click"
-                                IsEnabled="False" Margin="0,0,0,6"/>
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="{DynamicResource AccentGreen}" Foreground="White"
+                                Height="36" FontWeight="Bold" Click="BtnStartPoll_Click"
+                                IsEnabled="False" Margin="0,0,0,8"/>
                         <Button x:Name="btnStopPoll" Content="■ 停止轮询"
-                                Background="#E74C3C" Foreground="White" BorderThickness="0"
-                                Height="34" FontWeight="Bold" Click="BtnStopPoll_Click"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="{DynamicResource AccentRed}" Foreground="White"
+                                Height="36" FontWeight="Bold" Click="BtnStopPoll_Click"
                                 IsEnabled="False"/>
-                        <Border Background="{DynamicResource CardBackground}" CornerRadius="4" Padding="8,5" Margin="0,6,0,0">
-                            <TextBlock x:Name="txtPollStatus" Text="就绪" Foreground="#555" FontSize="11"/>
+                        <Border Background="{DynamicResource CardBackground}" CornerRadius="4"
+                                Padding="8,6" Margin="0,8,0,0">
+                            <TextBlock x:Name="txtPollStatus" Text="就绪"
+                                       Foreground="{DynamicResource TextDim}" FontSize="12"/>
                         </Border>
                     </StackPanel>
 
@@ -331,313 +354,554 @@
             </Grid.RowDefinitions>
 
             <!-- Tab 栏 -->
-            <TabControl Grid.Row="0" Background="Transparent" BorderThickness="0"
-                        Padding="0" x:Name="tabControl" Height="34">
-                <TabControl.Resources>
-                    <Style TargetType="TabPanel">
-                        <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
-                        <Setter Property="Margin" Value="10,0,10,0"/>
-                    </Style>
-                </TabControl.Resources>
-                <TabItem Header="📋 手动读写" Style="{StaticResource TabHeader}"/>
-                <TabItem Header="⚡ 自动轮询" Style="{StaticResource TabHeader}"/>
-            </TabControl>
+            <Border Background="{DynamicResource CardBackground}"
+                    BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
+                <TabControl x:Name="tabControl" Height="40"
+                            Background="Transparent" BorderThickness="0" Padding="0">
+                    <TabControl.Resources>
+                        <Style TargetType="TabPanel">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Margin" Value="8,0"/>
+                        </Style>
+                    </TabControl.Resources>
+                    <TabItem Header="📋 手动读写" Style="{StaticResource TabHeader}"/>
+                    <TabItem Header="⚡ 自动轮询" Style="{StaticResource TabHeader}"/>
+                    <TabItem Header="📈 趋势图" Style="{StaticResource TabHeader}"/>
+                </TabControl>
+            </Border>
 
             <!-- 内容 -->
             <Grid Grid.Row="1">
 
                 <!-- ===== 手动模式 ===== -->
-                <ScrollViewer x:Name="manualPanel" Padding="10,4" VerticalScrollBarVisibility="Auto" Visibility="Visible">
+                <ScrollViewer x:Name="manualPanel" Padding="16,8" VerticalScrollBarVisibility="Auto"
+                              Visibility="Visible" Cursor="Hand">
                     <StackPanel>
                         <!-- I 区 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
-                                CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
+                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                             <StackPanel>
-                                <Grid Margin="0,0,0,6">
+                                <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#3498DB" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Grid.Column="1" Text="I 区（输入 · 只读）" FontSize="15" FontWeight="Bold" Foreground="#3498DB" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="2" x:Name="txtIAddress" Text="0,1" Style="{StaticResource SidebarInput}" Width="160" Margin="8,0,0,0"/>
-                                    <Button Grid.Column="3" x:Name="btnIRead" Content="▶ 读取" Background="#3498DB" Foreground="White"
-                                            BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnIRead_Click" Margin="8,0,0,0"/>
+                                    <Ellipse Grid.Column="0" Width="12" Height="12" Fill="{DynamicResource AccentBlue}"
+                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="I 区（输入 · 只读）" FontSize="16" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentBlue}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="2" x:Name="txtIAddress" Text="0,1"
+                                             Style="{StaticResource SidebarInput}" Width="170" Margin="8,0,0,0"/>
+                                    <Button Grid.Column="3" x:Name="btnIRead" Content="▶ 读取"
+                                            Style="{StaticResource MaterialDesignRaisedButton}"
+                                            Background="{DynamicResource AccentBlue}" Foreground="White"
+                                            Padding="14,5" FontWeight="Bold" IsEnabled="False"
+                                            Click="BtnIRead_Click" Margin="8,0,0,0"/>
                                 </Grid>
-                                <Grid Margin="0,0,0,2" Height="20">
+                                <!-- 位表头 -->
+                                <Grid Margin="0,0,0,4" Height="18">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="272"/><ColumnDefinition Width="60"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="地址" Foreground="#666" FontSize="11"/>
+                                    <TextBlock Text="地址" Foreground="{DynamicResource TextDim}" FontSize="11"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位0" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位1" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位2" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位3" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位4" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位5" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位6" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位7" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="HEX" Foreground="{DynamicResource TextDim}"
+                                               FontSize="11" HorizontalAlignment="Center"/>
                                 </Grid>
                                 <ItemsControl x:Name="listIRows">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="models:ByteRowViewModel">
-                                            <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,2">
+                                            <Border BorderBrush="{DynamicResource CardBorder}"
+                                                    BorderThickness="0,0,0,1" Padding="3,3">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="60"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center"
+                                                               FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
                                                     <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
                                                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate DataType="models:BitViewModel">
-                                                                <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="{DynamicResource CardBorder}"
+                                                                <Border Width="32" Height="28" CornerRadius="4" Margin="1"
+                                                                        BorderThickness="1" BorderBrush="{DynamicResource CardBorder}"
                                                                         Background="{Binding IsSet, Converter={StaticResource BgConverter}}">
-                                                                    <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                               Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                                                    <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center"
+                                                                               VerticalAlignment="Center" Foreground="White"
+                                                                               FontWeight="Bold" FontSize="14"/>
                                                                 </Border>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
-                                                    <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding HexText}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource AccentOrange}" FontWeight="Bold"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock x:Name="txtIEmpty" Text="输入字节地址后点击 [▶ 读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                <TextBlock x:Name="txtIEmpty" Text="输入字节地址后点击 [▶ 读取]"
+                                           Foreground="{DynamicResource TextDim}" FontSize="12"
+                                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Q 区 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
+                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                             <StackPanel>
-                                <Grid Margin="0,0,0,6">
+                                <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#27AE60" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Grid.Column="1" Text="Q 区（输出 · 可读写）" FontSize="15" FontWeight="Bold" Foreground="#27AE60" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="2" x:Name="txtQAddress" Text="0" Style="{StaticResource SidebarInput}" Width="160" Margin="8,0,0,0"/>
-                                    <Button Grid.Column="3" x:Name="btnQRead" Content="▶ 读取" Background="#3498DB" Foreground="White"
-                                            BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnQRead_Click" Margin="8,0,6,0"/>
+                                    <Ellipse Grid.Column="0" Width="12" Height="12" Fill="{DynamicResource AccentGreen}"
+                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="Q 区（输出 · 可读写）" FontSize="16" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentGreen}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="2" x:Name="txtQAddress" Text="0"
+                                             Style="{StaticResource SidebarInput}" Width="170" Margin="8,0,0,0"/>
+                                    <Button Grid.Column="3" x:Name="btnQRead" Content="▶ 读取"
+                                            Style="{StaticResource MaterialDesignRaisedButton}"
+                                            Background="{DynamicResource AccentBlue}" Foreground="White"
+                                            Padding="14,5" FontWeight="Bold" IsEnabled="False"
+                                            Click="BtnQRead_Click" Margin="8,0,8,0"/>
                                     <Button Grid.Column="4" x:Name="btnQWriteMode" Content="🔒 写入模式 (关)"
-                                            Background="#555" Foreground="White" BorderThickness="0" Padding="10,5"
-                                            FontWeight="Bold" FontSize="11" IsEnabled="False" Click="BtnQWriteMode_Click"/>
+                                            Style="{StaticResource FlatButton}"
+                                            Background="{DynamicResource TextDim}" Foreground="White"
+                                            Padding="10,5" FontWeight="Bold" FontSize="11" IsEnabled="False"
+                                            Click="BtnQWriteMode_Click"/>
                                 </Grid>
-                                <Grid Margin="0,0,0,2" Height="20">
+                                <!-- 位表头 -->
+                                <Grid Margin="0,0,0,4" Height="18">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="272"/>
+                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="70"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="地址" Foreground="#666" FontSize="11"/>
+                                    <TextBlock Text="地址" Foreground="{DynamicResource TextDim}" FontSize="11"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位0" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位1" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位2" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位3" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位4" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位5" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位6" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位7" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
-                                    <TextBlock Grid.Column="3" Text="状态" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="HEX" Foreground="{DynamicResource TextDim}"
+                                               FontSize="11" HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="状态" Foreground="{DynamicResource TextDim}"
+                                               FontSize="11" HorizontalAlignment="Center"/>
                                 </Grid>
                                 <ItemsControl x:Name="listQRows">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="models:ByteRowViewModel">
-                                            <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,2">
+                                            <Border BorderBrush="{DynamicResource CardBorder}"
+                                                    BorderThickness="0,0,0,1" Padding="3,3">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="70"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center"
+                                                               FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
                                                     <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
                                                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate DataType="models:BitViewModel">
-                                                                <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="{DynamicResource CardBorder}"
+                                                                <Border Width="32" Height="28" CornerRadius="4" Margin="1"
+                                                                        BorderThickness="1" BorderBrush="{DynamicResource CardBorder}"
                                                                         Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
-                                                                        MouseDown="BitBlock_MouseDown"
-                                                                        ToolTip="点击切换">
-                                                                    <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                               Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                                                        MouseDown="BitBlock_MouseDown" ToolTip="点击切换">
+                                                                    <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center"
+                                                                               VerticalAlignment="Center" Foreground="White"
+                                                                               FontWeight="Bold" FontSize="14"/>
                                                                 </Border>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
-                                                    <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
-                                                    <TextBlock Grid.Column="3" Text="已修改" FontSize="11" Foreground="#E74C3C" HorizontalAlignment="Center"
+                                                    <TextBlock Grid.Column="2" Text="{Binding HexText}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource AccentOrange}" FontWeight="Bold"/>
+                                                    <TextBlock Grid.Column="3" Text="已修改" FontSize="11"
+                                                               Foreground="{DynamicResource AccentRed}" HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
                                                                Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock x:Name="txtQEmpty" Text="输入字节地址后点击 [▶ 读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                <TextBlock x:Name="txtQEmpty" Text="输入字节地址后点击 [▶ 读取]"
+                                           Foreground="{DynamicResource TextDim}" FontSize="12"
+                                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
                         <!-- M 区 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
+                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                             <StackPanel>
-                                <Grid Margin="0,0,0,6">
+                                <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#9B59B6" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Grid.Column="1" Text="M 区（位存储 · 可读写）" FontSize="15" FontWeight="Bold" Foreground="#9B59B6" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="2" x:Name="txtMAddress" Text="0,1" Style="{StaticResource SidebarInput}" Width="160" Margin="8,0,0,0"/>
-                                    <Button Grid.Column="3" x:Name="btnMRead" Content="▶ 读取" Background="#3498DB" Foreground="White"
-                                            BorderThickness="0" Padding="14,5" FontWeight="Bold" IsEnabled="False" Click="BtnMRead_Click" Margin="8,0,6,0"/>
+                                    <Ellipse Grid.Column="0" Width="12" Height="12" Fill="{DynamicResource AccentPurple}"
+                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="M 区（位存储 · 可读写）" FontSize="16" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentPurple}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="2" x:Name="txtMAddress" Text="0,1"
+                                             Style="{StaticResource SidebarInput}" Width="170" Margin="8,0,0,0"/>
+                                    <Button Grid.Column="3" x:Name="btnMRead" Content="▶ 读取"
+                                            Style="{StaticResource MaterialDesignRaisedButton}"
+                                            Background="{DynamicResource AccentBlue}" Foreground="White"
+                                            Padding="14,5" FontWeight="Bold" IsEnabled="False"
+                                            Click="BtnMRead_Click" Margin="8,0,8,0"/>
                                     <Button Grid.Column="4" x:Name="btnMWriteMode" Content="🔒 写入模式 (关)"
-                                            Background="#555" Foreground="White" BorderThickness="0" Padding="10,5"
-                                            FontWeight="Bold" FontSize="11" IsEnabled="False" Click="BtnMWriteMode_Click"/>
+                                            Style="{StaticResource FlatButton}"
+                                            Background="{DynamicResource TextDim}" Foreground="White"
+                                            Padding="10,5" FontWeight="Bold" FontSize="11" IsEnabled="False"
+                                            Click="BtnMWriteMode_Click"/>
                                 </Grid>
-                                <Grid Margin="0,0,0,2" Height="20">
+                                <!-- 位表头 -->
+                                <Grid Margin="0,0,0,4" Height="18">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50"/><ColumnDefinition Width="280"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="272"/>
+                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="70"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="地址" Foreground="#666" FontSize="11"/>
+                                    <TextBlock Text="地址" Foreground="{DynamicResource TextDim}" FontSize="11"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <TextBlock Text="位0" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位1" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位2" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位3" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位4" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位5" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位6" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
-                                        <TextBlock Text="位7" Width="34" Foreground="#555" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位0" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位1" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位2" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位3" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位4" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位5" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位6" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
+                                        <TextBlock Text="位7" Width="34" Foreground="{DynamicResource TextDim}" FontSize="10" TextAlignment="Center"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="HEX" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
-                                    <TextBlock Grid.Column="3" Text="状态" Foreground="#555" FontSize="11" HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="HEX" Foreground="{DynamicResource TextDim}"
+                                               FontSize="11" HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="状态" Foreground="{DynamicResource TextDim}"
+                                               FontSize="11" HorizontalAlignment="Center"/>
                                 </Grid>
                                 <ItemsControl x:Name="listMRows">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="models:ByteRowViewModel">
-                                            <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,2">
+                                            <Border BorderBrush="{DynamicResource CardBorder}"
+                                                    BorderThickness="0,0,0,1" Padding="3,3">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="50"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="60"/><ColumnDefinition Width="70"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center"
+                                                               FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
                                                     <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}">
                                                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate DataType="models:BitViewModel">
-                                                                <Border Width="32" Height="28" CornerRadius="3" Margin="1" BorderThickness="1" BorderBrush="{DynamicResource CardBorder}"
+                                                                <Border Width="32" Height="28" CornerRadius="4" Margin="1"
+                                                                        BorderThickness="1" BorderBrush="{DynamicResource CardBorder}"
                                                                         Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
-                                                                        MouseDown="BitBlock_MouseDown"
-                                                                        ToolTip="点击切换">
-                                                                    <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                               Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                                                        MouseDown="BitBlock_MouseDown" ToolTip="点击切换">
+                                                                    <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center"
+                                                                               VerticalAlignment="Center" Foreground="White"
+                                                                               FontWeight="Bold" FontSize="14"/>
                                                                 </Border>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
-                                                    <TextBlock Grid.Column="2" Text="{Binding HexText}" HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center" Foreground="#F39C12" FontWeight="Bold"/>
-                                                    <TextBlock Grid.Column="3" Text="已修改" FontSize="11" Foreground="#E74C3C" HorizontalAlignment="Center"
+                                                    <TextBlock Grid.Column="2" Text="{Binding HexText}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource AccentOrange}" FontWeight="Bold"/>
+                                                    <TextBlock Grid.Column="3" Text="已修改" FontSize="11"
+                                                               Foreground="{DynamicResource AccentRed}" HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
                                                                Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock x:Name="txtMEmpty" Text="输入字节地址后点击 [▶ 读取]" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                <TextBlock x:Name="txtMEmpty" Text="输入字节地址后点击 [▶ 读取]"
+                                           Foreground="{DynamicResource TextDim}" FontSize="12"
+                                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
                         <!-- DB 占位 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Opacity="0.4">
-                            <StackPanel>
-                                <Ellipse Width="10" Height="10" Fill="#888" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="DB 区：请在「自动轮询」页配置" FontSize="13" Foreground="#888"/>
+                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
+                                BorderThickness="1" CornerRadius="8" Padding="16" Opacity="0.55">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="12" Height="12" Fill="{DynamicResource TextDim}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="DB 区：请在「自动轮询」页配置" FontSize="14"
+                                           Foreground="{DynamicResource TextDim}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
 
-                        <Rectangle Height="20" Fill="Transparent"/>
+                        <Rectangle Height="24" Fill="Transparent"/>
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- ===== 自动轮询模式 ===== -->
-                <ScrollViewer x:Name="autoPanel" Padding="10,4" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                <!-- ===== 趋势图模式 ===== -->
+                <ScrollViewer x:Name="trendPanel" Padding="16,8" VerticalScrollBarVisibility="Auto"
+                              Visibility="Collapsed">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- 1. Channel 配置 + 实时趋势图 -->
+                        <Border Grid.Row="0" Background="{DynamicResource CardBackground}"
+                                BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                                CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Channel 列表 -->
+                                <StackPanel>
+                                    <TextBlock Text="📡 通道配置" FontSize="15" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentBlue}" Margin="0,0,0,10"/>
+                                    <ItemsControl x:Name="listTrendChannels">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="{DynamicResource CardBorder}"
+                                                        BorderThickness="0,0,0,1" Padding="4,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="14"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Ellipse Grid.Column="0" Width="10" Height="10"
+                                                                 Fill="{Binding Color}" VerticalAlignment="Center"/>
+                                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                                            <TextBlock Text="{Binding Label}" FontSize="12"
+                                                                       FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}">
+                                                                <Run Text="{Binding Min, StringFormat='{}{0:F0}'}"/>
+                                                                <Run Text=" – "/>
+                                                                <Run Text="{Binding Max, StringFormat='{}{0:F0}'}"/>
+                                                                <Run Text=" "/>
+                                                                <Run Text="{Binding Unit}"/>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <CheckBox Grid.Column="2"
+                                                                  IsChecked="{Binding Enabled}"
+                                                                  VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <!-- Mock 控制 -->
+                                    <StackPanel Margin="0,10,0,0">
+                                        <Button x:Name="btnTrendMock" Content="▶ 启动 Mock" Height="30"
+                                                FontWeight="Bold" FontSize="12"
+                                                Click="BtnTrendMock_Click"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- 趋势图 -->
+                                <lvc:CartesianChart Grid.Column="1" x:Name="cartesianTrend"
+                                                    Margin="16,0,0,0"
+                                                    AnimationsSpeed="00:00:00.100"
+                                                    MinHeight="300"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- 2. 水平轴仪表 + 柱状图 -->
+                        <Grid Grid.Row="1" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- 水平轴仪表 -->
+                            <Border Grid.Column="0" Background="{DynamicResource CardBackground}"
+                                    BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                                    CornerRadius="8" Padding="16" Margin="0,0,6,0">
+                                <StackPanel>
+                                    <TextBlock Text="📏 伺服位置" FontSize="15" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentOrange}" Margin="0,0,0,10"/>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="左限" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                            <TextBox x:Name="txtGaugeLeft" Text="0" Style="{StaticResource SidebarInput}" Height="26"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="右限" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                            <TextBox x:Name="txtGaugeRight" Text="100" Style="{StaticResource SidebarInput}" Height="26"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="刻度数" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                            <TextBox x:Name="txtGaugeTicks" Text="10" Style="{StaticResource SidebarInput}" Height="26"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="当前位置" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                            <TextBlock x:Name="txtGaugePos" Text="45.0 mm" FontSize="18"
+                                                       FontWeight="Bold" Foreground="{DynamicResource AccentBlue}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Background="{DynamicResource WindowBackground}"
+                                            BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                                            CornerRadius="6" Height="60" Padding="8">
+                                        <Canvas x:Name="canvasGauge" HorizontalAlignment="Stretch" Margin="0,5"/>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 柱状图 -->
+                            <Border Grid.Column="1" Background="{DynamicResource CardBackground}"
+                                    BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                                    CornerRadius="8" Padding="16" Margin="6,0,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="📊 通道实时值" FontSize="15" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentGreen}" Margin="0,0,0,10"/>
+                                    <lvc:CartesianChart x:Name="cartesianBars"
+                                                        AnimationsSpeed="00:00:00.400"
+                                                        Margin="8" MinHeight="200"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Rectangle Grid.Row="2" Height="24" Fill="Transparent"/>
+                    </Grid>
+                </ScrollViewer>
+
+                                <!-- ===== 自动轮询模式 ===== -->
+                <ScrollViewer x:Name="autoPanel" Padding="16,8" VerticalScrollBarVisibility="Auto"
+                              Visibility="Collapsed">
                     <StackPanel>
 
                         <!-- DB 轮询列表 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
+                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="DB 轮询列表" FontSize="15" FontWeight="Bold" Foreground="#F39C12" Margin="0,0,0,8"/>
-                                <Grid Margin="0,0,0,2" Height="20">
+                                <TextBlock Text="DB 轮询列表" FontSize="16" FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentOrange}" Margin="0,0,0,10"/>
+                                <Grid Margin="0,0,0,4" Height="20">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="30"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/>
+                                        <ColumnDefinition Width="34"/><ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="70"/><ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="*"/><ColumnDefinition Width="34"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="" Foreground="#666" FontSize="11"/>
-                                    <TextBlock Grid.Column="1" Text="DB 号" Foreground="#666" FontSize="11"/>
-                                    <TextBlock Grid.Column="2" Text="偏移" Foreground="#666" FontSize="11"/>
-                                    <TextBlock Grid.Column="3" Text="长度" Foreground="#666" FontSize="11"/>
-                                    <TextBlock Grid.Column="4" Text="状态" Foreground="#666" FontSize="11"/>
-                                    <TextBlock Grid.Column="5" Text="" Foreground="#666" FontSize="11"/>
+                                    <TextBlock Grid.Column="0" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                                    <TextBlock Grid.Column="1" Text="DB 号" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                                    <TextBlock Grid.Column="2" Text="偏移" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                                    <TextBlock Grid.Column="3" Text="长度" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                                    <TextBlock Grid.Column="4" Text="状态" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                                    <TextBlock Grid.Column="5" Foreground="{DynamicResource TextDim}" FontSize="11"/>
                                 </Grid>
                                 <ItemsControl x:Name="listDbItems">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="models:DbPollItem">
-                                            <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="2,3">
+                                            <Border BorderBrush="{DynamicResource CardBorder}"
+                                                    BorderThickness="0,0,0,1" Padding="3,4">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="30"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="60"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/>
+                                                        <ColumnDefinition Width="34"/><ColumnDefinition Width="70"/>
+                                                        <ColumnDefinition Width="70"/><ColumnDefinition Width="70"/>
+                                                        <ColumnDefinition Width="*"/><ColumnDefinition Width="34"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" Foreground="#AAA" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding DbNumber}" Foreground="#E0E0E0" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Offset}" Foreground="#E0E0E0" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="3" Text="{Binding Length}" Foreground="#E0E0E0" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="4" Text="{Binding Status}" Foreground="#AAA" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                                                    <Button Grid.Column="5" Content="×" Background="Transparent" Foreground="#E74C3C" BorderThickness="0" FontSize="14"
-                                                            Click="BtnRemoveDb_Click" Width="24" Height="24" Padding="0" Tag="{Binding}"/>
+                                                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}"
+                                                              Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding DbNumber}"
+                                                               Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Offset}"
+                                                               Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding Length}"
+                                                               Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="4" Text="{Binding Status}"
+                                                               Foreground="{DynamicResource TextSecondary}" FontSize="11"
+                                                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                    <Button Grid.Column="5" Content="×" Style="{StaticResource FlatButton}"
+                                                            Background="Transparent" Foreground="{DynamicResource AccentRed}"
+                                                            FontSize="14" Width="26" Height="26" Padding="0"
+                                                            Click="BtnRemoveDb_Click" Tag="{Binding}"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock x:Name="txtDbEmpty" Text="在左侧边栏底部添加 DB 轮询条目" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                <TextBlock x:Name="txtDbEmpty" Text="在左侧边栏底部添加 DB 轮询条目"
+                                           Foreground="{DynamicResource TextDim}" FontSize="12"
+                                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
                         <!-- 实时数据 -->
-                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"
+                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="实时数据监视" FontSize="15" FontWeight="Bold" Foreground="#27AE60" Margin="0,0,0,8"/>
-                                <TextBlock Text="I / Q / M 区" Foreground="#3498DB" FontSize="12" Margin="0,0,0,4"/>
-                                <ItemsControl x:Name="listFastLive" MaxHeight="120">
+                                <TextBlock Text="实时数据监视" FontSize="16" FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentGreen}" Margin="0,0,0,10"/>
+                                <TextBlock Text="I / Q / M 区" Foreground="{DynamicResource AccentBlue}"
+                                           FontSize="12" Margin="0,0,0,6"/>
+                                <ItemsControl x:Name="listFastLive" MaxHeight="140">
                                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#1E1E3A" CornerRadius="3" Padding="6,3" Margin="2">
-                                                <TextBlock Text="{Binding}" Foreground="#AAA" FontSize="12"/>
+                                            <Border Background="{DynamicResource InputBackground}" CornerRadius="4"
+                                                    Padding="8,4" Margin="3">
+                                                <TextBlock Text="{Binding}" Foreground="{DynamicResource TextSecondary}"
+                                                           FontSize="12"/>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock Text="DB 区" Foreground="#F39C12" FontSize="12" Margin="0,8,0,4"/>
-                                <ItemsControl x:Name="listDbLive" MaxHeight="180">
+                                <TextBlock Text="DB 区" Foreground="{DynamicResource AccentOrange}"
+                                           FontSize="12" Margin="0,10,0,6"/>
+                                <ItemsControl x:Name="listDbLive" MaxHeight="200">
                                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#1E1E3A" CornerRadius="3" Padding="6,3" Margin="2">
-                                                <TextBlock Text="{Binding}" Foreground="#AAA" FontSize="12"/>
+                                            <Border Background="{DynamicResource InputBackground}" CornerRadius="4"
+                                                    Padding="8,4" Margin="3">
+                                                <TextBlock Text="{Binding}" Foreground="{DynamicResource TextSecondary}"
+                                                           FontSize="12"/>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock x:Name="txtLiveEmpty" Text="启动轮询后自动显示" Foreground="#444" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                <TextBlock x:Name="txtLiveEmpty" Text="启动轮询后自动显示"
+                                           Foreground="{DynamicResource TextDim}" FontSize="12"
+                                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
-                        <Rectangle Height="20" Fill="Transparent"/>
+                        <Rectangle Height="24" Fill="Transparent"/>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

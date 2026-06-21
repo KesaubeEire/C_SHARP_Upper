@@ -24,8 +24,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<ByteRowViewModel> _qRows = [];
     private readonly ObservableCollection<ByteRowViewModel> _mRows = [];
     private Dictionary<int, byte> _lastIBytes = [], _lastQBytes = [], _lastMBytes = [];
-    private bool _qWriteMode = false;
-    private bool _mWriteMode = false;
+    private bool _qWriteMode, _mWriteMode;
 
     // ─── 自动轮询 ───
     private readonly PollingScheduler _scheduler = new();
@@ -42,14 +41,12 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<ISeries> _trendSeries = [];
     private readonly ObservableCollection<ISeries> _barSeriesColl = [];
     private readonly Dictionary<string, ObservableCollection<DateTimePoint>> _trendBuffers = [];
-    private readonly int _trendMaxPoints = 300;
+    private const int TrendMaxPoints = 300;
 
     private readonly AppConfig _config = AppConfig.Load();
-    private static readonly SKColor[] TrendColors =
-    [
-        SKColors.Crimson, SKColors.Cyan, SKColors.SeaGreen,
-        SKColors.Gold, SKColors.DodgerBlue, SKColors.MediumPurple,
-    ];
+    private static readonly SKColor[] TrendColors = [SKColors.Crimson, SKColors.Cyan, SKColors.SeaGreen, SKColors.Gold, SKColors.DodgerBlue, SKColors.MediumPurple];
+
+    // ====================== Startup ======================
 
     public MainWindow()
     {
@@ -77,7 +74,7 @@ public partial class MainWindow : Window
 
     private void InitTrendPanel()
     {
-        var defs = new[]
+        var defs = new (string key, string label, string color, string unit, double min, double max)[]
         {
             ("ch_temp",  "Reactor Temp",  "#E24B4A", "°C",   60.0, 110.0),
             ("ch_press", "Pressure",      "#37D3E0", "bar",    0.0,  16.0),
@@ -99,7 +96,6 @@ public partial class MainWindow : Window
             });
             idx++;
         }
-
         _trendBuffers["ch_servo"] = new ObservableCollection<DateTimePoint>();
         _trendChannels.Add(new TrendChannelConfig { Key = "ch_servo", Label = "Servo Pos", Color = "#3498DB", Unit = "mm", Min = -10, Max = 90, Variable = "ch_servo" });
         _trendBuffers["ch_current"] = new ObservableCollection<DateTimePoint>();
@@ -107,16 +103,19 @@ public partial class MainWindow : Window
 
         listTrendChannels.ItemsSource = _trendChannels;
 
-        cartesianTrend.Series = _trendSeries;
-        cartesianTrend.XAxes = [new Axis
+        // X 轴 Labeler：防御 DateTime 越界（LiveCharts 会传边缘值）
+        static string SafeTimeLabel(double v)
         {
-            Labeler = l =>
-            {
-                if (l > DateTime.MaxValue.Ticks) return "";
-                if (l < DateTime.MinValue.Ticks) return "";
-                return new DateTime((long)l).ToString("HH:mm:ss");
-            },
-        }];
+            if (v is >= long.MaxValue or <= long.MinValue or double.NaN or double.NegativeInfinity or double.PositiveInfinity)
+                return "";
+            long ticks = (long)v;
+            return ticks is > 0 and <= 3155378975999999999L
+                ? new DateTime(ticks).ToString("HH:mm:ss")
+                : "";
+        }
+
+        cartesianTrend.Series = _trendSeries;
+        cartesianTrend.XAxes = [new Axis { Labeler = SafeTimeLabel }];
         cartesianTrend.YAxes = [new Axis()];
         cartesianTrend.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
 
@@ -136,7 +135,7 @@ public partial class MainWindow : Window
         {
             if (!_trendBuffers.TryGetValue(key, out var buf)) return;
             buf.Add(new DateTimePoint(ts, val));
-            while (buf.Count > _trendMaxPoints) buf.RemoveAt(0);
+            while (buf.Count > TrendMaxPoints) buf.RemoveAt(0);
 
             var col = (ColumnSeries<double>)_barSeriesColl[0];
             var vals = (ObservableCollection<double>)col.Values!;
@@ -183,18 +182,11 @@ public partial class MainWindow : Window
 
         double nFrac = Math.Clamp((needlePos - left) / range, 0, 1), nx = pad + drawW * nFrac;
 
-        var needle = new System.Windows.Shapes.Rectangle
-        {
-            Width = 3, Height = h * 0.55, Fill = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)), RadiusX = 2, RadiusY = 2,
-        };
+        var needle = new System.Windows.Shapes.Rectangle { Width = 3, Height = h * 0.55, Fill = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)), RadiusX = 2, RadiusY = 2 };
         Canvas.SetLeft(needle, nx - 1.5); Canvas.SetTop(needle, h * 0.4);
         canvas.Children.Add(needle);
 
-        var tri = new Polygon
-        {
-            Points = new PointCollection { new(nx - 5, h * 0.4 + 10), new(nx + 5, h * 0.4 + 10), new(nx, h * 0.4 - 2) },
-            Fill = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)),
-        };
+        var tri = new Polygon { Points = new PointCollection { new(nx - 5, h * 0.4 + 10), new(nx + 5, h * 0.4 + 10), new(nx, h * 0.4 - 2) }, Fill = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)) };
         canvas.Children.Add(tri);
 
         var valLbl = new TextBlock { Text = $"{needlePos:F1}", FontSize = 10, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)) };
@@ -263,13 +255,14 @@ public partial class MainWindow : Window
         btnStopPoll.IsEnabled = conn && _scheduler.IsRunning;
     }
 
-    // ====================== 手动：地址解析 ======================
+    // ====================== 手动：地址解析 + 读写 ======================
 
     private static int[] ParseAddrs(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return [];
-        return input.Split(',', '，', ';', '；', ' ').Select(s => s.Trim())
-            .Where(s => int.TryParse(s, out _)).Select(int.Parse).Distinct().OrderBy(a => a).ToArray();
+        return input.Split(',', '，', ';', '；', ' ')
+            .Select(s => s.Trim()).Where(s => int.TryParse(s, out _))
+            .Select(int.Parse).Distinct().OrderBy(a => a).ToArray();
     }
 
     private void BtnIRead_Click(object sender, RoutedEventArgs e)
@@ -292,9 +285,7 @@ public partial class MainWindow : Window
     {
         _qWriteMode = !_qWriteMode;
         btnQWriteMode.Content = _qWriteMode ? "🔓 写入模式 (开)" : "🔒 写入模式 (关)";
-        btnQWriteMode.Background = _qWriteMode
-            ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C))
-            : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
+        btnQWriteMode.Background = _qWriteMode ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)) : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
     }
 
     private void BtnMRead_Click(object sender, RoutedEventArgs e)
@@ -309,20 +300,16 @@ public partial class MainWindow : Window
     {
         _mWriteMode = !_mWriteMode;
         btnMWriteMode.Content = _mWriteMode ? "🔓 写入模式 (开)" : "🔒 写入模式 (关)";
-        btnMWriteMode.Background = _mWriteMode
-            ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C))
-            : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
+        btnMWriteMode.Background = _mWriteMode ? new SolidColorBrush(Color.FromRgb(0xE7, 0x4C, 0x3C)) : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
     }
 
     private void BitBlock_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not Border b || b.DataContext is not BitViewModel bit) return;
-        if (bit.Parent == null) return;
+        if (sender is not Border b || b.DataContext is not BitViewModel bit || bit.Parent == null) return;
         bool canWrite = (bit.Parent.AreaLabel == "Q" && _qWriteMode) || (bit.Parent.AreaLabel == "M" && _mWriteMode);
         if (!canWrite) return;
         bit.Toggle();
-        int area = bit.Parent.AreaLabel == "Q" ? S7Service.AreaQ : S7Service.AreaM;
-        _plc.WriteByte(area, bit.Parent.ByteAddress, bit.Parent.ToByte());
+        _plc.WriteByte(bit.Parent.AreaLabel == "Q" ? S7Service.AreaQ : S7Service.AreaM, bit.Parent.ByteAddress, bit.Parent.ToByte());
     }
 
     private void UpdateRows(ObservableCollection<ByteRowViewModel> rows, int[] addrs, Dictionary<int, byte> data, string label, bool ro)

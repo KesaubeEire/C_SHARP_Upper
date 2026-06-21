@@ -13,69 +13,7 @@
         <Setter Property="CaretBrush" Value="#3498DB"/>
     </Style>
 
-    <!-- ===== 禁用按钮修复 ===== -->
-    <!-- 自包含按钮样式（不依赖 MaterialDesign StaticResource，避免设计器报错） -->
-    <Style TargetType="Button">
-        <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Background" Value="#27AE60"/>
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Padding" Value="16,6"/>
-        <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="3"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-        <Style.Triggers>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Background" Value="#2A2A3A"/>
-                <Setter Property="Foreground" Value="#999"/>
-            </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Opacity" Value="0.85"/>
-            </Trigger>
-            <Trigger Property="IsPressed" Value="True">
-                <Setter Property="Opacity" Value="0.7"/>
-            </Trigger>
-        </Style.Triggers>
-    </Style>
-
-    <!-- Flat 按钮变体 -->
-    <Style TargetType="Button" x:Key="FlatButton">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-        <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-        <Style.Triggers>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Foreground" Value="#666"/>
-            </Trigger>
-        </Style.Triggers>
-    </Style>
-
-    <!-- ScrollBar 辅助部件（必须在 ScrollBar 样式之前定义，因为 StaticResource 不支持向前引用） -->
+    <!-- ===== ScrollBar 辅助部件 ===== -->
     <Style x:Key="ScrollBarThumbStyle" TargetType="Thumb">
         <Setter Property="OverridesDefaultStyle" Value="True"/>
         <Setter Property="Template">
@@ -159,6 +97,26 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ===== MaterialDesign 命名样式快捷引用 ===== -->
+    <Style x:Key="MaterialDesignRaisedButton" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style x:Key="MaterialDesignFlatButton" TargetType="ButtonBase">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <Style x:Key="FlatButton" TargetType="ButtonBase" BasedOn="{StaticResource MaterialDesignFlatButton}">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
