@@ -55,7 +55,7 @@ public class MockTrendService : IDisposable
         Emit("ch_current", 12 + Math.Sin(t * 0.15) * 4 + (_rng.NextDouble() - 0.5) * 1, now);
     }
 
-    private void Emit(string key, string label, double value, DateTime ts)
+    private void Emit(string key, double value, DateTime ts)
     {
         _lastValues[key] = value;
         SampleGenerated?.Invoke(key, value, ts);
