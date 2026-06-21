@@ -29,8 +29,7 @@ Thumbs.db
 .nezha/attachments/
 
 # 项目无关目录
-Communication-Protocol-Assistant/
-SharpSCADA/
+vendor/
 *.db
 
 # 历史数据（太大，不纳入版本控制）
