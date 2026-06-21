@@ -106,10 +106,9 @@ public partial class MainWindow : Window
         // X 轴 Labeler：防御 LiveCharts 传入越界/NaN/Inf ticks
         static string SafeTimeLabel(double v)
         {
-            if (v is >= 1e18 or <= 0 or double.NaN or double.NegativeInfinity or double.PositiveInfinity)
+            if (v <= 0 || v > 1e18 || double.IsNaN(v) || double.IsInfinity(v))
                 return "";
-            long ticks = (long)v;
-            try { return new DateTime(ticks).ToString("HH:mm:ss"); }
+            try { return new DateTime((long)v).ToString("HH:mm:ss"); }
             catch { return ""; }
         }
 

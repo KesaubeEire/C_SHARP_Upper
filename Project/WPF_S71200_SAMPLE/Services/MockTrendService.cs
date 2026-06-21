@@ -16,6 +16,8 @@ public class MockTrendService : IDisposable
     private readonly Random _rng = new();
     private DateTime _startTime = DateTime.Now;
 
+    // 趋势图 X 轴用相对秒数（距启动时刻的秒数），避开 DateTime.Ticks 精度问题
+
     public bool IsRunning { get; private set; }
     public event Action<string, double, DateTime>? SampleGenerated;
 
@@ -42,16 +44,15 @@ public class MockTrendService : IDisposable
     private void Tick()
     {
         double t = (DateTime.Now - _startTime).TotalSeconds;
+        DateTime now = DateTime.Now;
 
-        // 4 个预设通道，模拟不同物理量
-        Emit("ch_temp", "Reactor Temp", 85 + Math.Sin(t * 0.05) * 8 + Math.Sin(t * 0.4) * 1.5, DateTime.Now);
-        Emit("ch_press", "Pressure", 8 + Math.Sin(t * 0.07) * 1.5 + (_rng.NextDouble() - 0.5) * 0.3, DateTime.Now);
-        Emit("ch_flow", "Feed Flow", 28 + Math.Sin(t * 0.04) * 6 + Math.Sin(t * 0.3) * 1, DateTime.Now);
-        Emit("ch_level", "Tank Level", 60 + Math.Sin(t * 0.03) * 18 + (_rng.NextDouble() - 0.5) * 2, DateTime.Now);
-
-        // 伺服位置（正弦 + 随机）
-        Emit("ch_servo", "Servo Pos", 45 + Math.Sin(t * 0.1) * 30 + (_rng.NextDouble() - 0.5) * 3, DateTime.Now);
-        Emit("ch_current", "Motor Current", 12 + Math.Sin(t * 0.15) * 4 + (_rng.NextDouble() - 0.5) * 1, DateTime.Now);
+        // 所有通道用绝对 DateTime
+        Emit("ch_temp", 85 + Math.Sin(t * 0.05) * 8 + Math.Sin(t * 0.4) * 1.5, now);
+        Emit("ch_press", 8 + Math.Sin(t * 0.07) * 1.5 + (_rng.NextDouble() - 0.5) * 0.3, now);
+        Emit("ch_flow", 28 + Math.Sin(t * 0.04) * 6 + Math.Sin(t * 0.3) * 1, now);
+        Emit("ch_level", 60 + Math.Sin(t * 0.03) * 18 + (_rng.NextDouble() - 0.5) * 2, now);
+        Emit("ch_servo", 45 + Math.Sin(t * 0.1) * 30 + (_rng.NextDouble() - 0.5) * 3, now);
+        Emit("ch_current", 12 + Math.Sin(t * 0.15) * 4 + (_rng.NextDouble() - 0.5) * 1, now);
     }
 
     private void Emit(string key, string label, double value, DateTime ts)
