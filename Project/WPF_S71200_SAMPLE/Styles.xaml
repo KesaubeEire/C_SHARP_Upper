@@ -129,8 +129,8 @@
         <Style.Triggers>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="1"/>
-                <Setter Property="Background" Value="#2A2A3A"/>
-                <Setter Property="Foreground" Value="#777"/>
+                <Setter Property="Background" Value="{DynamicResource DisabledBackground}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
             </Trigger>
         </Style.Triggers>
     </Style>

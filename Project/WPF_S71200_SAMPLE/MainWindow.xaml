@@ -375,7 +375,7 @@
 
                 <!-- ===== 手动模式 ===== -->
                 <ScrollViewer x:Name="manualPanel" Padding="16,8" VerticalScrollBarVisibility="Auto"
-                              Visibility="Visible" Cursor="Hand">
+                              Visibility="Visible" Cursor="Hand" Style="{DynamicResource MaterialDesignScrollViewer}">
                     <StackPanel>
                         <!-- I 区 -->
                         <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}"

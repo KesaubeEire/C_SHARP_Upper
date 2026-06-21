@@ -16,5 +16,6 @@
     <SolidColorBrush x:Key="AccentRed" Color="#C0392B"/>
     <SolidColorBrush x:Key="AccentPurple" Color="#8E44AD"/>
     <SolidColorBrush x:Key="AccentOrange" Color="#D68910"/>
+    <SolidColorBrush x:Key="DisabledBackground" Color="#E0E0E0"/>
 
 </ResourceDictionary>
