@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Timers;
 using Sharp7;
 using TestWpf.Models;
@@ -32,6 +33,8 @@ public sealed class PollingScheduler : IDisposable
     public bool IsRunning { get; private set; }
     public bool IsConnected { get; private set; }
     public string? LastError { get; private set; }
+    /// <summary>最近一次轮询读操作的耗时（ms）</summary>
+    public long LatencyMs { get; private set; }
     public PollingConfig Config => _config;
 
     public event Action<HashSet<string>>? DataUpdated;
@@ -96,6 +99,7 @@ public sealed class PollingScheduler : IDisposable
         if (_s7 == null || !_s7.IsConnected) { IsConnected = false; return; }
 
         _busy = true;
+        var sw = Stopwatch.StartNew();
         try
         {
             _tick++;
@@ -104,11 +108,14 @@ public sealed class PollingScheduler : IDisposable
             ReadFastPath(updated);
             ReadDbSlice(updated);
 
-            if (updated.Count > 0)
-                DataUpdated?.Invoke(updated);
+            sw.Stop();
+            LatencyMs = sw.ElapsedMilliseconds;
+
+            DataUpdated?.Invoke(updated);
         }
         catch (Exception ex)
         {
+            sw.Stop();
             LastError = ex.Message;
         }
         finally
@@ -117,7 +124,11 @@ public sealed class PollingScheduler : IDisposable
             // 工作完成后再启动下一次定时，绝不重叠
             if (IsRunning)
             {
-                try { _timer?.Start(); }
+                try
+                {
+                    _timer!.Interval = Math.Max(20, Math.Min(_config.FastInterval, 200));
+                    _timer.Start();
+                }
                 catch { /* Dispose 竞争时忽略 */ }
             }
         }

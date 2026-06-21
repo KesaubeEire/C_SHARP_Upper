@@ -189,7 +189,7 @@
 
                     <!-- 连接/断开 -->
                     <StackPanel Margin="16,14,16,0" Orientation="Horizontal" HorizontalAlignment="Center">
-                        
+
                         <Button x:Name="btnConnect" Content="● 连接"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
                                 Background="{DynamicResource AccentGreen}" Foreground="White"
@@ -290,10 +290,21 @@
                     <Rectangle Height="1" Fill="{DynamicResource DividerColor}" Margin="16,8,16,0"/>
 
                     <StackPanel Margin="16,12,16,0">
-                        <TextBlock Text="⏱ 轮询" Style="{StaticResource SectionTitle}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="⏱ 轮询" Style="{StaticResource SectionTitle}"/>
+                            <TextBlock Grid.Column="2" x:Name="txtPollLatency" Text=""
+                                       Foreground="{DynamicResource TextDim}" FontSize="11"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txtPollInterval" Text="50" Style="{StaticResource SidebarInput}" Height="28"/>
                             <TextBlock Grid.Column="1" Text="ms" Foreground="{DynamicResource TextSecondary}" FontSize="12"
@@ -338,8 +349,9 @@
                             <Setter Property="Margin" Value="8,0"/>
                         </Style>
                     </TabControl.Resources>
-                    <TabItem Header="📋 手动读写" Style="{StaticResource TabHeader}"/>
+                    <TabItem Header="📋 I/Q/M 区" Style="{StaticResource TabHeader}"/>
                     <TabItem Header="📈 趋势图" Style="{StaticResource TabHeader}"/>
+                    <TabItem Header="📊 仪表盘" Style="{StaticResource TabHeader}"/>
                 </TabControl>
             </Border>
 
@@ -816,6 +828,289 @@
 
                         <Rectangle Grid.Row="3" Height="24" Fill="Transparent"/>
                     </Grid>
+                </ScrollViewer>
+
+                <!-- ===== 仪表盘（AngularGauge） ===== -->
+                <!--
+                    LiveCharts2 AngularGauge 配置说明：
+                    ─────────────────────────────────────────────────────────────
+                    控件：PieChart + GaugeGenerator.BuildSolidGauge()
+
+                    关键属性（在 PieChart 上设置）：
+                      InitialRotation  : 起始角度（°），-225 表示从 7:30 方向开始
+                      MaxAngle         : 扇形扫过的角度（°），270 = 3/4 圆
+                                         → 两者组合: -225 起始 + 270 扫过 = 底部开口的速度表
+                      MinValue / MaxValue : 量程范围，等同于仪表的最小/最大值
+
+                    gauge:background 系列（显示灰色背景弧）：
+                      InnerRadius    : 内径偏移（像素），越大环越细
+                      Fill           : 使用半透明灰色
+
+                    gauge:value 系列（显示彩色值弧）：
+                      InnerRadius      : 同上，必须与背景一致
+                      Fill             : 彩色填充（SKColor）
+                      DataLabelsPosition: PolarLabelsPosition.ChartCenter 标签居中
+                      DataLabelsFormatter: 自定义标签文字格式
+
+                    多区段仪表（BuildAngularGaugeSections）：
+                      每个 GaugeItem 代表一个区段
+                      OuterRadiusOffset  : 外径偏移（像素），用来分层
+                      MaxRadialColumnWidth: 每个区段的最大厚度（像素）
+                    ─────────────────────────────────────────────────────────────
+                -->
+                <ScrollViewer x:Name="gaugePanel" Padding="16,8" VerticalScrollBarVisibility="Auto"
+                              Visibility="Collapsed">
+                    <StackPanel>
+                        <!-- ===== AngularGauge #1: 单值实心表盘（270° 速度表风格） ===== -->
+                        <!--
+                            配置步骤：
+                            1. 在 PieChart 上设置 InitialRotation="-225" MaxAngle="270"
+                            2. 调用 GaugeGenerator.BuildSolidGauge() 传两个 GaugeItem：
+                               - 第一个是实际值（第 2 个参数 lambda 配置样式）
+                               - 第二个是背景弧（GaugeItem.Background）
+                            3. 关键样式参数：
+                               InnerRadius            : 圆环内径偏移量（px），越大环越细
+                               MaxRadialColumnWidth   : 弧的最大厚度（px）
+                               Fill                   : 弧的颜色（SolidColorPaint）
+                               DataLabelsPosition     : 标签位置（ChartCenter=居中）
+                               DataLabelsFormatter    : 标签格式化函数
+                        -->
+                        <Border Background="{DynamicResource CardBackground}"
+                                BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                                CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="300"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 左侧：AngularGauge 速度表 -->
+                                <!--
+                                    ╔═══════════════════════════════════════════════════════╗
+                                    ║  AngularGauge 属性速查表                              ║
+                                    ╠═══════════════════════════════════════════════════════╣
+                                    ║ InitialRotation  : -225° (7:30方向)                    ║
+                                    ║ MaxAngle         : 270°  (3/4 圆)                      ║
+                                    ║ MinValue         : 0     (仪表最小值)                   ║
+                                    ║ MaxValue         : 100   (仪表最大值)                   ║
+                                    ║                                                       ║
+                                    ║ GaugeItem(数值) 配置项：                                ║
+                                    ║   InnerRadius          : 内径偏移(px)                   ║
+                                    ║   MaxRadialColumnWidth : 弧厚度(px)                     ║
+                                    ║   Fill                 : 弧颜色(SolidColorPaint)        ║
+                                    ║   DataLabelsPosition   : 标签位置                       ║
+                                    ║   DataLabelsFormatter  : 标签格式化函数                  ║
+                                    ╚═══════════════════════════════════════════════════════╝
+                                -->
+                                <lvc:PieChart Grid.Column="0" x:Name="angularGauge1"
+                                              InitialRotation="-225"
+                                              MaxAngle="270"
+                                              MinValue="0"
+                                              MaxValue="100"
+                                              Width="360" Height="280"
+                                              Margin="10"
+                                              TooltipPosition="Hidden">
+                                    <!--
+                                        LiveCharts2 2.0.4 WPF 专用 AngularGauge 控件说明：
+                                        ==================================================
+                                        XamlAngularGaugeSeries — 仪表弧系列
+                                          属性:
+                                            GaugeValue          : 弧的值（double），自动映射到 InitialRotation~MaxAngle
+                                            OuterRadiusOffset   : 外径偏移（px），正数向内缩，用于多层叠加
+                                            MaxRadialColumnWidth: 弧的最大厚度（px）
+                                            CornerRadius        : 弧端圆角（px），2.0.4 已实现
+                                            Fill                : 弧颜色（在代码中设置）
+
+                                        XamlNeedle — 仪表指针
+                                          属性:
+                                            Value : 指针指向的值（double），支持 Binding
+                                            Width : 指针宽度（px）
+
+                                        XamlAngularTicks — 刻度线
+                                          属性:
+                                            LabelsSize      : 刻度标签字号
+                                            LabelsOuterOffset: 标签离外缘的距离（px）
+                                            OuterOffset     : 刻度线离外缘的距离（px）
+                                            TicksLength     : 刻度线长度（px）
+
+                                        InitialRotation = -225 : 从 7:30 方向开始（左下）
+                                        MaxAngle = 270 : 扫 270° 到 4:30 结束（右下），底部留 90° 开口
+                                    -->
+
+                                    <!-- VisualElements: 刻度 + 指针（2.0.4+） -->
+                                    <lvc:PieChart.VisualElements>
+                                        <lvc:VisualsCollection>
+                                            <!-- 仪表指针：Value 绑定到当前值 -->
+                                            <lvc:XamlNeedle x:Name="gaugeNeedle" Width="20"/>
+                                            <!-- 刻度线配置 -->
+                                            <lvc:XamlAngularTicks
+                                                LabelsSize="14"
+                                                LabelsOuterOffset="10"
+                                                OuterOffset="55"
+                                                TicksLength="15" />
+                                        </lvc:VisualsCollection>
+                                    </lvc:PieChart.VisualElements>
+                                </lvc:PieChart>
+
+                                <!-- 右侧：配置面板 -->
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🎯 伺服位置" FontSize="16" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentOrange}" Margin="0,0,0,12"/>
+
+                                    <!-- 值的实时显示 -->
+                                    <Border Background="{DynamicResource WindowBackground}"
+                                            CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="当前值" FontSize="12"
+                                                       Foreground="{DynamicResource TextDim}"/>
+                                            <TextBlock x:Name="txtAngularGaugeVal" Text="0.0 mm"
+                                                       FontSize="28" FontWeight="Bold"
+                                                       Foreground="{DynamicResource AccentBlue}"
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 量程配置 -->
+                                    <!--
+                                        修改量程后需要调用 UpdateAngularGaugeRange() 刷新
+                                    -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="最小值" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                            <TextBox x:Name="txtAngularMin" Text="0"
+                                                     Style="{StaticResource SidebarInput}" Height="28"
+                                                     TextChanged="TxtAngularMinMax_Changed"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="最大值" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                            <TextBox x:Name="txtAngularMax" Text="100"
+                                                     Style="{StaticResource SidebarInput}" Height="28"
+                                                     TextChanged="TxtAngularMinMax_Changed"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- 弧厚度调节 -->
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="弧厚度" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                        <Slider x:Name="sldGaugeThickness" Minimum="5" Maximum="60" Value="20"
+                                                TickFrequency="5" TickPlacement="BottomRight"
+                                                ValueChanged="SldGaugeThickness_Changed"/>
+                                    </StackPanel>
+
+                                    <Button x:Name="btnGaugeLinkMock" Content="🔗 联动 Mock 数据"
+                                            Style="{StaticResource MaterialDesignRaisedButton}"
+                                            Background="{DynamicResource AccentBlue}" Foreground="White"
+                                            Height="34" FontWeight="Bold" Click="BtnGaugeLinkMock_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- ===== AngularGauge #2: 多区段仪表（分段显示） ===== -->
+                        <!--
+                            多区段仪表使用 XamlAngularGaugeSeries（2.0.4+ WPF 专用控件）：
+
+                            XAML 定义方式（在 PieChart.Series 中）：
+                            <lvc:XamlAngularGaugeSeries
+                                GaugeValue="60"              → 当前值
+                                OuterRadiusOffset="15"       → 外径偏移（px），控制层叠位置
+                                MaxRadialColumnWidth="14"    → 弧厚度（px）
+                                CornerRadius="0"/>           → 弧端圆角（px）
+
+                            关键配置说明：
+                            - OuterRadiusOffset 越大 → 弧越靠近圆心（向内缩）
+                            - 多个区段叠加时，Offset 要逐层递增 15~20px
+                            - GaugeValue 可以通过 x:Name 在 C# 中直接更新
+                            - Fill（颜色）需要在代码中设置（XAML 不支持直接绑定 SKColor）
+                            - 每个区段独立显示一个数据通道的值
+                        -->
+                        <Border Background="{DynamicResource CardBackground}"
+                                BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                                CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="300"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 左侧：多区段 AngularGauge -->
+                                <lvc:PieChart Grid.Column="0" x:Name="angularGauge2"
+                                              InitialRotation="-225"
+                                              MaxAngle="270"
+                                              MinValue="0"
+                                              MaxValue="100"
+                                              Width="360" Height="280"
+                                              Margin="10"
+                                              TooltipPosition="Hidden">
+                                    <!--
+                                        多区段仪表使用 XamlAngularGaugeSeries 在 XAML 定义每个区段：
+                                        - GaugeValue : 区段值，通过 x:Name 在代码中更新
+                                        - OuterRadiusOffset : 从外向内分层（px）
+                                        - MaxRadialColumnWidth : 弧的厚度（px）
+                                        - Fill : 颜色在 InitGaugePanel() 中设置
+                                    -->
+                                    <lvc:PieChart.Series>
+                                        <lvc:SeriesCollection>
+                                            <lvc:XamlAngularGaugeSeries x:Name="gaugeSeg0" GaugeValue="0" OuterRadiusOffset="15" MaxRadialColumnWidth="14"/>
+                                            <lvc:XamlAngularGaugeSeries x:Name="gaugeSeg1" GaugeValue="0" OuterRadiusOffset="33" MaxRadialColumnWidth="14"/>
+                                            <lvc:XamlAngularGaugeSeries x:Name="gaugeSeg2" GaugeValue="0" OuterRadiusOffset="51" MaxRadialColumnWidth="14"/>
+                                            <lvc:XamlAngularGaugeSeries x:Name="gaugeSeg3" GaugeValue="0" OuterRadiusOffset="69" MaxRadialColumnWidth="14"/>
+                                            <lvc:XamlAngularGaugeSeries x:Name="gaugeSeg4" GaugeValue="0" OuterRadiusOffset="87" MaxRadialColumnWidth="14"/>
+                                        </lvc:SeriesCollection>
+                                    </lvc:PieChart.Series>
+                                    <lvc:PieChart.VisualElements>
+                                        <lvc:VisualsCollection>
+                                            <lvc:XamlAngularTicks
+                                                LabelsSize="12"
+                                                LabelsOuterOffset="5"
+                                                OuterOffset="110"
+                                                TicksLength="10" />
+                                        </lvc:VisualsCollection>
+                                    </lvc:PieChart.VisualElements>
+                                </lvc:PieChart>
+
+                                <!-- 右侧：各区段状态 -->
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🔴 多区段状态" FontSize="16" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentGreen}" Margin="0,0,0,12"/>
+                                    <ItemsControl x:Name="listGaugeSections">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="{DynamicResource CardBorder}"
+                                                        BorderThickness="0,0,0,1" Padding="4,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="14"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Ellipse Grid.Column="0" Width="10" Height="10"
+                                                                 Fill="{Binding Color}" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Label}"
+                                                                   FontSize="12" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource TextPrimary}"
+                                                                   Margin="6,0,8,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="3"
+                                                                   Text="{Binding Value, StringFormat='{}{0:F1}'}"
+                                                                   FontSize="14" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource AccentBlue}"
+                                                                   VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Rectangle Height="24" Fill="Transparent"/>
+                    </StackPanel>
                 </ScrollViewer>
 
             </Grid>

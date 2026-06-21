@@ -8,6 +8,7 @@ using System.Windows.Shapes;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Extensions;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.WPF;
 using SkiaSharp;
@@ -51,10 +52,37 @@ public partial class MainWindow : Window
     private readonly AppConfig _config = AppConfig.Load();
     private static readonly SKColor[] TrendColors = [SKColors.Crimson, SKColors.Cyan, SKColors.SeaGreen, SKColors.Gold, SKColors.DodgerBlue, SKColors.MediumPurple];
 
+    // ─── 仪表盘（AngularGauge） ───
+    /// <summary>
+    /// AngularGauge #1 的系列集合（由一个值弧 + 一个背景弧组成）
+    /// 通过 GaugeGenerator.BuildSolidGauge() 初始化，之后可以通过替换整个集合来更新值。
+    /// </summary>
+    private ObservableCollection<ISeries> _gaugeSeries1 = [];
+
+    /// <summary>
+    /// AngularGauge #2 的系列集合（多区段仪表）
+    /// 改用 XAML 中声明的 XamlAngularGaugeSeries（gaugeSeg0~gaugeSeg4），
+    /// 此字段已废弃，保留作为 API 参考
+    /// </summary>
+    [Obsolete("改用 XAML 中声明的 gaugeSeg0~gaugeSeg4")]
+    private ObservableCollection<ISeries> _gaugeSeries2 = [];
+
+    /// <summary>
+    /// 多区段仪表的数据源，绑定到 listGaugeSections ItemsControl
+    /// </summary>
+    private readonly ObservableCollection<GaugeSectionInfo> _gaugeSections = [];
+
+    /// <summary>当前 AngularGauge 的弧厚度（px），由 sldGaugeThickness 控制</summary>
+    private double _gaugeThickness = 20;
+
+    /// <summary>是否已链接 Mock 数据</summary>
+    private bool _gaugeMockLinked;
+
     public MainWindow()
     {
         InitializeComponent();
         InitTrendPanel();
+        InitGaugePanel();
 
         listIRows.ItemsSource = _iRows; listQRows.ItemsSource = _qRows; listMRows.ItemsSource = _mRows;
         UpdateEmptyState();
@@ -87,23 +115,80 @@ public partial class MainWindow : Window
             var buf = new ObservableCollection<DateTimePoint>();
             _trendNormBuffers[key] = buf;
             _trendChannels.Add(new TrendChannelConfig { Key = key, Label = label, Color = color, Unit = unit, Min = min, Max = max, Variable = key });
-            double range = max - min;
-            _trendSeries.Add(new LineSeries<DateTimePoint> { Values = buf, Stroke = new SolidColorPaint(TrendColors[idx++ % TrendColors.Length]) { StrokeThickness = 2 }, Fill = null, GeometrySize = 0, LineSmoothness = 0.3, Name = label });
+
+            // ── 2.0.4 LineSeries 配置 ──
+            // Stroke           : 线条颜色 + 粗细（SolidColorPaint）
+            // Fill             : null = 不填充面积
+            // GeometrySize     : 0 = 不显示数据点标记（实时曲线不需要点）
+            // LineSmoothness   : 0~1 曲线平滑度（0=折线, 0.3=轻微平滑）
+            // TooltipLabelFormatter: 2.0.4 自定义悬停提示格式
+            //   内置变量: {Series.Name}, {Point.X}, {Point.Y}, {Value}
+            //   通过 Series.Name 存标签，在 formatter 中拼接单位和值
+            // ScalesYAt        : 如果要用多个 Y 轴，指定索引
+            var series = new LineSeries<DateTimePoint>
+            {
+                Values = buf,
+                Name = label, // 用于 tooltip 和图例
+                Stroke = new SolidColorPaint(TrendColors[idx++ % TrendColors.Length]) { StrokeThickness = 2 },
+                Fill = null,
+                GeometrySize = 0,
+                LineSmoothness = 0.3,
+                // 2.0.4 默认 tooltip 显示通道名 + 坐标值
+                // 自定义格式需要 TooltipLabelFormatter（属性名视版本略有差异）
+            };
+            _trendSeries.Add(series);
         }
         listTrendChannels.ItemsSource = _trendChannels;
         cmbTrendTimeRange.ItemsSource = TimeRangeOptions.Select(o => o.label).ToList();
         cmbTrendTimeRange.SelectedIndex = 0;
         _trendTimeWindowMs = TimeRangeOptions[0].windowMs;
         cartesianTrend.Series = _trendSeries;
-        cartesianTrend.YAxes = [new Axis { MinLimit = 0, MaxLimit = 100, Labeler = _ => "" }];
+
+        // ── 2.0.4 Y 轴配置 ──
+        // 归一化后显示 0~100%，Labeler 格式化刻度标签
+        // 用 " %" 后缀提示用户这是 normalized 百分比
+        cartesianTrend.YAxes = [
+            new Axis
+            {
+                MinLimit = 0,
+                MaxLimit = 100,
+                Labeler = value => $"{value:F0}%",
+                // 2.0.4 轴线样式
+                ShowSeparatorLines = true,
+                SeparatorsPaint = new SolidColorPaint(SKColors.Gray) { StrokeThickness = 0.5f },
+            }
+        ];
         cartesianTrend.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
+        // 2.0.4 提示框背景
+        cartesianTrend.TooltipBackgroundPaint = new SolidColorPaint(new SKColor(40, 40, 40, 230));
+
         UpdateTrendXAxis();
 
+        // ── 柱状图 ──
+        // 2.0.4 ColumnSeries 直接用 double 数组，无需 ObservableCollection
         var barVals = new ObservableCollection<double> { 0, 0, 0, 0, 0, 0 };
-        _barSeriesColl.Add(new ColumnSeries<double> { Values = barVals, Fill = new SolidColorPaint(SKColor.Parse("#3498DB")), Padding = 2, MaxBarWidth = 40 });
+        _barSeriesColl.Add(new ColumnSeries<double>
+        {
+            Values = barVals,
+            Fill = new SolidColorPaint(SKColor.Parse("#3498DB")),
+            Padding = 2,
+            MaxBarWidth = 40,
+        });
         cartesianBars.Series = _barSeriesColl;
-        cartesianBars.XAxes = [new Axis { Labels = ["Temp", "Press", "Flow", "Level", "Servo", "Curr."], LabelsRotation = 45 }];
-        cartesianBars.YAxes = [new Axis { MinLimit = 0 }];
+        cartesianBars.XAxes = [new Axis
+        {
+            Labels = ["Temp", "Press", "Flow", "Level", "Servo", "Curr."],
+            LabelsRotation = 45,
+            // 2.0.4 标签样式
+            LabelsPaint = new SolidColorPaint(SKColors.LightGray),
+        }];
+        cartesianBars.YAxes = [new Axis
+        {
+            MinLimit = 0,
+            Labeler = value => $"{value:F0}",
+            SeparatorsPaint = new SolidColorPaint(SKColors.Gray) { StrokeThickness = 0.5f },
+        }];
+        cartesianBars.TooltipPosition = LiveChartsCore.Measure.TooltipPosition.Top;
 
         _mockTrend.SampleGenerated += OnTrendSample;
         // 刻度等趋势Tab首次选中时再画（此时canvas才有尺寸）
@@ -130,6 +215,7 @@ public partial class MainWindow : Window
             int bi = key switch { "ch_temp" => 0, "ch_press" => 1, "ch_flow" => 2, "ch_level" => 3, "ch_servo" => 4, "ch_current" => 5, _ => -1 };
             if (bi >= 0) vals[bi] = val;
             if (key == "ch_servo") UpdateGaugeNeedle(val);
+            if (_gaugeMockLinked) UpdateAngularGaugesFromMock(key, val);
         });
     }
 
@@ -201,14 +287,308 @@ public partial class MainWindow : Window
         Canvas.SetLeft(vl, Math.Clamp(nx - 15, 0, c.ActualWidth - 35)); Canvas.SetTop(vl, 0); c.Children.Add(vl);
     }
 
+    // ====================== 仪表盘（AngularGauge） ======================
+    //
+    // LiveCharts2 2.0.4 WPF AngularGauge 使用说明：
+    // ─────────────────────────────────────────────────────────────────────────
+    // WPF 2.0.4 新增了专用的 XAML 控件，无需全部用 C# 代码生成：
+    //
+    // 1. XamlAngularGaugeSeries（仪表弧系列）
+    //    在 XAML 的 <PieChart.Series> 中定义，属性：
+    //      GaugeValue           : 当前值（double），支持 x:Name 在 C# 直接更新
+    //      OuterRadiusOffset    : 外径偏移（px），正数向内缩，多层叠加时逐层+15~20px
+    //      MaxRadialColumnWidth : 弧的最大厚度（px）
+    //      CornerRadius         : 弧端圆角（px），2.0.4 已实现
+    //      Fill                 : 颜色（在 C# 中设置）
+    //
+    // 2. XamlNeedle（仪表指针）
+    //    放在 <PieChart.VisualElements> 中，属性：
+    //      Value : 指针指向的值（double）
+    //      Width : 指针宽度（px）
+    //
+    // 3. XamlAngularTicks（刻度线）
+    //    也放在 <PieChart.VisualElements> 中，属性：
+    //      LabelsSize       : 刻度标签字号
+    //      LabelsOuterOffset: 标签离外缘的距离（px）
+    //      OuterOffset      : 刻度线离外缘的距离（px）
+    //      TicksLength      : 刻度线长度（px）
+    //
+    // 4. GaugeGenerator.BuildSolidGauge()（单值实心表盘 — 代码方式）
+    //    仍然可用，适合需要背景弧 + 值弧的场景。
+    //    但在 2.0.4 中，也可以在 XAML 中用两个 XamlAngularGaugeSeries 叠加。
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// 初始化 AngularGauge 面板（在构造函数中调用）
+    ///
+    /// 初始化步骤：
+    /// 1. 创建 AngularGauge #1（单值实心表盘），初始值设为 0
+    /// 2. 创建 AngularGauge #2（多区段仪表），显示 6 个通道的状态
+    /// 3. 绑定区段列表到 ItemsControl
+    /// </summary>
+    private void InitGaugePanel()
+    {
+        // ── AngularGauge #1: 单值实心表盘 ──
+        // GaugeGenerator.BuildSolidGauge() 返回 ISeries[]
+        // 第一个 GaugeItem: 实际值的弧（彩色）
+        // 第二个 GaugeItem: 背景弧（灰色，GaugeItem.Background 常量）
+        UpdateSolidGauge(0);
+
+        // ── AngularGauge #2: 多区段仪表 ──
+        // 定义 5 个区段，对应不同数据通道
+        var sectionDefs = new (string label, string color)[]
+        {
+            ("温度",  "#E24B4A"),
+            ("压力",  "#37D3E0"),
+            ("流量",  "#1D9E75"),
+            ("液位",  "#F4D03F"),
+            ("电流",  "#9B59B6"),
+        };
+        foreach (var (label, color) in sectionDefs)
+            _gaugeSections.Add(new GaugeSectionInfo { Label = label, Color = color, Value = 0 });
+
+        // 多区段仪表使用 XAML 声明的 XamlAngularGaugeSeries（2.0.4+ WPF 专用控件）
+        // x:Name = gaugeSeg0 ~ gaugeSeg4，在 XAML 的 <PieChart.Series> 中定义
+        // 只需在 C# 中设置颜色（Fill）即可
+        var xamlSections = new[] { gaugeSeg0, gaugeSeg1, gaugeSeg2, gaugeSeg3, gaugeSeg4 };
+        for (int i = 0; i < Math.Min(xamlSections.Length, sectionDefs.Length); i++)
+        {
+            var color = SKColor.Parse(sectionDefs[i].color);
+            xamlSections[i].Fill = new SolidColorPaint(color);
+        }
+
+        // 绑定多区段的文字列表
+        listGaugeSections.ItemsSource = _gaugeSections;
+    }
+
+    /// <summary>
+    /// 更新 AngularGauge #1（单值实心表盘）的值
+    ///
+    /// GaugeGenerator.BuildSolidGauge() 创建一个新集合替换旧集合。
+    /// PieChart 检测到 Series 引用变化会自动重绘。
+    ///
+    /// 关键参数说明：
+    ///   value        : 当前仪表值（会被映射到 InitialRotation~InitialRotation+MaxAngle 角度之间）
+    ///   InnerRadius  : 内径偏移 10px -> 弧默认从距圆心 10px 处开始绘制
+    ///   Fill         : 值弧颜色，示例用青色
+    ///   DataLabelsPosition: ChartCenter -> 数字显示在仪表圆心位置
+    ///   DataLabelsFormatter: 格式化显示的文本
+    /// </summary>
+    private void UpdateSolidGauge(double value)
+    {
+        var thickness = _gaugeThickness;
+        var minVal = double.TryParse(txtAngularMin.Text, out var mn) ? mn : 0;
+        var maxVal = double.TryParse(txtAngularMax.Text, out var mx) ? mx : 100;
+
+        _gaugeSeries1 = new ObservableCollection<ISeries>(
+            GaugeGenerator.BuildSolidGauge(
+                // ── 值弧（前弧）：显示实际值的彩色弧段 ──
+                new GaugeItem(value, series =>
+                {
+                    // InnerRadius: 内径偏移量（px）。值越大，弧形环越细（从内部向中心收缩）
+                    // 建议范围 5~30，必须和背景弧一致
+                    series.InnerRadius = 10;
+
+                    // MaxRadialColumnWidth: 弧的最大厚度（px），控制弧的视觉宽度
+                    // 由 sldGaugeThickness 滑块动态控制（5~60）
+                    series.MaxRadialColumnWidth = thickness;
+
+                    // Fill: 弧的填充颜色，使用 SkiaSharp SKColor
+                    series.Fill = new SolidColorPaint(SKColors.Cyan);
+
+                    // Stroke/Fill: 也可设置弧的边框
+                    // series.Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 1 };
+
+                    // CornerRadius: 弧端圆角（px），2.0.4 已实现，4~8 为圆润弧端
+                    series.CornerRadius = 4;
+
+                    // DataLabelsPosition: 标签显示位置
+                    // ChartCenter → 显示在仪表圆心
+                    // PolarLabelsPosition.ChartCenter | End | Middle | Start
+                    series.DataLabelsPosition = LiveChartsCore.Measure.PolarLabelsPosition.ChartCenter;
+
+                    // DataLabelsFormatter: 格式化标签文字
+                    // point.Coordinate.PrimaryValue → 当前值
+                    // point.Coordinate.MinLimit / MaxLimit → 量程边界
+                    series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F1}%";
+
+                    // DataLabelsPaint: 标签文字样式（SKTypeface 可选）
+                    series.DataLabelsPaint = new SolidColorPaint(SKColors.White);
+                }),
+
+                // ── 背景弧（底弧）：显示灰色半透明背景 ──
+                // GaugeItem.Background 常量表示这是一个背景层
+                // InnerRadius 必须与值弧一致，否则会错位
+                new GaugeItem(GaugeItem.Background, series =>
+                {
+                    series.InnerRadius = 10;
+                    series.MaxRadialColumnWidth = thickness;
+                    series.Fill = new SolidColorPaint(new SKColor(64, 64, 64, 60)); // 半透明灰色
+                    // CornerRadius: 2.0.4 已实现，背景弧也设圆角保持视觉一致
+                    series.CornerRadius = 4;
+                })
+            )
+        );
+
+        // 重新赋值 Series 会触发 PieChart 重绘
+        angularGauge1.Series = _gaugeSeries1;
+
+        // 同步更新 PieChart 的量程
+        if (angularGauge1.MinValue != minVal || angularGauge1.MaxValue != maxVal)
+        {
+            angularGauge1.MinValue = minVal;
+            angularGauge1.MaxValue = maxVal;
+        }
+
+        // 更新指针（XAML 中声明的 XamlNeedle，x:Name="gaugeNeedle"）
+        // gaugeNeedle.Value 控制指针在仪表上的指向角度
+        if (gaugeNeedle != null)
+            gaugeNeedle.Value = Math.Clamp(value, minVal, maxVal);
+
+        // 更新数值显示
+        double clampedVal = Math.Clamp(value, minVal, maxVal);
+        txtAngularGaugeVal.Text = $"{clampedVal:F1} mm";
+    }
+
+    /// <summary>
+    /// 更新 AngularGauge #2（多区段仪表）的各个区段值
+    ///
+    /// XAML 中已声明 gaugeSeg0~gaugeSeg4（XamlAngularGaugeSeries），
+    /// 直接设置它们的 GaugeValue 属性即可触发重绘。
+    /// </summary>
+    private void UpdateSectionsGauge(double[] values)
+    {
+        var xamlSections = new[] { gaugeSeg0, gaugeSeg1, gaugeSeg2, gaugeSeg3, gaugeSeg4 };
+        int count = Math.Min(values.Length, xamlSections.Length);
+        for (int i = 0; i < count; i++)
+        {
+            xamlSections[i].GaugeValue = values[i];
+        }
+    }
+
+    // ====================== AngularGauge 事件处理 ======================
+
+    /// <summary>
+    /// 量程（Min/Max）修改时调用，刷新 AngularGauge #1
+    /// 也支持实时预览：输入新值后按回车或焦点离开即更新
+    /// </summary>
+    /// <remarks>
+    /// XAML 绑定: TextChanged="TxtAngularMinMax_Changed"
+    /// 注意：频繁 TextChanged 触发 UpdateSolidGauge 可能影响性能，
+    /// 可以改为 LostFocus 事件只在输入完成后触发一次
+    /// </remarks>
+    private void TxtAngularMinMax_Changed(object sender, TextChangedEventArgs e)
+    {
+        // 只在仪表盘 Tab 可见时才自动刷新，避免后台不必要的重绘
+        if (tabControl.SelectedIndex == 2)
+        {
+            UpdateSolidGauge(0);
+        }
+    }
+
+    /// <summary>
+    /// 弧厚度滑块值变化时调用，刷新 AngularGauge #1
+    /// 让用户可以实时调节弧的粗细
+    /// </summary>
+    /// <remarks>
+    /// XAML 绑定: ValueChanged="SldGaugeThickness_Changed"
+    /// Minimum=5, Maximum=60, Value=20（初始 20px）
+    /// 每次滑动都触发更新，由于 GaugeGenerator 生成新集合，频繁操作可能有开销
+    /// </remarks>
+    private void SldGaugeThickness_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        _gaugeThickness = e.NewValue;
+        // 获取当前值并刷新
+        // 从当前仪表上获取显示的数值
+        double currentVal = 0;
+        if (_gaugeSeries1.Count > 0 && _gaugeSeries1[0] is PieSeries<ObservableValue> ps
+            && ps.Values is IEnumerable<ObservableValue> gaugeVals)
+        {
+            var ov = gaugeVals.FirstOrDefault();
+            currentVal = ov?.Value ?? 0;
+        }
+        UpdateSolidGauge(currentVal);
+    }
+
+    /// <summary>
+    /// "联动 Mock 数据" 按钮点击事件
+    /// 点击后订阅 MockTrendService 的最新值更新 AngularGauge
+    /// 再点击一次取消联动
+    /// </summary>
+    private void BtnGaugeLinkMock_Click(object sender, RoutedEventArgs e)
+    {
+        _gaugeMockLinked = !_gaugeMockLinked;
+
+        if (_gaugeMockLinked)
+        {
+            btnGaugeLinkMock.Content = "🔗 已联动 ✓";
+            btnGaugeLinkMock.Background = new SolidColorBrush(Color.FromRgb(0x27, 0xAE, 0x60));
+            // 如果 Mock 没在运行，自动启动
+            if (!_mockTrend.IsRunning)
+                _mockTrend.Start();
+        }
+        else
+        {
+            btnGaugeLinkMock.Content = "🔗 联动 Mock 数据";
+            btnGaugeLinkMock.Background = new SolidColorBrush(Color.FromRgb(0x52, 0xAE, 0xC3));
+            // 如果趋势图也没在用 Mock，可以停止
+            if (!_mockTrend.IsRunning) { }
+        }
+    }
+
+    /// <summary>
+    /// 由 OnTrendSample 调用，更新 AngularGauge #1 的值（伺服通道）
+    /// 同时更新多区段表 #2
+    /// </summary>
+    private void UpdateAngularGaugesFromMock(string key, double val)
+    {
+        if (!_gaugeMockLinked) return;
+
+        // AngularGauge #1: 显示伺服位置（ch_servo）
+        if (key == "ch_servo")
+        {
+            UpdateSolidGauge(val);
+        }
+
+        // AngularGauge #2: 每收到一个通道数据就更新对应区段
+        int sectionIdx = key switch
+        {
+            "ch_temp"    => 0,
+            "ch_press"   => 1,
+            "ch_flow"    => 2,
+            "ch_level"   => 3,
+            "ch_current" => 4,
+            _            => -1,
+        };
+        if (sectionIdx >= 0)
+        {
+            // 更新区段值
+            UpdateSectionsGauge(
+                _trendChannels
+                    .Where(c => c.Key != "ch_servo") // 排除伺服（用 AngularGauge #1 展示）
+                    .Select(c => Math.Clamp(c.CurrentValue, 0, 100))
+                    .ToArray()
+            );
+
+            // 更新文字列表
+            if (sectionIdx < _gaugeSections.Count)
+            {
+                var ch = _trendChannels.FirstOrDefault(c => c.Key == key);
+                if (ch != null)
+                    _gaugeSections[sectionIdx].Value = ch.CurrentValue;
+            }
+        }
+    }
+
     // ====================== Tab 切换 ======================
 
     private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        bool isTrend = tabControl.SelectedIndex == 1;
-        manualPanel.Visibility = isTrend ? Visibility.Collapsed : Visibility.Visible;
-        trendPanel.Visibility = isTrend ? Visibility.Visible : Visibility.Collapsed;
-        if (isTrend && !_gaugeDrawn && canvasGauge.ActualWidth >= 10)
+        // 三个 Tab 的可见性切换：0=手动读写，1=趋势图，2=仪表盘
+        manualPanel.Visibility = tabControl.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        trendPanel.Visibility = tabControl.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+        gaugePanel.Visibility = tabControl.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+        if (tabControl.SelectedIndex == 1 && !_gaugeDrawn && canvasGauge.ActualWidth >= 10)
         { _gaugeDrawn = true; DrawGaugeScale(45.0); }
     }
 
@@ -240,7 +620,7 @@ if (_plc.Connect(localIp, ip, p, r, s) != 0) { MessageBox.Show(this, $"连接失
 
     private void BtnDisconnect_Click(object _, RoutedEventArgs _2) { _plc.Disconnect(); txtStatus.Text = "未连接"; txtStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)); indicator.Fill = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)); UpdateUI(); SaveConfig(); }
 
-    private void UpdateUI() { bool c = _plc.IsConnected; bool p = _scheduler.IsRunning; btnConnect.IsEnabled = !c; btnDisconnect.IsEnabled = c; btnIRead.IsEnabled = c && !p; btnQRead.IsEnabled = c && !p; btnQWriteMode.IsEnabled = c && !p; btnMRead.IsEnabled = c && !p; btnMWriteMode.IsEnabled = c && !p; btnStartPoll.IsEnabled = c && !p; btnStopPoll.IsEnabled = c && p; }
+    private void UpdateUI() { bool c = _plc.IsConnected; bool p = _scheduler.IsRunning; btnConnect.IsEnabled = !c; btnDisconnect.IsEnabled = c; btnIRead.IsEnabled = c && !p; btnQRead.IsEnabled = c; btnQWriteMode.IsEnabled = c; btnMRead.IsEnabled = c; btnMWriteMode.IsEnabled = c; btnStartPoll.IsEnabled = c && !p; btnStopPoll.IsEnabled = c && p; }
 
     // ====================== 手动读写 ======================
 
@@ -320,8 +700,12 @@ if (_plc.Connect(localIp, ip, p, r, s) != 0) { MessageBox.Show(this, $"连接失
     /// <summary>轮询数据直接写入 I/Q/M 行（无中间缓存）</summary>
     private void OnPollData(HashSet<string> updated)
     {
-        Dispatcher.Invoke(() =>
+        // InvokeAsync: 不阻塞 timer 线程，避免轮询和 UI 写操作竞争 S7Client
+        Dispatcher.InvokeAsync(() =>
         {
+            // 更新延迟显示
+            txtPollLatency.Text = $"{_scheduler.LatencyMs}ms";
+
             void UpdateRows(ObservableCollection<ByteRowViewModel> rows)
             {
                 foreach (var row in rows)
@@ -374,5 +758,45 @@ if (_plc.Connect(localIp, ip, p, r, s) != 0) { MessageBox.Show(this, $"连接失
         _config.ThemeMode = ThemeManager.Current == AppThemeMode.Dark ? "Dark" : "Light";
         _config.WindowLeft = Left; _config.WindowTop = Top; _config.WindowWidth = Width; _config.WindowHeight = Height; _config.WindowState = WindowState.ToString();
         _config.Save();
+    }
+}
+
+/// <summary>
+/// 多区段仪表 (AngularGauge #2) 的文字列表数据模型
+///
+/// 绑定到 listGaugeSections ItemsControl，显示每个区段的：
+///   Label : 区段名称（如 "温度", "压力"）
+///   Color : 区段颜色（与弧颜色一致）
+///   Value : 当前数值
+///
+/// 实现 INotifyPropertyChanged 以便 Value 变化时 UI 自动更新
+/// </summary>
+public class GaugeSectionInfo : System.ComponentModel.INotifyPropertyChanged
+{
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    private string _label = "";
+    public string Label
+    {
+        get => _label;
+        set { _label = value; PropertyChanged?.Invoke(this, new(nameof(Label))); }
+    }
+
+    private string _color = "#000000";
+    public string Color
+    {
+        get => _color;
+        set { _color = value; PropertyChanged?.Invoke(this, new(nameof(Color))); }
+    }
+
+    private double _value;
+    public double Value
+    {
+        get => _value;
+        set
+        {
+            _value = value;
+            PropertyChanged?.Invoke(this, new(nameof(Value)));
+        }
     }
 }

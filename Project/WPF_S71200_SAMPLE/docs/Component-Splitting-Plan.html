@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>WPF 组件拆分方案</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; }
+  h1, h2, h3 { color: #64b5f6; }
+  h1 { border-bottom: 2px solid #64b5f6; padding-bottom: 8px; }
+  h2 { margin-top: 32px; }
+  .section { background: #16213e; border-radius: 8px; padding: 16px 20px; margin: 16px 0; border: 1px solid #2a2a4a; }
+  .section-title { font-weight: bold; font-size: 1.1em; margin: 0 0 8px 0; color: #ffd54f; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-right: 4px; }
+  .badge-industry { background: #1b5e20; color: #a5d6a7; }
+  .badge-current { background: #b71c1c; color: #ef9a9a; }
+  .badge-target { background: #0d47a1; color: #90caf9; }
+  .tree { font-family: 'Consolas', monospace; line-height: 1.8; margin: 8px 0; }
+  .tree-folder { color: #ffd54f; }
+  .tree-file { margin-left: 20px; }
+  .tree-file.current { color: #ef9a9a; }
+  .tree-file.new { color: #81c784; }
+  .tree-file.keep { color: #90caf9; }
+  .arrow { color: #78909c; margin: 0 8px; }
+  .diagram { background: #0d1117; border: 1px solid #2a2a4a; border-radius: 6px; padding: 16px; margin: 12px 0; font-family: 'Consolas', monospace; font-size: 0.9em; line-height: 1.6; white-space: pre; overflow-x: auto; }
+  .diagram .hl { color: #ffd54f; }
+  .diagram .comment { color: #78909c; }
+  .diagram .tag { color: #64b5f6; }
+  .diagram .arrow-c { color: #81c784; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #2a2a4a; }
+  th { color: #64b5f6; background: #0d1117; }
+  tr:hover { background: rgba(100, 181, 246, 0.08); }
+  .col-status { width: 80px; }
+  .col-file { width: auto; }
+  .col-desc { width: auto; }
+  .prin { background: #0d47a1; border-left: 4px solid #64b5f6; padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; }
+  .prin-title { font-weight: bold; color: #64b5f6; }
+  .mockup { background: #0d1117; border: 1px solid #2a2a4a; border-radius: 8px; padding: 0; margin: 16px 0; overflow: hidden; }
+  .mockup-header { background: #16213e; padding: 8px 16px; border-bottom: 1px solid #2a2a4a; font-size: 0.8em; color: #78909c; }
+  .mockup-body { padding: 16px; font-family: 'Consolas', monospace; font-size: 0.85em; line-height: 1.5; }
+  .mockup .border-c { border: 1px solid #2a2a4a; border-radius: 4px; }
+  .sidebar-m { background: #16213e; }
+  .panel-m { background: #1a1a2e; }
+  .mockup .highlight { color: #ffd54f; }
+  .mockup .dim { color: #78909c; }
+</style>
+</head>
+<body>
+
+<h1>WPF 组件拆分方案</h1>
+
+<p style="color: #a0a0a0;">基于本项目现状 + 工业界标准 WPF 实践，不涉及 MVVM 框架迁移，只做 XAML + Code-Behind 的组件化拆分。</p>
+
+<!-- ============================================================ -->
+<!-- 第一部分：行业标准 -->
+<!-- ============================================================ -->
+<h2>一、成熟的 WPF 项目是怎么拆的？</h2>
+
+<p>调研了四个方向的工业级 WPF 项目结构：</p>
+
+<div class="section">
+  <div class="section-title">📐 模式 A：功能区域拆分（MahApps.Metro / MaterialDesignInXAML）</div>
+  <div class="diagram">
+<span class="comment">// 最主流的拆分方式 — 按 UI 区域切 UserControl</span>
+Shell/
+  ├── MainWindow.xaml                    <span class="comment">// 仅骨架：Grid + 区域占位</span>
+  ├── MainWindow.xaml.cs                 <span class="comment">// 仅窗口级事件（关闭、主题）</span>
+Controls/
+  ├── Sidebar/
+  │   ├── ConnectionPanel.xaml           <span class="comment">// 连接参数 + 按钮</span>
+  │   ├── ImportPanel.xaml               <span class="comment">// 导入 DB/UDT</span>
+  │   └── PollingPanel.xaml              <span class="comment">// 轮询配置</span>
+  ├── IoPanel/
+  │   ├── IAreaPanel.xaml                <span class="comment">// I 区（只读）</span>
+  │   ├── QAreaPanel.xaml                <span class="comment">// Q 区（可读写）</span>
+  │   └── MAreaPanel.xaml                <span class="comment">// M 区（可读写）</span>
+  ├── Trend/
+  │   ├── TrendChartPanel.xaml           <span class="comment">// 趋势图</span>
+  │   ├── GaugeControl.xaml              <span class="comment">// 水平轴仪表</span>
+  │   └── BarChartPanel.xaml             <span class="comment">// 柱状图</span>
+  └── Common/
+      ├── BitBlock.xaml                  <span class="comment">// 可复用的位块组件</span>
+      └── ByteRow.xaml                   <span class="comment">// 可复用的字节行组件</span>
+  </div>
+  <p><strong>特点</strong>：每个 <code>UserControl</code> 就是一个独立 xaml + cs，事件在自己内部处理，通过 <code>DependencyProperty</code> / 事件暴露给父级。一般大型项目都这样拆。</p>
+</div>
+
+<div class="section">
+  <div class="section-title">📐 模式 B：MVVM 分层（Prism / CommunityToolkit.Mvvm）</div>
+  <div class="diagram">
+<span class="comment">// 企业级标准 — View + ViewModel 一一对应</span>
+Views/
+  ├── SidebarView.xaml
+  ├── IAreaView.xaml
+  ├── QAreaView.xaml
+  ├── MAreaView.xaml
+  ├── TrendView.xaml
+  └── GaugeView.xaml
+ViewModels/
+  ├── SidebarViewModel.cs
+  ├── IAreaViewModel.cs
+  ├── QAreaViewModel.cs
+  ├── MAreaViewModel.cs
+  ├── TrendViewModel.cs
+  └── GaugeViewModel.cs
+  </div>
+  <p><strong>特点</strong>：Code-Behind 几乎为空，所有逻辑在 ViewModel 里用 Binding 驱动。适合大型团队协作。</p>
+</div>
+
+<div class="section">
+  <div class="section-title">📐 模式 C：按 Tab / 页面拆分（最轻量，适合你）</div>
+  <div class="diagram">
+<span class="comment">// 你当前已经是 Tab 布局了，只是内容全写在一个文件里</span>
+<span class="comment">// 最小改动：把每个 Tab 内容拆成独立 UserControl，主窗只做引用</span>
+
+MainWindow.xaml  ← 只留 Shell 骨架
+  ├── Sidebar.xaml          ← 侧边栏全部移过去
+  ├── IoPanel.xaml          ← Tab1: I/Q/M 读写面板
+  ├── TrendPanel.xaml       ← Tab2: 趋势图面板
+  └── GaugePanel.xaml       ← Tab3: 仪表盘面板
+  </div>
+  <p><strong>特点</strong>：介于 A 和 B 之间，不引入第三方框架，每个 Tab 对应一个 UserControl，事件通过 <code>EventArgs</code> 冒泡或通过共享的 Service 通信。</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第二部分：现状分析 -->
+<!-- ============================================================ -->
+<h2>二、当前项目的结构问题</h2>
+
+<table>
+  <tr><th class="col-file">文件</th><th class="col-desc">行数</th><th class="col-desc">问题</th></tr>
+  <tr><td><code>MainWindow.xaml</code></td><td><strong>1112 行</strong></td><td>一个文件包含：侧边栏、I 区、Q 区、M 区、趋势图、水平仪表、柱状图、AngularGauge 两个，一共 8 个独立 UI 模块杂糅在一起。改一处要滚半天。</td></tr>
+  <tr><td><code>MainWindow.xaml.cs</code></td><td><strong>~380 行</strong></td><td>16 个事件处理器 + 轮询回调 + 配置持久化 + 趋势逻辑 + 仪表逻辑全部在一个类里。没有职责边界。</td></tr>
+  <tr><td><code>Styles.xaml</code></td><td>可以</td><td>全局样式集中管理，这个是好的，保留。</td></tr>
+  <tr><td><code>Themes/Dark.xaml + Light.xaml</code></td><td>可以</td><td>主题资源字典，好的，保留。</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- 第三部分：推荐方案 -->
+<!-- ============================================================ -->
+<h2>三、推荐方案：模式 C — 按 Tab 区域拆分 + 公共控件下沉</h2>
+
+<div class="prin">
+  <div class="prin-title">拆分原则</div>
+  <ol style="margin: 8px 0; padding-left: 20px;">
+    <li><strong>一个 Tab 一个 UserControl</strong> — I/Q/M 面板、趋势面板、仪表盘各一个文件</li>
+    <li><strong>侧边栏独立</strong> — 连接配置 + 导入 + 轮询是一个独立模块</li>
+    <li><strong>公共控件下沉</strong> — BitBlock、ByteRow 这些被多处引用的做成可复用 UserControl</li>
+    <li><strong>不引入第三方框架</strong> — 纯 UserControl + DependencyProperty + 事件，保持简单</li>
+    <li><strong>事件冒泡</strong> — 子组件触发事件，父级（MainWindow）监听并调用 Service</li>
+  </ol>
+</div>
+
+<h3>目标目录结构</h3>
+
+<div class="diagram">
+<span class="comment">// 新增 Controls/ 文件夹，按功能分组</span>
+Project\WPF_S71200_SAMPLE\
+├── MainWindow.xaml                   <span class="comment">// ⬇ 从 1112 行降到 ~80 行，只剩引用</span>
+├── MainWindow.xaml.cs                <span class="comment">// ⬇ 从 380 行降到 ~100 行，只做协调</span>
+│
+├── <span class="hl">Controls/</span>                           <span class="comment">// ← 新增：所有组件放在这里</span>
+│   ├── <span class="hl">Sidebar/</span>
+│   │   ├── <span class="tag">ConnectionPanel.xaml</span>          <span class="comment">// 连接参数 + 连接/断开按钮</span>
+│   │   ├── <span class="tag">ConnectionPanel.xaml.cs</span>
+│   │   ├── <span class="tag">ImportPanel.xaml</span>              <span class="comment">// 导入 DB/UDT + 列表</span>
+│   │   ├── <span class="tag">ImportPanel.xaml.cs</span>
+│   │   ├── <span class="tag">PollingPanel.xaml</span>             <span class="comment">// 轮询配置 + 启动/停止 + 延迟</span>
+│   │   └── <span class="tag">PollingPanel.xaml.cs</span>
+│   │
+│   ├── <span class="hl">IoPanels/</span>
+│   │   ├── <span class="tag">QPanel.xaml</span>                   <span class="comment">// Q 区完全独立</span>
+│   │   ├── <span class="tag">QPanel.xaml.cs</span>
+│   │   ├── <span class="tag">MPanel.xaml</span>                   <span class="comment">// M 区完全独立</span>
+│   │   └── <span class="tag">MPanel.xaml.cs</span>
+│   │
+│   ├── <span class="hl">Common/</span>
+│   │   ├── <span class="tag">BitBlock.xaml</span>                 <span class="comment">// ← 从内联 DataTemplate 提升为独立组件</span>
+│   │   ├── <span class="tag">BitBlock.xaml.cs</span>              <span class="comment">//    I/Q/M 公用同一个 BitBlock</span>
+│   │   ├── <span class="tag">ByteRow.xaml</span>                  <span class="comment">// ← 同理，字节行组件</span>
+│   │   └── <span class="tag">ByteRow.xaml.cs</span>
+│   │   ├── <span class="tag">AreaPanelBase.xaml</span>             <span class="comment">// I/Q/M 共用的基础面板</span>
+│   │   └── <span class="tag">AreaPanelBase.xaml.cs</span>
+│   │
+│   ├── <span class="hl">Trend/</span>
+│   │   ├── <span class="tag">TrendChartPanel.xaml</span>           <span class="comment">// 通道列表 + 趋势图 + 时间范围</span>
+│   │   ├── <span class="tag">TrendChartPanel.xaml.cs</span>
+│   │   ├── <span class="tag">HorizontalGauge.xaml</span>          <span class="comment">// 水平轴仪表</span>
+│   │   ├── <span class="tag">HorizontalGauge.xaml.cs</span>
+│   │   └── <span class="tag">BarChartPanel.xaml</span>             <span class="comment">// 柱状图</span>
+│   │   └── <span class="tag">BarChartPanel.xaml.cs</span>
+│   │
+│   └── <span class="hl">Gauge/</span>
+│       ├── <span class="tag">AngularGaugeSingle.xaml</span>        <span class="comment">// 单值速度表</span>
+│       ├── <span class="tag">AngularGaugeSingle.xaml.cs</span>
+│       ├── <span class="tag">AngularGaugeMulti.xaml</span>         <span class="comment">// 多区段仪表</span>
+│       └── <span class="tag">AngularGaugeMulti.xaml.cs</span>
+│
+├── Models/                          <span class="comment">// 保持不变</span>
+├── Services/                        <span class="comment">// 保持不变</span>
+├── Converters/                      <span class="comment">// 保持不变</span>
+├── Themes/                          <span class="comment">// 保持不变</span>
+├── Styles.xaml                      <span class="comment">// 保持不变</span>
+└── App.xaml                         <span class="comment">// 保持不变</span>
+</div>
+
+<h3>组件间的通信方式</h3>
+
+<table>
+  <tr><th>方向</th><th>方式</th><th>例子</th></tr>
+  <tr><td>子 → 父</td><td>事件冒泡（<code>new RoutedEvent</code> 或 <code>EventHandler</code>）</td><td><code>BitBlock</code> 被点击 → <code>BitToggled</code> 事件 → <code>QPanel</code> 调用 <code>S7Service.WriteByte()</code></td></tr>
+  <tr><td>父 → 子</td><td><code>DependencyProperty</code> 绑定</td><td><code>PollingPanel.LatencyMs</code> → MainWindow 轮询回调时设值</td></tr>
+  <tr><td>跨组件</td><td>共享 Service 实例（同一个 <code>S7Service</code> / <code>PollingScheduler</code>）</td><td><code>QPanel</code> 和 <code>MPanel</code> 通过构造参数拿到同一个 <code>S7Service</code></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- 第四部分：MainWindow 重构后的样子 -->
+<!-- ============================================================ -->
+<h2>四、拆分后 MainWindow.xaml 长什么样</h2>
+
+<div class="diagram">
+&lt;!-- 从 1112 行 → 约 80 行 --&gt;
+&lt;Window ...&gt;
+    &lt;Grid&gt;
+        &lt;Grid.ColumnDefinitions&gt;
+            &lt;ColumnDefinition Width="270"/&gt;
+            &lt;ColumnDefinition Width="*"/&gt;
+        &lt;/Grid.ColumnDefinitions&gt;
+
+        <span class="comment">&lt;!-- 侧边栏：一个 UserControl 搞定 --&gt;</span>
+        &lt;controls:<span class="hl">SidebarControl</span> Grid.Column="0"
+                    x:Name="sidebar"/&gt;
+
+        <span class="comment">&lt;!-- 主区域 --&gt;</span>
+        &lt;Grid Grid.Column="1"&gt;
+            &lt;TabControl x:Name="tabControl"&gt;
+                &lt;TabItem Header="📋 I/Q/M 区"&gt;
+                    &lt;ScrollViewer&gt;
+                        &lt;StackPanel&gt;
+                            &lt;controls:<span class="hl">IAreaPanel</span>/&gt;
+                            &lt;controls:<span class="hl">QAreaPanel</span>/&gt;
+                            &lt;controls:<span class="hl">MAreaPanel</span>/&gt;
+                        &lt;/StackPanel&gt;
+                    &lt;/ScrollViewer&gt;
+                &lt;/TabItem&gt;
+                &lt;TabItem Header="📈 趋势图"&gt;
+                    &lt;controls:<span class="hl">TrendTabPanel</span>/&gt;
+                &lt;/TabItem&gt;
+                &lt;TabItem Header="📊 仪表盘"&gt;
+                    &lt;controls:<span class="hl">GaugeTabPanel</span>/&gt;
+                &lt;/TabItem&gt;
+            &lt;/TabControl&gt;
+        &lt;/Grid&gt;
+    &lt;/Grid&gt;
+&lt;/Window&gt;
+</div>
+
+<div class="diagram">
+<span class="comment">// MainWindow.xaml.cs 也从 ~380 行降到 ~80 行</span>
+<span class="comment">// 只做 Service 共享 + 事件转发</span>
+
+public partial class MainWindow : Window
+{
+    <span class="comment">// Service 实例（全局共享）</span>
+    private readonly S7Service _plc = new();
+    private readonly PollingScheduler _scheduler = new();
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        <span class="comment">// 把 Service 传给子组件</span>
+        sidebar.Init(_plc, _scheduler);
+        iAreaPanel.Init(_plc);
+        qAreaPanel.Init(_plc, _scheduler);
+        mAreaPanel.Init(_plc, _scheduler);
+        trendPanel.Init(_plc, _scheduler);
+    }
+}
+</div>
+
+<!-- ============================================================ -->
+<!-- 第五部分：拆分步骤 -->
+<!-- ============================================================ -->
+<h2>五、建议的拆分顺序（6 步，可分批做）</h2>
+
+<div class="section">
+  <div class="section-title">🟢 第 1 步：把 Common 控件抽出来</div>
+  <p>先把 <code>BitBlock</code> 和 <code>ByteRow</code> 从 I/Q/M 三处内联 DataTemplate 提成独立 UserControl。</p>
+  <ul>
+    <li><code>Controls/Common/BitBlock.xaml</code> ← 目前 I/Q/M 三处重复定义了同样的 Bit Border 模板</li>
+    <li><code>Controls/Common/ByteRow.xaml</code> ← 行模板也只定义一次</li>
+    <li><strong>好处</strong>：改位块样式只用改一个文件，三区同步</li>
+  </ul>
+</div>
+
+<div class="section">
+  <div class="section-title">🟢 第 2 步：拆分侧边栏</div>
+  <p>侧边栏内部有 3 个逻辑块，但内部耦合不高，可以拆成 3 个独立面板，也可以先合成一个 <code>SidebarControl</code>：</p>
+  <ul>
+    <li><strong>ConnectionPanel</strong>：网卡/IP/端口/机架/槽位 + 连接/断开按钮 + 状态指示</li>
+    <li><strong>ImportPanel</strong>：导入 DB/UDT + 已导入列表</li>
+    <li><strong>PollingPanel</strong>：间隔输入 + 启停按钮 + 延迟显示 + 状态</li>
+  </ul>
+  <p>建议：先合为 <code>SidebarControl</code>，后续再进一步拆。</p>
+</div>
+
+<div class="section">
+  <div class="section-title">🟢 第 3 步：拆分 I 区</div>
+  <p>I 区是纯只读，和 Q/M 的行为不同（无写入、无写模式切换）。直接搬成 <code>IAreaPanel</code>。</p>
+</div>
+
+<div class="section">
+  <div class="section-title">🟢 第 4 步：拆分 Q 区和 M 区</div>
+  <p>Q 和 M 结构几乎一样（标题/标签色不同 + 写入模式切换 + "已修改"状态列），可以共用一个 <code>AreaPanelBase</code>，传入不同参数区分：</p>
+  <div class="diagram">
+  <span class="comment">// Q 和 M 都基于 AreaPanelBase</span>
+  &lt;controls:AreaPanelBase AreaType="Q" Color="Green"/&gt;
+  &lt;controls:AreaPanelBase AreaType="M" Color="Purple"/&gt;
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🟢 第 5 步：拆分趋势图 Tab</div>
+  <p>趋势面板包含：通道列表 + 时间范围 ComboBox + LiveCharts 趋势图 + 水平仪表 + 柱状图。拆成 3 个：</p>
+  <ul>
+    <li><code>TrendChartPanel</code> — 通道列表 + 趋势图（核心）</li>
+    <li><code>HorizontalGauge</code> — 水平轴伺服仪表</li>
+    <li><code>BarChartPanel</code> — 柱状图</li>
+  </ul>
+</div>
+
+<div class="section">
+  <div class="section-title">🟢 第 6 步：拆分仪表盘 Tab</div>
+  <p>两个 AngularGauge + 各自的配置面板，拆成两个独立 UserControl：</p>
+  <ul>
+    <li><code>AngularGaugeSingle</code> — 单值速度表 + 配置面板</li>
+    <li><code>AngularGaugeMulti</code> — 多区段仪表 + 区段列表</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第六部分：效果对比 -->
+<!-- ============================================================ -->
+<h2>六、拆分前后对比</h2>
+
+<table>
+  <tr><th>文件</th><th>拆分前</th><th>拆分后</th><th>变化</th></tr>
+  <tr><td><code>MainWindow.xaml</code></td><td>1112 行</td><td>~80 行</td><td>↓ -93%</td></tr>
+  <tr><td><code>MainWindow.xaml.cs</code></td><td>~380 行</td><td>~80 行</td><td>↓ -79%</td></tr>
+  <tr><td><code>Controls/</code>（新增）</td><td>0 个文件</td><td>~18 个 .xaml + .cs 对</td><td>新增</td></tr>
+  <tr><td>重复的 Bit/Byte 模板</td><td>3 处</td><td>1 处（Common/BitBlock.xaml）</td><td>↓ 复用</td></tr>
+  <tr><td>修改位块样式</td><td>改 3 个地方</td><td>改 1 个文件</td><td>↓ -67%</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- 第七部分：风险与注意事项 -->
+<!-- ============================================================ -->
+<h2>七、注意事项</h2>
+
+<div class="section" style="border-left: 4px solid #ffd54f;">
+  <div class="section-title">⚡ 重要提醒</div>
+  <ol>
+    <li><strong>别引入第三方 MVVM 框架</strong> — Prism / CommunityToolkit.Mvvm 学习成本高，纯 UserControl + 依赖注入（构造传参）足够当前场景。</li>
+    <li><strong>S7Service 保持单例</strong> — 所有组件共享同一个 <code>S7Service</code> 和 <code>PollingScheduler</code> 实例，通过 MainWindow 构造后传参给子组件。</li>
+    <li><strong>I 区特殊</strong> — I 区是只读的，没有写模式切换，所以它不和 Q/M 共用 <code>AreaPanelBase</code>。Q/M 可以共用。</li>
+    <li><strong>事件不绑到 Window 上</strong> — 像 <code>BitBlock_MouseDown</code> 这种事件要移到对应的 UserControl 里去处理，不会跑到 MainWindow 的 code-behind 里。</li>
+    <li><strong>Resources 合并</strong> — <code>Styles.xaml</code> 和 <code>Themes/</code> 放在 App.xaml 的 <code>MergedDictionaries</code> 里全局生效，子组件不需要再引用。</li>
+  </ol>
+</div>
+
+</body>
+</html>
