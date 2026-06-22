@@ -1,0 +1,23 @@
+<UserControl x:Class="Wpf.Ui.Gallery.Controls.Plc.LedIndicator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="20" d:DesignHeight="20"
+             x:Name="root">
+    <UserControl.Resources>
+        <Storyboard x:Key="BlinkStory" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="ellipse"
+                             Storyboard.TargetProperty="Opacity"
+                             From="1.0" To="0.15" Duration="0:0:0.4"/>
+        </Storyboard>
+    </UserControl.Resources>
+    <Ellipse x:Name="ellipse" Width="{Binding Width, ElementName=root, FallbackValue=16}"
+             Height="{Binding Height, ElementName=root, FallbackValue=16}"
+             Fill="{Binding LedColor, ElementName=root}"
+             Stroke="{DynamicResource ControlElevationBorderBrush}"
+             StrokeThickness="0.5"
+             ToolTip="{Binding ToolTipText, ElementName=root}"
+             RenderOptions.EdgeMode="Aliased"/>
+</UserControl>

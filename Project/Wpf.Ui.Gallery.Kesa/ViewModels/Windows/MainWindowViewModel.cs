@@ -183,6 +183,7 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                 new NavigationViewItem("趋势图", SymbolRegular.ChartMultiple24, typeof(TrendChartPage)),
                 new NavigationViewItem("仪表盘", SymbolRegular.Gauge24, typeof(GaugeDashboardPage)),
                 new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
+                new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
                 new NavigationViewItemSeparator(),
                 new NavigationViewItem("连接", SymbolRegular.PlugDisconnected24, typeof(ConnectionPage)),
                 new NavigationViewItem("导入 DB/UDT", SymbolRegular.FolderArrowRight24, typeof(ImportPage)),
