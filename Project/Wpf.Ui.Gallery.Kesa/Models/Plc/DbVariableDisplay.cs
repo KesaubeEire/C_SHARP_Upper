@@ -1,0 +1,31 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace Wpf.Ui.Gallery.Models.Plc;
+
+public class DbVariableDisplay : INotifyPropertyChanged
+{
+    private string _value = "";
+
+    public int ByteOffset { get; set; }
+    public int BitOffset { get; set; } = -1;
+    public bool IsBit => BitOffset >= 0;
+    public string OffsetDisplay => IsBit ? $"{ByteOffset}.{BitOffset}" : $"{ByteOffset}";
+    public string Name { get; set; } = "";
+    public string DataType { get; set; } = "";
+    public int Size { get; set; }
+    public string? InitialValue { get; set; }
+    public string? Comment { get; set; }
+    public bool IsFromUdt { get; set; }
+    public string? UdtName { get; set; }
+
+    public string Value
+    {
+        get => _value;
+        set { _value = value; OnPropertyChanged(); }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([CallerMemberName] string? n = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+}

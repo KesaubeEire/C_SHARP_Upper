@@ -1,0 +1,16 @@
+<UserControl x:Class="Wpf.Ui.Gallery.Controls.Plc.BitBlock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="32" d:DesignHeight="28">
+    <Border Width="32" Height="28" CornerRadius="4" Margin="1"
+            BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
+            MouseDown="OnMouseDown" ToolTip="点击切换" Cursor="Hand">
+        <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center"
+                   VerticalAlignment="Center" Foreground="White"
+                   FontWeight="Bold" FontSize="14"/>
+    </Border>
+</UserControl>

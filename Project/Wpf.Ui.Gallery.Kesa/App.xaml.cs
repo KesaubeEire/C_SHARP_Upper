@@ -4,14 +4,17 @@
 // All Rights Reserved.
 
 using Lepo.i18n.DependencyInjection;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.DependencyInjection;
 using Wpf.Ui.Gallery.DependencyModel;
 using Wpf.Ui.Gallery.Resources;
 using Wpf.Ui.Gallery.Services;
 using Wpf.Ui.Gallery.Services.Contracts;
+using Wpf.Ui.Gallery.Services.Plc;
 using Wpf.Ui.Gallery.ViewModels.Pages;
 using Wpf.Ui.Gallery.ViewModels.Windows;
 using Wpf.Ui.Gallery.Views.Pages;
+using Wpf.Ui.Gallery.Views.Pages.Plc;
 using Wpf.Ui.Gallery.Views.Windows;
 
 namespace Wpf.Ui.Gallery;
@@ -44,6 +47,11 @@ public partial class App
                 _ = services.AddSingleton<IContentDialogService, ContentDialogService>();
                 _ = services.AddSingleton<WindowsProviderService>();
 
+                // PLC Services
+                _ = services.AddSingleton<S7Service>();
+                _ = services.AddSingleton<PollingScheduler>();
+                _ = services.AddSingleton(AppConfigService.Load());
+
                 // Top-level pages
                 _ = services.AddSingleton<DashboardPage>();
                 _ = services.AddSingleton<DashboardViewModel>();
@@ -51,6 +59,15 @@ public partial class App
                 _ = services.AddSingleton<AllControlsViewModel>();
                 _ = services.AddSingleton<SettingsPage>();
                 _ = services.AddSingleton<SettingsViewModel>();
+
+                // PLC Pages
+                _ = services.AddSingleton<ConnectionPage>();
+                _ = services.AddSingleton<IoMonitorPage>();
+                _ = services.AddSingleton<TrendChartPage>();
+                _ = services.AddSingleton<GaugeDashboardPage>();
+                _ = services.AddSingleton<DbMonitorPage>();
+                _ = services.AddSingleton<ImportPage>();
+                _ = services.AddSingleton<PollingPage>();
 
                 // All other pages and view models
                 _ = services.AddTransientFromNamespace("Wpf.Ui.Gallery.Views", GalleryAssembly.Asssembly);
@@ -83,6 +100,8 @@ public partial class App
     /// </summary>
     private void OnStartup(object sender, StartupEventArgs e)
     {
+        // Apply dark theme before host starts, so all controls see correct colors
+        ApplicationThemeManager.Apply(ApplicationTheme.Dark);
         _host.Start();
     }
 

@@ -1,0 +1,43 @@
+<Page x:Class="Wpf.Ui.Gallery.Views.Pages.Plc.GaugeDashboardPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:skia="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
+      xmlns:local="clr-namespace:Wpf.Ui.Gallery.Views.Pages.Plc"
+      ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+      ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      Title="仪表盘">
+    <ScrollViewer>
+        <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TextBlock Grid.Row="0" Grid.ColumnSpan="2" FontTypography="Title" Text="仪表盘" Margin="0,0,0,8" />
+
+        <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource CardBackground}" CornerRadius="8" Padding="16" Margin="4">
+            <StackPanel>
+                <ui:TextBlock FontTypography="Subtitle" Text="单值仪表" HorizontalAlignment="Center" />
+                <skia:SKElement x:Name="singleGauge" PaintSurface="OnPaintSingleGauge" Height="250" />
+                <TextBlock x:Name="gaugeValueText" Text="0.0" FontSize="24" FontWeight="Bold"
+                           HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                <TextBlock x:Name="gaugeUnitText" Text="mm" FontSize="14"
+                           HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource CardBackground}" CornerRadius="8" Padding="16" Margin="4">
+            <StackPanel>
+                <ui:TextBlock FontTypography="Subtitle" Text="多区段状态" HorizontalAlignment="Center" />
+                <skia:SKElement x:Name="multiGauge" PaintSurface="OnPaintMultiGauge" Height="250" />
+                <StackPanel x:Name="sectionList" Margin="0,8,0,0" />
+            </StackPanel>
+        </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

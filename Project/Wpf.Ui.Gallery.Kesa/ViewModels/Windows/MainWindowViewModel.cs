@@ -21,6 +21,7 @@ using Wpf.Ui.Gallery.Views.Pages.OpSystem;
 using Wpf.Ui.Gallery.Views.Pages.StatusAndInfo;
 using Wpf.Ui.Gallery.Views.Pages.Text;
 using Wpf.Ui.Gallery.Views.Pages.Windows;
+using Wpf.Ui.Gallery.Views.Pages.Plc;
 
 namespace Wpf.Ui.Gallery.ViewModels.Windows;
 
@@ -173,6 +174,21 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
             },
         },
         new NavigationViewItem("Windows", SymbolRegular.WindowApps24, typeof(WindowsPage)),
+        new NavigationViewItemSeparator(),
+        new NavigationViewItem("PLC Tools", SymbolRegular.Desktop24, typeof(IoMonitorPage))
+        {
+            MenuItemsSource = new object[]
+            {
+                new NavigationViewItem("I/Q/M 监控", SymbolRegular.List24, typeof(IoMonitorPage)),
+                new NavigationViewItem("趋势图", SymbolRegular.ChartMultiple24, typeof(TrendChartPage)),
+                new NavigationViewItem("仪表盘", SymbolRegular.Gauge24, typeof(GaugeDashboardPage)),
+                new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
+                new NavigationViewItemSeparator(),
+                new NavigationViewItem("连接", SymbolRegular.PlugDisconnected24, typeof(ConnectionPage)),
+                new NavigationViewItem("导入 DB/UDT", SymbolRegular.FolderArrowRight24, typeof(ImportPage)),
+                new NavigationViewItem("轮询", SymbolRegular.Timer24, typeof(PollingPage)),
+            },
+        },
     ];
 
     [ObservableProperty]

@@ -1,0 +1,42 @@
+<UserControl x:Class="Wpf.Ui.Gallery.Controls.Plc.ByteRow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+             xmlns:conv="clr-namespace:Wpf.Ui.Gallery.Helpers"
+             mc:Ignorable="d"
+             d:DesignWidth="400" d:DesignHeight="32"
+             x:Name="root">
+    <Grid Margin="0,1">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="60"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="60"/>
+            <ColumnDefinition Width="70"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Text="{Binding Label}"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   VerticalAlignment="Center" FontSize="13"/>
+        <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}"
+                       VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <local:BitBlock DataContext="{Binding}"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Grid.Column="2" Text="{Binding HexText}"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0"/>
+        <TextBlock Grid.Column="3" Text="已修改"
+                   Foreground="#F39C12" FontSize="11"
+                   Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"
+                   VerticalAlignment="Center"/>
+    </Grid>
+</UserControl>
