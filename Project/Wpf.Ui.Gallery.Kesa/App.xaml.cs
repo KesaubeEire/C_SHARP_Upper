@@ -12,6 +12,7 @@ using Wpf.Ui.Gallery.Services;
 using Wpf.Ui.Gallery.Services.Contracts;
 using Wpf.Ui.Gallery.Services.Plc;
 using Wpf.Ui.Gallery.ViewModels.Pages;
+using Wpf.Ui.Gallery.ViewModels.Pages.Plc;
 using Wpf.Ui.Gallery.ViewModels.Windows;
 using Wpf.Ui.Gallery.Views.Pages;
 using Wpf.Ui.Gallery.Views.Pages.Plc;
@@ -51,6 +52,7 @@ public partial class App
                 _ = services.AddSingleton<S7Service>();
                 _ = services.AddSingleton<PollingScheduler>();
                 _ = services.AddSingleton(AppConfigService.Load());
+                _ = services.AddSingleton<AlarmService>();
 
                 // Top-level pages
                 _ = services.AddSingleton<DashboardPage>();
@@ -68,6 +70,8 @@ public partial class App
                 _ = services.AddSingleton<DbMonitorPage>();
                 _ = services.AddSingleton<ImportPage>();
                 _ = services.AddSingleton<PollingPage>();
+                _ = services.AddSingleton<AlarmPage>();
+                _ = services.AddSingleton<AlarmViewModel>();
 
                 // All other pages and view models
                 _ = services.AddTransientFromNamespace("Wpf.Ui.Gallery.Views", GalleryAssembly.Asssembly);
