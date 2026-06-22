@@ -37,7 +37,7 @@ public partial class ConnectionPage : Page
         if (result == 0)
         {
             statusBar.Visibility = Visibility.Visible;
-            statusIndicator.Fill = new SolidColorBrush(Color.FromRgb(39, 174, 96));
+            statusIndicator.Fill = GetThemeBrush("SystemFillColorSuccessBrush", Color.FromRgb(39, 174, 96));
             statusText.Text = "已连接";
             btnConnect.IsEnabled = false;
             btnDisconnect.IsEnabled = true;
@@ -45,7 +45,7 @@ public partial class ConnectionPage : Page
         else
         {
             statusBar.Visibility = Visibility.Visible;
-            statusIndicator.Fill = new SolidColorBrush(Color.FromRgb(231, 76, 60));
+            statusIndicator.Fill = GetThemeBrush("SystemFillColorCriticalBrush", Color.FromRgb(231, 76, 60));
             statusText.Text = $"连接失败: {S7Service.LastError ?? "未知错误"}";
         }
     }
@@ -53,9 +53,15 @@ public partial class ConnectionPage : Page
     private void OnDisconnect(object sender, RoutedEventArgs e)
     {
         S7Service.Disconnect();
-        statusIndicator.Fill = new SolidColorBrush(Color.FromRgb(102, 102, 102));
+        statusIndicator.Fill = GetThemeBrush("TextFillColorDisabledBrush", Color.FromRgb(102, 102, 102));
         statusText.Text = "已断开";
         btnConnect.IsEnabled = true;
         btnDisconnect.IsEnabled = false;
+    }
+
+    private static System.Windows.Media.Brush GetThemeBrush(string key, Color fallback)
+    {
+        return Application.Current.TryFindResource(key) as System.Windows.Media.Brush
+               ?? new SolidColorBrush(fallback);
     }
 }

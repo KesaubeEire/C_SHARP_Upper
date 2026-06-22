@@ -2,62 +2,72 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
-      controls:PageControlDocumentation.Show="False"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:local="clr-namespace:Wpf.Ui.Gallery.Views.Pages.Plc"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      Title="导入 DB/UDT">
-    <ScrollViewer>
-        <StackPanel Margin="24">
-        <ui:TextBlock FontTypography="Title" Text="导入 DB 块 / UDT" />
-        <Separator />
+      Title="导入 DB/UDT"
+      mc:Ignorable="d">
+    <StackPanel Margin="0,0,0,24">
+        <ui:TextBlock Margin="0,0,0,12" FontTypography="Title" Text="导入 DB 块 / UDT" />
 
         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
             <ui:Button Content="📂 导入 .db 文件" Click="OnImportDb" Margin="0,0,8,0" />
             <ui:Button Content="📂 导入 .udt 文件" Click="OnImportUdt" />
         </StackPanel>
 
-        <GroupBox Header="已导入的 DB">
-            <ItemsControl x:Name="dbList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="13" VerticalAlignment="Center" />
-                                <ui:Button Grid.Column="1" Content="✕" FontSize="11" Width="24" Height="24"
-                                        Tag="{Binding}" Click="OnDeleteDb" Appearance="Secondary" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </GroupBox>
+        <controls:ControlExample Margin="0" HeaderText="已导入的 DB">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ItemsControl Grid.Column="0" x:Name="dbList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="13" VerticalAlignment="Center" />
+                                    <ui:Button Grid.Column="1" Content="✕" FontSize="11" Width="24" Height="24"
+                                            Tag="{Binding}" Click="OnDeleteDb" Appearance="Secondary" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </controls:ControlExample>
 
-        <GroupBox Header="已导入的 UDT" Margin="0,12,0,0">
-            <ItemsControl x:Name="udtList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding UdtName}" FontSize="13" VerticalAlignment="Center" />
-                                <ui:Button Grid.Column="1" Content="✕" FontSize="11" Width="24" Height="24"
-                                        Tag="{Binding}" Click="OnDeleteUdt" Appearance="Secondary" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </GroupBox>
-        </StackPanel>
-    </ScrollViewer>
+        <controls:ControlExample Margin="0,32,0,0" HeaderText="已导入的 UDT">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ItemsControl Grid.Column="0" x:Name="udtList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding UdtName}" FontSize="13" VerticalAlignment="Center" />
+                                    <ui:Button Grid.Column="1" Content="✕" FontSize="11" Width="24" Height="24"
+                                            Tag="{Binding}" Click="OnDeleteUdt" Appearance="Secondary" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </controls:ControlExample>
+    </StackPanel>
 </Page>

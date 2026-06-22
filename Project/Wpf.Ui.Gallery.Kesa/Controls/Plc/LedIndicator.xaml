@@ -15,9 +15,28 @@
     </UserControl.Resources>
     <Ellipse x:Name="ellipse" Width="{Binding Width, ElementName=root, FallbackValue=16}"
              Height="{Binding Height, ElementName=root, FallbackValue=16}"
-             Fill="{Binding LedColor, ElementName=root}"
              Stroke="{DynamicResource ControlElevationBorderBrush}"
              StrokeThickness="0.5"
              ToolTip="{Binding ToolTipText, ElementName=root}"
-             RenderOptions.EdgeMode="Aliased"/>
+             RenderOptions.EdgeMode="Aliased">
+        <Ellipse.Style>
+            <Style TargetType="Ellipse">
+                <Setter Property="Fill" Value="{DynamicResource TextFillColorDisabledBrush}" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Quality, ElementName=root}" Value="Good">
+                        <Setter Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Quality, ElementName=root}" Value="Bad">
+                        <Setter Property="Fill" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Quality, ElementName=root}" Value="Warning">
+                        <Setter Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Quality, ElementName=root}" Value="Info">
+                        <Setter Property="Fill" Value="{DynamicResource SystemFillColorAttentionBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Ellipse.Style>
+    </Ellipse>
 </UserControl>

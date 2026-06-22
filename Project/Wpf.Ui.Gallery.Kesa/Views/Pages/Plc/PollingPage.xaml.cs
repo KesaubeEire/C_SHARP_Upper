@@ -58,9 +58,15 @@ public partial class PollingPage : Page
         btnStart.IsEnabled = !running;
         btnStop.IsEnabled = running;
         statusIndicator.Fill = running
-            ? new SolidColorBrush(Color.FromRgb(39, 174, 96))
-            : new SolidColorBrush(Color.FromRgb(102, 102, 102));
+            ? GetThemeBrush("SystemFillColorSuccessBrush", Color.FromRgb(39, 174, 96))
+            : GetThemeBrush("TextFillColorDisabledBrush", Color.FromRgb(102, 102, 102));
         statusText.Text = running ? "轮询运行中" : "已停止";
+    }
+
+    private static System.Windows.Media.Brush GetThemeBrush(string key, Color fallback)
+    {
+        return Application.Current.TryFindResource(key) as System.Windows.Media.Brush
+               ?? new SolidColorBrush(fallback);
     }
 
     public void SetReady()

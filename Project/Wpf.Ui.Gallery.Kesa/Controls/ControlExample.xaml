@@ -32,16 +32,25 @@
                                                          Converter={StaticResource NullToVisibilityConverter}}" />
 
                         <Border
+                            x:Name="ContentBorder"
                             Grid.Row="1"
                             Padding="16"
                             Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1,1,1,0"
-                            CornerRadius="8,8,0,0">
+                            BorderThickness="1"
+                            CornerRadius="8">
                             <ContentPresenter Content="{TemplateBinding ExampleContent}" />
                         </Border>
 
+                        <!-- Spacer to push rounded bottom corners down when SourceCode is collapsed -->
+                        <Border
+                            x:Name="BottomSpacer"
+                            Grid.Row="2"
+                            Height="0"
+                            Visibility="Collapsed" />
+
                         <ui:CardExpander
+                            x:Name="SourceCodeExpander"
                             Grid.Row="2"
                             CornerRadius="0,0,8,8"
                             Header="Source code">
@@ -86,6 +95,23 @@
                     </Grid>
 
                     <ControlTemplate.Triggers>
+                        <!-- When source code is hidden, content border has full rounded corners -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="XamlCode" Value="{x:Null}" />
+                                <Condition Property="CsharpCode" Value="{x:Null}" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="SourceCodeExpander" Property="Visibility" Value="Collapsed" />
+                        </MultiTrigger>
+
+                        <!-- When source code exists, bottom spacer pushes the CardExpander up to rest on it -->
+                        <Trigger SourceName="SourceCodeExpander" Property="Visibility" Value="Visible">
+                            <Setter TargetName="ContentBorder" Property="CornerRadius" Value="8,8,0,0" />
+                            <Setter TargetName="ContentBorder" Property="BorderThickness" Value="1,1,1,0" />
+                            <!-- Move CardExpander to row 3 so it sits UNDER the content -->
+                            <Setter TargetName="SourceCodeExpander" Property="Grid.Row" Value="2" />
+                        </Trigger>
+
                         <Trigger Property="XamlCode" Value="{x:Null}">
                             <Setter TargetName="XamlCodeBlock" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="Border" Property="Visibility" Value="Collapsed" />

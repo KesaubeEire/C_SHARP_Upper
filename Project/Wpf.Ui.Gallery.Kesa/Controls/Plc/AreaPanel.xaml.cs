@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Models.Plc;
+using UiButton = Wpf.Ui.Controls.Button;
 using Wpf.Ui.Gallery.Services.Plc;
 
 namespace Wpf.Ui.Gallery.Controls.Plc;
@@ -15,7 +17,8 @@ public partial class AreaPanel : UserControl
 
     public static readonly DependencyProperty AreaColorProperty =
         DependencyProperty.Register(nameof(AreaColor), typeof(Brush), typeof(AreaPanel),
-            new PropertyMetadata(new SolidColorBrush(System.Windows.Media.Color.FromRgb(52, 152, 219))));
+            new PropertyMetadata(GetResourceBrush("SystemFillColorAttentionBrush",
+                Color.FromRgb(52, 152, 219))));
 
     public static readonly DependencyProperty IsReadOnlyProperty =
         DependencyProperty.Register(nameof(IsReadOnly), typeof(bool), typeof(AreaPanel),
@@ -75,17 +78,20 @@ public partial class AreaPanel : UserControl
         {
             case "I":
                 AreaLabel = "I 区（输入.只读）";
-                AreaColor = new SolidColorBrush(System.Windows.Media.Color.FromRgb(52, 152, 219));
+                AreaColor = GetResourceBrush("SystemFillColorAttentionBrush",
+                    Color.FromRgb(52, 152, 219));
                 _areaCode = S7Service.AreaI;
                 break;
             case "Q":
                 AreaLabel = "Q 区（输出.可读写）";
-                AreaColor = new SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60));
+                AreaColor = GetResourceBrush("SystemFillColorCriticalBrush",
+                    Color.FromRgb(231, 76, 60));
                 _areaCode = S7Service.AreaQ;
                 break;
             case "M":
                 AreaLabel = "M 区（位存储.可读写）";
-                AreaColor = new SolidColorBrush(System.Windows.Media.Color.FromRgb(46, 204, 113));
+                AreaColor = GetResourceBrush("SystemFillColorSuccessBrush",
+                    Color.FromRgb(46, 204, 113));
                 _areaCode = S7Service.AreaM;
                 break;
         }
@@ -113,15 +119,11 @@ public partial class AreaPanel : UserControl
     private void OnWriteModeClick(object sender, RoutedEventArgs e)
     {
         _writeMode = !_writeMode;
-        if (sender is Button btn)
+        if (sender is System.Windows.Controls.Primitives.ButtonBase btn)
         {
             btn.Content = _writeMode ? "🔓 写入" : "🔒 写模式";
-            btn.Background = _writeMode
-                ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60))
-                : System.Windows.Media.Brushes.Transparent;
-            btn.Foreground = _writeMode
-                ? System.Windows.Media.Brushes.White
-                : Application.Current.TryFindResource("TextFillColorSecondaryBrush") as Brush ?? System.Windows.Media.Brushes.Gray;
+            if (btn is UiButton uiBtn)
+                uiBtn.Appearance = _writeMode ? ControlAppearance.Danger : ControlAppearance.Secondary;
         }
     }
 
@@ -147,5 +149,11 @@ public partial class AreaPanel : UserControl
                    .Where(x => int.TryParse(x, out _))
                    .Select(int.Parse)
                    .ToArray();
+    }
+
+    private static Brush GetResourceBrush(string key, Color fallback)
+    {
+        return Application.Current.TryFindResource(key) as Brush
+               ?? new SolidColorBrush(fallback);
     }
 }

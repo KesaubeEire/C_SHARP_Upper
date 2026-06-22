@@ -31,9 +31,15 @@ public partial class DbMonitorPage : Page
     public void RefreshConnectionStatus()
     {
         connIndicator.Fill = _s7.IsConnected
-            ? new SolidColorBrush(Color.FromRgb(39, 174, 96))
-            : new SolidColorBrush(Color.FromRgb(102, 102, 102));
+            ? GetThemeBrush("SystemFillColorSuccessBrush", Color.FromRgb(39, 174, 96))
+            : GetThemeBrush("TextFillColorDisabledBrush", Color.FromRgb(102, 102, 102));
         statusText.Text = _s7.IsConnected ? "已连接" : "未连接";
+    }
+
+    private static System.Windows.Media.Brush GetThemeBrush(string key, Color fallback)
+    {
+        return Application.Current.TryFindResource(key) as System.Windows.Media.Brush
+               ?? new SolidColorBrush(fallback);
     }
 
     private void OnImportDb(object sender, RoutedEventArgs e)
