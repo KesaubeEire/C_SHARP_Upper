@@ -3,10 +3,9 @@
     "allow": [
       "Bash(dotnet build *)",
       "Bash(git *)",
-      "Bash(rm \"/g/剑儒/上位机/喜科堂上位机工控开发/C#工控上位机VIP班系统录播视频5.0版/第01章【上位机VIP-编程预科】零基础快速到项目实战【2-3周】/第10节基础语法：const常量的使用enum枚举程序调试各种技巧/授课源码和笔记/csharpbase/thinger.csharpbase/App.config\")",
       "Bash(dotnet run *)",
-      "Bash(rm -rf \"C:/KesaData/Projects/Claude_msi2020/C_SHARP_Upper/Project/WPF_S71200_SAMPLE/\"*)",
-      "Bash(cp -r \"/tmp/TestWpf/\"* \"C:/KesaData/Projects/Claude_msi2020/C_SHARP_Upper/Project/WPF_S71200_SAMPLE/\")"
+      "Bash(dotnet test *)",
+      "Bash(dotnet restore *)"
     ]
   }
 }
