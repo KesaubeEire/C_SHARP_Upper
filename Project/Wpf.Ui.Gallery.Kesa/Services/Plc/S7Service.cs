@@ -2,28 +2,30 @@ using Sharp7;
 
 namespace Wpf.Ui.Gallery.Services.Plc;
 
-public class S7Service : IDisposable
+public sealed class S7Service : IDisposable
 {
     private readonly S7Client _client = new();
     private readonly object _clientLock = new();
 
-    public bool IsConnected
-    {
-        get { lock (_clientLock) return _client.Connected; }
-    }
-
+    public bool IsConnected => _client.Connected;
     public string? LastError { get; private set; }
 
     public int Connect(string localIp, string ip, int port, int rack, int slot)
     {
         lock (_clientLock)
         {
-            _client.SetConnectionParams(ip, (ushort)rack, (ushort)slot);
-            int result = _client.Connect();
+            if (_client.Connected)
+                _client.Disconnect();
+
+            int portVal = port;
+            _client.SetParam(Sharp7.S7Consts.p_u16_LocalPort, ref portVal);
+            int result = _client.ConnectTo(ip, rack, slot);
+
             if (result != 0)
-                LastError = "连接失败: " + result;
+                LastError = _client.ErrorText(result);
             else
                 LastError = null;
+
             return result;
         }
     }
@@ -34,52 +36,65 @@ public class S7Service : IDisposable
         {
             if (_client.Connected)
                 _client.Disconnect();
+            LastError = null;
         }
     }
+
+    public static int AreaI  => (int)S7Area.PE;
+    public static int AreaQ  => (int)S7Area.PA;
+    public static int AreaM  => (int)S7Area.MK;
+    public static int AreaDB => (int)S7Area.DB;
+    private static S7Area A(int v) => (S7Area)v;
 
     public byte? ReadByte(int area, int byteAddress, int dbNumber = 0)
     {
         lock (_clientLock)
         {
-            var buf = new byte[1];
-            int result = _client.ReadArea(area, dbNumber, byteAddress, 1, S7Consts.S7WLByte, buf);
-            if (result == 0)
-                return buf[0];
-            LastError = "读取失败: " + result;
-            return null;
+            byte[] buffer = new byte[1];
+            int result = area == (int)S7Area.DB
+                ? _client.DBRead(dbNumber, byteAddress, 1, buffer)
+                : _client.ReadArea(A(area), 0, byteAddress, 1, S7WordLength.Byte, buffer);
+
+            if (result != 0)
+            {
+                LastError = _client.ErrorText(result);
+                return null;
+            }
+            return buffer[0];
         }
     }
 
-    public Dictionary<int, byte> ReadBytes(int area, int[] addresses, int dbNumber = 0)
+    public Dictionary<int, byte> ReadBytes(int area, int[] byteAddresses, int dbNumber = 0)
     {
         var result = new Dictionary<int, byte>();
-        if (addresses.Length == 0) return result;
+        if (byteAddresses.Length == 0) return result;
+
+        var sorted = byteAddresses.Distinct().OrderBy(a => a).ToArray();
+        var groups = new List<(int Start, int Count)>();
+        int gs = sorted[0], ge = sorted[0];
+        for (int i = 1; i < sorted.Length; i++)
+        {
+            if (sorted[i] == ge + 1) { ge = sorted[i]; }
+            else { groups.Add((gs, ge - gs + 1)); gs = sorted[i]; ge = sorted[i]; }
+        }
+        groups.Add((gs, ge - gs + 1));
 
         lock (_clientLock)
         {
-            var sorted = addresses.Distinct().OrderBy(a => a).ToArray();
-            var segments = new List<(int start, int count)>();
-            int segStart = sorted[0], segEnd = sorted[0];
-
-            foreach (int addr in sorted.Skip(1))
+            foreach (var (start, count) in groups)
             {
-                if (addr == segEnd + 1) segEnd = addr;
-                else { segments.Add((segStart, segEnd - segStart + 1)); segStart = segEnd = addr; }
-            }
-            segments.Add((segStart, segEnd - segStart + 1));
+                byte[] buffer = new byte[count];
+                int ret = area == (int)S7Area.DB
+                    ? _client.DBRead(dbNumber, start, count, buffer)
+                    : _client.ReadArea(A(area), 0, start, count, S7WordLength.Byte, buffer);
 
-            foreach (var (start, count) in segments)
-            {
-                var buf = new byte[count];
-                int ret = area == AreaDB
-                    ? _client.DBRead(dbNumber, start, count, buf)
-                    : _client.ReadArea(area, dbNumber, start, count, S7Consts.S7WLByte, buf);
-
-                if (ret == 0)
+                if (ret != 0)
                 {
-                    for (int i = 0; i < count; i++)
-                        result[start + i] = buf[i];
+                    LastError = _client.ErrorText(ret);
+                    for (int i = 0; i < count; i++) result[start + i] = 0;
+                    continue;
                 }
+                for (int i = 0; i < count; i++) result[start + i] = buffer[i];
             }
         }
         return result;
@@ -89,13 +104,17 @@ public class S7Service : IDisposable
     {
         lock (_clientLock)
         {
-            var buf = new byte[count];
-            int ret = area == AreaDB
-                ? _client.DBRead(dbNumber, start, count, buf)
-                : _client.ReadArea(area, dbNumber, start, count, S7Consts.S7WLByte, buf);
-            if (ret == 0) return buf;
-            LastError = "读取失败: " + ret;
-            return null;
+            byte[] buffer = new byte[count];
+            int ret = area == (int)S7Area.DB
+                ? _client.DBRead(dbNumber, start, count, buffer)
+                : _client.ReadArea(A(area), 0, start, count, S7WordLength.Byte, buffer);
+
+            if (ret != 0)
+            {
+                LastError = _client.ErrorText(ret);
+                return null;
+            }
+            return buffer;
         }
     }
 
@@ -103,33 +122,19 @@ public class S7Service : IDisposable
     {
         lock (_clientLock)
         {
-            var buf = new[] { value };
-            int result = _client.WriteArea(area, dbNumber, byteAddress, 1, S7Consts.S7WLByte, buf);
-            if (result != 0) LastError = "写入失败: " + result;
-            return result == 0;
+            byte[] buffer = [value];
+            int result = area == (int)S7Area.DB
+                ? _client.DBWrite(dbNumber, byteAddress, 1, buffer)
+                : _client.WriteArea(A(area), 0, byteAddress, 1, S7WordLength.Byte, buffer);
+
+            if (result != 0)
+            {
+                LastError = _client.ErrorText(result);
+                return false;
+            }
+            return true;
         }
     }
 
-    public void Dispose()
-    {
-        lock (_clientLock)
-        {
-            if (_client.Connected)
-                _client.Disconnect();
-            // S7Client doesn't implement IDisposable in v1.1.84
-        }
-    }
-
-    // S7 area constants
-    public const int AreaPE = 0x81;
-    public const int AreaPA = 0x82;
-    public const int AreaMK = 0x83;
-    public const int AreaDB = 0x84;
-    public const int AreaCT = 0x1C;
-    public const int AreaTM = 0x1D;
-
-    // Alias for backward compatibility
-    public const int AreaI = AreaPE;
-    public const int AreaQ = AreaPA;
-    public const int AreaM = AreaMK;
+    public void Dispose() { lock (_clientLock) Disconnect(); }
 }

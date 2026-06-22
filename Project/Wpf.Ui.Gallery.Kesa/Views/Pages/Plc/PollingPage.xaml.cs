@@ -32,7 +32,9 @@ public partial class PollingPage : Page
         }
 
         _scheduler.Config.FastInterval = Interval;
-        _connection.Config.ManualIAddress = "0,1,8";
+        _scheduler.Config.Fast.PollIAddr = "0,1,8";
+        _scheduler.Config.Fast.PollQAddr = "0";
+        _scheduler.Config.Fast.PollMAddr = "0";
 
         _scheduler.Start(_s7);
         if (_scheduler.IsConnected)
