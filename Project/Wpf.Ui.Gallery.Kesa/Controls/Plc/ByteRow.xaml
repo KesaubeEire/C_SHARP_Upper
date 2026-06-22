@@ -5,19 +5,24 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
              xmlns:conv="clr-namespace:Wpf.Ui.Gallery.Helpers"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
-             d:DesignWidth="400" d:DesignHeight="32"
+             ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+             ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+             d:DesignWidth="400" d:DesignHeight="36"
              x:Name="root">
-    <Grid Margin="0,1">
+    <Grid MinHeight="36" Margin="0,2">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="60"/>
+            <ColumnDefinition Width="64"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="60"/>
-            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="64"/>
+            <ColumnDefinition Width="80"/>
         </Grid.ColumnDefinitions>
+
         <TextBlock Grid.Column="0" Text="{Binding Label}"
                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                    VerticalAlignment="Center" FontSize="13"/>
+
         <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}"
                        VerticalAlignment="Center">
             <ItemsControl.ItemsPanel>
@@ -31,11 +36,14 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
         <TextBlock Grid.Column="2" Text="{Binding HexText}"
                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                    VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0"/>
+
         <TextBlock Grid.Column="3" Text="已修改"
-                   Foreground="#F39C12" FontSize="11"
+                   Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                   FontSize="12"
                    Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}"
                    VerticalAlignment="Center"/>
     </Grid>

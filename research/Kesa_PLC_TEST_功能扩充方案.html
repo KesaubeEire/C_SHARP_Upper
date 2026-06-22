@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kesa_PLC_TEST 功能扩充与结构改造方案</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #0d47a1;
+            --accent: #00bcd4;
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-light: #607d8b;
+            --border: #e0e6ed;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --info: #3498db;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0d47a1, #1a73e8, #00bcd4);
+            color: white;
+            padding: 50px 20px 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2em; font-weight: 700; letter-spacing: 1px; }
+        .header p { opacity: .85; margin-top: 8px; font-size: 1.05em; }
+        .header .badge {
+            display: inline-block; margin-top: 14px;
+            padding: 4px 18px; border-radius: 20px;
+            background: rgba(255,255,255,.18); font-size: .85em;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+        .toc {
+            background: var(--card-bg); border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.06);
+            margin: -25px auto 28px; padding: 24px 28px;
+            max-width: 900px; position: relative;
+        }
+        .toc h2 { font-size: 1.05em; color: var(--primary); margin-bottom: 10px; }
+        .toc ul { list-style: none; columns: 2 230px; column-gap: 24px; }
+        .toc li { margin: 3px 0; break-inside: avoid; }
+        .toc a { color: var(--text); text-decoration: none; font-size: .9em; }
+        .toc a:hover { color: var(--primary); }
+
+        section { margin: 32px 0; animation: fadeUp .4s ease both; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+        .sec-title {
+            font-size: 1.5em; font-weight: 700; color: var(--primary-dark);
+            border-left: 5px solid var(--primary); padding-left: 14px;
+            margin-bottom: 20px;
+        }
+        .sec-sub {
+            font-size: 1.15em; font-weight: 600; color: #37474f;
+            margin: 24px 0 12px; padding-bottom: 6px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        /* Phase badges */
+        .phase { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: .75em; font-weight: 700; margin-right: 6px; }
+        .p0 { background: #e8f5e9; color: #1b5e20; }
+        .p1 { background: #e3f2fd; color: #0d47a1; }
+        .p2 { background: #fff3e0; color: #e65100; }
+
+        /* Cards */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 12px 0; }
+        .card {
+            background: var(--card-bg); border-radius: 10px;
+            padding: 18px 20px; border: 1px solid var(--border);
+        }
+        .card h3 { font-size: 1em; margin-bottom: 6px; color: var(--primary-dark); }
+        .card p, .card li { font-size: .88em; color: var(--text-light); line-height: 1.6; }
+        .card ul { list-style: none; padding: 0; margin: 6px 0 0; }
+        .card li { padding: 1px 0 1px 16px; position: relative; }
+        .card li::before { content: "•"; color: var(--accent); position: absolute; left: 0; font-weight: bold; }
+        .card .files { font-size: .8em; color: var(--info); margin-top: 8px; }
+
+        /* Project rows */
+        .proj {
+            background: var(--card-bg); border-radius: 10px;
+            padding: 18px 22px; margin: 12px 0;
+            border: 1px solid var(--border);
+        }
+        .proj .hdr { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+        .proj .hdr h3 { font-size: 1em; margin: 0; }
+        .proj .desc { font-size: .9em; color: var(--text-light); margin-top: 6px; }
+        .proj .files { font-size: .82em; color: var(--info); margin-top: 8px; padding: 8px 12px; background: #f8faff; border-radius: 6px; }
+
+        /* Tables */
+        table {
+            width: 100%; border-collapse: separate; border-spacing: 0;
+            border-radius: 8px; overflow: hidden;
+            box-shadow: 0 1px 6px rgba(0,0,0,.04);
+            margin: 10px 0; font-size: .88em;
+        }
+        thead th { background: var(--primary-dark); color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+        tbody td { padding: 9px 14px; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+        tbody tr:last-child td { border-bottom: none; }
+
+        /* Layout spec */
+        .spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+        .spec-item {
+            background: var(--card-bg); border-radius: 8px;
+            padding: 12px 16px; border: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .spec-item .label { font-size: .85em; color: var(--text-light); }
+        .spec-item .value { font-size: .9em; font-weight: 700; color: var(--primary-dark); font-family: monospace; }
+
+        .footer {
+            text-align: center; padding: 30px 20px;
+            color: var(--text-light); font-size: .82em;
+            border-top: 1px solid var(--border); margin-top: 40px;
+        }
+
+        @media (max-width: 640px) {
+            .header h1 { font-size: 1.4em; }
+            .toc ul { columns: 1; }
+            .card-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🏭 Kesa_PLC_TEST 功能扩充与结构改造方案</h1>
+    <p>基于工控行业调研结果的项目升级路线图</p>
+    <span class="badge">📅 2026 年 6 月 · 三阶段实施</span>
+</div>
+
+<div class="container">
+
+<!-- ===== TOC ===== -->
+<nav class="toc">
+    <h2>📑 目录</h2>
+    <ul>
+        <li><a href="#sec1">一、优先级与总体策略</a></li>
+        <li><a href="#sec2">二、布局标准规范</a></li>
+        <li><a href="#sec3">三、工具箱控件</a></li>
+        <li><a href="#sec4">四、主功能页面</a></li>
+        <li><a href="#sec5">五、现有页面增强</a></li>
+        <li><a href="#sec6">六、项目结构变更</a></li>
+        <li><a href="#sec7">七、实现顺序</a></li>
+    </ul>
+</nav>
+
+<!-- ===== 1 ===== -->
+<section id="sec1">
+    <h2 class="sec-title">一、优先级与总体策略</h2>
+
+    <table>
+        <thead><tr><th>级别</th><th>说明</th><th>目标</th></tr></thead>
+        <tbody>
+            <tr><td><span class="phase p0">P0</span> 核心</td><td>基础设施 + 核心控件 + 核心功能</td><td>立即可用，解决间距/规范问题</td></tr>
+            <tr><td><span class="phase p1">P1</span> 重要</td><td>重要功能扩充</td><td>增强实用性</td></tr>
+            <tr><td><span class="phase p2">P2</span> 增强</td><td>增强功能 / 长期演进</td><td>锦上添花</td></tr>
+        </tbody>
+    </table>
+
+    <div class="proj" style="margin-top:16px;">
+        <strong>技术原则：</strong><br>
+        ✅ 不引入新外部依赖（优先利用 SkiaSharp + Sharp7 + Wpf.Ui 现有体系）<br>
+        ✅ 新页面强制使用 MVVM 模式（<code>[ObservableProperty]</code> + <code>[RelayCommand]</code>）<br>
+        ✅ 所有控件遵循统一布局标准<br>
+        ✅ 颜色/画刷使用 <code>DynamicResource</code> 支持运行时主题切换
+    </div>
+</section>
+
+<!-- ===== 2 ===== -->
+<section id="sec2">
+    <h2 class="sec-title">二、布局标准规范</h2>
+    <p style="color:var(--text-light);margin-bottom:14px;">
+        基于 WPF UI Gallery 官方页面的观察，统一项目的间距规范：
+    </p>
+
+    <div class="spec-grid">
+        <div class="spec-item"><span class="label">页面外边距</span><span class="value">Margin="24" / "16"</span></div>
+        <div class="spec-item"><span class="label">卡片内边距</span><span class="value">Padding="16"</span></div>
+        <div class="spec-item"><span class="label">卡片圆角</span><span class="value">CornerRadius="8"</span></div>
+        <div class="spec-item"><span class="label">卡片之间间距</span><span class="value">Margin="0,0,0,12"</span></div>
+        <div class="spec-item"><span class="label">Section 之间</span><span class="value">Margin="0,32,0,0"</span></div>
+        <div class="spec-item"><span class="label">分组标题下间距</span><span class="value">Margin="0,0,0,8"</span></div>
+        <div class="spec-item"><span class="label">按钮间距</span><span class="value">Margin="4,0" / "8,0"</span></div>
+        <div class="spec-item"><span class="label">按钮高度</span><span class="value">28 ~ 32</span></div>
+        <div class="spec-item"><span class="label">输入框间距</span><span class="value">Margin="0,6"</span></div>
+        <div class="spec-item"><span class="label">列表项 padding</span><span class="value">Padding="8,4"</span></div>
+        <div class="spec-item"><span class="label">标签列宽</span><span class="value">120 / 60 / Auto</span></div>
+        <div class="spec-item"><span class="label">字体: 标题/副标题/正文/次要</span><span class="value">20 / 16 / 14 / 12</span></div>
+    </div>
+
+    <div class="proj" style="margin-top:16px;">
+        <h3 style="font-size:.95em;color:var(--danger);">🔧 需要修复的现有间距问题（P0 一并处理）</h3>
+        <table style="margin-top:8px;">
+            <thead><tr><th>文件</th><th>问题</th><th>修复方案</th></tr></thead>
+            <tbody>
+                <tr><td><code>IoMonitorPage.xaml</code></td><td>AreaPanel 之间无间距</td><td>AreaPanel 加 <code>Margin="0,0,0,12"</code></td></tr>
+                <tr><td><code>ConnectionPage.xaml</code></td><td>表单行间距 <code>Margin="0,4"</code> 过小</td><td>→ <code>Margin="0,6"</code></td></tr>
+                <tr><td><code>PollingPage.xaml</code></td><td>按钮与状态栏之间无间距</td><td>加 <code>Margin="0,12,0,0"</code></td></tr>
+                <tr><td><code>BitBlock.xaml</code></td><td><code>Margin="1"</code> 过于紧凑</td><td>→ <code>Margin="2"</code></td></tr>
+                <tr><td><code>ByteRow.xaml</code></td><td>各列间距无统一标准</td><td>用 <code>Margin</code> 规范化</td></tr>
+                <tr><td><code>GaugeDashboardPage.xaml</code></td><td>仪表之间 <code>Margin="4"</code> 过小</td><td>→ <code>Margin="8"</code></td></tr>
+                <tr><td><code>TrendChartPage.xaml</code></td><td>工具栏间距不一致</td><td>统一 <code>Margin="0,0,0,8"</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ===== 3 ===== -->
+<section id="sec3">
+    <h2 class="sec-title">三、工具箱控件（Reusable Controls）</h2>
+
+    <!-- P0 -->
+    <h3 class="sec-sub"><span class="phase p0">P0</span> 核心工具箱控件</h3>
+
+    <div class="card-grid">
+        <div class="card">
+            <h3>💡 LedIndicator</h3>
+            <span class="phase p0">P0</span>
+            <p>多色 LED 指示灯 — 绿/红/黄/蓝/灰，支持闪烁动画</p>
+            <ul>
+                <li>依赖属性：Color, IsBlinking, Quality</li>
+                <li>绑定 Quality 枚举自动切换颜色</li>
+                <li>Ellipse + Storyboard 动画</li>
+            </ul>
+            <div class="files">📄 Controls/Plc/LedIndicator.xaml + .cs</div>
+        </div>
+        <div class="card">
+            <h3>📟 ValueDisplayCard</h3>
+            <span class="phase p0">P0</span>
+            <p>数值显示卡片 — 标题 + 数值 + 单位 + LED 质量戳</p>
+            <ul>
+                <li>标题 FontSize=12 次要色，数值 28 加粗，单位 14</li>
+                <li>Padding=16, CornerRadius=8</li>
+                <li>支持 IsEditing 点击编辑模式</li>
+            </ul>
+            <div class="files">📄 Controls/Plc/ValueDisplayCard.xaml + .cs</div>
+        </div>
+        <div class="card">
+            <h3>📊 StatusStrip</h3>
+            <span class="phase p0">P0</span>
+            <p>状态栏控件 — 连接状态 + 轮询间隔 + 错误计数 + 更新时间</p>
+            <ul>
+                <li>水平等间距分布</li>
+                <li>放在页面底部 Margin="0,12,0,0"</li>
+            </ul>
+            <div class="files">📄 Controls/Plc/StatusStrip.xaml + .cs</div>
+        </div>
+        <div class="card">
+            <h3>🔄 BoolToQualityConverter</h3>
+            <span class="phase p0">P0</span>
+            <p>质量戳转换器</p>
+            <ul>
+                <li>true → #27AE60（绿/Good）</li>
+                <li>false → #E74C3C（红/Bad）</li>
+            </ul>
+            <div class="files">📄 Helpers/BoolToQualityConverter.cs</div>
+        </div>
+    </div>
+
+    <!-- P1 -->
+    <h3 class="sec-sub"><span class="phase p1">P1</span> 增强工具箱控件</h3>
+
+    <div class="card-grid">
+        <div class="card">
+            <h3>🔢 NumericInput</h3>
+            <span class="phase p1">P1</span>
+            <p>工业数字输入 — 上下箭头递增/递减，长按连续变化</p>
+            <ul>
+                <li>可配置上下限、步长、小数位数</li>
+                <li>回车/失焦触发确认事件</li>
+            </ul>
+            <div class="files">📄 Controls/Plc/NumericInput.xaml + .cs</div>
+        </div>
+        <div class="card">
+            <h3>🚨 AlarmBanner</h3>
+            <span class="phase p1">P1</span>
+            <p>报警横幅 — 顶部滑入动画，级别变色</p>
+            <ul>
+                <li>红/橙/黄 三级</li>
+                <li>显示时间 + 文本 + 确认按钮</li>
+                <li>支持自动隐藏</li>
+            </ul>
+            <div class="files">📄 Controls/Plc/AlarmBanner.xaml + .cs</div>
+        </div>
+        <div class="card">
+            <h3>📈 ChannelLegend</h3>
+            <span class="phase p1">P1</span>
+            <p>趋势图图例 — 从 TrendChannelConfig 自动生成</p>
+            <ul>
+                <li>颜色块 + 通道名 + 当前值 + 单位</li>
+                <li>点击切换可见性</li>
+                <li>从 TrendChartPage 提取为独立控件</li>
+            </ul>
+            <div class="files">📄 Controls/Plc/ChannelLegend.xaml + .cs</div>
+        </div>
+    </div>
+
+    <!-- P2 -->
+    <h3 class="sec-sub"><span class="phase p2">P2</span> 进阶工具箱控件</h3>
+
+    <div class="card-grid">
+        <div class="card">
+            <h3>🎛️ TrendToolbar</h3>
+            <span class="phase p2">P2</span>
+            <p>趋势图工具栏 — 时间窗口/暂停/导出/回放</p>
+        </div>
+        <div class="card">
+            <h3>📋 StateGrid</h3>
+            <span class="phase p2">P2</span>
+            <p>可配置变量网格 — 列配置/分组/闪烁高亮/右键菜单</p>
+        </div>
+        <div class="card">
+            <h3>📊 ProgressBarEx</h3>
+            <span class="phase p2">P2</span>
+            <p>工业进度条 — 分段颜色/目标标记线/百分比</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 4 ===== -->
+<section id="sec4">
+    <h2 class="sec-title">四、主功能页面</h2>
+
+    <!-- P0 Pages -->
+    <h3 class="sec-sub"><span class="phase p0">P0</span> 核心功能页面</h3>
+
+    <div class="proj">
+        <div class="hdr"><h3>🚨 报警管理 AlarmPage</h3> <span class="phase p0">P0</span></div>
+        <div class="desc">
+            <strong>功能：</strong>实时报警列表 → 历史报警查询 → 报警确认
+        </div>
+        <div class="files">
+            📄 Views/Pages/Plc/AlarmPage.xaml + .cs &nbsp;|&nbsp;
+            📄 ViewModels/Pages/Plc/AlarmViewModel.cs &nbsp;|&nbsp;
+            📄 Services/Plc/AlarmService.cs &nbsp;|&nbsp;
+            📄 Models/Plc/AlarmItem.cs
+        </div>
+        <table style="margin-top:8px;">
+            <thead><tr><th>元素</th><th>说明</th></tr></thead>
+            <tbody>
+                <tr><td>实时报警列表</td><td>DataGrid 时间倒序，紧急(红)/严重(橙)/警告(黄)/信息(蓝)</td></tr>
+                <tr><td>历史报警查询</td><td>按时间/级别/变量名筛选</td></tr>
+                <tr><td>报警确认</td><td>选中 → 确认 → 记录确认人/时间</td></tr>
+                <tr><td>报警规则</td><td>变量名 → 阈值/上下限/变化率</td></tr>
+                <tr><td>事件驱动</td><td>对接 PollingScheduler.DataUpdated</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="proj">
+        <div class="hdr"><h3>📋 配方管理 RecipePage</h3> <span class="phase p0">P0</span></div>
+        <div class="desc">
+            <strong>功能：</strong>配方创建/编辑/导入导出/下发到 PLC / 从 PLC 上传
+        </div>
+        <div class="files">
+            📄 Views/Pages/Plc/RecipePage.xaml + .cs &nbsp;|&nbsp;
+            📄 ViewModels/Pages/Plc/RecipeViewModel.cs &nbsp;|&nbsp;
+            📄 Services/Plc/RecipeService.cs &nbsp;|&nbsp;
+            📄 Models/Plc/Recipe.cs + RecipeParameter.cs
+        </div>
+        <table style="margin-top:8px;">
+            <thead><tr><th>元素</th><th>说明</th></tr></thead>
+            <tbody>
+                <tr><td>配方列表</td><td>左侧 ListBox（名称/版本/更新时间）</td></tr>
+                <tr><td>配方编辑</td><td>右侧 DataGrid（参数名/值/单位/上下限）</td></tr>
+                <tr><td>操作</td><td>新建/保存/重命名/删除/导入 JSON/导出 JSON</td></tr>
+                <tr><td>PLC 交互</td><td>下发配方到 PLC / 从 PLC 上传当前参数</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- P1 Pages -->
+    <h3 class="sec-sub"><span class="phase p1">P1</span> 重要功能页面</h3>
+
+    <div class="proj">
+        <div class="hdr"><h3>💾 数据记录 DataLoggerPage</h3> <span class="phase p1">P1</span></div>
+        <div class="desc">
+            从已导入 DB 中选择要记录的变量 → 启动/停止记录 → CSV 导出 → 趋势回放
+        </div>
+        <div class="files">📄 Views/Pages/Plc/DataLoggerPage + Services/Plc/DataLoggerService.cs</div>
+    </div>
+
+    <div class="proj">
+        <div class="hdr"><h3>🔍 系统诊断 SystemDiagnosticsPage</h3> <span class="phase p1">P1</span></div>
+        <div class="desc">
+            PLC 通信统计（成功/失败/超时），扫描周期波动图，CPU 信息
+        </div>
+        <div class="files">📄 Views/Pages/Plc/SystemDiagnosticsPage + ViewModel</div>
+    </div>
+
+    <!-- P2 Pages -->
+    <h3 class="sec-sub"><span class="phase p2">P2</span> 增强功能页面</h3>
+
+    <div class="proj">
+        <div class="hdr"><h3>👥 用户管理 UserManagementPage</h3> <span class="phase p2">P2</span></div>
+        <div class="desc">用户登录/注销 / 角色管理（管理员/工程师/操作员）/ 写操作权限 / 操作审计日志</div>
+    </div>
+</section>
+
+<!-- ===== 5 ===== -->
+<section id="sec5">
+    <h2 class="sec-title">五、现有页面增强</h2>
+
+    <table>
+        <thead><tr><th>页面</th><th>增强内容</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><code>TrendChartPage</code></td>
+                <td>数据持久化（环形缓冲区→CSV）/ 回放模式 / 滚轮缩放 / 通道管理 / CSV 导出</td>
+                <td><span class="phase p1">P1</span></td>
+            </tr>
+            <tr>
+                <td><code>DbMonitorPage</code></td>
+                <td>双击写入 / 类型感知输入 / 写入确认对话框 / 变更高亮 / 批量写入</td>
+                <td><span class="phase p1">P1</span></td>
+            </tr>
+            <tr>
+                <td><code>PollingPage</code></td>
+                <td>多场景配置（保存/切换/导出）/ 轮询统计 / 调试模式</td>
+                <td><span class="phase p2">P2</span></td>
+            </tr>
+            <tr>
+                <td><code>ConnectionPage</code></td>
+                <td>多配置保存 / 自动重连（指数退避）/ 连接日志</td>
+                <td><span class="phase p2">P2</span></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ===== 6 ===== -->
+<section id="sec6">
+    <h2 class="sec-title">六、项目结构变更</h2>
+
+    <h3 class="sec-sub">📂 新增文件清单（P0 阶段）</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="proj" style="margin:0;">
+            <strong>📁 Controls/Plc/</strong><br>
+            <code>LedIndicator.xaml</code> + <code>.cs</code><br>
+            <code>ValueDisplayCard.xaml</code> + <code>.cs</code><br>
+            <code>StatusStrip.xaml</code> + <code>.cs</code>
+        </div>
+        <div class="proj" style="margin:0;">
+            <strong>📁 Helpers/</strong><br>
+            <code>BoolToQualityConverter.cs</code>
+        </div>
+        <div class="proj" style="margin:0;">
+            <strong>📁 Models/Plc/</strong><br>
+            <code>AlarmItem.cs</code><br>
+            <code>Recipe.cs</code><br>
+            <code>RecipeParameter.cs</code>
+        </div>
+        <div class="proj" style="margin:0;">
+            <strong>📁 Services/Plc/</strong><br>
+            <code>AlarmService.cs</code><br>
+            <code>RecipeService.cs</code>
+        </div>
+        <div class="proj" style="margin:0;">
+            <strong>📁 Views/Pages/Plc/</strong><br>
+            <code>AlarmPage.xaml</code> + <code>.cs</code><br>
+            <code>RecipePage.xaml</code> + <code>.cs</code>
+        </div>
+        <div class="proj" style="margin:0;">
+            <strong>📁 ViewModels/Pages/Plc/</strong><br>
+            <code>AlarmViewModel.cs</code><br>
+            <code>RecipeViewModel.cs</code>
+        </div>
+    </div>
+
+    <h3 class="sec-sub">✏️ 需要修改的文件（P0 阶段）</h3>
+
+    <table>
+        <thead><tr><th>文件</th><th>修改内容</th></tr></thead>
+        <tbody>
+            <tr><td><code>App.xaml</code></td><td>注册新 Converter</td></tr>
+            <tr><td><code>App.xaml.cs</code></td><td>DI 注册：AlarmService, RecipeService, AlarmPage, AlarmViewModel, RecipePage, RecipeViewModel</td></tr>
+            <tr><td><code>ViewModels/Windows/MainWindowViewModel.cs</code></td><td>导航菜单新增"报警管理"和"配方管理"</td></tr>
+            <tr><td><code>Controls/Plc/BitBlock.xaml</code></td><td>Margin 统一规范</td></tr>
+            <tr><td><code>Controls/Plc/ByteRow.xaml</code></td><td>列间距规范</td></tr>
+            <tr><td><code>Controls/Plc/AreaPanel.xaml</code></td><td>内部间距规范</td></tr>
+            <tr><td><code>Views/Pages/Plc/IoMonitorPage.xaml</code></td><td>AreaPanel 间距修复</td></tr>
+            <tr><td><code>Views/Pages/Plc/ConnectionPage.xaml</code></td><td>表单行间距修复</td></tr>
+            <tr><td><code>Views/Pages/Plc/PollingPage.xaml</code></td><td>按钮与状态栏间距</td></tr>
+            <tr><td><code>Views/Pages/Plc/GaugeDashboardPage.xaml</code></td><td>仪表面板间距修复</td></tr>
+            <tr><td><code>Views/Pages/Plc/TrendChartPage.xaml</code></td><td>工具栏间距修复</td></tr>
+        </tbody>
+    </table>
+
+    <h3 class="sec-sub">🔌 DI 注册模式（App.xaml.cs）</h3>
+    <div class="proj">
+        <pre style="font-size:.82em;background:#f0f4f8;padding:12px;border-radius:6px;overflow-x:auto;">
+// 新服务（单例）
+services.AddSingleton&lt;AlarmService&gt;();
+services.AddSingleton&lt;RecipeService&gt;();
+
+// 新页面 + ViewModel（单例 - 遵循 PLC 页面现有注册模式）
+services.AddSingleton&lt;AlarmPage&gt;();
+services.AddSingleton&lt;AlarmViewModel&gt;();
+services.AddSingleton&lt;RecipePage&gt;();
+services.AddSingleton&lt;RecipeViewModel&gt;();</pre>
+    </div>
+
+    <h3 class="sec-sub">🧭 导航菜单新增（MainWindowViewModel.cs）</h3>
+    <div class="proj">
+        在现有 "PLC Tools" 导航组中新增：
+        <pre style="font-size:.82em;background:#f0f4f8;padding:12px;border-radius:6px;overflow-x:auto;margin-top:8px;">
+new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
+new NavigationViewItem("配方管理", SymbolRegular.Book20, typeof(RecipePage)),</pre>
+    </div>
+</section>
+
+<!-- ===== 7 ===== -->
+<section id="sec7">
+    <h2 class="sec-title">七、实现顺序</h2>
+
+    <table>
+        <thead><tr><th>阶段</th><th>步骤</th><th>内容</th></tr></thead>
+        <tbody>
+            <tr>
+                <td rowspan="4" style="vertical-align:middle;"><span class="phase p0">P0</span><br>核心</td>
+                <td>1</td>
+                <td>🛠️ 修复所有现有 XAML 页面的间距问题（7 个文件，统一布局标准）</td>
+            </tr>
+            <tr><td>2</td><td>🧩 创建 4 个基础控件（LedIndicator, ValueDisplayCard, StatusStrip, BoolToQualityConverter）</td></tr>
+            <tr><td>3</td><td>🚨 创建 AlarmService + AlarmPage + AlarmViewModel（报警管理）</td></tr>
+            <tr><td>4</td><td>🔗 注册 DI + 导航菜单 + 全局 Converter</td></tr>
+            <tr>
+                <td rowspan="4" style="vertical-align:middle;"><span class="phase p1">P1</span><br>重要</td>
+                <td>5</td>
+                <td>📋 创建 RecipeService + RecipePage（配方管理）</td></tr>
+            <tr><td>6</td><td>📈 TrendChartPage 增强（数据持久化 + 回放模式 + CSV 导出）</td></tr>
+            <tr><td>7</td><td>📝 DbMonitorPage 增强（写入支持 + 变更高亮 + 批量写入）</td></tr>
+            <tr><td>8</td><td>🧩 扩展控件（NumericInput, AlarmBanner, ChannelLegend）+ DataLoggerPage</td></tr>
+            <tr>
+                <td rowspan="3" style="vertical-align:middle;"><span class="phase p2">P2</span><br>增强</td>
+                <td>9</td>
+                <td>👥 创建 UserManagementPage（用户管理 + 权限控制）</td></tr>
+            <tr><td>10</td><td>🧩 进阶控件（TrendToolbar, StateGrid, ProgressBarEx）</td></tr>
+            <tr><td>11</td><td>⚙️ PollingPage + ConnectionPage 增强</td></tr>
+        </tbody>
+    </table>
+
+    <div class="proj" style="background:#e8f5e9;border-color:#a5d6a7;margin-top:20px;">
+        <strong>🚀 Phase 0 第一刀砍哪里？</strong><br>
+        先修间距问题（7 个文件，改 margin/padding），再建 4 个控件，最后出 AlarmPage ——
+        这样既有"立竿见影"的 UI 改善，又有一个完整的新功能落地。
+    </div>
+</section>
+
+</div>
+
+<footer class="footer">
+    <p>📅 2026 年 6 月 &nbsp;|&nbsp; 基于工控行业调研 + 开源项目分析 &nbsp;|&nbsp; Kesa_PLC_TEST</p>
+</footer>
+
+</body>
+</html>

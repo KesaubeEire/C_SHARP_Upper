@@ -9,11 +9,12 @@ interface StatusBarProps {
   connected: boolean
   pointCount: number
   lastDataTime?: number
+  ioLatency?: number
   sidebarOpen?: boolean
   onToggleSidebar?: () => void
 }
 
-export default function StatusBar({ config, connected, pointCount, lastDataTime, sidebarOpen, onToggleSidebar }: StatusBarProps) {
+export default function StatusBar({ config, connected, pointCount, lastDataTime, ioLatency, sidebarOpen, onToggleSidebar }: StatusBarProps) {
   const writableCount = config?.variables.filter(v => v.writable).length ?? 0
   const { username, role, logout } = useAuth()
   const { theme, toggle: toggleTheme } = useTheme()
@@ -52,6 +53,10 @@ export default function StatusBar({ config, connected, pointCount, lastDataTime,
       </div>
 
       <div className="status-bar__right">
+        <span className="stat stat--latency">
+          <span className="stat__label">延迟</span>
+          <span className="stat__value">{ioLatency ?? '—'} ms</span>
+        </span>
         <span className="stat">
           <span className="stat__label">变量</span>
           <span className="stat__value">{pointCount}</span>

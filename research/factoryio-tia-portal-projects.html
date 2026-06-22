@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FactoryIO + TIA Portal + PLCSIM 联合仿真项目资源汇总</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --border: #475569;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --orange: #fb923c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 48px 24px 32px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(56,189,248,0.03) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 1; }
+  }
+  header h1 {
+    font-size: 2.2em;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    margin-bottom: 12px;
+  }
+  header p {
+    color: var(--text2);
+    font-size: 1.05em;
+    position: relative;
+  }
+  header .meta {
+    margin-top: 16px;
+    font-size: 0.85em;
+    color: var(--text2);
+    position: relative;
+  }
+
+  /* Sections */
+  section { margin: 40px 0; }
+  h2 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .icon { font-size: 1.2em; }
+  h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    margin: 20px 0 10px;
+    color: var(--accent);
+  }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(56,189,248,0.1);
+  }
+  .card h4 {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h4 a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .card h4 a:hover { text-decoration: underline; }
+  .card .stars {
+    font-size: 0.8em;
+    color: var(--yellow);
+    background: rgba(251,191,36,0.1);
+    padding: 1px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .card .desc {
+    color: var(--text2);
+    font-size: 0.92em;
+    margin: 8px 0 12px;
+    line-height: 1.5;
+  }
+  .card .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .tag {
+    font-size: 0.78em;
+    padding: 2px 10px;
+    border-radius: 99px;
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .tag.plc { border-color: var(--accent); color: var(--accent); }
+  .tag.version { border-color: var(--accent2); color: var(--accent2); }
+  .tag.scene { border-color: var(--green); color: var(--green); }
+  .tag.include { border-color: var(--orange); color: var(--orange); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--surface);
+    font-weight: 600;
+    color: var(--accent);
+    position: sticky;
+    top: 0;
+  }
+  tr:hover td { background: rgba(56,189,248,0.04); }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  /* Alert boxes */
+  .alert {
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin: 16px 0;
+    border-left: 4px solid;
+    font-size: 0.95em;
+  }
+  .alert.info {
+    background: rgba(56,189,248,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .alert.warn {
+    background: rgba(251,191,36,0.08);
+    border-color: var(--yellow);
+    color: var(--yellow);
+  }
+  .alert.good {
+    background: rgba(74,222,128,0.08);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .alert.err {
+    background: rgba(248,113,113,0.08);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  /* Code */
+  code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.9em;
+    background: var(--surface2);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  pre {
+    background: #0c0f1a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-size: 0.88em;
+    line-height: 1.5;
+    margin: 12px 0;
+  }
+  pre code { background: none; padding: 0; }
+
+  /* Architecture diagram */
+  .arch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .arch .row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+  }
+  .arch .box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.9em;
+    min-width: 100px;
+  }
+  .arch .box.highlight {
+    border-color: var(--accent);
+    background: rgba(56,189,248,0.1);
+  }
+  .arch .box.green {
+    border-color: var(--green);
+    background: rgba(74,222,128,0.1);
+  }
+  .arch .arrow {
+    color: var(--text2);
+    font-size: 1.3em;
+  }
+
+  /* Version badges */
+  .v {
+    display: inline-block;
+    font-size: 0.78em;
+    padding: 1px 8px;
+    border-radius: 4px;
+    margin: 0 2px;
+    font-weight: 600;
+  }
+  .v.v15 { background: rgba(56,189,248,0.15); color: #38bdf8; }
+  .v.v16 { background: rgba(99,102,241,0.15); color: #818cf8; }
+  .v.v17 { background: rgba(168,85,247,0.15); color: #c084fc; }
+  .v.v18 { background: rgba(236,72,153,0.15); color: #f472b6; }
+  .v.v19 { background: rgba(34,211,238,0.15); color: #22d3ee; }
+  .v.v20 { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .v.v21 { background: rgba(251,191,36,0.15); color: #fbbf24; }
+
+  /* Download button */
+  .dl-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: #0f172a;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .dl-btn:hover {
+    background: #7dd3fc;
+    transform: translateY(-1px);
+  }
+  .dl-btn.secondary {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .dl-btn.secondary:hover { background: var(--border); }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 32px;
+    color: var(--text2);
+    font-size: 0.85em;
+    border-top: 1px solid var(--border);
+    margin-top: 48px;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .card-grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 1.5em; }
+    .container { padding: 20px 16px; }
+    .arch .row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏭 FactoryIO + TIA Portal + PLCSIM</h1>
+  <p>联合仿真项目资源汇总 — 让你的 WPF 上位机 &amp; Trioop 项目无 PLC 跑起来</p>
+  <div class="meta">
+    搜索日期：2026-06-22 &nbsp;|&nbsp; 目标版本：TIA Portal V21 / PLCSIM Advanced V7+
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 1. 架构总览 -->
+  <section>
+    <h2><span class="icon">📐</span> 架构总览：三种联仿方案</h2>
+
+    <div class="arch">
+      <div class="row">
+        <div class="box green highlight">FactoryIO<br><small>场景仿真</small></div>
+        <span class="arrow">⟷</span>
+        <div class="box highlight">Modbus TCP<br><small>驱动</small></div>
+        <span class="arrow">⟷</span>
+        <div class="box green">你的 WPF 上位机<br><small>Modbus TCP Client</small></div>
+      </div>
+      <div style="color:var(--text2);font-size:0.85em;margin-top:8px;">方案 A：FactoryIO Modbus TCP Server → WPF 直连（无需博途）</div>
+    </div>
+
+    <div class="arch">
+      <div class="row">
+        <div class="box green">FactoryIO</div>
+        <span class="arrow">⟷</span>
+        <div class="box highlight">S7-PLCSIM<br>驱动</div>
+        <span class="arrow">⟷</span>
+        <div class="box highlight">PLCSIM<br>Advanced</div>
+        <span class="arrow">⟷</span>
+        <div class="box">TIA Portal<br><small>博途项目</small></div>
+      </div>
+      <div style="color:var(--text2);font-size:0.85em;margin-top:8px;">方案 B：FactoryIO → PLCSIM Advanced → TIA Portal（经典 PLC 仿真链路）</div>
+    </div>
+
+    <div class="arch">
+      <div class="row">
+        <div class="box green">FactoryIO</div>
+        <span class="arrow">⟷</span>
+        <div class="box highlight">Modbus TCP<br>驱动</div>
+        <span class="arrow">⟷</span>
+        <div class="box">你的 WPF 上位机</div>
+        <span class="arrow">⟷</span>
+        <div class="box">Triooop<br><small>React 前端</small></div>
+      </div>
+      <div style="color:var(--text2);font-size:0.85em;margin-top:8px;">方案 C：FactoryIO Modbus TCP → WPF 后端 → Triooop 前端（全栈联调）</div>
+    </div>
+  </section>
+
+  <!-- 2. V21 兼容性 -->
+  <section>
+    <h2><span class="icon">⚠️</span> V21 兼容性说明</h2>
+
+    <div class="alert warn">
+      <strong>PLCSIM Advanced V7.0 最高支持到 TIA Portal V20。</strong> V21 需要 PLCSIM Advanced V8.0 或更新版本，目前 FactoryIO 官方文档尚未更新到 V21 支持。
+    </div>
+
+    <table>
+      <tr><th>FactoryIO 驱动</th><th>支持的 PLCSIM 版本</th><th>支持的 TIA Portal</th></tr>
+      <tr><td>Siemens S7-PLCSIM</td><td>PLCSIM V13~V20</td><td>V13~V20</td></tr>
+      <tr><td>Siemens S7-PLCSIM</td><td>PLCSIM Advanced V3.0</td><td>V14~V15</td></tr>
+      <tr><td>Siemens S7-PLCSIM</td><td>PLCSIM Advanced V4.0~V7.0</td><td>V14~V20</td></tr>
+      <tr><td>Siemens S7-1200/1500</td><td>实物 PLC / 第三方软 PLC</td><td>V13~V20</td></tr>
+      <tr><td>Modbus TCP/IP Server</td><td>—（纯 Modbus）</td><td>—</td></tr>
+    </table>
+
+    <div class="alert info">
+      <strong>✅ V21 迁移方案：</strong>TIA Portal 自带项目迁移功能，V15/V17/V20 的博途项目都可以
+      打开后自动迁移到 V21。PLCSIM 方面若 V8.0 尚不可用，可用 <strong>Modbus TCP 方案</strong>替代。
+    </div>
+  </section>
+
+  <!-- 3. 官方模板 -->
+  <section>
+    <h2><span class="icon">📦</span> FactoryIO 官方模板 &amp; 示例项目</h2>
+    <p style="color:var(--text2);margin-bottom:16px;">
+      这些模板是 FactoryIO 官方提供的，包含 OB1 通信功能块。<strong>Network 1 不可删除</strong>。
+    </p>
+
+    <div class="alert good">
+      <strong>💡 推荐优先使用！</strong> 这是最可靠的起步方式，开箱即用。
+    </div>
+
+    <table>
+      <tr><th>资源</th><th>下载链接</th><th>适用版本</th></tr>
+      <tr>
+        <td>S7-1200 模板</td>
+        <td><a href="https://downloads.factoryio.com/fio/tutorials/FactoryIO_Template_S7-1200_V15.zip" target="_blank">FactoryIO_Template_S7-1200_V15.zip</a></td>
+        <td><span class="v v15">V15</span> → <span class="v v20">V20</span> <span style="color:var(--text2);font-size:0.85em;">(可迁移到 V21)</span></td>
+      </tr>
+      <tr>
+        <td>S7-1500 模板</td>
+        <td><a href="https://downloads.factoryio.com/fio/tutorials/FactoryIO_Template_S7-1500_V15.zip" target="_blank">FactoryIO_Template_S7-1500_V15.zip</a></td>
+        <td><span class="v v15">V15</span> → <span class="v v20">V20</span></td>
+      </tr>
+      <tr>
+        <td>Sorting by Height <br><small>(PLCSIM Advanced)</small></td>
+        <td><a href="https://downloads.factoryio.com/fio/tutorials/Sorting%20with%20S7-PLCSIM%20Advanced%203.0%20(TIA%20V15).zip" target="_blank">Sorting with S7-PLCSIM Advanced.zip</a></td>
+        <td><span class="v v15">V15</span> → <span class="v v20">V20</span></td>
+      </tr>
+      <tr>
+        <td>Sorting by Height <br><small>(PLCSIM V20)</small></td>
+        <td><a href="https://downloads.factoryio.com/fio/tutorials/Sorting%20with%20S7-PLCSIM%2020.zip" target="_blank">Sorting with S7-PLCSIM 20.zip</a></td>
+        <td><span class="v v20">V20</span></td>
+      </tr>
+      <tr>
+        <td>Sorting by Height <br><small>(实物 S7-1200/1500)</small></td>
+        <td><a href="https://downloads.factoryio.com/fio/tutorials/Sorting%20by%20Height%20with%20S7-1200%20V15.zip" target="_blank">Sorting by Height with S7-1200 V15.zip</a></td>
+        <td><span class="v v15">V15</span> → <span class="v v17">V17</span></td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- 4. 开源 GitHub 项目 -->
+  <section>
+    <h2><span class="icon">🐙</span> 开源 GitHub 项目（含 TIA Portal + FactoryIO 场景）</h2>
+    <p style="color:var(--text2);margin-bottom:16px;">
+      以下仓库同时包含 <strong>博途项目文件 (.ap15/.ap17/.ap19)</strong> 和 <strong>FactoryIO 场景文件 (.factoryio)</strong>。
+    </p>
+
+    <div class="card-grid">
+
+      <div class="card">
+        <h4>
+          <a href="https://github.com/Ahmedhh1218/TIA-FACTORY-IO-Production-Line-Automation" target="_blank">TIA-FACTORY-IO-Production-Line-Automation</a>
+          <span class="stars">★ 12</span>
+        </h4>
+        <div class="desc">
+          完整生产线仿真：进料 → 加工（CNC）→ 装配 → 颜色分拣。含 HMI 界面 + 故障报警系统。
+        </div>
+        <div class="tags">
+          <span class="tag plc">S7-1500</span>
+          <span class="tag version">V17</span>
+          <span class="tag scene">Production Line</span>
+          <span class="tag include">有 HMI</span>
+        </div>
+        <div style="margin-top:10px;font-size:0.85em;color:var(--text2);">
+          文件：<code>ff.ap17</code> + <code>Production-Line-Scene.factoryio</code>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>
+          <a href="https://github.com/szf2020/FlutterIO-flutter" target="_blank">FlutterIO-flutter</a>
+          <span class="stars">★ 0</span>
+        </h4>
+        <div class="desc">
+          Flutter 应用 + S7-1200 (1214C) + FactoryIO "Sorting by Height Advanced" 场景，通过 MQTT 桥接。
+        </div>
+        <div class="tags">
+          <span class="tag plc">S7-1200</span>
+          <span class="tag version">V19</span>
+          <span class="tag scene">Sorting by Height</span>
+          <span class="tag include">Flutter App</span>
+        </div>
+        <div style="margin-top:10px;font-size:0.85em;color:var(--text2);">
+          文件：<code>TiaIO/TiaIO.ap19</code> + 官方 Sorting by Height 场景
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>
+          <a href="https://github.com/nilsonsales/Sorting-Station-TIA" target="_blank">Sorting-Station-TIA</a>
+        </h4>
+        <div class="desc">
+          分拣站项目：Ladder 逻辑控制蓝绿物料分离，含地址表对照图。
+        </div>
+        <div class="tags">
+          <span class="tag plc">S7-1200</span>
+          <span class="tag version">V15</span>
+          <span class="tag scene">Sorting Station</span>
+          <span class="tag include">地址表</span>
+        </div>
+        <div style="margin-top:10px;font-size:0.85em;color:var(--text2);">
+          文件：<code>AB2 Autom Final.ap15</code> + <code>Sorting Station AB2.factoryio</code>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>
+          <a href="https://github.com/rheradio/FactoryIO" target="_blank">FactoryIO (rheradio)</a>
+          <span class="stars">★ 3</span>
+        </h4>
+        <div class="desc">
+          教学资源包：传送带控制 + 液位 PID 控制，含 Simulink 对比模型。
+        </div>
+        <div class="tags">
+          <span class="tag plc">S7-1200</span>
+          <span class="tag version">V15</span>
+          <span class="tag scene">2个场景</span>
+          <span class="tag include">Simulink</span>
+        </div>
+        <div style="margin-top:10px;font-size:0.85em;color:var(--text2);">
+          文件：<code>conveyorbelt.ap15_1</code> + <code>pid_tank.ap15_1</code> + 2个 .factoryio 场景
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>
+          <a href="https://github.com/2001Anjana/Factory.IO_PLC" target="_blank">Factory.IO_PLC</a>
+        </h4>
+        <div class="desc">
+          瓶盖装配线仿真：传送带检测 → 定位 → 压盖 → 包装。
+        </div>
+        <div class="tags">
+          <span class="tag plc">S7-1200</span>
+          <span class="tag version">V16</span>
+          <span class="tag scene">Bottle Cap Assembly</span>
+          <span class="tag include">Ladder</span>
+        </div>
+        <div style="margin-top:10px;font-size:0.85em;color:var(--text2);">
+          文件：<code>BottleCapAssembly.factoryio</code> + V16 模板项目
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>
+          <a href="https://github.com/Bilalsahin25/Product-Sorting-and-Color-Detection-Station" target="_blank">Product-Sorting-and-Color-Detection</a>
+        </h4>
+        <div class="desc">
+          颜色检测分拣站：模拟量传感器 + 气动执行器，含 SCADA 上位机。
+        </div>
+        <div class="tags">
+          <span class="tag plc">S7-1200</span>
+          <span class="tag version">V16</span>
+          <span class="tag scene">Color Sorting</span>
+          <span class="tag include">SCADA</span>
+        </div>
+        <div style="margin-top:10px;font-size:0.85em;color:var(--text2);">
+          文件：<code>.ap16</code> + SCADA 项目
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 5. 其他关联项目 -->
+  <section>
+    <h2><span class="icon">🔗</span> 其他关联项目</h2>
+
+    <table>
+      <tr><th>项目</th><th>说明</th><th>亮点</th></tr>
+      <tr>
+        <td><a href="https://github.com/Masum75/Pick-and-Place-Robotic-Arm-PLC-Programming-with-TIA-and-FactoryIO" target="_blank">Pick-and-Place Robotic Arm</a></td>
+        <td>机械臂抓取项目，TIA Portal V18 Ladder 编程</td>
+        <td>含演示视频</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/ogum-kevin/Industrial-Automation-Projects" target="_blank">Industrial-Automation-Projects</a></td>
+        <td>多种自动化项目合集（TIA、Codesys、OPC-UA、Node-RED）</td>
+        <td>多技术栈</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/derekhe/ax-factoryio-assembler" target="_blank">ax-factoryio-assembler</a></td>
+        <td>SIMATIC AX（高级语言）编写的 Assembler 场景</td>
+        <td>ST 语言 + 命令行部署</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/litcpslab/FactoryIO_Projects" target="_blank">FactoryIO_Projects</a></td>
+        <td>IEC 61499 标准控制应用，通过 OPC UA 连接 FactoryIO</td>
+        <td>IEC 61499 / OPC UA</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/Bluevipe21/SET-RESET-TIA_PORTAL-FACTORYIO" target="_blank">SET-RESET TIA PORTAL FACTORYIO</a></td>
+        <td>简单的 Set/Reset 示例（V15 + Ladder）</td>
+        <td>入门级</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- 6. 官方文档 -->
+  <section>
+    <h2><span class="icon">📚</span> 官方文档 &amp; 教程</h2>
+
+    <table>
+      <tr><th>资源</th><th>链接</th><th>说明</th></tr>
+      <tr>
+        <td>PLCSIM Advanced 设置指南</td>
+        <td><a href="https://docs.factoryio.com/tutorials/siemens/sample-s7-plcsim-advanced/" target="_blank">docs.factoryio.com/tutorials/siemens/sample-s7-plcsim-advanced/</a></td>
+        <td>含 Sorting by Height 示例下载</td>
+      </tr>
+      <tr>
+        <td>PLCSIM V20 设置指南</td>
+        <td><a href="https://docs.factoryio.com/tutorials/siemens/setting-up-s7-plcsim-v20/" target="_blank">docs.factoryio.com/tutorials/siemens/setting-up-s7-plcsim-v20/</a></td>
+        <td>V20 专属模板下载</td>
+      </tr>
+      <tr>
+        <td>PLCSIM V13~19 设置指南</td>
+        <td><a href="https://docs.factoryio.com/tutorials/siemens/setting-up-s7-plcsim-v13/" target="_blank">docs.factoryio.com/tutorials/siemens/setting-up-s7-plcsim-v13/</a></td>
+        <td>V13~V19 模板（1200/1500）</td>
+      </tr>
+      <tr>
+        <td>S7-1200/1500 实物 PLC 连接</td>
+        <td><a href="https://docs.factoryio.com/tutorials/siemens/sample-s7-1200-1500/" target="_blank">docs.factoryio.com/tutorials/siemens/sample-s7-1200-1500/</a></td>
+        <td>适合有真实 PLC 时使用</td>
+      </tr>
+      <tr>
+        <td>ControlByte 博客教程</td>
+        <td><a href="https://controlbyte.tech/blog/how-to-connect-factory-io-with-siemens-s7-1200-and-plcsim-v15-1-v20/" target="_blank">controlbyte.tech/.../how-to-connect-factory-io-with-siemens-s7-1200-and-plcsim-v15-1-v20/</a></td>
+        <td>中英文双语，含 FAQ</td>
+      </tr>
+      <tr>
+        <td>Control.com 教程</td>
+        <td><a href="https://control.com/technical-articles/using-factory-i-o-with-a-virtual-siemens-s7-1200-plc/" target="_blank">control.com/.../using-factory-i-o-with-a-virtual-siemens-s7-1200-plc/</a></td>
+        <td>V17 详细图文教程</td>
+      </tr>
+      <tr>
+        <td>FactoryIO 社区论坛</td>
+        <td><a href="https://community.factoryio.com/" target="_blank">community.factoryio.com</a></td>
+        <td>V20/V21 兼容性讨论</td>
+      </tr>
+      <tr>
+        <td>Modbus TCP/IP Server 驱动</td>
+        <td><a href="https://docs.factoryio.com/manual/drivers/modbus-tcp-client/" target="_blank">docs.factoryio.com/manual/drivers/modbus-tcp-client/</a></td>
+        <td>FactoryIO 作为 Modbus Server</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- 7. 推荐方案 -->
+  <section>
+    <h2><span class="icon">🎯</span> 推荐行动方案</h2>
+
+    <div class="card-grid">
+
+      <div class="card" style="border-color:var(--green);">
+        <h4 style="color:var(--green);">🟢 方案 A：纯 Modbus TCP（最快）</h4>
+        <div class="desc">
+          FactoryIO 内置 <strong>Modbus TCP/IP Server</strong> 驱动。你的 WPF 上位机作为 Modbus TCP Client 直接连入，<strong>完全不需要博途/PLCSIM</strong>。
+        </div>
+        <pre style="font-size:0.82em;"><code>FactoryIO (Modbus Server)  ⟷  WPF 上位机 (Modbus Client)  ⟷  Trioop 前端</code></pre>
+        <div style="font-size:0.88em;color:var(--text2);">
+          ✅ 最简单<br>
+          ✅ V21 无兼容性问题<br>
+          ✅ 无需安装 PLCSIM
+        </div>
+      </div>
+
+      <div class="card" style="border-color:var(--accent);">
+        <h4 style="color:var(--accent);">🔵 方案 B：PLCSIM Advanced（经典）</h4>
+        <div class="desc">
+          用官方 Sorting by Height 模板 → TIA Portal 打开 → 下载到 PLCSIM Advanced → FactoryIO 连接。
+        </div>
+        <div style="font-size:0.88em;color:var(--text2);">
+          ✅ 最接近真实 PLC 开发流程<br>
+          ✅ 可调试博途程序<br>
+          ✅ 丰富的开源项目可参考<br>
+          ⚠️ PLCSIM Advanced V7 最高支持 V20
+        </div>
+      </div>
+
+      <div class="card" style="border-color:var(--orange);">
+        <h4 style="color:var(--orange);">🟠 方案 C：开源项目迁移</h4>
+        <div class="desc">
+          下载 Ahmedhh1218 的<a href="https://github.com/Ahmedhh1218/TIA-FACTORY-IO-Production-Line-Automation" target="_blank">生产线项目</a>
+          或 nilsonsales 的<a href="https://github.com/nilsonsales/Sorting-Station-TIA" target="_blank">分拣站项目</a>，
+          用 TIA Portal V21 打开并迁移。
+        </div>
+        <div style="font-size:0.88em;color:var(--text2);">
+          ✅ 最完整的场景 + PLC 程序<br>
+          ✅ 可直接学习生产级代码<br>
+          ⚠️ V17→V21 迁移可能需要小修
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 8. FactoryIO 内置场景 -->
+  <section>
+    <h2><span class="icon">🎬</span> FactoryIO 内置场景速览</h2>
+    <p style="color:var(--text2);margin-bottom:12px;">
+      FactoryIO 自带 20+ 内置场景，以下是适合 PLC 联仿的常用场景：
+    </p>
+
+    <table>
+      <tr><th>场景</th><th>复杂度</th><th>说明</th></tr>
+      <tr><td>From A to B</td><td>入门</td><td>物料从 A 传送到 B</td></tr>
+      <tr><td>Filling Tank (Timers)</td><td>入门</td><td>液位控制 + 定时</td></tr>
+      <tr><td>Queue of Items (Counters)</td><td>入门</td><td>物料计数</td></tr>
+      <tr><td>Sorting by Height (Basic)</td><td>基础</td><td>按高度分拣（官方示例场景）</td></tr>
+      <tr><td>Sorting by Height (Advanced)</td><td>进阶</td><td>多段传送带 + 复杂分拣</td></tr>
+      <tr><td>Pick & Place</td><td>进阶</td><td>机械臂抓取</td></tr>
+      <tr><td>Production Line</td><td>高阶</td><td>完整生产线</td></tr>
+      <tr><td>Automated Warehouse</td><td>高阶</td><td>自动化立体仓库</td></tr>
+    </table>
+  </section>
+
+  <!-- 9. 快速开始 -->
+  <section>
+    <h2><span class="icon">🚀</span> 快速开始：10 分钟跑通</h2>
+
+    <div class="alert good">
+      <strong>推荐路径（方案 A）：</strong>Modbus TCP 直连，无博途依赖
+    </div>
+
+    <pre><code>1. 打开 FactoryIO → 文件 → 打开场景 → Sorting by Height (Basic)
+2. 按 F4 → 驱动列表 → 选择 "Modbus TCP/IP Server"
+3. 配置 → 设置端口 502
+4. 点击 CONNECT（绿色勾号）
+5. 你的 WPF 上位机连接 127.0.0.1:502 即可</code></pre>
+
+    <div class="alert info">
+      <strong>推荐路径（方案 B）：</strong>PLCSIM Advanced
+    </div>
+
+    <pre><code>1. 下载官方模板: FactoryIO_Template_S7-1200_V15.zip
+2. TIA Portal V21 打开 → 自动迁移
+3. PLCSIM Advanced → 实例名设为 "factoryio" → Start
+4. 博途 → 下载到设备 (PN/IE → PLCSIM)
+5. CPU 切 RUN
+6. FactoryIO → F4 → Siemens S7-PLCSIM → CONNECT</code></pre>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>搜索资源整理于 2026-06-22 &nbsp;|&nbsp; 基于 Claude WebSearch + proxy-fetch</p>
+    <p style="margin-top:6px;font-size:0.85em;">
+      项目仓库：
+      <a href="https://github.com/Ahmedhh1218/TIA-FACTORY-IO-Production-Line-Automation" target="_blank" style="color:var(--accent);">生产线</a> ·
+      <a href="https://github.com/nilsonsales/Sorting-Station-TIA" target="_blank" style="color:var(--accent);">分拣站</a> ·
+      <a href="https://github.com/rheradio/FactoryIO" target="_blank" style="color:var(--accent);">教学资源</a> ·
+      <a href="https://github.com/2001Anjana/Factory.IO_PLC" target="_blank" style="color:var(--accent);">瓶盖装配</a> ·
+      <a href="https://github.com/szf2020/FlutterIO-flutter" target="_blank" style="color:var(--accent);">FlutterIO</a>
+    </p>
+  </footer>
+
+</div>
+
+</body>
+</html>

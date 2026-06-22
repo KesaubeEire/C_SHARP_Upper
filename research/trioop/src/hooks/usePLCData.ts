@@ -28,6 +28,8 @@ export function usePLCData() {
   const [dbBlocks, setDbBlocks] = useState<Record<string, number[] | null>>({})
   const [connected, setConnected] = useState(false)
   const [lastDataTime, setLastDataTime] = useState(0)
+  const [ioLatency, setIoLatency] = useState(0)
+  const lastIoTimeRef = useRef(0)
   const esRef = useRef<EventSource | null>(null)
   const retryRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -48,7 +50,13 @@ export function usePLCData() {
         setDb(payload.db ?? {})
         setIo({ i: payload.io?.i ?? {}, q: payload.io?.q ?? {}, m: payload.io?.m ?? {} })
         setDbBlocks(payload.dbBlocks ?? {})
-        setLastDataTime(Date.now())
+        const now = Date.now()
+        setLastDataTime(now)
+        // 跟踪 I 区更新间隔（两次信号接收时间差）
+        if (lastIoTimeRef.current > 0) {
+          setIoLatency(now - lastIoTimeRef.current)
+        }
+        lastIoTimeRef.current = now
       } catch { /* ignore malformed data */ }
     }
 
@@ -67,5 +75,5 @@ export function usePLCData() {
     }
   }, [connect])
 
-  return { db, io, setIo, dbBlocks, connected, lastDataTime }
+  return { db, io, setIo, dbBlocks, connected, lastDataTime, ioLatency }
 }

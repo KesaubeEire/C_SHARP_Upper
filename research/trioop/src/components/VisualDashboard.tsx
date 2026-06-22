@@ -16,7 +16,7 @@ import { AlarmAnnunciatorPanel } from './altara/industrial/components/AlarmAnnun
 import { PIDTuningPanel } from './altara/industrial/components/PIDTuningPanel'
 import { ProcessFlowDiagram } from './altara/industrial/components/ProcessFlowDiagram'
 import { useContextMenu } from './VDBContextMenu'
-import { resolveVarName, loadMapping, loadAllDBData, writePLC } from '../hooks/useDBMapping'
+import { resolveVarName, loadMapping, loadAllDBData, writePLC, reregisterAllDBs } from '../hooks/useDBMapping'
 
 
 type WidgetType = 'value' | 'lamp' | 'button' | 'gauge' | 'trend' | 'oee' | 'motor' | 'predictive' | 'alarm' | 'pid' | 'signal' | 'eventlog' | 'connectionbar' | 'process'
@@ -201,6 +201,11 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   const [rowH, setRowH] = useState(() => { try { return Number(localStorage.getItem(ROW_HEIGHT_KEY)) || 120 } catch { return 120 } })
   const paletteRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('lg')
+  const [ghostCell, setGhostCell] = useState<{x: number; y: number} | null>(null)
+  const [insertMenu, setInsertMenu] = useState<{x: number; y: number; top: number; left: number} | null>(null)
+  const [resizing, setResizing] = useState(false)
+  const insertMenuRef = useRef<HTMLDivElement>(null)
 
   // ─── 撤销 / 重做 ─────────────────────────────────────
   const historyRef = useRef<{ stack: any[]; idx: number }>({ stack: [], idx: -1 })
@@ -243,6 +248,68 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   useEffect(() => { localStorage.setItem(ROW_HEIGHT_KEY, String(rowH)) }, [rowH])
   useEffect(() => { const el = containerRef.current; if (!el) return; const ro = new ResizeObserver(entries => { for (const e of entries) setContainerWidth(e.contentRect.width) }); ro.observe(el); return () => ro.disconnect() }, [])
 
+  // ─── 网格度量 ────────────────────────────────────────────
+  const getGridMetrics = useCallback(() => {
+    const cols = COLS[currentBreakpoint] ?? 12
+    const margin = [10, 10]
+    const colWidth = (containerWidth - margin[0] * (cols - 1) - 0 * 2) / cols
+    return { cols, colWidth, cellHeight: rowH, margin }
+  }, [containerWidth, rowH, currentBreakpoint])
+
+  const mouseToGrid = useCallback((clientX: number, clientY: number) => {
+    const container = containerRef.current?.parentElement // .vdb-rgl-wrapper
+    if (!container) return null
+    const rect = container.getBoundingClientRect()
+    const { cols, colWidth, cellHeight, margin } = getGridMetrics()
+    const mx = clientX - rect.left
+    const my = clientY - rect.top
+    const col = Math.floor(mx / (colWidth + margin[0]))
+    const row = Math.floor(my / (cellHeight + margin[1]))
+    if (col < 0 || col >= cols || row < 0) return null
+    // 检查该格是否已被占
+    const layout = data.layouts[currentBreakpoint] ?? []
+    const oc = layout.some((l: any) =>
+      l.i && col < l.x + l.w && col >= l.x && row < l.y + l.h && row >= l.y
+    )
+    return oc ? null : { x: col, y: row }
+  }, [data.layouts, currentBreakpoint, getGridMetrics])
+
+  // ─── RGL 容器事件 ────────────────────────────────────────
+  const handleRglMouseMove = useCallback((e: React.MouseEvent) => {
+    if (resizing) return // 拖拽扩展大小时不显示 ghost
+    if ((e.target as HTMLElement)?.closest?.('.vdb-widget')) { setGhostCell(null); return }
+    const pos = mouseToGrid(e.clientX, e.clientY)
+    setGhostCell(pos)
+  }, [mouseToGrid, resizing])
+
+  const handleRglMouseLeave = useCallback(() => setGhostCell(null), [])
+
+  const handleRglContextMenu = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement)?.closest?.('.vdb-widget')) return // 组件上的右键走现有逻辑
+    e.preventDefault()
+    const pos = mouseToGrid(e.clientX, e.clientY)
+    if (!pos) return
+    setInsertMenu({ ...pos, top: e.clientY, left: e.clientX })
+    setGhostCell(null)
+  }, [mouseToGrid])
+
+  const handleRglClick = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement)?.closest?.('.vdb-widget')) return
+    setInsertMenu(null)
+  }, [])
+
+  // 点击外部 / Escape 关闭 insertMenu
+  useEffect(() => {
+    if (!insertMenu) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setInsertMenu(null) }
+    const onDown = (e: MouseEvent) => {
+      if (insertMenuRef.current && !insertMenuRef.current.contains(e.target as Node)) setInsertMenu(null)
+    }
+    const t = setTimeout(() => document.addEventListener('mousedown', onDown), 0)
+    document.addEventListener('keydown', onKey)
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [insertMenu])
+
   const addWidget = useCallback((type: WidgetType) => {
     const meta = WIDGET_META[type]; const id = `w${Date.now()}`
     const cfg: Record<string, any> = {}; for (const f of CONFIG_FIELDS[type] || []) cfg[f.key] = f.default
@@ -252,6 +319,33 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     setData(d => ({ widgets: [...d.widgets, { id, type, title: meta.label, config: cfg }], layouts: { ...d.layouts, lg: [...layout, newLayout] } }))
     setFormTitle(meta.label); setFormType(type); setFormCfg({ ...cfg }); setEditing(id); setShowPalette(false)
   }, [data.layouts])
+
+  // ─── 在指定网格位置插入组件 ──────────────────────────────
+  const addWidgetAt = useCallback((type: WidgetType, x: number, y: number) => {
+    const meta = WIDGET_META[type]; const id = `w${Date.now()}`
+    const cfg: Record<string, any> = {}; for (const f of CONFIG_FIELDS[type] ?? []) cfg[f.key] = f.default
+    const bp = currentBreakpoint
+    const layout = (data.layouts[bp] ?? []).map((l: any) => ({ ...l }))
+    const newItem = { i: id, x, y, w: 1, h: 1 }
+    const newLayout = [...layout, newItem]
+    // 碰撞检测：把和 (x,y,1x1) 重叠的组件向下推 1 格
+    for (let pass = 0; pass < 30; pass++) {
+      let moved = false
+      for (const item of newLayout) {
+        if (item.i === id) continue
+        if (item.x < x + 1 && item.x + item.w > x && item.y < y + 1 && item.y + item.h > y) {
+          item.y += 1; moved = true
+        }
+      }
+      if (!moved) break
+    }
+    setData(d => ({
+      widgets: [...d.widgets, { id, type, title: meta.label, config: cfg }],
+      layouts: { ...d.layouts, [bp]: newLayout },
+    }))
+    setGhostCell(null); setInsertMenu(null)
+    setFormTitle(meta.label); setFormType(type); setFormCfg({ ...cfg }); setEditing(id)
+  }, [data.layouts, currentBreakpoint, setData])
 
   // 点击外部 / Escape → 关闭 palette dropdown
   useEffect(() => {
@@ -292,6 +386,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
         <Tooltip content="导出 JSON"><button className="btn btn--ghost btn--sm" onClick={exportData}>📤</button></Tooltip>
         <input ref={fileRef} type="file" accept=".json" onChange={importData} style={{ display:'none' }} />
         <Tooltip content="导入 JSON"><button className="btn btn--ghost btn--sm" onClick={() => fileRef.current?.click()}>📥</button></Tooltip>
+        <Tooltip content="重新注册所有已导入 DB"><button className="btn btn--ghost btn--sm" onClick={() => reregisterAllDBs()}>↻</button></Tooltip>
         <div style={{ position: 'relative' }} ref={paletteRef}>
           <button className="btn btn--sm btn--primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setShowPalette(p => !p)}>
             <span>+ 添加</span>
@@ -320,7 +415,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
       {data.widgets.length === 0 ? (
         <div className="db-empty" style={{ textAlign: 'center', padding: 40 }}>点击「+ 添加组件」开始构建仪表盘</div>
       ) : (
-        <div className="vdb-rgl-wrapper">
+        <div className="vdb-rgl-wrapper" onMouseMove={handleRglMouseMove} onMouseLeave={handleRglMouseLeave} onContextMenu={handleRglContextMenu} onClick={handleRglClick}>
           <div ref={containerRef} style={{ width: "100%" }}><Responsive width={containerWidth}
             className="vdb-rgl"
             layouts={data.layouts}
@@ -328,10 +423,13 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
             cols={COLS}
             rowHeight={rowH}
             onLayoutChange={onLayoutChange}
+            onBreakpointChange={(bp) => setCurrentBreakpoint(bp)}
+            onResizeStart={() => setResizing(true)}
+            onResizeStop={() => setResizing(false)}
             draggableHandle=".vdb-widget__bar"
             isDraggable
             isResizable
-            compactType="vertical"
+            compactType={null}
             preventCollision={false}
             margin={[10, 10]}
             containerPadding={[0, 0]}
@@ -353,7 +451,30 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                 <div className="vdb-widget__body" onMouseDown={e => e.stopPropagation()}><ResizeWrapper>{renderWidget(w.type, w.config, liveData)}</ResizeWrapper></div>
               </div>
             ))}
-          </Responsive></div>
+          </Responsive>
+          {/* Ghost cell */}
+          {ghostCell && (() => {
+            const { colWidth, cellHeight, margin } = getGridMetrics()
+            return <div className="vdb-ghost-cell" style={{
+              left: ghostCell.x * (colWidth + margin[0]),
+              top: ghostCell.y * (cellHeight + margin[1]),
+              width: colWidth,
+              height: cellHeight,
+            }} />
+          })()}
+          {/* 右键插入菜单 */}
+          {insertMenu && (
+            <div ref={insertMenuRef} className="vdb-ctx" style={{ position: 'fixed', zIndex: 99999, left: insertMenu.left, top: insertMenu.top }}>
+              {Object.entries(WIDGET_META).map(([type, meta]) => (
+                <button key={type} className="vdb-ctx__item"
+                  onClick={() => addWidgetAt(type as WidgetType, insertMenu.x, insertMenu.y)}>
+                  <span className="vdb-ctx__icon">{meta.icon}</span>
+                  {meta.label}
+                </button>
+              ))}
+            </div>
+          )}
+          </div>
         </div>
       )}
 

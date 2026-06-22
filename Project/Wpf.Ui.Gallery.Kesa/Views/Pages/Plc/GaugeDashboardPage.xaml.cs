@@ -1,8 +1,11 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using SkiaSharp.Views.WPF;
+using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
 
 namespace Wpf.Ui.Gallery.Views.Pages.Plc;
@@ -15,6 +18,8 @@ public partial class GaugeDashboardPage : Page
     private readonly SKColor[] _sectionColors = [SKColors.Red, SKColors.Cyan, SKColors.LimeGreen, SKColors.Orange, SKColors.Magenta];
     private readonly double[] _sectionMax = [200, 20, 80, 100, 100];
 
+    public ObservableCollection<GaugeSectionItem> SectionItems { get; } = [];
+
     private static SKColor ThemeCardBg => ReadSKColor("CardBackground", 0x1A, 0x1A, 0x2E);
     private static SKColor ThemeBorder => ReadSKColor("ControlElevationBorderBrush", 0x3A, 0x3A, 0x5C);
     private static SKColor ThemeText => ReadSKColor("TextFillColorPrimaryBrush", 0xE0, 0xE0, 0xE0);
@@ -22,7 +27,7 @@ public partial class GaugeDashboardPage : Page
     public GaugeDashboardPage(S7Service s7)
     {
         InitializeComponent();
-        BuildSectionList();
+        InitSectionItems();
     }
 
     public void UpdateSingleGauge(double value)
@@ -38,29 +43,22 @@ public partial class GaugeDashboardPage : Page
     public void UpdateMultiGauge(double[] values)
     {
         for (int i = 0; i < Math.Min(values.Length, _sectionValues.Length); i++)
+        {
             _sectionValues[i] = values[i];
+            if (i < SectionItems.Count)
+                SectionItems[i].Value = values[i];
+        }
         Dispatcher.InvokeAsync(() => multiGauge.InvalidateVisual());
     }
 
-    private void BuildSectionList()
+    private void InitSectionItems()
     {
-        sectionList.Children.Clear();
+        SectionItems.Clear();
         for (int i = 0; i < _sectionValues.Length; i++)
         {
-            var color = System.Windows.Media.Color.FromArgb(
+            var color = Color.FromArgb(
                 _sectionColors[i].Alpha, _sectionColors[i].Red, _sectionColors[i].Green, _sectionColors[i].Blue);
-            var sp = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 2) };
-            sp.Children.Add(new System.Windows.Shapes.Ellipse
-            {
-                Width = 10, Height = 10,
-                Fill = new System.Windows.Media.SolidColorBrush(color),
-                Margin = new Thickness(0, 0, 8, 0),
-                VerticalAlignment = System.Windows.VerticalAlignment.Center
-            });
-            sp.Children.Add(new TextBlock { Text = $"{_sectionLabels[i]}: {_sectionValues[i]:F1}", FontSize = 12,
-                Foreground = Application.Current.TryFindResource("TextFillColorPrimaryBrush") as System.Windows.Media.Brush
-                    ?? System.Windows.Media.Brushes.White });
-            sectionList.Children.Add(sp);
+            SectionItems.Add(new GaugeSectionItem(_sectionLabels[i], new SolidColorBrush(color), _sectionValues[i]));
         }
     }
 

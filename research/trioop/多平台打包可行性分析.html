@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trioop PLC Monitor — 多平台打包可行性分析</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --teal: #56d4dd;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* ─── Header ─── */
+  .hero {
+    text-align: center;
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .hero h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .hero .sub { color: var(--text-dim); font-size: 14px; }
+  .hero .badge {
+    display: inline-block;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 12px;
+  }
+
+  /* ─── Section ─── */
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 24px 0 12px;
+    color: var(--accent);
+  }
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 16px 0 8px;
+  }
+  p { margin-bottom: 12px; color: var(--text-dim); }
+  ul, ol { margin: 8px 0 16px 20px; color: var(--text-dim); }
+  li { margin-bottom: 6px; }
+  code {
+    background: #1c2128;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    color: var(--teal);
+  }
+  pre {
+    background: #1c2128;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+  }
+
+  /* ─── Cards ─── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card .label { font-size: 11px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px; }
+  .card .val   { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .card .sub   { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  /* ─── Table ─── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 16px 0;
+  }
+  th {
+    background: #1c2128;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(88,166,255,0.04); }
+  .tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-green  { background: rgba(63,185,80,0.15); color: var(--green); }
+  .tag-orange { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .tag-red    { background: rgba(248,81,73,0.15);  color: var(--red); }
+  .tag-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+
+  /* ─── Comparison row ─── */
+  .cmp { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+  .cmp-item {
+    flex: 1;
+    min-width: 180px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .cmp-item h4 { margin: 0 0 8px; font-size: 14px; }
+  .cmp-item ul { margin: 0 0 0 16px; font-size: 13px; }
+  .cmp-item ul li { margin-bottom: 4px; }
+
+  .bar {
+    display: flex; align-items: center; gap: 8px; margin: 4px 0;
+  }
+  .bar-fill {
+    height: 8px; border-radius: 4px;
+    background: var(--accent);
+  }
+  .bar-fill.easy { width: 80px; background: var(--green); }
+  .bar-fill.medium { width: 130px; background: var(--orange); }
+  .bar-fill.hard { width: 200px; background: var(--red); }
+
+  /* ─── Timeline ─── */
+  .tl { position: relative; padding-left: 24px; margin: 16px 0; }
+  .tl::before {
+    content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px;
+    width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 20px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -20px; top: 6px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--bg);
+  }
+  .tl-item .title { font-weight: 600; font-size: 14px; }
+  .tl-item .desc { font-size: 13px; color: var(--text-dim); }
+
+  .arch {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .footnote {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<div class="hero">
+  <h1>🔌 Trioop PLC Monitor</h1>
+  <div class="sub">多平台打包可行性分析报告</div>
+  <div class="badge">2026-06 · v1.0 · 分析范围: Electron / Tauri / Android / iOS</div>
+</div>
+
+<!-- ═══════════════ 1. 项目现状 ═══════════════ -->
+<section>
+<h2>📋 当前技术栈</h2>
+
+<div class="card-grid">
+  <div class="card"><div class="label">前端框架</div><div class="val">React 19</div><div class="sub">TypeScript + Vite</div></div>
+  <div class="card"><div class="label">后端框架</div><div class="val">Express</div><div class="sub">Node.js 22, TypeScript</div></div>
+  <div class="card"><div class="label">桌面 GUI</div><div class="val">浏览器</div><div class="sub">目前仅有 Web 界面</div></div>
+  <div class="card"><div class="label">实时通信</div><div class="val">SSE</div><div class="sub">Server-Sent Events</div></div>
+  <div class="card"><div class="label">数据库</div><div class="val">better-sqlite3</div><div class="sub">原生 Node 模块</div></div>
+  <div class="card"><div class="label">PLC 协议</div><div class="val">ISO-on-TCP</div><div class="sub">S7, snap7, node-opcua</div></div>
+</div>
+
+<h3>关键瓶颈</h3>
+<table>
+  <tr><th>组件</th><th>是否跨平台</th><th>说明</th></tr>
+  <tr>
+    <td>React + Vite 前端</td>
+    <td><span class="tag tag-green">✅ 跨平台</span></td>
+    <td>纯浏览器端代码，Electron / Tauri / 移动端 WebView 均可直接运行</td>
+  </tr>
+  <tr>
+    <td>Express 后端</td>
+    <td><span class="tag tag-orange">⚠️ 仅桌面</span></td>
+    <td>Node.js HTTP 服务，移动端无法直接运行（需 nodejs-mobile 或原生重写）</td>
+  </tr>
+  <tr>
+    <td>better-sqlite3</td>
+    <td><span class="tag tag-orange">⚠️ 需处理</span></td>
+    <td>C++ 原生模块，每个平台需重新编译；Node 22 可用内置 <code>node:sqlite</code> 替代</td>
+  </tr>
+  <tr>
+    <td>nodes7 / snap7</td>
+    <td><span class="tag tag-red">❌ 桌面</span></td>
+    <td>C++ 原生模块，仅 x86/x64 架构；ARM（手机/树莓派）需另寻方案</td>
+  </tr>
+  <tr>
+    <td>node-opcua</td>
+    <td><span class="tag tag-orange">⚠️ 纯 JS</span></td>
+    <td>纯 JavaScript 实现，理论上跨平台，但依赖 Node.js Buffer API</td>
+  </tr>
+  <tr>
+    <td>react-grid-layout</td>
+    <td><span class="tag tag-green">✅ 跨平台</span></td>
+    <td>纯前端组件，桌面/移动 WebView 通用</td>
+  </tr>
+</table>
+</section>
+
+<!-- ═══════════════ 2. Electron ═══════════════ -->
+<section>
+<h2>🖥️ Electron — 桌面端（Win/Mac/Linux）</h2>
+
+<h3>架构方案</h3>
+<p>不需要分离前后端：Express 直接跑在 <strong>Electron 主进程</strong> 中，渲染进程加载 Vite 构建的静态页面。</p>
+
+<div class="arch">
+┌─────────────────────────────────────────────┐
+│  Electron 应用                              │
+│  ┌─────────────────────────────────────┐   │
+│  │  Main Process (Node.js 22 + Express) │   │
+│  │  ┌──────────┐  ┌──────────────────┐ │   │
+│  │  │ Express  │  │ better-sqlite3   │ │   │
+│  │  │ API 服务  │  │ / node:sqlite   │ │   │
+│  │  │ :3001    │  │ S7 PLC 通信      │ │   │
+│  │  └──────────┘  └──────────────────┘ │   │
+│  └─────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────┐   │
+│  │  Renderer Process (Vite React App) │   │
+│  │  http://localhost:5173 或 file://   │   │
+│  └─────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘</div>
+
+<h3>改造清单</h3>
+<table>
+  <tr><th>改动项</th><th>难度</th><th>说明</th></tr>
+  <tr>
+    <td>项目结构</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td>新增 <code>electron/</code> 目录放主进程代码，保留现有 <code>src/</code> 和 <code>server/</code> 不变</td>
+  </tr>
+  <tr>
+    <td>Express 集成</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td>在 Electron 的 <code>app.on('ready')</code> 回调中启动 Express，现有代码几乎零修改</td>
+  </tr>
+  <tr>
+    <td>Vite 构建</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td>使用 <code>electron-vite</code> 或 <code>@electron-forge/plugin-vite</code> 零配置集成</td>
+  </tr>
+  <tr>
+    <td>better-sqlite3</td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td>需要 <code>postinstall</code> 脚本针对 Electron 重新编译；或用 <code>node:sqlite</code> 替代（推荐）</td>
+  </tr>
+  <tr>
+    <td>原生模块打包</td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td>需要 <code>asarUnpack</code> 配置 + 在 <code>forge.config.ts</code> 中用 <code>packageAfterCopy</code> hook 复制 .node 文件</td>
+  </tr>
+  <tr>
+    <td>S7 / OPC UA 通信</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td>主进程直接使用 <code>net.Socket</code> 和现有 <code>nodes7</code>，无需改动</td>
+  </tr>
+  <tr>
+    <td>系统托盘</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td>可添加托盘图标，后台运行时最小化到托盘</td>
+  </tr>
+  <tr>
+    <td>自动更新</td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td>使用 <code>electron-updater</code>，需要配置 S3/OSS 或 GitHub Releases</td>
+  </tr>
+</table>
+
+<h3>推荐工具链</h3>
+<div class="cmp">
+  <div class="cmp-item">
+    <h4>🥇 electron-vite</h4>
+    <ul>
+      <li>专门为 Vite + Electron 设计</li>
+      <li>主进程、预加载、渲染进程分离配置</li>
+      <li>HMR 开发体验好</li>
+      <li>社区活跃，文档齐全</li>
+    </ul>
+  </div>
+  <div class="cmp-item">
+    <h4>🥇 Electron Forge</h4>
+    <ul>
+      <li>官方打包/分发工具</li>
+      <li>支持 .dmg / .exe / .deb / .rpm</li>
+      <li>内置代码签名、自动更新</li>
+      <li>推荐与 <code>@electron-forge/plugin-vite</code> 搭配</li>
+    </ul>
+  </div>
+</div>
+
+<h3>优劣总结</h3>
+<table>
+  <tr><th style="width:120px">维度</th><th>评价</th></tr>
+  <tr><td><span class="tag tag-green">✅ 优势</span></td>
+    <td>① 改造量最小：Express + React 现有代码几乎零改动<br>
+        ② 原生 Node 模块直接可用<br>
+        ③ 社区成熟，踩坑资料丰富<br>
+        ④ 进程模型灵活（主/渲染分离自然适配前后端架构）</td></tr>
+  <tr><td><span class="tag tag-red">❌ 劣势</span></td>
+    <td>① 安装包体积大（~150-250MB，含 Chromium）<br>
+        ② 内存占用高（~200-400MB）<br>
+        ③ 不支持触屏优化，移动端不可用<br>
+        ④ 打包配置稍繁琐（native modules + asar）</td></tr>
+</table>
+
+<div class="tl">
+  <div class="tl-item">
+    <div class="title">预估工期: 3~7 天</div>
+    <div class="desc">
+      第 1 天：搭建 electron-vite 骨架，集成现有 src/server<br>
+      第 2 天：配置 Vite 构建、HMR、better-sqlite3 兼容<br>
+      第 3 天：窗口管理、系统托盘、原生菜单、打包测试
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ 3. Tauri ═══════════════ -->
+<section>
+<h2>🦀 Tauri v2 — 桌面端（Win/Mac/Linux）</h2>
+
+<h3>架构方案：两种路线</h3>
+
+<h4>路线 A：Sidecar（侧边进程）— 推荐过渡方案</h4>
+<p>把 Express 后端用 <code>pkg</code> 打包成独立二进制，Tauri 通过 <code>sidecar</code> 机制启动。</p>
+<div class="arch">
+┌─────────────────────────────────────┐
+│  Tauri 应用                         │
+│  ┌──────────────────────────────┐  │
+│  │  Rust Core + WebView        │  │
+│  │  (React Vite 构建的前端)     │  │
+│  └──────────────────────────────┘  │
+│  ┌──────────────────────────────┐  │
+│  │  Sidecar: Express Binary    │  │
+│  │  (pkg 打包的 Node.js 后端)   │  │
+│  └──────────────────────────────┘  │
+└─────────────────────────────────────┘</div>
+
+<h4>路线 B：Rust 重写后端 — 最终推荐</h4>
+<p>用 Rust 重写 Express API 层，Tauri 命令直接调用 Rust 逻辑。</p>
+<div class="arch">
+┌─────────────────────────────────────┐
+│  Tauri 应用                         │
+│  ┌──────────────────────────────┐  │
+│  │  Rust Backend (Axum/TauriCmd)│  │
+│  │  ┌──────┐  ┌─────────────┐  │  │
+│  │  │Axum  │  │ rusqlite    │  │  │
+│  │  │HTTP  │  │ S7 TCP Client│  │  │
+│  │  └──────┘  └─────────────┘  │  │
+│  └──────────────────────────────┘  │
+│  ┌──────────────────────────────┐  │
+│  │  WebView (React Vite 前端)   │  │
+│  └──────────────────────────────┘  │
+└─────────────────────────────────────┘</div>
+
+<h3>Sidecar 方案改造清单</h3>
+<table>
+  <tr><th>改动项</th><th>难度</th><th>说明</th></tr>
+  <tr>
+    <td>项目骨架</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td><code>pnpm create tauri-app</code> 初始化，保留现有前端</td></tr>
+  <tr>
+    <td>后端打包</td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td>用 <code>yao-pkg/pkg</code> 把 server/ 打包成可执行文件；原生模块如 better-sqlite3 需要预先编译</td></tr>
+  <tr>
+    <td>Sidecar 配置</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td><code>tauri.conf.json</code> 声明 externalBin + 权限配置</td></tr>
+  <tr>
+    <td>CORS 调整</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td>开发模式前端 :5173 => 后端 :3001 的跨域已在 Vite proxy 中处理；生产环境 Tauri 前端从 WebView 加载 file:// 或 dev://，需调整 CORS</td></tr>
+  <tr>
+    <td>better-sqlite3</td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td>pkg 能打包但体积膨胀（~18MB+）；改用 <code>node:sqlite</code> 更轻量</td></tr>
+</table>
+
+<h3>Rust 重写改造清单</h3>
+<table>
+  <tr><th>改动项</th><th>难度</th><th>说明</th></tr>
+  <tr>
+    <td>API 路由重写</td>
+    <td><span class="tag tag-red">高</span></td>
+    <td>Express 的 ~20 个路由端点需用 Rust (Axum/Actix) 重写；业务逻辑（报警引擎、趋势缓存、SSE）全部重写</td></tr>
+  <tr>
+    <td>SQLite 迁移</td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td><code>rusqlite</code> 或 <code>sqlx</code> API 优秀，表结构和查询逻辑需移植</td></tr>
+  <tr>
+    <td>S7 PLC 通信</td>
+    <td><span class="tag tag-red">高</span></td>
+    <td>没有成熟的 Rust S7 库，需用 <code>tokio::net::TcpStream</code> 自行实现 ISO-on-TCP 握手 + S7 帧协议（约 300-500 行）</td></tr>
+  <tr>
+    <td>OPC UA</td>
+    <td><span class="tag tag-red">高</span></td>
+    <td>Rust 的 OPC UA 库 (<code>opcua</code>) 成熟度低于 node-opcua，可能需封装 FFI</td></tr>
+  <tr>
+    <td>SSE / WebSocket</td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td>用 <code>tokio::sync::broadcast</code> + Axum 的流式响应模拟 SSE</td></tr>
+</table>
+
+<h3>优劣总结</h3>
+<div class="cmp">
+  <div class="cmp-item">
+    <h4>Sidecar 方案</h4>
+    <ul>
+      <li>✅ 后端代码零改动</li>
+      <li>⚠️ 包体积 ~80-120MB（含浏览器 + Node runtime）</li>
+      <li>⚠️ pkg 对原生模块支持不完美</li>
+      <li>✅ 开发周期短（1~2 周）</li>
+    </ul>
+  </div>
+  <div class="cmp-item">
+    <h4>Rust 重写方案</h4>
+    <ul>
+      <li>✅ 包体积 ~10-20MB（极小）</li>
+      <li>✅ 性能最好，内存 ~50-100MB</li>
+      <li>⚠️ 开发周期长（1~3 个月）</li>
+      <li>⚠️ Rust 学习曲线</li>
+    </ul>
+  </div>
+</div>
+
+<table>
+  <tr><th style="width:120px">维度</th><th>Sidecar</th><th>Rust 重写</th></tr>
+  <tr><td>改造量</td><td><span class="tag tag-orange">中</span> — 主要打包配置</td><td><span class="tag tag-red">高</span> — 全线重写</td></tr>
+  <tr><td>安装包大小</td><td>~80-120MB</td><td><span class="tag tag-green">~10-20MB</span></td></tr>
+  <tr><td>内存占用</td><td>~150-250MB</td><td><span class="tag tag-green">~50-100MB</span></td></tr>
+  <tr><td>Electron 对比</td><td>比 Electron 小 ~50%</td><td>比 Electron 小 ~90%</td></tr>
+  <tr><td>开发周期</td><td>1~2 周</td><td>1~3 个月</td></tr>
+</table>
+</section>
+
+<!-- ═══════════════ 4. Android ═══════════════ -->
+<section>
+<h2>📱 Android 打包</h2>
+
+<h3>架构方案</h3>
+<p>Android 无法直接运行 Node.js。有三种路线：</p>
+
+<h4>路线 A：Capacitor + 原生插件（推荐）</h4>
+<div class="arch">
+┌─────────────────────────────────────────────┐
+│  Android App                                │
+│  ┌─────────────────────────────────────┐   │
+│  │  WebView (Capacitor)               │   │
+│  │  React Vite 前端 (几乎零修改)       │   │
+│  └─────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────┐   │
+│  │  Native Plugins (Kotlin/Java)      │   │
+│  │  ┌────────────┐ ┌───────────────┐ │   │
+│  │  │ Moka7     │ │ SQLite (原生)  │ │   │
+│  │  │ S7 通信    │ │ 本地存储       │ │   │
+│  │  └────────────┘ └───────────────┘ │   │
+│  └─────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘</div>
+
+<p>前端用 Capacitor 跑在原生 WebView 中；后端逻辑用 Kotlin 写原生插件替代。启动后原生插件启动一个嵌入的 HTTP 服务器（如 NanoHTTPD）来提供 Express 替代 API。</p>
+
+<table>
+  <tr><th>组件</th><th>Android 方案</th><th>难度</th></tr>
+  <tr><td>前端</td><td>Vite 构建 → Capacitor WebView，几乎零修改</td><td><span class="tag tag-green">低</span></td></tr>
+  <tr><td>HTTP API</td><td>用 <a href="https://github.com/NanoHttpd/nanohttpd">NanoHTTPD</a> 在原生侧启动轻量 HTTP 服务</td><td><span class="tag tag-orange">中</span></td></tr>
+  <tr><td>S7 PLC 通信</td><td><a href="https://snap7.sourceforge.net/moka7.html">Moka7</a>（纯 Java，Snap7 官方移植）</td><td><span class="tag tag-green">低</span></td></tr>
+  <tr><td>SQLite</td><td><code>@capacitor-community/sqlite</code> 或 原生 Room</td><td><span class="tag tag-green">低</span></td></tr>
+  <tr><td>OPC UA</td><td><a href="https://plc4x.apache.org/">PLC4X</a>（Apache 企业级）或 <a href="https://github.com/eclipse/milo">Milo</a></td><td><span class="tag tag-orange">中</span></td></tr>
+  <tr><td>SSE 实时推送</td><td>原生 HTTP Server 支持 SSE 标准</td><td><span class="tag tag-orange">中</span></td></tr>
+  <tr><td>react-grid-layout</td><td>触屏需适配（拖拽事件变 touch 事件）</td><td><span class="tag tag-orange">中</span></td></tr>
+</table>
+
+<h4>路线 B：nodejs-mobile 嵌入 Node.js</h4>
+<p>将 Node.js 运行时嵌入 Android 应用，Express 后端作为后台线程运行。</p>
+<table>
+  <tr><th>组件</th><th>方案</th><th>难度</th></tr>
+  <tr><td>Node.js 运行时</td><td><a href="https://nodejs-mobile.github.io/">nodejs-mobile</a> for Android（基于 Node 18）</td><td><span class="tag tag-orange">中</span></td></tr>
+  <tr><td>Express 后端</td><td>在 Node 线程中原样运行，几乎零修改</td><td><span class="tag tag-green">低</span></td></tr>
+  <tr><td>better-sqlite3</td><td>需交叉编译 ARM 版本；或改用 <code>node:sqlite</code>（推荐）</td><td><span class="tag tag-orange">中</span></td></tr>
+  <tr><td>nodes7 / snap7</td><td>需交叉编译 ARM 版 C++ 模块</td><td><span class="tag tag-red">高</span></td></tr>
+  <tr><td>包体积</td><td>增加 ~15-25MB（含 Node.js 运行时）</td><td><span class="tag tag-orange">中</span></td></tr>
+</table>
+
+<table>
+  <tr><th style="width:120px">维度</th><th>Capacitor + 原生</th><th>nodejs-mobile</th></tr>
+  <tr><td>后端代码复用</td><td><span class="tag tag-red">需重写</span></td><td><span class="tag tag-green">几乎零修改</span></td></tr>
+  <tr><td>前端代码复用</td><td><span class="tag tag-green">几乎零修改</span></td><td><span class="tag tag-green">几乎零修改</span></td></tr>
+  <tr><td>S7 通信</td><td>Moka7（纯 Java，成熟）</td><td>交叉编译 snap7 for ARM</td></tr>
+  <tr><td>包体积增量</td><td>~5MB（插件）</td><td>~15-25MB（含 Node）</td></tr>
+  <tr><td>开发周期</td><td>2~4 周</td><td>1~3 周</td></tr>
+  <tr><td>App Store 审核风险</td><td>无</td><td>可能有（iOS 侧）</td></tr>
+</table>
+</section>
+
+<!-- ═══════════════ 5. iOS ═══════════════ -->
+<section>
+<h2>🍎 iOS 打包</h2>
+
+<h3>核心问题</h3>
+<p>iOS 是打包难度最高的平台，原因：</p>
+<ul>
+  <li><strong>无 Node.js 运行时</strong> — Apple 不允许在 App Store 应用中动态加载 JavaScript 引擎执行任意代码</li>
+  <li><strong>无 S7 通信库</strong> — 目前没有成熟的 Swift / Obj-C S7 PLC 库</li>
+  <li><strong>严格的网络沙箱</strong> — 后台进程受限，长时间 TCP 连接需特殊配置</li>
+  <li><strong>App Review 不确定性</strong> — 内嵌 Node.js 的应用被拒风险高</li>
+</ul>
+
+<h3>改造清单</h3>
+<table>
+  <tr><th>组件</th><th>方案</th><th>难度</th></tr>
+  <tr><td>前端</td><td>Capacitor WebView，React 代码零修改</td><td><span class="tag tag-green">低</span></td></tr>
+  <tr><td>HTTP API</td><td>Swift 启动 Vapor / Kitura 嵌入式 HTTP 服务器，或用 GCDWebServer</td><td><span class="tag tag-red">高</span></td></tr>
+  <tr><td>S7 PLC 通信</td><td>Swift 原生实现 ISO-on-TCP + S7 帧协议（使用 <code>NWConnection</code>）</td><td><span class="tag tag-red">高</span></td></tr>
+  <tr><td>SQLite</td><td><code>@capacitor-community/sqlite</code> 或 原生 <code>GRDB.swift</code></td><td><span class="tag tag-green">低</span></td></tr>
+  <tr><td>OPC UA</td><td>无成熟 Swift 库，需 FFI 调用 C 库或封裝 C++</td><td><span class="tag tag-red">高</span></td></tr>
+  <tr><td>SSE / 实时推送</td><td>Swift <code>URLSession</code> 或原生 HTTP Server 支持</td><td><span class="tag tag-orange">中</span></td></tr>
+  <tr><td>react-grid-layout 触屏</td><td>需适配 iOS 触屏拖拽事件</td><td><span class="tag tag-orange">中</span></td></tr>
+  <tr><td>包体积</td><td>~30-50MB</td><td><span class="tag tag-orange">中</span></td></tr>
+</table>
+
+<div class="bar" style="margin-top:16px">
+  <span style="width:100px">iOS 改造难度</span>
+  <div class="bar-fill hard"></div>
+  <span style="font-size:13px;color:var(--text-dim)">高 — 预估 1~3 个月</span>
+</div>
+
+<p><strong>结论：除非有强 iOS 需求，否则不建议现阶段投入。</strong> 如确实需要，先用 Capacitor 跑通前端，后端 API 逐步用 Swift 重写。</p>
+</section>
+
+<!-- ═══════════════ 6. 对比总表 ═══════════════ -->
+<section>
+<h2>📊 全面对比</h2>
+
+<table>
+  <tr>
+    <th>维度</th>
+    <th>Electron</th>
+    <th>Tauri (Sidecar)</th>
+    <th>Tauri (Rust)</th>
+    <th>Android</th>
+    <th>iOS</th>
+  </tr>
+  <tr>
+    <td>改造难度</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td><span class="tag tag-red">高</span></td>
+    <td><span class="tag tag-red">高</span></td>
+    <td><span class="tag tag-red">极高</span></td>
+  </tr>
+  <tr>
+    <td>安装包大小</td>
+    <td>~150-250MB</td>
+    <td>~80-120MB</td>
+    <td><span class="tag tag-green">~10-20MB</span></td>
+    <td>~20-50MB</td>
+    <td>~30-60MB</td>
+  </tr>
+  <tr>
+    <td>内存占用</td>
+    <td>~200-400MB</td>
+    <td>~150-250MB</td>
+    <td><span class="tag tag-green">~50-100MB</span></td>
+    <td>~100-200MB</td>
+    <td>~100-200MB</td>
+  </tr>
+  <tr>
+    <td>后端代码复用</td>
+    <td><span class="tag tag-green">100%</span></td>
+    <td><span class="tag tag-green">~90%</span></td>
+    <td><span class="tag tag-red">0%</span></td>
+    <td><span class="tag tag-red">0~50%</span></td>
+    <td><span class="tag tag-red">0%</span></td>
+  </tr>
+  <tr>
+    <td>前端代码复用</td>
+    <td><span class="tag tag-green">100%</span></td>
+    <td><span class="tag tag-green">100%</span></td>
+    <td><span class="tag tag-green">100%</span></td>
+    <td><span class="tag tag-green">~90%</span></td>
+    <td><span class="tag tag-green">~90%</span></td>
+  </tr>
+  <tr>
+    <td>S7 PLC 通信</td>
+    <td>nodes7 / snap7 直接使用</td>
+    <td>sidecar 中直接使用</td>
+    <td>Rust 自实现 ISO-on-TCP</td>
+    <td>Moka7（纯 Java）</td>
+    <td>Swift 自实现 ISO-on-TCP</td>
+  </tr>
+  <tr>
+    <td>OPC UA 支持</td>
+    <td>node-opcua ✅</td>
+    <td>node-opcua ✅</td>
+    <td>Rust opcua ⚠️</td>
+    <td>PLC4X / Milo ✅</td>
+    <td>无成熟库 ❌</td>
+  </tr>
+  <tr>
+    <td>硬件访问</td>
+    <td>USB/串口 ✅</td>
+    <td>USB/串口 ✅</td>
+    <td>USB/串口 ✅</td>
+    <td>USB OTG ⚠️</td>
+    <td>受限 ❌</td>
+  </tr>
+  <tr>
+    <td>自动更新</td>
+    <td>electron-updater ✅</td>
+    <td>Tauri updater ✅</td>
+    <td>Tauri updater ✅</td>
+    <td>Play Store ✅</td>
+    <td>App Store ✅</td>
+  </tr>
+  <tr>
+    <td>触屏优化</td>
+    <td>❌ 桌面鼠标</td>
+    <td>❌ 桌面鼠标</td>
+    <td>❌ 桌面鼠标</td>
+    <td>✅ 原生触屏</td>
+    <td>✅ 原生触屏</td>
+  </tr>
+  <tr>
+    <td>开发周期</td>
+    <td><span class="tag tag-green">3~7 天</span></td>
+    <td>1~2 周</td>
+    <td>1~3 个月</td>
+    <td>2~4 周</td>
+    <td>1~3 个月</td>
+  </tr>
+  <tr>
+    <td>维护成本</td>
+    <td><span class="tag tag-green">低</span></td>
+    <td><span class="tag tag-orange">中</span></td>
+    <td><span class="tag tag-red">高</span></td>
+    <td><span class="tag tag-red">高</span></td>
+    <td><span class="tag tag-red">极高</span></td>
+  </tr>
+</table>
+</section>
+
+<!-- ═══════════════ 7. 推荐路径 ═══════════════ -->
+<section>
+<h2>🎯 推荐路线图</h2>
+
+<h3>第一阶段：Electron 桌面端（3~7 天）</h3>
+<div class="tl">
+  <div class="tl-item">
+    <div class="title">为什么先做 Electron？</div>
+    <div class="desc">
+      ✅ 后端 100% 复用、前端 100% 复用<br>
+      ✅ 改造成本最低，3-7 天可出 MVP<br>
+      ✅ 原生模块（snap7、better-sqlite3）直接可用<br>
+      ✅ 覆盖 Windows / macOS / Linux 三大桌面平台<br>
+      ✅ 为后续向 Tauri 迁移保留干净的架构边界
+    </div>
+  </div>
+</div>
+
+<h3>第二阶段：Tauri Rust 重写（长远规划）</h3>
+<div class="tl">
+  <div class="tl-item">
+    <div class="title">什么时候迁移？</div>
+    <div class="desc">
+      ✅ 当需要大幅减小安装包体积时（如分发到低带宽场景）<br>
+      ✅ 当需要更低的内存占用时（如边缘网关设备）<br>
+      ✅ 当团队有 Rust 能力后
+    </div>
+  </div>
+</div>
+
+<h3>第三阶段：Android（未来设想）</h3>
+<div class="tl">
+  <div class="tl-item">
+    <div class="title">前提条件</div>
+    <div class="desc">
+      ✅ 前端已做好触屏适配<br>
+      ✅ 后端抽象出清晰的 API 接口层<br>
+      ✅ 用 Capacitor + Moka7 来实现 Android 原生 S7 通信
+    </div>
+  </div>
+</div>
+
+<h3>具体实施步骤（Electron 优先）</h3>
+<table>
+  <tr><th>步骤</th><th>操作</th><th>预估</th></tr>
+  <tr><td>1</td><td>用 <code>electron-vite</code> 初始化 Electron + Vite 骨架</td><td>0.5 天</td></tr>
+  <tr><td>2</td><td>将现有 Express server 集成到主进程，HMR 开发模式调通</td><td>0.5 天</td></tr>
+  <tr><td>3</td><td>Vite 构建配置：前端构建到主进程的 static 目录</td><td>0.5 天</td></tr>
+  <tr><td>4</td><td>处理 better-sqlite3 原生模块（改用 node:sqlite 或 asarUnpack）</td><td>1 天</td></tr>
+  <tr><td>5</td><td>窗口管理：主窗口、托盘、任务栏缩略图</td><td>0.5 天</td></tr>
+  <tr><td>6</td><td>打包测试：Windows .exe / macOS .dmg / Linux .AppImage</td><td>1 天</td></tr>
+  <tr><td>7</td><td>自动更新：electron-updater + 发布渠道配置</td><td>0.5 天</td></tr>
+  <tr><td style="text-align:right;font-weight:600" colspan="2">总计</td><td><strong>3~7 天</strong></td></tr>
+</table>
+</section>
+
+<!-- ═══════════════ 8. 关键建议 ═══════════════ -->
+<section>
+<h2>💡 关键建议</h2>
+
+<div class="card-grid" style="grid-template-columns:1fr">
+  <div class="card">
+    <div class="label">🏆 最高性价比方案</div>
+    <div style="margin-top:8px"><strong>Electron + node:sqlite</strong></div>
+    <div class="sub">
+      Node.js 22 内置 <code>node:sqlite</code>（自 v22.13 正式稳定），可完全替代 <code>better-sqlite3</code>，<br>
+      零原生依赖、零编译、零打包问题。这是通往 Electron 的最短路径。
+    </div>
+  </div>
+</div>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="label">💡 前端触屏适配</div>
+    <div class="sub" style="margin-top:8px">
+      react-grid-layout 支持 <code>isTouch</code> 属性，<br>
+      只需设置 <code>isDraggable: true, useCSSTransforms: true</code><br>
+      即可在触屏设备上拖拽。mobile 下增加组件间距（~16px）即可。
+    </div>
+  </div>
+  <div class="card">
+    <div class="label">💡 代码复用策略</div>
+    <div class="sub" style="margin-top:8px">
+      将 <code>shared/types.ts</code> 保持为纯 TypeScript，<br>
+      不引入 Node 或浏览器 API。<br>
+      这样 Electron / Tauri / Mobile 均可共享类型定义。
+    </div>
+  </div>
+  <div class="card">
+    <div class="label">💡 分发渠道</div>
+    <div class="sub" style="margin-top:8px">
+      Electron: GitHub Releases + 私有更新服务器<br>
+      Android: 侧载 APK / 企业分发 / Play Store<br>
+      iOS: 仅企业证书分发（TestFlight 对内）
+    </div>
+  </div>
+  <div class="card">
+    <div class="label">💡 PLC 通信的跨平台方案</div>
+    <div class="sub" style="margin-top:8px">
+      最佳统一方案：将 S7 通信抽成 <strong>独立库/模块</strong><br>
+      桌面用 nodes7 / snap7，Android 用 Moka7（API 设计几乎一致），<br>
+      iOS 需自实现。这些库都基于同一协议标准，接口风格类似。
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<div class="footnote">
+  <p>本报告基于 trioop-plc-monitor v1.0 技术栈分析，参考数据截至 2026 年 6 月。</p>
+  <p>相关链接：<br>
+  · <a href="https://github.com/electron/forge" style="color:var(--accent)">Electron Forge</a> ·
+  <a href="https://github.com/alex8088/electron-vite" style="color:var(--accent)">electron-vite</a> ·
+  <a href="https://v2.tauri.app" style="color:var(--accent)">Tauri v2</a> ·
+  <a href="https://capacitorjs.com" style="color:var(--accent)">Capacitor</a> ·
+  <a href="https://nodejs-mobile.github.io" style="color:var(--accent)">nodejs-mobile</a> ·
+  <a href="https://snap7.sourceforge.net/moka7.html" style="color:var(--accent)">Moka7</a> ·
+  <a href="https://nodejs.org/api/sqlite.html" style="color:var(--accent)">node:sqlite</a>
+  </p>
+</div>
+
+</div>
+</body>
+</html>

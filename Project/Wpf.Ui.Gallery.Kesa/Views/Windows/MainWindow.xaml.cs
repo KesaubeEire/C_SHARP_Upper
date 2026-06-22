@@ -177,4 +177,14 @@ public partial class MainWindow : IWindow
 
         _isUserClosedPane = true;
     }
+
+    private void OnThemeToggle(object sender, RoutedEventArgs e)
+    {
+        var currentTheme = Appearance.ApplicationThemeManager.GetAppTheme();
+        var newTheme = currentTheme == Appearance.ApplicationTheme.Light
+            ? Appearance.ApplicationTheme.Dark
+            : Appearance.ApplicationTheme.Light;
+
+        Appearance.ApplicationThemeManager.Apply(newTheme);
+    }
 }

@@ -5,13 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
              xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
              x:Name="root">
-    <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-            BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+    <Border Background="{DynamicResource CardBackground}"
+            BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,12">
         <StackPanel>
-            <Grid Margin="0,0,0,8">
+            <!-- 标题行：色块 + 区名 + 地址输入 + 按钮 -->
+            <Grid Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -29,35 +31,37 @@
                            VerticalAlignment="Center"/>
                 <TextBox Grid.Column="2" x:Name="addrInput"
                          Text="{Binding AddressText, ElementName=root, UpdateSourceTrigger=PropertyChanged}"
-                         VerticalAlignment="Center" Height="28"
-                         FontSize="12" Margin="4,0"/>
-                <Button Grid.Column="3" x:Name="btnRead"
-                        Content="▶ 读取"
-                        Click="OnReadClick"
-                        Margin="4,0" Height="28" FontSize="12"/>
-                <Button Grid.Column="4" x:Name="btnWriteMode"
-                        Content="🔒 写模式"
-                        Click="OnWriteModeClick"
-                        Margin="4,0" Height="28" FontSize="12"
-                        Background="Transparent"
-                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                         VerticalAlignment="Center" Height="30"
+                         FontSize="13" Margin="8,0"/>
+                <ui:Button Grid.Column="3" x:Name="btnRead"
+                           Content="▶ 读取"
+                           Click="OnReadClick"
+                           Margin="4,0" Height="30" FontSize="13"
+                           Appearance="Primary"/>
+                <ui:Button Grid.Column="4" x:Name="btnWriteMode"
+                           Content="🔒 写模式"
+                           Click="OnWriteModeClick"
+                           Margin="4,0" Height="30" FontSize="13"
+                           Appearance="Secondary"/>
             </Grid>
 
-            <Grid Margin="0,4,0,4">
+            <!-- 列标题 -->
+            <Grid Margin="0,0,0,4">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="64"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="60"/>
-                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="64"/>
+                    <ColumnDefinition Width="80"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="地址" FontSize="11"
-                           Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
-                <TextBlock Grid.Column="1" Text="位 (0-7)" FontSize="11"
-                           Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
-                <TextBlock Grid.Column="2" Text="HEX" FontSize="11"
-                           Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
+                <TextBlock Grid.Column="0" Text="地址" FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Grid.Column="1" Text="位 (0-7)" FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Grid.Column="2" Text="HEX" FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
             </Grid>
 
+            <!-- 字节行列表 -->
             <ItemsControl x:Name="byteList" ItemsSource="{Binding ByteRows}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="models:ByteRowViewModel">
@@ -66,9 +70,10 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
+            <!-- 空状态提示 -->
             <TextBlock x:Name="emptyHint" Text="输入地址后点击 &#x25B6; 读取"
-                       Foreground="{DynamicResource TextFillColorDisabledBrush}"
-                       FontSize="13" Margin="0,8,0,0"/>
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       FontSize="13" Margin="0,12,0,0"/>
         </StackPanel>
     </Border>
 </UserControl>

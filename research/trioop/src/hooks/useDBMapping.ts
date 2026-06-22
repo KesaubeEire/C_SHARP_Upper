@@ -77,6 +77,33 @@ export function clearUDTCache(): void {
   try { localStorage.removeItem(UDT_FILES_KEY) } catch {}
 }
 
+
+
+/** 重新注册所有已导入的 DB 到当前连接 */
+export async function reregisterAllDBs(): Promise<{ success: number; fail: number }> {
+  try {
+    const res = await fetch('/api/plc/imported-dbs')
+    if (!res.ok) return { success: 0, fail: 0 }
+    const dbs: { dbNumber: number; dbName: string }[] = await res.json()
+    if (dbs.length === 0) return { success: 0, fail: 0 }
+    const mapping = loadMapping()
+    let success = 0, fail = 0
+    for (const db of dbs) {
+      try {
+        const dbNumber = mapping[db.dbName] ?? db.dbNumber
+        const key = `${db.dbNumber}_${db.dbName}`
+        const r = await fetch(`/api/plc/imported-dbs/${encodeURIComponent(key)}/refresh`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dbNumber, dbName: db.dbName }),
+        })
+        const data = await r.json()
+        if (data.success) { success++ } else { fail++ }
+      } catch { fail++ }
+    }
+    return { success, fail }
+  } catch { return { success: 0, fail: 0 } }
+}
+
 /** 写入 PLC：bool 走 modifyBit(RMW), 数值直接写 */
 export async function writePLC(fullName: string, value: number): Promise<void> {
   const { dbNumber, varName } = resolveVarName(fullName)

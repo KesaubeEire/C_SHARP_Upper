@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { usePLCData } from './hooks/usePLCData'
 import { usePLCWrite } from './hooks/usePLCWrite'
+import { reregisterAllDBs } from './hooks/useDBMapping'
 import StatusBar from './components/StatusBar'
 import PLCGrid from './components/PLCGrid'
 import ConnectionPanel from './components/ConnectionPanel'
@@ -37,7 +38,7 @@ function rangesToBytes(ranges?: { start: number; end: number }[]): number[] {
 }
 
 export default function App() {
-  const { db, io, setIo, dbBlocks, connected, lastDataTime } = usePLCData()
+  const { db, io, setIo, dbBlocks, connected, lastDataTime, ioLatency } = usePLCData()
   const { write, states, dismissError } = usePLCWrite()
   const [config, setConfig] = useState<PLCConfig | null>(null)
   const [blocks, setBlocks] = useState<DBBlockConfig[]>([])
@@ -58,6 +59,18 @@ export default function App() {
     fetch('/api/plc/config').then(r => r.json()).then(setConfig).catch(() => {})
     fetch('/api/plc/db-blocks').then(r => r.json()).then(setBlocks).catch(() => {})
   }, [])
+
+  // ─── 断线重连 → 自动重新注册 DB ──────────────────────────
+  const wasConnectedRef = useRef(false)
+  useEffect(() => {
+    if (connected && !wasConnectedRef.current) {
+      wasConnectedRef.current = true
+      reregisterAllDBs().then(({ success, fail }) => {
+        if (success > 0) console.log(`自动注册 ${success} 个 DB${fail > 0 ? `, ${fail} 个失败` : ''}`)
+      })
+    }
+    if (!connected) wasConnectedRef.current = false
+  }, [connected])
 
   const handleIoToggle = useCallback(async (area: 'q' | 'm', byteAddr: number, bit: number, value: boolean) => {
     let currentByte = 0
@@ -145,7 +158,7 @@ export default function App() {
         <ConnectionPanel />
       </div>
       <div className="app__main">
-        <StatusBar config={config} connected={connected} pointCount={pointCount} lastDataTime={lastDataTime} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <StatusBar config={config} connected={connected} pointCount={pointCount} lastDataTime={lastDataTime} ioLatency={ioLatency} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <button className="btn btn--ghost btn--sm" style={{ position: 'fixed', bottom: 8, right: 8, zIndex: 100, fontSize: 11 }} onClick={() => setShowAltara(!showAltara)}>
           {showAltara ? '关闭演示' : '组件演示'}
         </button>
