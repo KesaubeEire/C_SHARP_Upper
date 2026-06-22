@@ -36,3 +36,6 @@ vendor/
 research/trioop/data/
 # altara 已完全本地化到 src/components/altara/，原仓库不再需要
 research/altara/
+
+# wpfui 参考
+/Project/wpfui
