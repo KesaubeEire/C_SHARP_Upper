@@ -1,7 +1,6 @@
 <Page x:Class="Wpf.Ui.Gallery.Views.Pages.Plc.IoMonitorPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,39 +8,18 @@
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      Title="I/Q/M 监控"
+      Title="I/Q/M 区监控"
       mc:Ignorable="d">
     <StackPanel Margin="0,0,0,24">
         <ui:TextBlock Margin="0,0,0,12" FontTypography="Title" Text="I / Q / M 区监控" />
 
-        <controls:ControlExample Margin="0" HeaderText="I 区（输入）">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <plc:AreaPanel Grid.Column="0" x:Name="iPanel" AreaType="I" IsReadOnly="True" />
-            </Grid>
-        </controls:ControlExample>
+        <!-- ===== I 区（输入 · 只读） ===== -->
+        <plc:AreaPanel x:Name="iPanel" AreaType="I" IsReadOnly="True" />
 
-        <controls:ControlExample Margin="0,32,0,0" HeaderText="Q 区（输出）">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <plc:AreaPanel Grid.Column="0" x:Name="qPanel" AreaType="Q" />
-            </Grid>
-        </controls:ControlExample>
+        <!-- ===== Q 区（输出 · 可读写） ===== -->
+        <plc:AreaPanel x:Name="qPanel" AreaType="Q" Margin="0,16,0,0" />
 
-        <controls:ControlExample Margin="0,32,0,0" HeaderText="M 区（存储）">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <plc:AreaPanel Grid.Column="0" x:Name="mPanel" AreaType="M" AddressText="" />
-            </Grid>
-        </controls:ControlExample>
+        <!-- ===== M 区（位存储 · 可读写） ===== -->
+        <plc:AreaPanel x:Name="mPanel" AreaType="M" Margin="0,16,0,0" />
     </StackPanel>
 </Page>

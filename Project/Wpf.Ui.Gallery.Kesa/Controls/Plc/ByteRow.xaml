@@ -32,7 +32,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <local:BitBlock DataContext="{Binding}"/>
+                    <local:BitBlock DataContext="{Binding}" Toggled="OnBitBlockToggled"/>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>

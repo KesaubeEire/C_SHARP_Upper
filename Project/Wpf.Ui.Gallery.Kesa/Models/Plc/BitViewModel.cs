@@ -11,6 +11,8 @@ public class BitViewModel : INotifyPropertyChanged
     public bool IsReadOnly { get; }
     public ByteRowViewModel? Parent { get; set; }
 
+    public bool WriteModeEnabled { get; set; } = true;
+
     public bool IsSet
     {
         get => _isSet;
@@ -35,7 +37,7 @@ public class BitViewModel : INotifyPropertyChanged
 
     public void Toggle()
     {
-        if (!IsReadOnly)
+        if (!IsReadOnly && WriteModeEnabled)
         {
             IsSet = !IsSet;
             Parent?.NotifyBitChanged();

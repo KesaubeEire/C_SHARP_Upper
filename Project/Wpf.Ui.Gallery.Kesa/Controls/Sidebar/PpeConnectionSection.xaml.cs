@@ -181,6 +181,7 @@ public partial class PpeConnectionSection : UserControl
         _scheduler.Config.Fast.PollQAddr = "0";
         _scheduler.Config.Fast.PollMAddr = "0";
 
+        _scheduler.DataUpdated += OnPollDataUpdated;
         _scheduler.Start(_s7);
         if (_scheduler.IsConnected)
         {
@@ -194,8 +195,14 @@ public partial class PpeConnectionSection : UserControl
 
     private void OnStop(object sender, RoutedEventArgs e)
     {
+        _scheduler.DataUpdated -= OnPollDataUpdated;
         _scheduler.Stop();
         SetPollingRunning(false);
+    }
+
+    private void OnPollDataUpdated(HashSet<string> _)
+    {
+        UpdateLatency(_scheduler.LatencyMs);
     }
 
     public void SetPollingRunning(bool running)

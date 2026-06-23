@@ -10,8 +10,28 @@ public class ByteRowViewModel : INotifyPropertyChanged
 
     public int ByteAddress { get; }
     public string AreaLabel { get; }
-    public string Label => $"{AreaLabel}B{ByteAddress}";
+    public static string AreaLabelToChinese(string area) => area.ToUpperInvariant() switch
+    {
+        "I" => "I 区",
+        "Q" => "Q 区",
+        "M" => "M 区",
+        _ => area
+    };
+
+    public string Label => $"{AreaLabelToChinese(AreaLabel)}B{ByteAddress}";
     public bool IsReadOnly { get; }
+
+    private bool _writeModeEnabled;
+    public bool WriteModeEnabled
+    {
+        get => _writeModeEnabled;
+        set
+        {
+            _writeModeEnabled = value;
+            foreach (var bit in Bits)
+                bit.WriteModeEnabled = value;
+        }
+    }
 
     public List<BitViewModel> Bits { get; }
 
@@ -26,7 +46,7 @@ public class ByteRowViewModel : INotifyPropertyChanged
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(HexText));
                 for (int i = 0; i < 8; i++)
-                    Bits[i].IsSet = ((value >> (7 - i)) & 1) == 1;
+                    Bits[i].IsSet = ((value >> i) & 1) == 1;
             }
         }
     }
@@ -54,7 +74,7 @@ public class ByteRowViewModel : INotifyPropertyChanged
     {
         byte v = 0;
         for (int i = 0; i < 8; i++)
-            if (Bits[i].IsSet) v |= (byte)(1 << (7 - i));
+            if (Bits[i].IsSet) v |= (byte)(1 << i);
         return v;
     }
 

@@ -27,7 +27,7 @@
                 <TextBlock Grid.Column="1"
                            Text="{Binding AreaLabel, ElementName=root}"
                            FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           Foreground="{Binding AreaColor, ElementName=root}"
                            VerticalAlignment="Center"/>
                 <TextBox Grid.Column="2" x:Name="addrInput"
                          Text="{Binding AddressText, ElementName=root, UpdateSourceTrigger=PropertyChanged}"
@@ -55,17 +55,21 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="地址" FontSize="12"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <TextBlock Grid.Column="1" Text="位 (0-7)" FontSize="12"
+                <TextBlock Grid.Column="1" Text="位 0 → 7" FontSize="12"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <TextBlock Grid.Column="2" Text="HEX" FontSize="12"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="3" x:Name="colStatusHeader" Text="状态" FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           HorizontalAlignment="Center"/>
             </Grid>
 
             <!-- 字节行列表 -->
             <ItemsControl x:Name="byteList" ItemsSource="{Binding ByteRows}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="models:ByteRowViewModel">
-                        <local:ByteRow DataContext="{Binding}"/>
+                    <local:ByteRow DataContext="{Binding}" BitToggled="OnRowBitToggled"/>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

@@ -26,7 +26,7 @@ public partial class AreaPanel : UserControl
 
     public static readonly DependencyProperty AddressTextProperty =
         DependencyProperty.Register(nameof(AddressText), typeof(string), typeof(AreaPanel),
-            new PropertyMetadata("0,1,8"));
+            new PropertyMetadata(null));
 
     public string AreaType
     {
@@ -46,60 +46,80 @@ public partial class AreaPanel : UserControl
         set => SetValue(IsReadOnlyProperty, value);
     }
 
-    public string AddressText
+    public string? AddressText
     {
-        get => (string)GetValue(AddressTextProperty);
+        get => (string?)GetValue(AddressTextProperty);
         set => SetValue(AddressTextProperty, value);
     }
 
-    public string AreaLabel { get; private set; } = "I 区（输入.只读）";
+    // 改为 DP 以便绑定通知
+    public static readonly DependencyProperty AreaLabelProperty =
+        DependencyProperty.Register(nameof(AreaLabel), typeof(string), typeof(AreaPanel),
+            new PropertyMetadata("I 区（输入 · 只读）"));
+
+    public string AreaLabel
+    {
+        get => (string)GetValue(AreaLabelProperty);
+        private set => SetValue(AreaLabelProperty, value);
+    }
+
     public ObservableCollection<ByteRowViewModel> ByteRows { get; } = [];
 
     private S7Service? _s7;
     private int _areaCode = S7Service.AreaI;
     private bool _writeMode;
+    private bool _manualSet;
 
     public AreaPanel()
     {
         DataContext = this;
         InitializeComponent();
+        ApplyAreaType();
     }
 
     public void Init(S7Service s7) => _s7 = s7;
 
     private static void OnAreaTypeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is AreaPanel panel) panel.UpdateAreaLabel();
+        if (d is AreaPanel panel) panel.ApplyAreaType();
     }
 
-    private void UpdateAreaLabel()
+    private void ApplyAreaType()
     {
         switch (AreaType)
         {
             case "I":
-                AreaLabel = "I 区（输入.只读）";
-                AreaColor = GetResourceBrush("SystemFillColorAttentionBrush",
-                    Color.FromRgb(52, 152, 219));
+                AreaLabel = "I 区（输入 · 只读）";
+                AreaColor = GetResourceBrush("SystemFillColorAttentionBrush", Color.FromRgb(52, 152, 219));
                 _areaCode = S7Service.AreaI;
                 break;
             case "Q":
-                AreaLabel = "Q 区（输出.可读写）";
-                AreaColor = GetResourceBrush("SystemFillColorCriticalBrush",
-                    Color.FromRgb(231, 76, 60));
+                AreaLabel = "Q 区（输出 · 可读写）";
+                AreaColor = GetResourceBrush("SystemFillColorCriticalBrush", Color.FromRgb(231, 76, 60));
                 _areaCode = S7Service.AreaQ;
                 break;
             case "M":
-                AreaLabel = "M 区（位存储.可读写）";
-                AreaColor = GetResourceBrush("SystemFillColorSuccessBrush",
-                    Color.FromRgb(46, 204, 113));
+                AreaLabel = "M 区（位存储 · 可读写）";
+                AreaColor = GetResourceBrush("SystemFillColorSuccessBrush", Color.FromRgb(46, 204, 113));
                 _areaCode = S7Service.AreaM;
                 break;
         }
+
+        // I 区隐藏写模式按钮和状态列，Q/M 显示
+        bool ro = IsReadOnly || AreaType == "I";
+        btnWriteMode.Visibility = ro ? Visibility.Collapsed : Visibility.Visible;
+        colStatusHeader.Visibility = ro ? Visibility.Collapsed : Visibility.Visible;
+
+        // 默认地址（仅第一次）
+        if (!_manualSet && string.IsNullOrEmpty(addrInput.Text))
+            addrInput.Text = AreaType == "I" ? "0,1" : "0";
     }
 
     private void OnReadClick(object sender, RoutedEventArgs e)
     {
         if (_s7 == null) return;
+        _manualSet = true;
+
         var addrs = ParseAddresses(addrInput.Text);
         if (addrs.Length == 0) return;
 
@@ -109,7 +129,10 @@ public partial class AreaPanel : UserControl
 
         foreach (var addr in addrs)
         {
-            var row = new ByteRowViewModel(addr, AreaType[..1], IsReadOnly);
+            var row = new ByteRowViewModel(addr, AreaType, IsReadOnly)
+            {
+                WriteModeEnabled = _writeMode
+            };
             if (bytes.TryGetValue(addr, out byte val))
                 row.Value = val;
             ByteRows.Add(row);
@@ -119,6 +142,8 @@ public partial class AreaPanel : UserControl
     private void OnWriteModeClick(object sender, RoutedEventArgs e)
     {
         _writeMode = !_writeMode;
+        foreach (var row in ByteRows)
+            row.WriteModeEnabled = _writeMode;
         if (sender is System.Windows.Controls.Primitives.ButtonBase btn)
         {
             btn.Content = _writeMode ? "🔓 写入" : "🔒 写模式";
@@ -127,12 +152,19 @@ public partial class AreaPanel : UserControl
         }
     }
 
+    private void OnRowBitToggled(object sender, BitToggledEventArgs e)
+    {
+        if (_s7 == null || IsReadOnly || !_writeMode) return;
+        var bit = e.Bit;
+        if (bit.Parent == null) return;
+        _s7.WriteByte(_areaCode, bit.Parent.ByteAddress, bit.Parent.ToByte());
+    }
+
     public void UpdateFromPoll(HashSet<string> updated, PollingScheduler scheduler)
     {
-        string prefix = AreaType[..1];
         foreach (var row in ByteRows)
         {
-            string key = $"{prefix}{row.ByteAddress}";
+            string key = $"{AreaType}{row.ByteAddress}";
             if (updated.Contains(key))
             {
                 var val = scheduler.GetValue(key);
@@ -146,9 +178,8 @@ public partial class AreaPanel : UserControl
     {
         if (string.IsNullOrWhiteSpace(text)) return [];
         return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                   .Where(x => int.TryParse(x, out _))
-                   .Select(int.Parse)
-                   .ToArray();
+                   .Select(s => s.Trim()).Where(s => int.TryParse(s, out _))
+                   .Select(int.Parse).Distinct().OrderBy(a => a).ToArray();
     }
 
     private static Brush GetResourceBrush(string key, Color fallback)
