@@ -52,7 +52,7 @@
         <ui:TextBlock
             Margin="0,24,0,8"
             FontTypography="BodyStrong"
-            Text="About" />
+            Text="关于" />
         <ui:CardExpander ContentPadding="0" Icon="{ui:ImageIcon 'pack://application:,,,/Assets/wpfui.png', Width=38, Height=35}">
             <ui:CardExpander.Header>
                 <Grid>
@@ -68,7 +68,7 @@
                         Grid.Row="0"
                         Grid.Column="0"
                         FontTypography="Body"
-                        Text="WPF UI" />
+                        Text="Kesa_WPF_TEST" />
                     <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="0"

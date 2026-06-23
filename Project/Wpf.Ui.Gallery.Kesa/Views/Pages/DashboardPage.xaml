@@ -28,18 +28,13 @@
             Grid.Row="0"
             Height="300"
             CornerRadius="8">
-            <Border.Background>
-                <ImageBrush
-                    ImageSource="pack://application:,,,/Assets/pexels-johannes-plenio-1103970.jpg"
-                    RenderOptions.BitmapScalingMode="HighQuality"
-                    Stretch="UniformToFill" />
-            </Border.Background>
             <Border CornerRadius="8">
                 <Border.Background>
-                    <RadialGradientBrush>
-                        <GradientStop Offset="0" Color="#1F000000" />
-                        <GradientStop Offset="1" Color="#4F000000" />
-                    </RadialGradientBrush>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="#1F000000" Offset="1"/>
+                        <GradientStop Color="#4F4361DC" Offset="0"/>
+                        <GradientStop Color="#3A26377D" Offset="0.49"/>
+                    </LinearGradientBrush>
                 </Border.Background>
                 <Grid>
                     <StackPanel
@@ -101,12 +96,6 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-
-                    <Image
-                        Width="60"
-                        Margin="24,0,0,0"
-                        Source="pack://application:,,,/Assets/WinUiGallery/Button.png" />
-
                     <StackPanel
                         Grid.Column="1"
                         Margin="24"
@@ -140,10 +129,7 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <Image
-                        Width="60"
-                        Margin="24,0,0,0"
-                        Source="pack://application:,,,/Assets/WinUiGallery/Flyout.png" />
+
 
                     <StackPanel
                         Grid.Column="1"
@@ -178,10 +164,7 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <Image
-                        Width="60"
-                        Margin="24,0,0,0"
-                        Source="pack://application:,,,/Assets/WinUiGallery/MenuBar.png" />
+
 
                     <StackPanel
                         Grid.Column="1"

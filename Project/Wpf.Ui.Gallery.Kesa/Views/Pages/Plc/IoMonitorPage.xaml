@@ -5,6 +5,8 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+      xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
+      controls:PageControlDocumentation.Show="False"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
