@@ -200,6 +200,7 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                 new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
                 new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
                 new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
+                new NavigationViewItem("配方管理", SymbolRegular.DocumentData24, typeof(RecipePage)),
             },
         },
     ];

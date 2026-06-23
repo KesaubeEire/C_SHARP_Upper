@@ -54,6 +54,7 @@ public partial class App
                 _ = services.AddSingleton<PollingScheduler>();
                 _ = services.AddSingleton(AppConfigService.Load());
                 _ = services.AddSingleton<AlarmService>();
+                _ = services.AddSingleton<RecipeService>();
 
                 // Top-level pages
                 _ = services.AddSingleton<DashboardPage>();
@@ -70,6 +71,8 @@ public partial class App
                 _ = services.AddSingleton<DbMonitorPage>();
                 _ = services.AddSingleton<AlarmPage>();
                 _ = services.AddSingleton<AlarmViewModel>();
+                _ = services.AddSingleton<RecipePage>();
+                _ = services.AddSingleton<RecipeViewModel>();
 
                 // Sidebar panel
                 _ = services.AddTransient<PpeConnectionSection>();
