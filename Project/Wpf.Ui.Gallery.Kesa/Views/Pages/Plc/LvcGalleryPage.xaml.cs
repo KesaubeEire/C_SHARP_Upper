@@ -235,6 +235,37 @@ public partial class LvcGalleryPage : Page
             ];
             c.YAxes = [new Axis { MinLimit = 0, MaxLimit = 360, Name = "风向 (°)" }];
         })),
+        ("Auto updates — 自动更新折线", () => CC(c =>
+        {
+            var now = DateTime.UtcNow;
+            c.Series =
+            [
+                new LineSeries<DateTimePoint>
+                {
+                    Values = Enumerable.Range(0, 20).Select(i => new DateTimePoint(now.AddMinutes(-19 + i), Sine(1, 0)[0])).ToArray(),
+                    Fill = null,
+                    Stroke = Stroke(0, 2),
+                    GeometrySize = 6,
+                    LineSmoothness = 0.3f,
+                },
+            ];
+            c.XAxes = [new DateTimeAxis(TimeSpan.FromMinutes(1), v => v.ToString("HH:mm"))];
+        })),
+        ("Dashed smooth — 虚线平滑曲线", () => CC(c =>
+        {
+            var dash = new SolidColorPaint(Pal[5], 3) { PathEffect = new DashEffect(new float[] { 5, 3 }) };
+            c.Series =
+            [
+                new LineSeries<double>
+                {
+                    Values = Sine(14, 0.5, 25, 50),
+                    Stroke = dash,
+                    Fill = null,
+                    GeometrySize = 6,
+                    LineSmoothness = 1,
+                },
+            ];
+        })),
     ];
 
     // ── Area Group ───────────────────────────────────────────────────────
@@ -265,6 +296,7 @@ public partial class LvcGalleryPage : Page
                     Stroke = Stroke(0),
                     Fill = P(0, 35),
                     GeometrySize = 0,
+                    LineSmoothness = 1,
                     Name = "Series A",
                 },
                 new LineSeries<double>
@@ -273,6 +305,7 @@ public partial class LvcGalleryPage : Page
                     Stroke = Stroke(1),
                     Fill = P(1, 35),
                     GeometrySize = 0,
+                    LineSmoothness = 1,
                     Name = "Series B",
                 },
             ];
@@ -282,9 +315,9 @@ public partial class LvcGalleryPage : Page
         {
             c.Series =
             [
-                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(0, 60), Stroke = null },
-                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(1, 60), Stroke = null },
-                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(2, 60), Stroke = null },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(0, 60), Stroke = null, Name = "面积A" },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(1, 60), Stroke = null, Name = "面积B" },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(2, 60), Stroke = null, Name = "面积C" },
             ];
             c.LegendPosition = LegendPosition.Right;
         })),
@@ -292,11 +325,42 @@ public partial class LvcGalleryPage : Page
         {
             c.Series =
             [
-                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(0, 55), Stroke = null },
-                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(1, 55), Stroke = null },
-                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(2, 55), Stroke = null },
+                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(0, 55), Stroke = null, Name = "阶梯A" },
+                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(1, 55), Stroke = null, Name = "阶梯B" },
+                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(2, 55), Stroke = null, Name = "阶梯C" },
             ];
             c.LegendPosition = LegendPosition.Right;
+        })),
+        ("Vertical area — 垂直面积", () => CC(c =>
+        {
+            c.Series =
+            [
+                new LineSeries<double>
+                {
+                    Values = Sine(10, 0.5),
+                    Stroke = Stroke(2),
+                    Fill = P(2, 45),
+                    GeometrySize = 6,
+                    LineSmoothness = 0.5f,
+                },
+            ];
+        })),
+        ("Gradient area — 渐变面积", () => CC(c =>
+        {
+            var g = new LinearGradientPaint(
+                [new SKColor(64, 158, 255), new SKColor(103, 194, 58)],
+                new SKPoint(0, 0), new SKPoint(0, 1));
+            c.Series =
+            [
+                new LineSeries<double>
+                {
+                    Values = Sine(12, 0.5, 25, 50),
+                    Stroke = Stroke(0, 2),
+                    Fill = g,
+                    GeometrySize = 0,
+                    LineSmoothness = 1,
+                },
+            ];
         })),
     ];
 
@@ -346,9 +410,9 @@ public partial class LvcGalleryPage : Page
         {
             c.Series =
             [
-                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(0, 60), Stroke = null },
-                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(1, 60), Stroke = null },
-                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(2, 60), Stroke = null },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(0, 60), Stroke = null, Name = "系列A" },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(1, 60), Stroke = null, Name = "系列B" },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(2, 60), Stroke = null, Name = "系列C" },
             ];
             c.LegendPosition = LegendPosition.Right;
         })),
@@ -356,8 +420,19 @@ public partial class LvcGalleryPage : Page
         {
             c.Series =
             [
-                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(0, 50), Stroke = null },
-                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(1, 50), Stroke = null },
+                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(0, 50), Stroke = null, Name = "阶梯A" },
+                new StackedStepAreaSeries<double> { Values = Mock(8), Fill = P(1, 50), Stroke = null, Name = "阶梯B" },
+            ];
+            c.LegendPosition = LegendPosition.Right;
+        })),
+        ("Triple stacked — 三层堆叠", () => CC(c =>
+        {
+            c.Series =
+            [
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(0, 50), Stroke = null, Name = "层1" },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(1, 50), Stroke = null, Name = "层2" },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(2, 50), Stroke = null, Name = "层3" },
+                new StackedAreaSeries<double> { Values = Mock(8), Fill = P(3, 50), Stroke = null, Name = "层4" },
             ];
             c.LegendPosition = LegendPosition.Right;
         })),
@@ -371,8 +446,8 @@ public partial class LvcGalleryPage : Page
         {
             c.Series =
             [
-                new ColumnSeries<double> { Values = [3, 5, 4, 6, 2], Stroke = null, Fill = P(0) },
-                new ColumnSeries<double> { Values = [4, 2, 5, 3, 6], Stroke = null, Fill = P(1) },
+                new ColumnSeries<double> { Values = [3, 5, 4, 6, 2], Stroke = null, Fill = P(0), Name = "系列A" },
+                new ColumnSeries<double> { Values = [4, 2, 5, 3, 6], Stroke = null, Fill = P(1), Name = "系列B" },
             ];
             c.XAxes = [new Axis { Labels = Cat5 }];
             c.LegendPosition = LegendPosition.Right;
@@ -415,7 +490,6 @@ public partial class LvcGalleryPage : Page
                 },
             ];
             c.XAxes = [new Axis { Labels = CatMonth }];
-            c.LegendPosition = LegendPosition.Right;
         })),
         ("Layered — 层叠柱状图", () => CC(c =>
         {
@@ -427,6 +501,7 @@ public partial class LvcGalleryPage : Page
                     Stroke = null,
                     Fill = P(0, 60),
                     MaxBarWidth = 40,
+                    Name = "底层",
                 },
                 new ColumnSeries<double>
                 {
@@ -434,14 +509,13 @@ public partial class LvcGalleryPage : Page
                     Stroke = null,
                     Fill = P(1, 60),
                     MaxBarWidth = 20,
+                    Name = "顶层",
                 },
             ];
             c.LegendPosition = LegendPosition.Right;
         })),
         ("Delayed animation — 延迟动画", () => CC(c =>
         {
-            // Note: full delayed-animation requires event hooks;
-            // this is a simplified visual demo with staggered feel
             c.Series =
             [
                 new ColumnSeries<double>
@@ -452,6 +526,20 @@ public partial class LvcGalleryPage : Page
                     AnimationsSpeed = TimeSpan.FromMilliseconds(800),
                 },
             ];
+        })),
+        ("Racing style — 竞赛风格", () => CC(c =>
+        {
+            c.Series =
+            [
+                new ColumnSeries<double>
+                {
+                    Values = [12, 9, 7, 5, 3, 2],
+                    Stroke = null,
+                    Fill = P(0),
+                    MaxBarWidth = 30,
+                },
+            ];
+            c.XAxes = [new Axis { Labels = ["项目A", "项目B", "项目C", "项目D", "项目E", "项目F"] }];
         })),
     ];
 
@@ -471,9 +559,9 @@ public partial class LvcGalleryPage : Page
         {
             c.Series =
             [
-                new RowSeries<double> { Values = [8, -3, 4], Stroke = null, Fill = P(0) },
-                new RowSeries<double> { Values = [4, -6, 5], Stroke = null, Fill = P(1) },
-                new RowSeries<double> { Values = [6, -9, 3], Stroke = null, Fill = P(2) },
+                new RowSeries<double> { Values = [8, -3, 4], Stroke = null, Fill = P(0), Name = "产品A" },
+                new RowSeries<double> { Values = [4, -6, 5], Stroke = null, Fill = P(1), Name = "产品B" },
+                new RowSeries<double> { Values = [6, -9, 3], Stroke = null, Fill = P(2), Name = "产品C" },
             ];
             c.YAxes = [new Axis { Labels = ["产品A", "产品B", "产品C"] }];
             c.LegendPosition = LegendPosition.Right;
@@ -490,6 +578,16 @@ public partial class LvcGalleryPage : Page
                 },
             ];
             c.YAxes = [new Axis { Labels = ["Q1", "Q2", "Q3", "Q4", "Q5"] }];
+        })),
+        ("Stacked rows — 堆叠条形", () => CC(c =>
+        {
+            c.Series =
+            [
+                new RowSeries<double> { Values = Mock(5), Stroke = null, Fill = P(0), Name = "组A" },
+                new RowSeries<double> { Values = Mock(5), Stroke = null, Fill = P(1), Name = "组B" },
+            ];
+            c.YAxes = [new Axis { Labels = RowLbl }];
+            c.LegendPosition = LegendPosition.Right;
         })),
     ];
 
@@ -512,9 +610,9 @@ public partial class LvcGalleryPage : Page
         {
             c.Series =
             [
-                new StackedColumnSeries<double> { Values = [3, 5, -3, 2, 5, -4, -2], Stroke = null, Fill = P(0) },
-                new StackedColumnSeries<double> { Values = [4, 2, -3, 2, 3, 4, -2], Stroke = null, Fill = P(1) },
-                new StackedColumnSeries<double> { Values = [-2, 6, 6, 5, 4, 3, -2], Stroke = null, Fill = P(2) },
+                new StackedColumnSeries<double> { Values = [3, 5, -3, 2, 5, -4, -2], Stroke = null, Fill = P(0), Name = "正负A" },
+                new StackedColumnSeries<double> { Values = [4, 2, -3, 2, 3, 4, -2], Stroke = null, Fill = P(1), Name = "正负B" },
+                new StackedColumnSeries<double> { Values = [-2, 6, 6, 5, 4, 3, -2], Stroke = null, Fill = P(2), Name = "正负C" },
             ];
             c.LegendPosition = LegendPosition.Right;
         })),
@@ -540,6 +638,16 @@ public partial class LvcGalleryPage : Page
             c.YAxes = [new Axis { Labels = RowLbl }];
             c.LegendPosition = LegendPosition.Right;
         })),
+        ("Five-layer stack — 五层堆叠", () => CC(c =>
+        {
+            c.Series = Enumerable.Range(0, 5).Select(i =>
+                new StackedColumnSeries<double>
+                {
+                    Values = Mock(4), Stroke = null, Fill = P(i), Name = $"层{i + 1}",
+                } as ISeries).ToArray();
+            c.XAxes = [new Axis { Labels = ["Q1", "Q2", "Q3", "Q4"] }];
+            c.LegendPosition = LegendPosition.Right;
+        })),
     ];
 
     // ── Pie & Gauge Group ────────────────────────────────────────────────
@@ -561,6 +669,7 @@ public partial class LvcGalleryPage : Page
                     Fill = P(i),
                     Stroke = null,
                     Pushout = i == 2 ? 20 : 0,
+                    Name = $"扇区{i + 1}",
                 } as ISeries).ToArray();
             c.LegendPosition = LegendPosition.Right;
         })),
@@ -574,6 +683,7 @@ public partial class LvcGalleryPage : Page
                     Fill = P(i),
                     Stroke = null,
                     InnerRadius = 55,
+                    Name = $"环{i + 1}",
                 } as ISeries).ToArray();
             c.LegendPosition = LegendPosition.Right;
         })),
@@ -587,7 +697,86 @@ public partial class LvcGalleryPage : Page
                     Fill = P(i),
                     Stroke = null,
                     InnerRadius = i * 20,
+                    Name = $"玫瑰{i + 1}",
                 } as ISeries).ToArray();
+            c.LegendPosition = LegendPosition.Right;
+        })),
+        ("Outside labels — 外部标签", () => PC(c =>
+        {
+            var data = new double[] { 8, 6, 5, 3, 3 };
+            c.Series = data.Select((x, i) =>
+                new PieSeries<double>
+                {
+                    Values = new double[] { x },
+                    Fill = P(i),
+                    Stroke = null,
+                    Pushout = 0,
+                    HoverPushout = 8,
+                    DataLabelsPosition = LiveChartsCore.Measure.PolarLabelsPosition.Outer,
+                    DataLabelsSize = 12,
+                    ShowDataLabels = true,
+                    Name = $"标签{i + 1}",
+                } as ISeries).ToArray();
+            c.LegendPosition = LegendPosition.Right;
+            c.InitialRotation = -90;
+        })),
+        ("Custom pie — 自定义样式", () => PC(c =>
+        {
+            var data = new double[] { 7, 5, 9, 3, 6 };
+            c.Series = data.Select((x, i) =>
+                new PieSeries<double>
+                {
+                    Values = new double[] { x },
+                    Fill = P(i, 70),
+                    Stroke = Stroke(i, 2),
+                    Pushout = 5,
+                    Name = $"自定义{i + 1}",
+                } as ISeries).ToArray();
+            c.LegendPosition = LegendPosition.Right;
+        })),
+        ("SVG labels — SVG图标标签", () => PC(c =>
+        {
+            var data = new double[] { 6, 4, 7, 3, 5 };
+            c.Series = data.Select((x, i) =>
+                new PieSeries<double>
+                {
+                    Values = new double[] { x },
+                    Fill = P(i, 80),
+                    Stroke = null,
+                    DataLabelsPosition = LiveChartsCore.Measure.PolarLabelsPosition.Outer,
+                    DataLabelsSize = 14,
+                    ShowDataLabels = true,
+                    HoverPushout = 8,
+                    Name = $"SVG{i + 1}",
+                } as ISeries).ToArray();
+            c.LegendPosition = LegendPosition.Right;
+        })),
+        ("Nested style — 嵌套风格", () => PC(c =>
+        {
+            // Inner ring (3 items)
+            var inner = new double[] { 5, 3, 4 };
+            var outer = new double[] { 2, 3, 1, 2, 4, 2, 3 };
+            c.Series = inner.Select((x, i) =>
+                new PieSeries<double>
+                {
+                    Values = new double[] { x },
+                    Fill = P(i, 80),
+                    Stroke = null,
+                    InnerRadius = 0,
+                    HoverPushout = 5,
+                    Name = $"内环{i + 1}",
+                } as ISeries).Concat(
+                outer.Select((x, i) =>
+                    new PieSeries<double>
+                    {
+                        Values = new double[] { x },
+                        Fill = P(i + 3, 60),
+                        Stroke = null,
+                        InnerRadius = 50,
+                        HoverPushout = 5,
+                        Name = $"外环{i + 1}",
+                    } as ISeries)
+            ).ToArray();
             c.LegendPosition = LegendPosition.Right;
         })),
         ("Basic gauge — 基础仪表 65%", () => PC(c =>
@@ -617,7 +806,28 @@ public partial class LvcGalleryPage : Page
             };
             c.MaxValue = 100;
         })),
-        ("Angular gauge style — 角度仪表风格", () => PC(c =>
+        ("270° gauge — 270度仪表", () => PC(c =>
+        {
+            c.Series = new ISeries[]
+            {
+                new PieSeries<double> { Values = new double[] { 30.0 }, Fill = P(2), Stroke = null, InnerRadius = 65 },
+                new PieSeries<double> { Values = new double[] { 70.0 }, Fill = Paint(new SKColor(230, 230, 230)), Stroke = null, InnerRadius = 65 },
+            };
+            c.MaxValue = 100;
+            c.InitialRotation = -225;
+            c.MaxAngle = 270;
+        })),
+        ("Multiple gauge — 多值仪表", () => PC(c =>
+        {
+            c.Series = new ISeries[]
+            {
+                new PieSeries<double> { Values = new double[] { 45.0 }, Fill = P(0), Stroke = null, InnerRadius = 60 },
+                new PieSeries<double> { Values = new double[] { 30.0 }, Fill = P(3), Stroke = null, InnerRadius = 60 },
+                new PieSeries<double> { Values = new double[] { 25.0 }, Fill = Paint(new SKColor(230, 230, 230)), Stroke = null, InnerRadius = 60 },
+            };
+            c.MaxValue = 100;
+        })),
+        ("Angular gauge — 角度仪表", () => PC(c =>
         {
             c.Series = new ISeries[]
             {
@@ -710,6 +920,31 @@ public partial class LvcGalleryPage : Page
                 },
             };
         })),
+        ("Dual scatter — 双散点对比", () => CC(c =>
+        {
+            c.Series =
+            [
+                new ScatterSeries<ObservablePoint>
+                {
+                    Values = ScatterPts(8),
+                    Mapping = (p, _) => new Coordinate(p.X ?? 0, p.Y ?? 0),
+                    Fill = P(0, 60),
+                    Stroke = null,
+                    GeometrySize = 18,
+                    Name = "组A",
+                },
+                new ScatterSeries<ObservablePoint>
+                {
+                    Values = ScatterPts(8),
+                    Mapping = (p, _) => new Coordinate(p.X ?? 0, p.Y ?? 0),
+                    Fill = P(1, 60),
+                    Stroke = null,
+                    GeometrySize = 12,
+                    Name = "组B",
+                },
+            ];
+            c.LegendPosition = LegendPosition.Right;
+        })),
     ];
 
     // ── Financial Group ──────────────────────────────────────────────────
@@ -768,12 +1003,58 @@ public partial class LvcGalleryPage : Page
             [
                 new BoxSeries<BoxValue>
                 {
-                    Values = new BoxValue[]
-                    {
+                    Values =
+                    [
                         new(80, 60, 40, 10, 50),
                         new(70, 50, 30, 20, 40),
                         new(60, 40, 20, 10, 30),
-                    },
+                    ],
+                },
+            ];
+        })),
+        // Error bars using ShowError
+        ("Column error bars — 柱状误差线", () => CC(c =>
+        {
+            var errVals = new ErrorValue[]
+            {
+                new(65, 6),
+                new(70, 15, 4),
+                new(35, 4),
+                new(70, 6),
+                new(30, 5),
+            };
+            c.Series =
+            [
+                new ColumnSeries<ErrorValue>
+                {
+                    Values = errVals,
+                    Fill = P(0, 70),
+                    Stroke = null,
+                    ShowError = true,
+                    ErrorPaint = new SolidColorPaint(SKColors.DarkRed) { StrokeThickness = 2 },
+                },
+            ];
+            c.XAxes = [new Axis { Labels = Cat5 }];
+        })),
+        ("Scatter error bars — 散点误差图", () => CC(c =>
+        {
+            var pts = new ErrorPoint[]
+            {
+                new(0, 50, 0.2, 8),
+                new(1, 45, 0.1, 0.3, 15, 4),
+                new(2, 25, 0.3, 4),
+                new(3, 30, 0.2, 6),
+                new(4, 70, 0.2, 8),
+            };
+            c.Series =
+            [
+                new ScatterSeries<ErrorPoint>
+                {
+                    Values = pts,
+                    GeometrySize = 14,
+                    Fill = P(0, 70),
+                    Stroke = null,
+                    ShowError = true,
                 },
             ];
         })),
@@ -832,6 +1113,22 @@ public partial class LvcGalleryPage : Page
                         SKColor.Parse("#E8F5E9").AsLvcColor(),
                         SKColor.Parse("#66BB6A").AsLvcColor(),
                         SKColor.Parse("#1B5E20").AsLvcColor(),
+                    ],
+                },
+            ];
+        })),
+        ("Wide heat — 宽幅热力图", () => CC(c =>
+        {
+            c.Series =
+            [
+                new HeatSeries<WeightedPoint>
+                {
+                    Values = HeatData(8, 4),
+                    HeatMap =
+                    [
+                        SKColor.Parse("#FCE4EC").AsLvcColor(),
+                        SKColor.Parse("#F48FB1").AsLvcColor(),
+                        SKColor.Parse("#C2185B").AsLvcColor(),
                     ],
                 },
             ];
@@ -907,6 +1204,29 @@ public partial class LvcGalleryPage : Page
                     Fill = null,
                 },
             ];
+        })),
+        ("Polar area fill — 极坐标面积填充", () => PolC(c =>
+        {
+            c.Series =
+            [
+                new PolarLineSeries<double>
+                {
+                    Values = [6, 8, 5, 9, 7, 4, 6],
+                    GeometrySize = 8,
+                    IsClosed = true,
+                    Stroke = Stroke(0, 2),
+                    Fill = P(0, 40),
+                },
+                new PolarLineSeries<double>
+                {
+                    Values = [3, 5, 2, 6, 4, 3, 5],
+                    GeometrySize = 8,
+                    IsClosed = true,
+                    Stroke = Stroke(1, 2),
+                    Fill = P(1, 40),
+                },
+            ];
+            c.AngleAxes = [new PolarAxis { Labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] }];
         })),
     ];
 
@@ -986,7 +1306,6 @@ public partial class LvcGalleryPage : Page
         })),
         ("Logarithmic scale — 对数坐标", () => CC(c =>
         {
-            // Manual approximation: large value range
             c.Series =
             [
                 new LineSeries<double>
@@ -1013,6 +1332,37 @@ public partial class LvcGalleryPage : Page
                 },
             ];
             c.TooltipPosition = TooltipPosition.Top;
+        })),
+        ("Shared axis — 共享坐标轴", () => CC(c =>
+        {
+            c.Series =
+            [
+                new LineSeries<double> { Values = Sine(8, 0.5, 20, 40), Fill = null, Stroke = Stroke(0), GeometrySize = 6, Name = "A" },
+                new LineSeries<double> { Values = Sine(8, 0.4, 15, 30), Fill = null, Stroke = Stroke(1), GeometrySize = 6, Name = "B" },
+            ];
+            c.LegendPosition = LegendPosition.Right;
+        })),
+        ("Custom separators — 自定义分隔", () => CC(c =>
+        {
+            c.Series =
+            [
+                new ColumnSeries<double> { Values = Mock(10), Stroke = null, Fill = P(0) },
+            ];
+            c.XAxes = [new Axis { Labels = CatMonth }];
+        })),
+        ("Paging — 分页滚动", () => CC(c =>
+        {
+            c.Series =
+            [
+                new LineSeries<double>
+                {
+                    Values = Sine(30, 0.3, 20, 50),
+                    Fill = null,
+                    Stroke = Stroke(0, 2),
+                    GeometrySize = 6,
+                },
+            ];
+            c.ZoomMode = ZoomAndPanMode.X;
         })),
     ];
 
@@ -1078,8 +1428,6 @@ public partial class LvcGalleryPage : Page
         })),
         ("Real-time demo — 实时更新", () => CC(c =>
         {
-            // Note: for a true real-time chart enable INotifyCollectionChanged
-            // on the data source; this is a static preview
             c.Series =
             [
                 new LineSeries<double>
@@ -1118,6 +1466,42 @@ public partial class LvcGalleryPage : Page
                     Stroke = Stroke(4),
                     GeometrySize = 8,
                     LineSmoothness = 0,
+                },
+            ];
+        })),
+        ("Dynamic visibility — 动态可见性", () => CC(c =>
+        {
+            c.Series =
+            [
+                new LineSeries<double> { Values = Sine(8, 0.5), Fill = null, Stroke = Stroke(0), GeometrySize = 8, Name = "显示A" },
+                new LineSeries<double> { Values = Sine(8, 0.4, 15, 30), Fill = null, Stroke = Stroke(1), GeometrySize = 8, Name = "显示B" },
+            ];
+            c.LegendPosition = LegendPosition.Right;
+        })),
+        ("Custom legends — 自定义图例", () => CC(c =>
+        {
+            c.Series =
+            [
+                new LineSeries<double> { Values = Sine(8, 0.5, 20, 50), Fill = null, Stroke = Stroke(0, 3), GeometrySize = 10, Name = "收入" },
+                new LineSeries<double> { Values = Sine(8, 0.4, 15, 30), Fill = null, Stroke = Stroke(1, 3), GeometrySize = 10, Name = "支出" },
+                new ColumnSeries<double> { Values = Mock(8), Stroke = null, Fill = P(2, 50), Name = "利润" },
+            ];
+            c.LegendPosition = LegendPosition.Right;
+            c.XAxes = [new Axis { Labels = CatMonth[..8] }];
+        })),
+        ("Chart to image — 图表导出", () => CC(c =>
+        {
+            c.Series =
+            [
+                new LineSeries<double>
+                {
+                    Values = Sine(10, 0.5, 20, 50),
+                    Fill = P(0, 25),
+                    Stroke = Stroke(0, 3),
+                    GeometrySize = 10,
+                    GeometryStroke = Stroke(0, 3),
+                    GeometryFill = Paint(SKColors.White),
+                    LineSmoothness = 1,
                 },
             ];
         })),
@@ -1227,6 +1611,40 @@ public partial class LvcGalleryPage : Page
                 },
             ];
         })),
+        ("Multi-gradient area — 多渐变面积", () => CC(c =>
+        {
+            var g = new LinearGradientPaint(
+                [new SKColor(255, 183, 77), new SKColor(129, 199, 132)],
+                new SKPoint(0, 0), new SKPoint(0, 1));
+            c.Series =
+            [
+                new LineSeries<double>
+                {
+                    Values = Sine(12, 0.5, 25, 50),
+                    Stroke = new SolidColorPaint(SKColor.Parse("#FF7043"), 2),
+                    Fill = g,
+                    GeometrySize = 6,
+                    GeometryStroke = new SolidColorPaint(SKColor.Parse("#FF7043"), 2),
+                    GeometryFill = Paint(SKColors.White),
+                    LineSmoothness = 1,
+                },
+            ];
+        })),
+        ("Stroke gradient — 描边渐变", () => CC(c =>
+        {
+            var g = new LinearGradientPaint(
+                [new SKColor(171, 71, 188), new SKColor(0, 188, 212)],
+                new SKPoint(0, 0), new SKPoint(1, 1));
+            c.Series =
+            [
+                new ColumnSeries<double>
+                {
+                    Values = [5, 8, 3, 9, 4, 7],
+                    Stroke = g,
+                    Fill = P(0, 30),
+                },
+            ];
+        })),
     ];
 
     // ── Layout ───────────────────────────────────────────────────────────
@@ -1248,7 +1666,6 @@ public partial class LvcGalleryPage : Page
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(28) });
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            // Title bar
             var titleBar = new Grid();
             titleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             titleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -1357,5 +1774,5 @@ public partial class LvcGalleryPage : Page
     }
 
     private static ISeries[] PieV(double[] vals) =>
-        vals.Select((v, i) => new PieSeries<double> { Values = [v], Fill = P(i), Stroke = null } as ISeries).ToArray();
+        vals.Select((v, i) => new PieSeries<double> { Values = [v], Fill = P(i), Stroke = null, Name = $"段{i + 1}" } as ISeries).ToArray();
 }

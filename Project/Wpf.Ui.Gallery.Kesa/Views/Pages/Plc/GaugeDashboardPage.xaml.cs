@@ -52,27 +52,6 @@ public partial class GaugeDashboardPage : Page
         });
     }
 
-    public void UpdateMultiGauge(double[] values)
-    {
-        var seriesProps = new[] { section0, section1, section2, section3, section4 };
-        var count = Math.Min(values.Length, seriesProps.Length);
-
-        for (var i = 0; i < count; i++)
-        {
-            var normalized = Math.Clamp(values[i] / _sectionMax[i] * 100.0, 0, 100);
-            if (i < SectionItems.Count)
-                SectionItems[i].Value = values[i];
-        }
-
-        Dispatcher.InvokeAsync(() =>
-        {
-            for (var i = 0; i < count; i++)
-            {
-                var normalized = Math.Clamp(values[i] / _sectionMax[i] * 100.0, 0, 100);
-                seriesProps[i].GaugeValue = normalized;
-            }
-        });
-    }
 
     private void InitSectionItems()
     {
