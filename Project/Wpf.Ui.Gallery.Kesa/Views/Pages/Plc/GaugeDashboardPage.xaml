@@ -5,7 +5,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:skia="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
+      xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
       xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
       controls:PageControlDocumentation.Show="False"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -13,48 +13,80 @@
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="仪表盘"
       mc:Ignorable="d">
-    <StackPanel Margin="0,0,0,24">
+
+    <StackPanel Margin="0,0,0,24" Width="360">
+
+        <!-- ===== 单值仪表 (AngularGauge 带指针) ===== -->
         <controls:ControlExample Margin="0" HeaderText="单值仪表">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <ui:TextBlock FontTypography="Subtitle" Text="当前值" HorizontalAlignment="Center" Margin="0,0,0,8" />
-                    <skia:SKElement x:Name="singleGauge" PaintSurface="OnPaintSingleGauge" Height="250" />
-                    <TextBlock x:Name="gaugeValueText" Text="0.0" FontSize="24" FontWeight="Bold"
-                               HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,8,0,0" />
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ui:TextBlock Grid.Row="0" FontTypography="Subtitle" Text="当前值"
+                      HorizontalAlignment="Center" Margin="0,0,0,4" />
+
+                <!-- AngularGauge: 圆形进度条 + Needle 指针 + 刻度线 -->
+                <lvc:PieChart x:Name="singleGauge" Grid.Row="1"
+                      Width="280" Height="280"
+                      InitialRotation="-225"
+                      MaxAngle="270"
+                      MinValue="0" MaxValue="50">
+                    <lvc:PieChart.Series>
+                        <lvc:SeriesCollection>
+                            <!-- 3 段色 -->
+                            <lvc:XamlAngularGaugeSeries 
+                                x:Name="singleGaugeGreen"
+                                GaugeValue="30"
+                                OuterRadiusOffset="130"
+                                MaxRadialColumnWidth="20"
+                                CornerRadius="0"
+                                Fill="#4ade80" />
+                            <lvc:XamlAngularGaugeSeries 
+                                x:Name="singleGaugeYellow"
+                                GaugeValue="10"
+                                OuterRadiusOffset="130"
+                                MaxRadialColumnWidth="20"
+                                CornerRadius="0"
+                                Fill="#facc15" />
+                            <lvc:XamlAngularGaugeSeries 
+                                x:Name="singleGaugeRed"
+                                GaugeValue="10"
+                                OuterRadiusOffset="130"
+                                MaxRadialColumnWidth="20"
+                                CornerRadius="0"
+                                Fill="#ef4444" />
+                        </lvc:SeriesCollection>
+                    </lvc:PieChart.Series>
+
+                    <lvc:PieChart.VisualElements>
+                        <lvc:VisualsCollection>
+                            <!-- 指针 -->
+                            <lvc:XamlNeedle x:Name="singleNeedle" Value="0" Width="20" />
+
+                            <!-- 刻度 -->
+                            <lvc:XamlAngularTicks x:Name="singleTicks"
+                                    LabelsSize="16"
+                                    LabelsOuterOffset="15"
+                                    OuterOffset="65"
+                                    TicksLength="20" />
+                        </lvc:VisualsCollection>
+                    </lvc:PieChart.VisualElements>
+                </lvc:PieChart>
+
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,4,0,0">
+                    <TextBlock x:Name="gaugeValueText" Text="0.0"
+                        FontSize="28" FontWeight="Bold"
+                        HorizontalAlignment="Center"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                     <TextBlock x:Name="gaugeUnitText" Text="mm" FontSize="14"
-                               HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        HorizontalAlignment="Center"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
             </Grid>
         </controls:ControlExample>
 
-        <controls:ControlExample Margin="0,32,0,0" HeaderText="多区段状态">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <skia:SKElement x:Name="multiGauge" PaintSurface="OnPaintMultiGauge" Height="250" />
-                    <ItemsControl x:Name="sectionList" Margin="0,8,0,0"
-                                  ItemsSource="{Binding SectionItems, RelativeSource={RelativeSource AncestorType=Page}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="models:GaugeSectionItem">
-                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                    <Ellipse Width="10" Height="10"
-                                             Fill="{Binding Color}"
-                                             VerticalAlignment="Center" Margin="0,0,8,0" />
-                                    <TextBlock Text="{Binding DisplayText}" FontSize="12"
-                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Grid>
-        </controls:ControlExample>
     </StackPanel>
 </Page>
