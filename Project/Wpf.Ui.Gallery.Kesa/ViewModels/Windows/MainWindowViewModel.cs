@@ -199,7 +199,6 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                 new NavigationViewItem("仪表盘", SymbolRegular.Gauge24, typeof(GaugeDashboardPage)),
                 new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
                 new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
-                new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
             },
         },
     ];
