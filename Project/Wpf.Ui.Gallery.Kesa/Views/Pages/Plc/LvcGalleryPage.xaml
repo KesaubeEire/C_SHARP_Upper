@@ -1,0 +1,10 @@
+<Page x:Class="Wpf.Ui.Gallery.Views.Pages.Plc.LvcGalleryPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="LiveCharts2 图库画廊"
+      ScrollViewer.VerticalScrollBarVisibility="Visible"
+      ScrollViewer.CanContentScroll="True">
+
+    <StackPanel x:Name="_rootPanel" Margin="16" />
+
+</Page>

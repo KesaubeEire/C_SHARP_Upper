@@ -188,6 +188,8 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                 new NavigationViewItem("连接", SymbolRegular.PlugDisconnected24, typeof(ConnectionPage)),
                 new NavigationViewItem("导入 DB/UDT", SymbolRegular.FolderArrowRight24, typeof(ImportPage)),
                 new NavigationViewItem("轮询", SymbolRegular.Timer24, typeof(PollingPage)),
+                new NavigationViewItemSeparator(),
+                new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
             },
         },
     ];
