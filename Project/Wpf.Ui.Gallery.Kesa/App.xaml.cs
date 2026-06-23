@@ -64,13 +64,10 @@ public partial class App
                 _ = services.AddSingleton<SettingsViewModel>();
 
                 // PLC Pages
-                _ = services.AddSingleton<ConnectionPage>();
                 _ = services.AddSingleton<IoMonitorPage>();
                 _ = services.AddSingleton<TrendChartPage>();
                 _ = services.AddSingleton<GaugeDashboardPage>();
                 _ = services.AddSingleton<DbMonitorPage>();
-                _ = services.AddSingleton<ImportPage>();
-                _ = services.AddSingleton<PollingPage>();
                 _ = services.AddSingleton<AlarmPage>();
                 _ = services.AddSingleton<AlarmViewModel>();
 

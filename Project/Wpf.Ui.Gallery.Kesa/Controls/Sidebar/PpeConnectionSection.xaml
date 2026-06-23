@@ -6,7 +6,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
              mc:Ignorable="d"
-             d:DesignHeight="761.529" d:DesignWidth="300"
+             d:DesignHeight="781.564" d:DesignWidth="300"
+             Padding="10"
              ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
              ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
              Foreground="{DynamicResource TextFillColorPrimaryBrush}">

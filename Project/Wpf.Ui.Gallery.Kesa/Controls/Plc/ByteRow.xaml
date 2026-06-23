@@ -20,7 +20,7 @@
         </Grid.ColumnDefinitions>
 
         <TextBlock Grid.Column="0" Text="{Binding Label}"
-                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    VerticalAlignment="Center" FontSize="13"/>
 
         <ItemsControl Grid.Column="1" ItemsSource="{Binding Bits}"

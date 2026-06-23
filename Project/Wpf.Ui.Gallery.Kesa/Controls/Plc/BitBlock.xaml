@@ -13,7 +13,7 @@
             Background="{Binding IsSet, Converter={StaticResource BgConverter}}"
             MouseDown="OnMouseDown" ToolTip="点击切换" Cursor="Hand">
         <TextBlock Text="{Binding DisplayChar}" HorizontalAlignment="Center"
-                   VerticalAlignment="Center" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                   VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    FontWeight="Bold" FontSize="13"/>
     </Border>
 </UserControl>

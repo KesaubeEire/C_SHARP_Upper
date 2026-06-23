@@ -136,5 +136,22 @@ public sealed class S7Service : IDisposable
         }
     }
 
+    public bool WriteBytesRaw(int area, int start, byte[] data, int dbNumber = 0)
+    {
+        lock (_clientLock)
+        {
+            int result = area == (int)S7Area.DB
+                ? _client.DBWrite(dbNumber, start, data.Length, data)
+                : _client.WriteArea(A(area), 0, start, data.Length, S7WordLength.Byte, data);
+
+            if (result != 0)
+            {
+                LastError = _client.ErrorText(result);
+                return false;
+            }
+            return true;
+        }
+    }
+
     public void Dispose() { lock (_clientLock) Disconnect(); }
 }
