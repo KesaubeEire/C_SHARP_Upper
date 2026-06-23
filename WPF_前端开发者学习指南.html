@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WPF 学习指南 — 前端开发者视角</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-hover: #1c2333;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #d29922;
+    --accent4: #f78166;
+    --accent5: #bc8cff;
+    --danger: #f85149;
+    --priority-p0: #f78166;
+    --priority-p1: #d29922;
+    --priority-p2: #3fb950;
+    --priority-p3: #8b949e;
+    --diff-easy: #3fb950;
+    --diff-medium: #d29922;
+    --diff-hard: #f78166;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ===== NAV ===== */
+  nav.toc {
+    position: fixed; top: 0; left: 0; width: 280px; height: 100vh;
+    background: var(--bg-card); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 20px 0; z-index: 100;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  nav.toc::-webkit-scrollbar { width: 6px; }
+  nav.toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  nav.toc h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); padding: 0 20px 12px;
+    border-bottom: 1px solid var(--border); margin-bottom: 8px;
+  }
+  nav.toc a {
+    display: block; padding: 6px 20px 6px 24px;
+    color: var(--text-dim); text-decoration: none;
+    font-size: 13px; transition: all .15s;
+    border-left: 2px solid transparent;
+  }
+  nav.toc a:hover { color: var(--accent); background: var(--bg-hover); }
+  nav.toc a.l2 { padding-left: 36px; font-size: 12.5px; }
+  nav.toc a.active { color: var(--accent); border-left-color: var(--accent); background: rgba(88,166,255,.08); }
+
+  /* ===== MAIN ===== */
+  main { margin-left: 280px; max-width: 920px; padding: 40px 60px 80px; }
+
+  /* ===== HERO ===== */
+  .hero {
+    padding: 40px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 40px;
+  }
+  .hero h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .hero h1 span { color: var(--accent); }
+  .hero .subtitle { color: var(--text-dim); font-size: 16px; }
+  .hero .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .hero .tags span {
+    padding: 3px 10px; border-radius: 12px; font-size: 12px;
+    border: 1px solid var(--border); color: var(--text-dim);
+  }
+
+  /* ===== SECTIONS ===== */
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 24px; font-weight: 700; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  h2 .badge { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 8px; margin-left: 10px; vertical-align: middle; }
+  h3 { font-size: 18px; font-weight: 600; margin: 24px 0 10px; color: var(--accent); }
+  h4 { font-size: 15px; font-weight: 600; margin: 18px 0 8px; }
+
+  p { margin-bottom: 12px; color: var(--text-dim); }
+  ul, ol { margin: 8px 0 16px 20px; color: var(--text-dim); }
+  li { margin-bottom: 4px; }
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ===== MAPPING TABLE ===== */
+  .mapping-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0 24px;
+    font-size: 14px;
+  }
+  .mapping-table th, .mapping-table td {
+    padding: 10px 14px; border: 1px solid var(--border); text-align: left;
+  }
+  .mapping-table th {
+    background: var(--bg-hover); color: var(--accent); font-weight: 600;
+    font-size: 13px; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .mapping-table td { vertical-align: top; }
+  .mapping-table tr:hover td { background: rgba(88,166,255,.04); }
+  .mapping-table code { font-size: 12.5px; }
+
+  /* ===== CARDS ===== */
+  .card-grid { display: grid; gap: 16px; margin: 16px 0; }
+  .card-grid.col2 { grid-template-columns: 1fr 1fr; }
+  .card-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; transition: all .2s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+  .card h4 { margin: 0 0 8px; font-size: 15px; }
+  .card p { font-size: 13px; margin: 0; }
+  .card .tag {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 8px; margin-bottom: 8px;
+  }
+
+  /* ===== PRIORITY / DIFFICULTY ===== */
+  .pri-p0 { color: var(--priority-p0); }
+  .pri-p1 { color: var(--priority-p1); }
+  .pri-p2 { color: var(--priority-p2); }
+  .pri-p3 { color: var(--priority-p3); }
+  .diff-easy { color: var(--diff-easy); }
+  .diff-medium { color: var(--diff-medium); }
+  .diff-hard { color: var(--diff-hard); }
+
+  .pill {
+    display: inline-block; padding: 1px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; letter-spacing: .3px;
+    margin-right: 4px;
+  }
+  .pill.p0 { background: rgba(247,129,102,.15); color: var(--priority-p0); }
+  .pill.p1 { background: rgba(210,153,34,.15); color: var(--priority-p1); }
+  .pill.p2 { background: rgba(63,185,80,.15); color: var(--priority-p2); }
+  .pill.p3 { background: rgba(139,148,158,.15); color: var(--priority-p3); }
+  .pill.easy { background: rgba(63,185,80,.15); color: var(--diff-easy); }
+  .pill.medium { background: rgba(210,153,34,.15); color: var(--diff-medium); }
+  .pill.hard { background: rgba(247,129,102,.15); color: var(--diff-hard); }
+  .pill.feat { background: rgba(188,140,255,.15); color: var(--accent5); }
+  .pill.dotnet { background: rgba(88,166,255,.15); color: var(--accent); }
+
+  /* ===== CODE ===== */
+  pre {
+    background: #0d1117; border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px; line-height: 1.6; margin: 12px 0 20px;
+  }
+  pre .comment { color: #8b949e; font-style: italic; }
+  pre .keyword { color: #ff7b72; }
+  pre .string { color: #a5d6ff; }
+  pre .type { color: #79c0ff; }
+  pre .tag-x { color: #f97583; }
+  pre .attr { color: #79c0ff; }
+  pre .val { color: #a5d6ff; }
+  pre .func { color: #d2a8ff; }
+  pre .num { color: #79c0ff; }
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    background: rgba(88,166,255,.1); padding: 2px 6px; border-radius: 4px;
+    font-size: 13px; color: var(--accent);
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  /* ===== TIMELINE ===== */
+  .timeline { position: relative; padding-left: 30px; margin: 20px 0; }
+  .timeline::before {
+    content: ''; position: absolute; left: 10px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 28px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -24px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--bg-card); border: 2px solid var(--accent);
+  }
+  .tl-item.phase1::before { border-color: var(--priority-p0); }
+  .tl-item.phase2::before { border-color: var(--priority-p1); }
+  .tl-item.phase3::before { border-color: var(--priority-p2); }
+  .tl-item.phase4::before { border-color: var(--priority-p3); }
+  .tl-item h4 { margin: 0 0 4px; color: var(--text); }
+  .tl-item p { margin: 0; font-size: 13px; }
+  .tl-item .meta { margin: 4px 0; font-size: 12px; }
+
+  /* ===== LIBRARY COMPARE ===== */
+  .lib-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  @media (max-width: 900px) { .lib-compare { grid-template-columns: 1fr; } }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+  .progress-row .label { width: 100px; font-size: 13px; flex-shrink: 0; }
+  .progress-row .bar-wrap { flex: 1; height: 8px; background: var(--bg-hover); border-radius: 4px; overflow: hidden; }
+  .progress-row .bar-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+
+  /* ===== TIPS ===== */
+  .tip {
+    padding: 14px 18px; border-radius: 8px; margin: 16px 0;
+    border-left: 4px solid;
+  }
+  .tip.info { background: rgba(88,166,255,.08); border-color: var(--accent); }
+  .tip.warn { background: rgba(210,153,34,.08); border-color: var(--accent3); }
+  .tip.alert { background: rgba(248,81,73,.08); border-color: var(--danger); }
+  .tip.success { background: rgba(63,185,80,.08); border-color: var(--accent2); }
+  .tip h4 { margin: 0 0 4px; font-size: 14px; }
+  .tip p { margin: 0; font-size: 13px; }
+
+  /* ===== COMPARISON TABLE (libraries) ===== */
+  .compare-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px; }
+  .compare-table th, .compare-table td {
+    padding: 10px 12px; border: 1px solid var(--border); text-align: left;
+  }
+  .compare-table th { background: var(--bg-hover); color: var(--accent); font-weight: 600; }
+  .compare-table tr:hover td { background: rgba(88,166,255,.04); }
+  .compare-table .yes { color: var(--accent2); }
+  .compare-table .no { color: var(--danger); }
+  .compare-table .partial { color: var(--accent3); }
+
+  /* ===== BACK TO TOP ===== */
+  .back-to-top {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-dim); font-size: 18px; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    transition: all .2s; z-index: 99;
+  }
+  .back-to-top:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    nav.toc { position: static; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 12px 0; }
+    nav.toc h2 { display: none; }
+    nav.toc a { display: inline-block; padding: 4px 12px; border-left: none; border-bottom: 2px solid transparent; font-size: 12px; }
+    nav.toc a.l2 { padding-left: 12px; }
+    nav.toc a.active { border-bottom-color: var(--accent); }
+    main { margin-left: 0; padding: 20px; }
+    .card-grid.col2, .card-grid.col3 { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 24px; }
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    nav.toc { display: none; }
+    main { margin-left: 0; padding: 20px; }
+    .back-to-top { display: none !important; }
+    .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav class="toc" id="toc">
+  <h2>📖 学习目录</h2>
+  <a href="#intro">1. 写给前端开发者的话</a>
+  <a href="#mapping" class="l2">1.1 概念映射总表</a>
+  <a href="#ecosystem">2. .NET / WPF 生态速览</a>
+  <a href="#path">3. 学习路径</a>
+  <a href="#path-xaml" class="l2">3.1 第一阶段：XAML · Layout</a>
+  <a href="#path-binding" class="l2">3.2 第二阶段：Binding · MVVM</a>
+  <a href="#path-style" class="l2">3.3 第三阶段：Style · Template</a>
+  <a href="#path-advanced" class="l2">3.4 第四阶段：高级主题</a>
+  <a href="#mvvmdepth">4. MVVM 深入</a>
+  <a href="#libraries">5. 第三方组件库</a>
+  <a href="#lib-communitytoolkit" class="l2">5.1 CommunityToolkit.Mvvm</a>
+  <a href="#lib-wpfui" class="l2">5.2 WPF UI</a>
+  <a href="#lib-mahapps" class="l2">5.3 MahApps.Metro</a>
+  <a href="#lib-material" class="l2">5.4 MaterialDesignInXaml</a>
+  <a href="#lib-livecharts" class="l2">5.5 LiveCharts2</a>
+  <a href="#lib-compare" class="l2">5.6 库对比总表</a>
+  <a href="#best-practices">6. 最佳实践 & 陷阱</a>
+  <a href="#projects">7. 实战项目建议</a>
+  <a href="#resources">8. 资源汇总</a>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main>
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <h1>从 <span>前端</span> 到 <span>WPF</span></h1>
+  <p class="subtitle">
+    一份为 React / Vue 开发者量身定制的 WPF 学习指南。<br>
+    不讲无关痛痒的历史，只讲你需要的概念映射、技术选型与实战路径。
+  </p>
+  <div class="tags">
+    <span>⚡ XAML ↔ HTML+CSS</span>
+    <span>🔗 MVVM ↔ Flux/Redux</span>
+    <span>🎨 Binding ↔ State</span>
+    <span>📦 .NET 8/9</span>
+    <span>🧩 LiveCharts2</span>
+  </div>
+</div>
+
+<!-- ===== 1. INTRO ===== -->
+<section id="intro">
+  <h2>1. 写给前端开发者的话</h2>
+  <p>
+    WPF（Windows Presentation Foundation）是微软在 2006 年推出的桌面 UI 框架，距今快 20 年了。
+    但它至今仍是 Windows 桌面开发的事实标准——不是因为"老"，而是因为它的<strong>声明式 UI（XAML）、数据驱动（Binding）、关注点分离（MVVM）</strong>三大设计哲学，
+    和现代前端框架在本质上一脉相承。
+  </p>
+
+  <div class="tip info">
+    <h4>💡 你的前端经验就是最大优势</h4>
+    <p>
+      React 的 JSX / Vue 的模板 = WPF 的 XAML。<br>
+      React 的 state + props = WPF 的 DataContext + Binding。<br>
+      Redux 的 store → reducer → dispatch = MVVM 的 ViewModel → Command → View。<br>
+      CSS 选择器 + 声明块 = WPF 的 Style + Setter。<br>
+      CSS Flexbox / Grid = WPF 的 StackPanel / Grid。<br>
+      <strong>你不是从零开始，你是在翻译。</strong>
+    </p>
+  </div>
+
+  <h3 id="mapping">1.1 概念映射总表（前端 → WPF）</h3>
+  <table class="mapping-table">
+    <thead>
+      <tr><th style="width:22%">前端概念</th><th style="width:22%">WPF 对应</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>HTML + CSS</code></td>
+        <td><code>XAML</code></td>
+        <td>XAML = 结构（HTML 部分）+ 样式（CSS 部分）合一的声明式语言。XAML 中直接可写属性（类似内联 style），也支持引用 Style 资源。</td>
+      </tr>
+      <tr>
+        <td><code>JSX / Vue 模板</code></td>
+        <td><code>XAML + Code-behind</code></td>
+        <td>JSX 中的 <code>{expression}</code> = XAML 的 <code>{Binding}</code>。Code-behind（.xaml.cs）相当于前端中"逻辑较少时直接写在模板旁"的模式。</td>
+      </tr>
+      <tr>
+        <td><code>React state + props</code></td>
+        <td><code>DependencyProperty + DataContext</code></td>
+        <td>父传子 = DependencyProperty；全局上下文 = DataContext。数据变化自动通知 UI 更新，不需要手动 setState。</td>
+      </tr>
+      <tr>
+        <td><code>React Hooks (useState, useEffect)</code></td>
+        <td><code>INotifyPropertyChanged + ICommand</code></td>
+        <td>Hooks 是"声明式订阅"——ViewModel 实现 INotifyPropertyChanged 就是"属性变了通知 UI"，Command 就是"UI 事件触发逻辑"。</td>
+      </tr>
+      <tr>
+        <td><code>Redux / Zustand store</code></td>
+        <td><code>ViewModel (MVVM)</code></td>
+        <td>Store 保管状态 + 提供 dispatch = ViewModel 暴露属性 + Command。Vuex 的 mapState ≈ WPF 的 Binding 到 ViewModel 属性。</td>
+      </tr>
+      <tr>
+        <td><code>CSS Selector + Rules</code></td>
+        <td><code>Style + Setter / Trigger</code></td>
+        <td><code>.btn { color: red }</code> ≈ <code>&lt;Style TargetType="Button"&gt;&lt;Setter Property="Foreground" Value="Red"/&gt;</code>。<br>CSS 伪类 <code>:hover</code> ≈ WPF Trigger / VisualState。</td>
+      </tr>
+      <tr>
+        <td><code>CSS Flexbox / Grid</code></td>
+        <td><code>StackPanel / Grid / WrapPanel</code></td>
+        <td>StackPanel = flex-direction: column/row。Grid = CSS Grid（定义行/列）。WrapPanel = flex-wrap: wrap。DockPanel = 简易 flex。</td>
+      </tr>
+      <tr>
+        <td><code>Vue computed / React useMemo</code></td>
+        <td><code>ValueConverter + IMultiValueConverter</code></td>
+        <td>计算属性 = Converter（值转换器）。多个依赖组合 = MultiBinding + IMultiValueConverter。</td>
+      </tr>
+      <tr>
+        <td><code>React.context / Vue.provide</code></td>
+        <td><code>DataContext 继承树</code></td>
+        <td>WPF 的 DataContext 会自动沿视觉树向下传递——子元素自动继承父级 DataContext，相当于 provide/inject 或 context 的默认行为。</td>
+      </tr>
+      <tr>
+        <td><code>v-if / v-show / *ngIf</code></td>
+        <td><code>Visibility Binding + BooleanToVisibilityConverter</code></td>
+        <td><code>Visibility="Collapsed"</code> 相当于 v-if（移除布局空间），<code>Hidden</code> = v-show（隐藏但占位）。</td>
+      </tr>
+      <tr>
+        <td><code>v-for / .map()</code></td>
+        <td><code>ItemsControl + DataTemplate</code></td>
+        <td><code>&lt;ListBox ItemsSource="{Binding Items}"&gt;</code> + DataTemplate = v-for="item in items"。模板即组件。</td>
+      </tr>
+      <tr>
+        <td><code>CSS Modules / Scoped CSS</code></td>
+        <td><code>ResourceDictionary + x:Key</code></td>
+        <td>ResourceDictionary ≈ CSS 模块化文件。<code>x:Key</code> 引用 ≈ CSS 类名引用。<code>MergedDictionaries</code> ≈ CSS @import。</td>
+      </tr>
+      <tr>
+        <td><code>Web Component / Slot</code></td>
+        <td><code>UserControl / ContentControl + ContentTemplate</code></td>
+        <td>UserControl 封装组件 + DependencyProperty 定义接口 + ContentPresenter = slot/children。</td>
+      </tr>
+      <tr>
+        <td><code>Event Handler (onClick)</code></td>
+        <td><code>ICommand + CommandBinding</code></td>
+        <td>onClick = Command。禁止用 Code-behind 的 Click 事件（除非原型）。Command 是 MVVM 模式下触发逻辑的标准方式。</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== 2. ECOSYSTEM ===== -->
+<section id="ecosystem">
+  <h2>2. .NET / WPF 生态速览（2026）</h2>
+  <div class="card-grid col3">
+    <div class="card">
+      <span class="tag feat">框架</span>
+      <h4>.NET 9 / .NET 10</h4>
+      <p>.NET 9（2024.11）稳定版，.NET 10（2025.11）预览中。WPF 在 .NET Core 3.0 起已开源（MIT），目前 .NET 8+ 均为 LTS。</p>
+    </div>
+    <div class="card">
+      <span class="tag feat">UI 层</span>
+      <h4>WPF + WinUI 3</h4>
+      <p>WPF 仍是 WinForms 之外最成熟的桌面框架。WinUI 3 是新一代选择但生态尚不完善。生产项目首选 WPF。</p>
+    </div>
+    <div class="card">
+      <span class="tag feat">语言</span>
+      <h4>C# 12 / 13</h4>
+      <p>主语言 C# 12+（.NET 8+）。支持主构造函数、集合表达式、lambda 增强、半属性（partial properties）等——写起来越来越像 TypeScript。</p>
+    </div>
+    <div class="card">
+      <span class="tag feat">包管理</span>
+      <h4>NuGet</h4>
+      <p>相当于 npm。所有第三方库通过 <code>dotnet add package</code> 安装。IDE 中可通过 "管理 NuGet 包" 图形界面操作。</p>
+    </div>
+    <div class="card">
+      <span class="tag feat">MVVM 工具包</span>
+      <h4>CommunityToolkit.Mvvm</h4>
+      <p>官方推荐 MVVM 框架，C# 源生成器驱动（类似 Vue 的编译器宏），少量注解即可完成全套 MVVM 样板代码。</p>
+    </div>
+    <div class="card">
+      <span class="tag feat">IDE</span>
+      <h4>Visual Studio / Rider</h4>
+      <p>社区版 VS 免费，Rider 跨平台（但 WPF 开发仍需 Windows）。VS 的 XAML 设计器是核心生产力工具。</p>
+    </div>
+    </div>
+    <div class="card">
+      <span class="tag feat">新特性</span>
+      <h4>.NET 9 Fluent 主题</h4>
+      <p>.NET 9 WPF 新增原生 Fluent 主题（Windows 11 美学），<code>ThemeMode</code> 属性可直接在 Application/Window 级别设置 Light/Dark/System/None 主题模式。⚠️ 目前为实验性（WPF0001），高对比度有已知 bug。</p>
+    </div>
+  </div>
+
+  <div class="tip alert">
+    <h4>⚠️ 关键认知校正</h4>
+    <p>
+      <strong>"WPF 死了"是谣言。</strong> 微软在 .NET Core 3.0 重新开源 WPF，此后每个 .NET 版本都在维护。2024-2026 年的 WPF 是 MIT 开源、跨平台 SDK 风格（SDK-style .csproj）、与 .NET 最新特性同步的框架。
+      只是它不再是"微软唯一的主推 UI 框架"，而是作为成熟稳定的桌面方案与 WinUI 3、MAUI、Blazor Hybrid 并存。
+    </p>
+  </div>
+
+  <pre><span class="comment">&lt;!-- .NET 9 Fluent 主题（实验性） --&gt;</span>
+&lt;Application ThemeMode="<span class="keyword">System</span>" ...&gt;    <span class="comment">&lt;!-- 跟随系统主题 --&gt;</span>
+&lt;Window ThemeMode="<span class="keyword">Dark</span>" ...&gt;            <span class="comment">&lt;!-- 强制暗色 --&gt;</span></pre>
+</section>
+
+<!-- ===== 3. LEARNING PATH ===== -->
+<section id="path">
+  <h2>3. 学习路径 <span class="badge" style="background:rgba(247,129,102,.15);color:var(--priority-p0)">核心</span></h2>
+  <p>
+    以下路径按 <strong>重要性</strong> 和 <strong>学习难度</strong> 标注，<strong>越靠前越必须先学</strong>。
+    每天投入 2-3 小时，<strong>约 2-3 周</strong> 可上手写生产级 WPF 应用。
+  </p>
+
+  <div class="tip success" style="margin-bottom:24px;">
+    <h4>🎯 一句话学习策略</h4>
+    <p><strong>先不要碰设计器拖控件！</strong> 前三天手写 XAML，就像学 React 先手写 JSX 而非拖组件一样。这样你会真正理解布局系统、绑定和模板——而不是靠 IDE 生成的混乱代码。</p>
+  </div>
+
+  <!-- Phase 1 -->
+  <div class="timeline">
+    <div class="tl-item phase1">
+      <h4>📦 第一阶段：XAML + Layout（第 1-3 天）</h4>
+      <div class="meta">
+        <span class="pill p0">优先级: 必须</span>
+        <span class="pill easy">难度: ⭐ 入门</span>
+        <span class="pill feat">先学这个</span>
+      </div>
+      <p>从零搭建第一个 WPF 项目，理解 XAML 语法、布局容器、控件基础、事件绑定。</p>
+    </div>
+  </div>
+  <h4 style="margin-top:0;">学习清单</h4>
+  <table class="mapping-table">
+    <thead><tr><th style="width:30%">主题</th><th style="width:10%">重要度</th><th style="width:10%">难度</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>dotnet new wpf</code> 建项目</td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>了解 SDK-style .csproj 结构（相当于 package.json + tsconfig.json）。<code>App.xaml</code> = 入口。</td></tr>
+      <tr><td><code>Grid / StackPanel / WrapPanel</code></td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>Grid 定义行/列（≈ CSS Grid），StackPanel（≈ flex-direction），WrapPanel（≈ flex-wrap）。<strong>这是最常用的三个容器</strong>。</td></tr>
+      <tr><td><code>常用控件：TextBlock / TextBox / Button / ListBox / Image</code></td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>TextBlock ≈ &lt;span&gt;，TextBox ≈ &lt;input&gt;，Button ≈ &lt;button&gt;，ListBox ≈ &lt;select&gt; 或列表。XAML 属性语法 ≈ HTML attribute / CSS property。</td></tr>
+      <tr><td><code>属性语法：Attribute vs Property Element</code></td><td><span class="pill p1">P1</span></td><td><span class="pill easy">易</span></td><td>简单属性用 attribute <code>&lt;Button Background="Red"/&gt;</code>，复杂值用 property element <code>&lt;Button&gt;&lt;Button.Background&gt;...&lt;/&gt;</code>。</td></tr>
+      <tr><td><code>x:Name / x:Key / 代码后台访问</code></td><td><span class="pill p1">P1</span></td><td><span class="pill easy">易</span></td><td><code>x:Name</code> = HTML id / ref。<code>x:Key</code> 给资源命名后续引用。Code-behind 通过 Name 访问控件（但 MVVM 模式下很少这么用）。</td></tr>
+      <tr><td><code>Margin / Padding / HorizontalAlignment / VerticalAlignment</code></td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>Margin（外边距）≈ CSS margin，Padding（内边距）≈ CSS padding。Alignment 控制水平和垂直对齐。</td></tr>
+    </tbody>
+  </table>
+  <pre>&lt;!-- 第一天就能写出来的东西 --&gt;
+&lt;Window x:Class="MyApp.MainWindow" ...&gt;
+  &lt;Grid&gt;
+    &lt;Grid.RowDefinitions&gt;
+      &lt;RowDefinition Height="Auto"/&gt;    &lt;!-- Auto = 内容高度 --&gt;
+      &lt;RowDefinition Height="*"/&gt;        &lt;!-- * = 剩余空间（flex:1） --&gt;
+      &lt;RowDefinition Height="40"/&gt;       &lt;!-- 固定 px --&gt;
+    &lt;/Grid.RowDefinitions&gt;
+
+    &lt;TextBlock Text="Hello WPF" Grid.Row="0"
+               FontSize="24" FontWeight="Bold"
+               HorizontalAlignment="Center"/&gt;
+
+    &lt;StackPanel Grid.Row="1" Orientation="Horizontal"&gt;
+      &lt;TextBox x:Name="InputBox" Width="200" Margin="8"/&gt;
+      &lt;Button Content="Submit" Padding="12,4"/&gt;
+    &lt;/StackPanel&gt;
+
+    &lt;StatusBar Grid.Row="2"&gt;
+      &lt;TextBlock Text="Ready"/&gt;
+    &lt;/StatusBar&gt;
+  &lt;/Grid&gt;
+&lt;/Window&gt;</pre>
+
+  <!-- Phase 2 -->
+  <div class="timeline">
+    <div class="tl-item phase2">
+      <h4>🔗 第二阶段：Binding + MVVM（第 4-7 天）</h4>
+      <div class="meta">
+        <span class="pill p0">优先级: 必须</span>
+        <span class="pill medium">难度: ⭐⭐ 中等</span>
+        <span class="pill feat">核心难点</span>
+      </div>
+      <p>WPF 最核心的部分——数据绑定和 MVVM 模式。这是 WPF 和 WinForms 的本质区别，也是你前端经验最派得上用场的地方。</p>
+    </div>
+  </div>
+  <table class="mapping-table">
+    <thead><tr><th style="width:30%">主题</th><th style="width:10%">重要度</th><th style="width:10%">难度</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>INotifyPropertyChanged</code></td><td><span class="pill p0">P0</span></td><td><span class="pill medium">中</span></td><td>ViewModel 实现此接口，属性 setter 中调用 <code>PropertyChanged</code> 通知 UI。这是 WPF 绑定工作的基础——等价于 React 的 setState 触发 re-render。</td></tr>
+      <tr><td><code>{Binding Path, Mode=OneWay/TwoWay}</code></td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>OneWay（Model→View）≈ <code>useSelector</code> / computed。TwoWay（双向）≈ v-model。OneTime（只读一次）用于高性能静态数据。</td></tr>
+      <tr><td><code>DataContext 继承</code></td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>DataContext 向下传递 ≈ React Context。通常 Window/UserControl 的 DataContext 设为 ViewModel，所有子控件自动继承。</td></tr>
+      <tr><td><code>ICommand / RelayCommand</code></td><td><span class="pill p0">P0</span></td><td><span class="pill medium">中</span></td><td>Command = 函数引用。Button Command 绑定到 ViewModel 的 RelayCommand，替代 Click 事件。CanExecute ≈ 按钮禁用逻辑。</td></tr>
+      <tr><td><code>CommunityToolkit.Mvvm 入门</code></td><td><span class="pill p0">P0</span></td><td><span class="pill medium">中</span></td><td><code>[ObservableProperty]</code>、<code>[RelayCommand]</code> 两个注解解决 90% 的 MVVM 样板代码。源生成器在编译时生成 INPC 和 ICommand 实现。</td></tr>
+      <tr><td><code>ValueConverter（IValueConverter）</code></td><td><span class="pill p1">P1</span></td><td><span class="pill medium">中</span></td><td>绑定时转换值类型/格式。e.g. <code>bool → Visibility</code>、<code>DateTime → "yyyy-MM-dd"</code>。等价于 Vue 的 filter 或 React 的 useMemo。</td></tr>
+      <tr><td><code>ObservableCollection&lt;T&gt;</code></td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>WPF 的"响应式数组"。≈ React 的数组 + 不可变更新，但这里是可变的——增删自动通知 UI。<code>ItemsSource="{Binding Items}"</code> 配合 ListBox/DataGrid。</td></tr>
+    </tbody>
+  </table>
+  <pre><span class="comment">&lt;!-- View.xaml - 纯声明式 UI，没有一行逻辑代码 --&gt;</span>
+&lt;StackPanel DataContext="{StaticResource MainViewModel}"&gt;
+  &lt;TextBlock Text="{Binding UserName}" /&gt;                        <span class="comment">&lt;!-- 显示属性 --&gt;</span>
+  &lt;TextBox Text="{Binding UserName, Mode=TwoWay}" /&gt;              <span class="comment">&lt;!-- 双向绑定 = v-model --&gt;</span>
+  &lt;Button Command="{Binding SubmitCommand}" /&gt;                    <span class="comment">&lt;!-- Command = 函数 --&gt;</span>
+  &lt;Button Command="{Binding SaveCmd}" Content="{Binding SaveBtnText,
+    Converter={StaticResource UpperConverter}}" /&gt;                  <span class="comment">&lt;!-- Converter 转换 --&gt;</span>
+&lt;/StackPanel&gt;</pre>
+  <pre><span class="comment">// ViewModel.cs - 数据的"主人"</span>
+<span class="keyword">using</span> CommunityToolkit.Mvvm.ComponentModel;
+<span class="keyword">using</span> CommunityToolkit.Mvvm.Input;
+
+<span class="keyword">public partial class</span> <span class="type">MainViewModel</span> : <span class="type">ObservableObject</span>
+{
+    [ObservableProperty]
+    <span class="keyword">private</span> <span class="type">string</span> _userName = <span class="string">""</span>;         <span class="comment">// 源生成器产生 UserName 属性 + INPC</span>
+
+    [RelayCommand]
+    <span class="keyword">private async</span> <span class="type">Task</span> Submit()               <span class="comment">// 源生成器产生 SubmitCommand (ICommand)</span>
+    {
+        <span class="keyword">await</span> <span class="type">Task</span>.Delay(1000);
+        UserName = <span class="string">$"Hello, {_userName}!"</span>;  <span class="comment">// 自动通知 UI 更新</span>
+    }
+}</pre>
+
+  <!-- Phase 3 -->
+  <div class="timeline">
+    <div class="tl-item phase3">
+      <h4>🎨 第三阶段：Style + Template + Resources（第 8-10 天）</h4>
+      <div class="meta">
+        <span class="pill p1">优先级: 重要</span>
+        <span class="pill medium">难度: ⭐⭐ 中等</span>
+      </div>
+      <p>WPF 极其强大的样式和模板系统——某种意义上比 CSS 更灵活，但也更啰嗦。这阶段你将学会如何"真正地"定制控件外观。</p>
+    </div>
+  </div>
+  <table class="mapping-table">
+    <thead><tr><th style="width:30%">主题</th><th style="width:10%">重要度</th><th style="width:10%">难度</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>Style + Setter + TargetType</code></td><td><span class="pill p0">P0</span></td><td><span class="pill easy">易</span></td><td>≈ CSS class 选择器。指定 TargetType 自动应用于所有该类型控件（全局样式），或通过 x:Key 按需引用（≈ CSS class）。</td></tr>
+      <tr><td><code>Trigger / DataTrigger / MultiTrigger</code></td><td><span class="pill p1">P1</span></td><td><span class="pill medium">中</span></td><td>Trigger 响应依赖属性变化（≈ :hover :active），DataTrigger 响应绑定的数据变化（≈ :class 绑定）。MultiTrigger = 多个条件 AND。</td></tr>
+      <tr><td><code>ControlTemplate</code></td><td><span class="pill p1">P1</span></td><td><span class="pill hard">难</span></td><td>完全重定义控件外观。一个 Button 本质上只是一堆 XAML 组合在一起。≈ React 的 children + render props + style 组合。<strong>理解这个概念=理解 WPF 的"组件"本质</strong>。</td></tr>
+      <tr><td><code>DataTemplate</code></td><td><span class="pill p1">P1</span></td><td><span class="pill medium">中</span></td><td>定义"如何渲染一个数据对象"。配合 ItemsControl/ListBox 使用，≈ React 的 list.map + 组件模板。</td></tr>
+      <tr><td><code>ResourceDictionary + MergedDictionaries</code></td><td><span class="pill p1">P1</span></td><td><span class="pill easy">易</span></td><td>≈ CSS 模块化文件 + @import。<code>App.xaml</code> 中合并全局资源字典，全局可用。</td></tr>
+      <tr><td><code>ItemsControl + ItemTemplate + ItemContainerStyle</code></td><td><span class="pill p1">P1</span></td><td><span class="pill medium">中</span></td><td>ItemsControl 是"列表类控件"的基类。ItemTemplate = 每个 item 的 DataTemplate，ItemContainerStyle = 列表项容器的 style。</td></tr>
+    </tbody>
+  </table>
+  <pre><span class="comment">&lt;!-- 在 App.xaml 中定义全局样式 --&gt;</span>
+&lt;Application.Resources&gt;
+  &lt;ResourceDictionary&gt;
+    <span class="comment">&lt;!-- 全局按钮样式（自动应用于所有 Button） --&gt;</span>
+    &lt;Style TargetType="<span class="type">Button</span>"&gt;
+      &lt;Setter Property="Background" Value="#2ea043"/&gt;
+      &lt;Setter Property="Foreground" Value="White"/&gt;
+      &lt;Setter Property="Padding" Value="16,6"/&gt;
+      &lt;Setter Property="CornerRadius" Value="6"/&gt;
+      &lt;Style.Triggers&gt;
+        &lt;Trigger Property="IsMouseOver" Value="True"&gt;
+          &lt;Setter Property="Background" Value="#3fb950"/&gt;  <span class="comment">&lt;!— hover —&gt;</span>
+        &lt;/Trigger&gt;
+      &lt;/Style.Triggers&gt;
+    &lt;/Style&gt;
+
+    <span class="comment">&lt;!-- 按需样式的按钮 --&gt;</span>
+    &lt;Style x:Key="DangerButton" TargetType="<span class="type">Button</span>" BasedOn="{StaticResource {x:Type Button}}"&gt;
+      &lt;Setter Property="Background" Value="#da3633"/&gt;
+    &lt;/Style&gt;
+  &lt;/ResourceDictionary&gt;
+&lt;/Application.Resources&gt;</pre>
+  <pre><span class="comment">&lt;!-- DataTemplate - 定义"如何显示一条用户" --&gt;</span>
+&lt;DataTemplate x:Key="UserTemplate"&gt;
+  &lt;Border Padding="8" Margin="4" CornerRadius="8" Background="#161b22"&gt;
+    &lt;StackPanel Orientation="Horizontal"&gt;
+      &lt;Ellipse Width="32" Height="32" Fill="{Binding AvatarColor}"/&gt;
+      &lt;StackPanel Margin="8,0,0,0"&gt;
+        &lt;TextBlock Text="{Binding Name}" FontWeight="Bold"/&gt;
+        &lt;TextBlock Text="{Binding Email}" FontSize="12" Opacity="0.7"/&gt;
+      &lt;/StackPanel&gt;
+    &lt;/StackPanel&gt;
+  &lt;/Border&gt;
+&lt;/DataTemplate&gt;
+
+<span class="comment">&lt;!-- 使用模板 --&gt;</span>
+&lt;ListBox ItemsSource="{Binding Users}" ItemTemplate="{StaticResource UserTemplate}"/&gt;</pre>
+
+  <!-- Phase 4 -->
+  <div class="timeline">
+    <div class="tl-item phase4">
+      <h4>🚀 第四阶段：高级主题 + 三方库（第 11-14 天）</h4>
+      <div class="meta">
+        <span class="pill p2">优先级: 按需</span>
+        <span class="pill hard">难度: ⭐⭐⭐ 高</span>
+        <span class="pill feat">项目驱动</span>
+      </div>
+      <p>在实际项目中遇到了再学，不需要提前精通。按需要查找即可。</p>
+    </div>
+  </div>
+  <table class="mapping-table">
+    <thead><tr><th style="width:30%">主题</th><th style="width:10%">重要度</th><th style="width:10%">难度</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>UserControl 自定义组件</code></td><td><span class="pill p1">P1</span></td><td><span class="pill medium">中</span></td><td>复用 UI 片段。定义 DependencyProperty 暴露参数，支持 Binding。</td></tr>
+      <tr><td><code>自定义控件（CustomControl）</code></td><td><span class="pill p2">P2</span></td><td><span class="pill hard">难</span></td><td>编写全新控件。需要了解 WPF 可视化树、逻辑树、依赖属性系统、模板绑定（TemplateBinding）。仅当 UserControl 不够时使用。</td></tr>
+      <tr><td><code>AsyncCommand / 异步操作</code></td><td><span class="pill p1">P1</span></td><td><span class="pill medium">中</span></td><td>长期运行的命令需要 async，处理 IsRunning 状态禁用按钮（≈ loading state）。</td></tr>
+      <tr><td><code>附加属性 (AttachedProperty) / 行为 (Behavior)</code></td><td><span class="pill p2">P2</span></td><td><span class="pill hard">难</span></td><td>≈ 类似 Vue 的 directive 或 React 的 HOC。用于给现有控件附加新功能。</td></tr>
+      <tr><td><code>多线程 / Dispatcher / BackgroundWorker</code></td><td><span class="pill p1">P1</span></td><td><span class="pill hard">难</span></td><td>WPF UI 线程操作有严格限制。后台任务更新 UI 需通过 Dispatcher（≈ React 的 setState 只能在组件上下文中调用）。<code>async/await</code> 自动 marshal 回 UI 线程。</td></tr>
+      <tr><td><code>第三方库集成</code></td><td><span class="pill p1">P1</span></td><td><span class="pill medium">中</span></td><td>WPF UI、LiveCharts2、MaterialDesignInXaml 等。<code>dotnet add package</code> 安装后使用。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== 4. MVVM 深入 ===== -->
+<section id="mvvmdepth">
+  <h2>4. MVVM 深入理解</h2>
+  <div class="tip info">
+    <h4>💡 MVVM 不是"架构模式"，是"数据流约定"</h4>
+    <p>
+      理解 MVVM 的关键不是背三层名称，而是搞清楚<strong>谁拥有数据、谁消费数据</strong>：<br>
+      <strong>Model</strong> = 数据本体（数据库、API、设备）。<br>
+      <strong>ViewModel</strong> = 为 View 定制的数据适配器（将 Model 数据转为 View 可绑定的属性 + 命令）。<br>
+      <strong>View</strong> = 纯展示层，负责订阅 ViewModel 的变化并渲染（只写 XAML，不写逻辑）。<br>
+      这本质上就是 React 的 <strong>Store → Container → Component</strong> 或 Vue 的 <strong>Store → ref/computed → template</strong>。
+    </p>
+  </div>
+
+  <h3>CommunityToolkit.Mvvm 核心 API</h3>
+  <p>这是微软官方维护的 MVVM 工具包，学习成本极低——它通过<strong>源生成器（Source Generator）</strong>在编译时帮你写所有样板代码。</p>
+
+  <table class="mapping-table">
+    <thead>
+      <tr><th>注解 / 基类</th><th>作用</th><th>前端类比</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>ObservableObject</code>（基类）</td>
+        <td>提供 INotifyPropertyChanged 和 SetProperty 方法</td>
+        <td>≈ 提供了 setState 基础能力的基类</td>
+      </tr>
+      <tr>
+        <td><code>[ObservableProperty]</code></td>
+        <td>标记私有字段，自动生成公有属性 + PropertyChanged 通知</td>
+        <td>≈ <code>const [name, setName] = useState("")</code> 自动生成</td>
+      </tr>
+      <tr>
+        <td><code>[RelayCommand]</code></td>
+        <td>标记方法，自动生成 ICommand 属性的 RelayCommand</td>
+        <td>≈ 函数自动包装为可被模板调用的引用</td>
+      </tr>
+      <tr>
+        <td><code>[NotifyPropertyChangedFor]</code></td>
+        <td>A 属性变化时通知 B 属性也变化</td>
+        <td>≈ Vue computed 的依赖追踪</td>
+      </tr>
+      <tr>
+        <td><code>[NotifyCanExecuteChangedFor]</code></td>
+        <td>某属性变化时重新评估某 Command 的可执行状态</td>
+        <td>≈ useEffect 监听依赖后重新校验</td>
+      </tr>
+      <tr>
+        <td><code>AsyncRelayCommand</code></td>
+        <td>支持 async/await 的 RelayCommand，自动管理 IsRunning 状态</td>
+        <td>≈ useMutation / useSWR 的 loading 状态</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <pre><span class="comment">// 一个完整的 ViewModel 实例</span>
+<span class="keyword">public partial class</span> <span class="type">LoginViewModel</span> : <span class="type">ObservableObject</span>
+{
+    [ObservableProperty]
+    <span class="keyword">private</span> <span class="type">string</span> _username = <span class="string">""</span>;
+
+    [ObservableProperty]
+    <span class="keyword">private</span> <span class="type">string</span> _password = <span class="string">""</span>;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(<span class="keyword">nameof</span>(LoginCommand))]
+    <span class="keyword">private</span> <span class="type">bool</span> _isBusy;
+
+    <span class="keyword">private bool</span> CanLogin() =&gt; !<span class="keyword">string</span>.IsNullOrWhiteSpace(_username)
+                              &amp;&amp; _password.Length &gt;= 6
+                              &amp;&amp; !IsBusy;
+
+    [RelayCommand(CanExecute = <span class="keyword">nameof</span>(CanLogin))]
+    <span class="keyword">private async</span> <span class="type">Task</span> Login()
+    {
+        IsBusy = <span class="keyword">true</span>;
+        <span class="keyword">try</span>
+        {
+            <span class="keyword">await</span> AuthService.LoginAsync(_username, _password);
+            <span class="comment">// 登录成功 - 导航到主页</span>
+        }
+        <span class="keyword">catch</span> (Exception ex)
+        {
+            <span class="comment">// 错误处理 - 等价于 catch 块中的错误状态</span>
+            ErrorMessage = ex.Message;
+        }
+        <span class="keyword">finally</span>
+        {
+            IsBusy = <span class="keyword">false</span>;
+        }
+    }
+
+    [ObservableProperty]
+    <span class="keyword">private</span> <span class="type">string</span> _errorMessage = <span class="string">""</span>;
+}</pre>
+  <div class="tip success">
+    <h4>✅ MVVM 快速入门公式</h4>
+    <p>
+      <code>[ObservableProperty]</code> 私有字段 + <code>[RelayCommand]</code> 方法 = 一个完整的 ViewModel。<br>
+      不需要手写 INotifyPropertyChanged，不需要手动实现 ICommand。<br>
+      只用这两个注解，就能覆盖 90% 的日常开发。
+    </p>
+  </div>
+</section>
+
+<!-- ===== 5. LIBRARIES ===== -->
+<section id="libraries">
+  <h2>5. 第三方组件库详解</h2>
+
+  <div id="lib-communitytoolkit">
+    <h3>5.1 CommunityToolkit.Mvvm（必装）</h3>
+    <p>
+      <span class="pill p0">P0</span>
+      <span class="pill easy">易</span>
+      <span class="pill dotnet">官方</span>
+    </p>
+    <p>
+      <strong>一句话：每个 WPF 项目的必备基础库。</strong> 它不是 UI 组件库，而是 MVVM 基础设施。
+      前面 MVVM 章节已经详细介绍了——装上 <code>dotnet add package CommunityToolkit.Mvvm</code> 直接用就行。
+    </p>
+    <pre>dotnet add package CommunityToolkit.Mvvm</pre>
+  </div>
+
+  <div id="lib-wpfui">
+    <h3>5.2 WPF UI（强烈推荐）</h3>
+    <p>
+      <span class="pill p1">P1</span>
+      <span class="pill easy">易</span>
+      <span class="pill feat">Fluent Design</span>
+    </p>
+    <p>
+      <strong>现代、美观、社区活跃。</strong> WPF UI（全称 WPF-UI / wpfui）是目前最火的 WPF 第三方库之一。
+      它提供了类似 WinUI / Fluent Design 风格的控件集，让你的 WPF 应用看起来像 Windows 11 原生应用。
+    </p>
+    <pre>dotnet add package WPF-UI</pre>
+    <h4>主要特性</h4>
+    <ul>
+      <li>内置 <strong>浅色/深色主题</strong> 切换（一行代码）</li>
+      <li>包含 <code>NavigationView</code>（侧边导航）、<code>Button</code>、<code>ToggleSwitch</code> 等 Fluent 风格控件</li>
+      <li>提供 <code>SystemThemeWatcher</code> 自动跟随系统主题切换</li>
+      <li>内置 <code>Snackbar</code>（通知条）和 <code>MessageBox</code> 替代品</li>
+      <li>支持 MVVM 设计，Command 和 Binding 友好</li>
+      <li><strong>社区数据：</strong> GitHub ~9K stars，NuGet ~500K+ 下载量，MIT 许可证</li>
+    </ul>
+  </div>
+  <pre><span class="comment">&lt;!-- WPF UI 快速开始 --&gt;</span>
+&lt;Window ... xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+          ui:Design.Background="{DynamicResource ApplicationBackgroundColor}"
+          ui:Design.Foreground="{DynamicResource TextFillColorPrimary}"&gt;
+
+  &lt;ui:NavigationView x:Name="RootNavigation"
+                     Frame="{Binding ElementName=RootFrame}"&gt;
+    &lt;ui:NavigationView.MenuItems&gt;
+      &lt;ui:NavigationViewItem Content="Home"
+                              Icon="{ui:SymbolIcon Home}"&gt;
+        &lt;ui:NavigationViewItem.MenuItems&gt;
+          &lt;ui:NavigationViewItem Content="Dashboard"
+                                  Icon="{ui:SymbolIcon DataArea}"/&gt;
+        &lt;/ui:NavigationViewItem.MenuItems&gt;
+      &lt;/ui:NavigationViewItem&gt;
+      &lt;ui:NavigationViewItem Content="Settings"
+                              Icon="{ui:SymbolIcon Settings}"/&gt;
+    &lt;/ui:NavigationView.MenuItems&gt;
+  &lt;/ui:NavigationView&gt;
+
+  <span class="comment">&lt;!-- 主题切换 --&gt;</span>
+  &lt;ui:ToggleSwitch IsChecked="{Binding IsDarkTheme}"&gt;
+    &lt;TextBlock Text="Dark Mode"/&gt;
+  &lt;/ui:ToggleSwitch&gt;
+&lt;/Window&gt;</pre>
+
+  <div id="lib-mahapps">
+    <h3>5.3 MahApps.Metro</h3>
+    <p>
+      <span class="pill p2">P2</span>
+      <span class="pill medium">中</span>
+      <span class="pill feat">Metro 风格</span>
+    </p>
+    <p>
+      <strong>老牌经典。</strong> MahApps 是 WPF 社区最早的 Metro 风格库之一，提供了一整套现代化控件主题。
+      代码成熟、文档完善，但设计语言偏向 Windows 8/10 的 Metro（Modern UI）风格，
+      没有 WPF UI 那么"新 Windows 11"。
+    </p>
+    <pre>dotnet add package MahApps.Metro</pre>
+    <h4>主要特性</h4>
+    <ul>
+      <li><code>MetroWindow</code> 替代 Window——预置标题栏样式、窗口按钮、颜色主题</li>
+      <li><code>Flyout</code> 侧滑面板、<code>HamburgerMenu</code> 汉堡菜单</li>
+      <li><code>MetroProgressBar</code>、<code>MetroTabControl</code> 等美化控件</li>
+      <li>主题系统基于 <code>Accent</code>（强调色）+ <code>Theme</code>（亮/暗）</li>
+    </ul>
+  </div>
+
+  <div id="lib-material">
+    <h3>5.4 MaterialDesignInXaml</h3>
+    <p>
+      <span class="pill p2">P2</span>
+      <span class="pill medium">中</span>
+      <span class="pill feat">Material Design</span>
+    </p>
+    <p>
+      <strong>Material Design 风格。</strong> 如果你喜欢 Google 的 Material Design（Android / Flutter 风格），这个库最合适。
+      包含了 Material 风格的按钮、卡片、对话框、颜色调色板、字体等。适合做面向消费者的桌面应用。
+    </p>
+    <pre>dotnet add package MaterialDesignThemes</pre>
+    <div class="tip warn">
+      <h4>⚠️ MD3 支持尚未完整</h4>
+      <p>MaterialDesignInXaml 同时支持 MD2 和 MD3 主题（通过切换 App.xaml 中的 ResourceDictionary 源），但 MD3 的 <strong>颜色层级有已知问题</strong>（GitHub #3590），部分自定义控件（Card, Badged）尚未包含在 MD3 默认字典中。建议生产项目谨慎使用 MD3。</p>
+    </div>
+    <h4>主要特性</h4>
+    <ul>
+      <li>全套 Material Design 控件主题（Button、Card、Chip、FloatingActionButton、Snackbar 等）</li>
+      <li><strong>深色/浅色主题</strong> 切换 + 调色板二次定制</li>
+      <li>支持 MD2 和 MD3 两套设计语言（通过 ResourceDictionary 切换）</li>
+      <li>内置 <code>ColorZone</code>、<code>Card</code>、<code>Drawer</code> 等布局组件</li>
+      <li>丰富的图标资源集成（Material Design Icons）</li>
+    </ul>
+  </div>
+
+  <div id="lib-livecharts">
+    <h3>5.5 LiveCharts2（图表）</h3>
+    <p>
+      <span class="pill p1">P1</span>
+      <span class="pill medium">中</span>
+      <span class="pill feat">图表可视化</span>
+    </p>
+    <p>
+      <strong>WPF 生态最推荐的图表库。</strong> LiveCharts2 是 LiveCharts 的完全重写版本，从底层改为 SkiaSharp 渲染引擎。
+      支持 WPF、WinForms、Avalonia、MAUI、Blazor 等多个平台。API 设计现代，动画流畅。
+    </p>
+    <pre>dotnet add package LiveChartsCore.SkiaSharpView.WPF</pre>
+    <h4>核心概念</h4>
+    <ul>
+      <li><strong>Series</strong> — 数据系列（LineSeries、ColumnSeries、PieSeries 等）</li>
+      <li><strong>Axes</strong> — X/Y 轴配置（标题、范围、格式）</li>
+      <li><strong>CartesianChart</strong> — 直角坐标系图表</li>
+      <li><strong>PieChart</strong> — 饼图</li>
+      <li><strong>SKCharts</strong> — SkiaSharp 渲染的自定义画布图表</li>
+    </ul>
+  </div>
+  <pre><span class="comment">&lt;!-- LiveCharts2 - 一个折线图实例 --&gt;</span>
+&lt;Window ... xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"&gt;
+
+  &lt;lvc:CartesianChart&gt;
+    &lt;lvc:CartesianChart.Series&gt;
+      &lt;lvc:LineSeries Values="{Binding TemperatureValues}"
+                       Fill="Transparent"
+                       Stroke="#f78166"
+                       GeometrySize="6"
+                       GeometryStroke="#f78166"
+                       GeometryFill="#0d1117"
+                       LineSmoothness="0.3"/&gt;
+    &lt;/lvc:CartesianChart.Series&gt;
+
+    &lt;lvc:CartesianChart.XAxes&gt;
+      &lt;lvc:Axis Name="Time"
+                Labels="{Binding TimeLabels}"
+                LabelsRotation="45"/&gt;
+    &lt;/lvc:CartesianChart.XAxes&gt;
+
+    &lt;lvc:CartesianChart.YAxes&gt;
+      &lt;lvc:Axis Name="Temperature (°C)"
+                MinLimit="-10"
+                MaxLimit="50"/&gt;
+    &lt;/lvc:CartesianChart.YAxes&gt;
+  &lt;/lvc:CartesianChart&gt;
+&lt;/Window&gt;</pre>
+  <pre><span class="comment">// ViewModel 中的数据</span>
+<span class="keyword">public partial class</span> <span class="type">DashboardViewModel</span> : <span class="type">ObservableObject</span>
+{
+    <span class="keyword">public</span> <span class="type">ObservableCollection&lt;double&gt;</span> TemperatureValues { <span class="keyword">get</span>; }
+        = <span class="keyword">new</span>() { 22, 24, 19, 27, 25, 30, 28 };
+
+    <span class="keyword">public</span> <span class="type">string</span>[] TimeLabels { <span class="keyword">get</span>; }
+        = { <span class="string">"09:00"</span>, <span class="string">"10:00"</span>, <span class="string">"11:00"</span>, <span class="string">"12:00"</span>,
+            <span class="string">"13:00"</span>, <span class="string">"14:00"</span>, <span class="string">"15:00"</span> };
+}</pre>
+
+  <h4>LiveCharts2 常用图表类型速查</h4>
+  <table class="mapping-table">
+    <thead><tr><th>类型</th><th>Class</th><th>适用场景</th></tr></thead>
+    <tbody>
+      <tr><td>折线图</td><td><code>LineSeries&lt;double&gt;</code></td><td>趋势变化（温度、股价）</td></tr>
+      <tr><td>柱状图</td><td><code>ColumnSeries&lt;double&gt;</code></td><td>分类对比（销售额、流量）</td></tr>
+      <tr><td>饼图</td><td><code>PieSeries&lt;double&gt;</code></td><td>占比分布</td></tr>
+      <tr><td>散点图</td><td><code>ScatterSeries&lt;double&gt;</code></td><td>相关性分析</td></tr>
+      <tr><td>面积图</td><td><code>LineSeries</code> + <code>Fill</code></td><td>累积趋势，用 Fill 属性填充区域</td></tr>
+      <tr><td>极坐标图</td><td><code>PolarLineSeries&lt;double&gt;</code></td><td>方向/周期数据</td></tr>
+      <tr><td>热力图 / 仪表盘</td><td><code>HeatSeries</code> / <code>Gauge</code></td><td>多维数据 / 实时仪表</td></tr>
+    </tbody>
+  </table>
+
+  <div id="lib-compare">
+    <h3>5.6 组件库对比总表</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>库</th><th>类型</th><th>现代感</th><th>学习成本</th><th>主题切换</th><th>文档</th><th>推荐度</th><th>安装命令</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>CommunityToolkit.Mvvm</strong></td>
+          <td>MVVM 框架</td>
+          <td>—</td>
+          <td><span class="pill easy">低</span></td>
+          <td>—</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="pill p0">必装</span></td>
+          <td><code>dotnet add pkg CommunityToolkit.Mvvm</code></td>
+        </tr>
+        <tr>
+          <td><strong>WPF UI</strong></td>
+          <td>UI 控件库</td>
+          <td>⭐⭐⭐⭐⭐<br><small>Win11 Fluent</small></td>
+          <td><span class="pill easy">低</span></td>
+          <td><span class="yes">✅ 内置</span></td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="pill p1">强烈推荐</span></td>
+          <td><code>dotnet add pkg WPF-UI</code></td>
+        </tr>
+        <tr>
+          <td><strong>MahApps.Metro</strong></td>
+          <td>UI 控件库</td>
+          <td>⭐⭐⭐<br><small>Win8 Metro</small></td>
+          <td><span class="pill medium">中</span></td>
+          <td><span class="yes">✅ 内置</span></td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="pill p2">可选</span></td>
+          <td><code>dotnet add pkg MahApps.Metro</code></td>
+        </tr>
+        <tr>
+          <td><strong>MaterialDesignInXaml</strong></td>
+          <td>UI 控件库</td>
+          <td>⭐⭐⭐⭐<br><small>Material</small></td>
+          <td><span class="pill medium">中</span></td>
+          <td><span class="yes">✅ 内置</span></td>
+          <td>⭐⭐⭐</td>
+          <td><span class="pill p2">可选</span></td>
+          <td><code>dotnet add pkg MaterialDesignThemes</code></td>
+        </tr>
+        <tr>
+          <td><strong>LiveCharts2</strong></td>
+          <td>图表库</td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="pill medium">中</span></td>
+          <td><span class="partial">📐 手动</span></td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="pill p1">图表首选</span></td>
+          <td><code>dotnet add pkg LiveChartsCore.SkiaSharpView.WPF</code></td>
+        </tr>
+        <tr>
+          <td><strong>Newtonsoft.Json / System.Text.Json</strong></td>
+          <td>JSON 序列化</td>
+          <td>—</td>
+          <td><span class="pill easy">低</span></td>
+          <td>—</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="pill p1">必备</span></td>
+          <td>内置于 .NET</td>
+        </tr>
+        <tr>
+          <td><strong>Serilog</strong></td>
+          <td>日志</td>
+          <td>—</td>
+          <td><span class="pill easy">低</span></td>
+          <td>—</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="pill p2">生产推荐</span></td>
+          <td><code>dotnet add pkg Serilog</code></td>
+        </tr>
+        <tr>
+          <td><strong>FluentAvalonia</strong></td>
+          <td>跨平台/WinUI</td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="pill hard">高</span></td>
+          <td><span class="yes">✅ 内置</span></td>
+          <td>⭐⭐⭐</td>
+          <td><span class="pill p3">跨平台考虑</span></td>
+          <td><code>dotnet add pkg FluentAvaloniaUI</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===== 6. BEST PRACTICES ===== -->
+<section id="best-practices">
+  <h2>6. 最佳实践 & 常见陷阱</h2>
+
+  <div class="card-grid col2">
+    <div class="card">
+      <h4>✅ XAML 中不要写逻辑</h4>
+      <p>不要用 Converter 做复杂计算、不要在 Trigger 中做业务判断。XAML 只做"声明"，逻辑全部在 ViewModel 和 Service 中。</p>
+    </div>
+    <div class="card">
+      <h4>✅ 数据模板化</h4>
+      <p>遇到列表、表格、重复 UI，永远用 <code>ItemsControl + DataTemplate</code>，而不是在 Code-behind 中循环添加控件。</p>
+    </div>
+    <div class="card">
+      <h4>✅ 善用 ObservableCollection</h4>
+      <p>列表数据用 <code>ObservableCollection&lt;T&gt;</code> 而非 <code>List&lt;T&gt;</code>。前者增删自动通知 UI。</p>
+    </div>
+    <div class="card">
+      <h4>✅ MVVM + CommunityToolkit</h4>
+      <p>不要手写 INotifyPropertyChanged 和 ICommand。用 <code>[ObservableProperty]</code> 和 <code>[RelayCommand]</code> 两个注解搞定。</p>
+    </div>
+    <div class="card">
+      <h4>❌ 不要在设计器里拖控件</h4>
+      <p>VS 设计器生成的 XAML 又臭又长。初期手写 XAML 才能理解布局系统。</p>
+    </div>
+    <div class="card">
+      <h4>❌ 不要把 ViewModel 写成"上帝对象"</h4>
+      <p>一个页面可以有多个 ViewModel 组合，不要把所有属性和 Command 塞进一个类。按功能拆分 ≈ 前端的多个 hooks / stores。</p>
+    </div>
+    <div class="card">
+      <h4>❌ 不要在 Code-behind 写业务逻辑</h4>
+      <p>Code-behind 只放 UI 相关代码（动画控制、原生窗口交互）。业务逻辑、API 调用、数据转换全部在 ViewModel / Service 中。</p>
+    </div>
+    <div class="card">
+      <h4>❌ 不要在 UI 线程做耗时操作</h4>
+      <p>网络请求、文件读写、数据库查询一律异步。用 <code>async Task</code> + <code>AsyncRelayCommand</code>，await 后自动回到 UI 线程。</p>
+    </div>
+    <div class="card">
+      <h4>⚠️ 注意依赖属性的性能</h4>
+      <p>DependencyProperty 注册是静态的，性能开销很小。但大量 Trigger 和 Converter 的频繁调用会影响性能——大数据量列表时注意。</p>
+    </div>
+    <div class="card">
+      <h4>⚠️ 资源字典的查找顺序</h4>
+      <p>WPF 查找资源顺序：元素本地 → 父级 → 应用程序级 → 系统级。同名资源会"就近"覆盖。</p>
+    </div>
+    <div class="card">
+      <h4>⚠️ Binding 错误的调试</h4>
+      <p>开启输出窗口的 Binding 错误跟踪：在 VS 输出窗口选择"调试"→"WPF输出"。或者用 Snoop / WPF Inspector 工具。</p>
+    </div>
+    <div class="card">
+      <h4>💡 使用 .editorconfig + 代码分析</h4>
+      <p>WPF 项目配置 .editorconfig + Roslyn 分析器（如 CommunityToolkit 自带的分析器），在编码阶段发现潜在问题。</p>
+    </div>
+    <div class="card">
+      <h4>💡 项目结构推荐</h4>
+      <p><code>Views/</code>（.xaml）、<code>ViewModels/</code>、<code>Models/</code>、<code>Services/</code>、<code>Converters/</code>、<code>Resources/</code>。对应前端的 <code>components/</code>、<code>hooks/</code>、<code>store/</code>、<code>utils/</code>。</p>
+    </div>
+  </div>
+
+  <h3>调试工具</h3>
+  <table class="mapping-table">
+    <thead><tr><th>工具</th><th>用途</th><th>前端类比</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Snoop</strong></td><td>WPF 可视化树浏览器，实时查看/修改任何控件的属性、Binding、DataContext</td><td>≈ React DevTools</td></tr>
+      <tr><td><strong>VS Live Visual Tree</strong></td><td>VS 内置的运行时可视化树探查器（调试时可用）</td><td>≈ Chrome Elements Panel</td></tr>
+      <tr><td><strong>Output 窗口</strong></td><td>Binding 失败时输出详细错误信息（需要在 VS 选项中启用 WPF 跟踪）</td><td>≈ Console Error Trace</td></tr>
+      <tr><td><strong>WPF Inspector</strong></td><td>Snoop 的替代品，轻量级</td><td>—</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== 7. PROJECTS ===== -->
+<section id="projects">
+  <h2>7. 实战项目建议</h2>
+  <p>按难度排序，从简单到复杂。每个项目只做一件事，打好基础后再叠加。</p>
+
+  <div class="timeline">
+    <div class="tl-item phase1">
+      <h4>📝 项目 1：记事本（第 1-2 天）</h4>
+      <div class="meta"><span class="pill easy">入门</span> <span class="pill p1">练手</span></div>
+      <p>基本的文本编辑、文件打开/保存、字体/颜色设置。只用 XAML + Code-behind（这个刻意不用 MVVM，先熟悉 WPF 本身）。</p>
+    </div>
+    <div class="tl-item phase2">
+      <h4>📋 项目 2：待办事项 App（第 3-5 天）</h4>
+      <div class="meta"><span class="pill medium">中等</span> <span class="pill p0">核心练习</span></div>
+      <p>增删改查 + 列表显示 + 筛选。强制使用 MVVM + CommunityToolkit.Mvvm + ObservableCollection。这是 WPF 学习的关键转折点。</p>
+    </div>
+    <div class="tl-item phase2">
+      <h4>🌐 项目 3：Http API 浏览器（第 6-8 天）</h4>
+      <div class="meta"><span class="pill medium">中等</span> <span class="pill p1">实用</span></div>
+      <p>输入 URL 调用 API 并展示结果（≈ Postman lite）。练习 HttpClient、异步 Command、数据显示、错误处理、加载状态。</p>
+    </div>
+    <div class="tl-item phase3">
+      <h4>📊 项目 4：数据仪表盘（第 9-12 天）</h4>
+      <div class="meta"><span class="pill hard">较高</span> <span class="pill p1">综合</span></div>
+      <p>接入 LiveCharts2 展示折线图/柱状图。使用 WPF UI 或 MaterialDesign 做外观。数据来源可以是模拟生成或 API。练习第三方库集成 + 主题切换。</p>
+    </div>
+    <div class="tl-item phase4">
+      <h4>🏭 项目 5：工业/业务系统（第 13 天+）</h4>
+      <div class="meta"><span class="pill hard">高</span> <span class="pill p2">进阶</span></div>
+      <p>多页面导航（NavigationView）、数据网格（DataGrid）、自定义控件、多线程数据集采集、实时刷新图表。这就是项目中常见的复杂 WPF 应用形态。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 8. RESOURCES ===== -->
+<section id="resources">
+  <h2>8. 资源汇总</h2>
+
+  <div class="card-grid col3">
+    <div class="card">
+      <h4>📚 官方文档</h4>
+      <p><a href="https://learn.microsoft.com/zh-cn/dotnet/desktop/wpf/" target="_blank" style="color:var(--accent)">Microsoft WPF 文档</a> — 最权威的学习资料，从概念到 API 都很完善</p>
+    </div>
+    <div class="card">
+      <h4>📘 入门教程</h4>
+      <p><a href="https://www.wpf-tutorial.com/" target="_blank" style="color:var(--accent)">WPF-Tutorial.com</a> — 最好的免费 WPF 入门教程之一，按主题组织</p>
+    </div>
+    <div class="card">
+      <h4>🎯 MVVM 教程</h4>
+      <p><a href="https://learn.microsoft.com/zh-cn/dotnet/communitytoolkit/mvvm/" target="_blank" style="color:var(--accent)">CommunityToolkit.Mvvm 文档</a> — 官方 MVVM 工具包文档，有大量代码示例</p>
+    </div>
+    <div class="card">
+      <h4>📦 WPF UI 文档</h4>
+      <p><a href="https://wpfui.lepo.co/" target="_blank" style="color:var(--accent)">WPF UI 官网</a> — 文档 + 在线演示 + NuGet 包信息</p>
+    </div>
+    <div class="card">
+      <h4>📊 LiveCharts2</h4>
+      <p><a href="https://livecharts2.dev/" target="_blank" style="color:var(--accent)">LiveCharts2 官网</a> — 包含 WPF 集成指南和大量交互式示例</p>
+    </div>
+    <div class="card">
+      <h4>🔧 Snoop</h4>
+      <p><a href="https://github.com/cplotts/snoopwpf" target="_blank" style="color:var(--accent)">Snoop WPF</a> — WPF 调试利器，可视化树浏览器</p>
+    </div>
+    <div class="card">
+      <h4>💬 社区</h4>
+      <p><a href="https://stackoverflow.com/questions/tagged/wpf" target="_blank" style="color:var(--accent)">StackOverflow WPF</a> — 任何问题都能搜到</p>
+    </div>
+    <div class="card">
+      <h4>🎨 GitHub 示例</h4>
+      <p>搜索 <code>WPF MVVM Sample</code> 或 <code>WPF-UI Demo</code>，找完整的开源项目看代码结构</p>
+    </div>
+    <div class="card">
+      <h4>📹 视频教程</h4>
+      <p>YouTube 搜 "WPF for beginners"（AngelSix 的系列不错），但建议先看文档再看视频</p>
+    </div>
+  </div>
+
+  <div class="tip success" style="margin-top:24px;">
+    <h4>🏁 最后的建议</h4>
+    <p>
+      <strong>不要怕 XAML 啰嗦。</strong> 前端开发者最初都会觉得 XAML 太冗长——一个简单的按钮样式都要写十几行。
+      但 XAML 的啰嗦换来的是<strong>确定性</strong>：你写的每一行都精确描述 UI 的最终状态，没有 CSS 的层叠不确定性。
+      一旦你理解了 WPF 的<strong>数据流</strong>（Binding 从 ViewModel 到 View 的单向/双向流动），
+      你会发现它比前端的状态管理更直观 —— 因为没有虚拟 DOM diff、没有 Fiber reconciler、没有异步 setState 的坑。
+      就是"属性变了 → UI 刷新"，如此直接。
+    </p>
+  </div>
+</section>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+  // Back to top
+  window.addEventListener('scroll', function() {
+    document.getElementById('backToTop').style.display = window.scrollY > 400 ? 'flex' : 'none';
+  });
+
+  // Active TOC highlighting
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = [];
+  tocLinks.forEach(function(link) {
+    var href = link.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      var el = document.getElementById(href.slice(1));
+      if (el) sections.push({ el: el, link: link });
+    }
+  });
+  window.addEventListener('scroll', function() {
+    var scrollY = window.scrollY + 120;
+    var active = null;
+    sections.forEach(function(s) {
+      if (s.el.offsetTop <= scrollY) active = s.link;
+    });
+    tocLinks.forEach(function(l) { l.classList.remove('active'); });
+    if (active) active.classList.add('active');
+  });
+</script>
+
+</body>
+</html>
