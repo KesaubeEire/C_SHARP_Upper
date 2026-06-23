@@ -6,6 +6,7 @@
 using Lepo.i18n.DependencyInjection;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.DependencyInjection;
+using Wpf.Ui.Gallery.Controls.Sidebar;
 using Wpf.Ui.Gallery.DependencyModel;
 using Wpf.Ui.Gallery.Resources;
 using Wpf.Ui.Gallery.Services;
@@ -72,6 +73,9 @@ public partial class App
                 _ = services.AddSingleton<PollingPage>();
                 _ = services.AddSingleton<AlarmPage>();
                 _ = services.AddSingleton<AlarmViewModel>();
+
+                // Sidebar panel
+                _ = services.AddTransient<PpeConnectionSection>();
 
                 // All other pages and view models
                 _ = services.AddTransientFromNamespace("Wpf.Ui.Gallery.Views", GalleryAssembly.Asssembly);

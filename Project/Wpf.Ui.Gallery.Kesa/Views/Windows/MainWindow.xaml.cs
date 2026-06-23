@@ -3,7 +3,9 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
+using Microsoft.Extensions.DependencyInjection;
 using Wpf.Ui.Controls;
+using Wpf.Ui.Gallery.Controls.Sidebar;
 using Wpf.Ui.Gallery.Services.Contracts;
 using Wpf.Ui.Gallery.ViewModels.Windows;
 using Wpf.Ui.Gallery.Views.Pages;
@@ -27,9 +29,34 @@ public partial class MainWindow : IWindow
 
         InitializeComponent();
 
+        // 创建 PLC 连接综合面板并注入到 "PLC 连接" 的 MenuItems 中
+        var plcSection = serviceProvider.GetRequiredService<PpeConnectionSection>();
+        foreach (var item in ViewModel.MenuItems)
+        {
+            if (item is NavigationViewItem navItem && navItem.Content is string s && s == "PLC 连接")
+            {
+                navItem.MenuItemsSource = new object[] { plcSection };
+                break;
+            }
+        }
+
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
         navigationService.SetNavigationControl(NavigationView);
         contentDialogService.SetDialogHost(RootContentDialog);
+
+        // NavigationView 完全加载后强制将 Gallery 设为收起
+        NavigationView.Loaded += (_, _) =>
+        {
+            foreach (var item in ViewModel.MenuItems)
+            {
+                if (item is NavigationViewItem navItem && navItem.Content is string s && s == "Gallery")
+                {
+                    navItem.SetCurrentValue(NavigationViewItem.IsExpandedProperty, false);
+                    break;
+                }
+            }
+        };
+
         SetupTrayMenuEvents();
     }
 

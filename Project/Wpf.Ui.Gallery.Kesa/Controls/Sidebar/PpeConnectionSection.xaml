@@ -1,0 +1,128 @@
+<UserControl x:Class="Wpf.Ui.Gallery.Controls.Sidebar.PpeConnectionSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+
+    <!-- ===== 连接面板 ===== -->
+    <StackPanel>
+        <GroupBox Header="PLC 参数" Margin="12,4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="IP" VerticalAlignment="Center" FontSize="12" />
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ipInput" Text="192.168.0.1" Margin="0,2" FontSize="12" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="端口" VerticalAlignment="Center" FontSize="12" />
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="portInput" Text="102" Margin="0,2" FontSize="12" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="机架" VerticalAlignment="Center" FontSize="12" />
+                <TextBox Grid.Row="2" Grid.Column="1" x:Name="rackInput" Text="0" Margin="0,2" FontSize="12" />
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="槽位" VerticalAlignment="Center" FontSize="12" />
+                <TextBox Grid.Row="3" Grid.Column="1" x:Name="slotInput" Text="1" Margin="0,2" FontSize="12" />
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Header="本机网卡" Margin="12,0">
+            <ComboBox x:Name="adapterCombo" DisplayMemberPath="Display" FontSize="12" />
+        </GroupBox>
+
+        <StackPanel Orientation="Horizontal" Margin="12,4">
+            <ui:Button x:Name="btnConnect" Content="连接" Appearance="Primary" Click="OnConnect" Margin="0,0,6,0" FontSize="12" />
+            <ui:Button x:Name="btnDisconnect" Content="断开" Appearance="Secondary" Click="OnDisconnect" IsEnabled="False" FontSize="12" />
+        </StackPanel>
+
+        <Border x:Name="statusBar" Background="{DynamicResource CardBackground}" CornerRadius="4" Padding="8" Margin="12,4" Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse x:Name="statusIndicator" Width="8" Height="8" Fill="#666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock x:Name="statusText" Text="未连接" FontSize="12" />
+            </StackPanel>
+        </Border>
+
+        <Separator Margin="12,8" />
+
+        <!-- ===== 导入面板 ===== -->
+        <StackPanel Orientation="Horizontal" Margin="12,4">
+            <ui:Button Content="📂 导入 .db" Click="OnImportDb" Margin="0,0,6,0" FontSize="12" />
+            <ui:Button Content="📂 导入 .udt" Click="OnImportUdt" FontSize="12" />
+        </StackPanel>
+
+        <GroupBox Header="已导入的 DB" Margin="12,4">
+            <ItemsControl x:Name="dbList" MaxHeight="100">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="4,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="11" VerticalAlignment="Center" />
+                                <ui:Button Grid.Column="1" Content="✕" FontSize="10" Width="20" Height="20"
+                                        Tag="{Binding}" Click="OnDeleteDb" Appearance="Secondary" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </GroupBox>
+
+        <GroupBox Header="已导入的 UDT" Margin="12,4">
+            <ItemsControl x:Name="udtList" MaxHeight="100">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="4,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding UdtName}" FontSize="11" VerticalAlignment="Center" />
+                                <ui:Button Grid.Column="1" Content="✕" FontSize="10" Width="20" Height="20"
+                                        Tag="{Binding}" Click="OnDeleteUdt" Appearance="Secondary" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </GroupBox>
+
+        <Separator Margin="12,8" />
+
+        <!-- ===== 轮询面板 ===== -->
+        <GroupBox Header="轮询参数" Margin="12,4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="间隔 (ms)" VerticalAlignment="Center" FontSize="12" />
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="intervalInput" Text="500" Margin="0,2" FontSize="12" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="延迟" VerticalAlignment="Center" FontSize="12" />
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="latencyText" Text="--" Margin="0,2" FontSize="12" />
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Orientation="Horizontal" Margin="12,4">
+            <ui:Button x:Name="btnStart" Content="▶ 启动" Appearance="Primary" Click="OnStart" Margin="0,0,6,0" FontSize="12" />
+            <ui:Button x:Name="btnStop" Content="■ 停止" Appearance="Secondary" Click="OnStop" IsEnabled="False" FontSize="12" />
+        </StackPanel>
+
+        <Border Background="{DynamicResource CardBackground}" CornerRadius="4" Padding="8" Margin="12,4">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse x:Name="pollIndicator" Width="8" Height="8" Fill="#666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock x:Name="pollStatusText" Text="就绪" FontSize="12" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

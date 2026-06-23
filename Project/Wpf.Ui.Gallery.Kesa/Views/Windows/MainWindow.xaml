@@ -76,6 +76,9 @@
                     <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
                 </Grid>
             </ui:NavigationView.ContentOverlay>
+            <ui:NavigationView.PaneFooter>
+                <Rectangle Height="4" Fill="Transparent" />
+            </ui:NavigationView.PaneFooter>
         </ui:NavigationView>
 
         <ui:TitleBar
