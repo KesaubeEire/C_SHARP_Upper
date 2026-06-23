@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 using Wpf.Ui.Gallery.Models.Plc;
@@ -28,6 +30,22 @@ public partial class PpeConnectionSection : UserControl
     {
         LoadAdapters();
         RestoreImports();
+    }
+
+    /// <summary>
+    /// 阻止鼠标事件冒泡到父级 NavigationViewItem，
+    /// 避免点击本控件的非交互区域（空白/disabled 按钮等）触发侧边栏菜单折叠。
+    /// </summary>
+    private void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // 只拦截非交互控件的点击，正常的 Button/TextBox/ComboBox 仍然正常工作
+        if (e.OriginalSource is ButtonBase or TextBox or ComboBox or ToggleButton)
+        {
+            return;
+        }
+
+        // 阻止事件继续冒泡到 NavigationViewItem，防止其 IsExpanded 被切换
+        e.Handled = true;
     }
 
     // =================== 连接逻辑 ===================

@@ -8,6 +8,7 @@
              mc:Ignorable="d"
              d:DesignHeight="781.564" d:DesignWidth="300"
              Padding="10"
+             PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown"
              ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
              ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
              Foreground="{DynamicResource TextFillColorPrimaryBrush}">
