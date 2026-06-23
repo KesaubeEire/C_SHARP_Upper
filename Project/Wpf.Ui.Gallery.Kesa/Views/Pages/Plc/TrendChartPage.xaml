@@ -5,6 +5,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+      xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -26,10 +27,10 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="时间范围:" VerticalAlignment="Center" FontSize="13"
+                <TextBlock Grid.Column="0" Text="时间范围:" VerticalAlignment="Center" 
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 <ComboBox Grid.Column="2" x:Name="timeRangeCombo"
-                          Height="30" SelectedIndex="4"
+                          SelectedIndex="4"
                           SelectionChanged="OnTimeRangeChanged" />
                 <ui:Button Grid.Column="4" x:Name="btnMock"
                            Content="▶ 模拟数据"
@@ -48,10 +49,14 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <lvc:CartesianChart Grid.Row="0" x:Name="trendChart" Margin="8"
-                                    AnimationsSpeed="00:00:00.050"
-                                    ZoomMode="X"
-                                    TooltipPosition="Top" />
+                <controls:CartesianChartKesa Grid.Row="0" x:Name="trendChart" Margin="8"
+                                              AnimationsSpeed="00:00:00.050"
+                                              ZoomMode="X"
+                                              TooltipPosition="Top"
+                                              LineStrokeThickness="3"
+                                              LineSmoothness="0.2"
+                                              GeometrySize="0"
+                                              FillOpacity="0" />
                 <!-- 图例 + 实时值 -->
                 <Border Grid.Row="1" x:Name="legendBar"
                         Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -132,11 +137,6 @@
                                MouseLeave="OnMotorPressLeave" />
                 </Grid>
 
-                <TextBlock Text="💡 按住设1，松开设0（按1松0）"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           Margin="0,12,0,0"
-                           HorizontalAlignment="Center" />
             </StackPanel>
         </Border>
     </StackPanel>

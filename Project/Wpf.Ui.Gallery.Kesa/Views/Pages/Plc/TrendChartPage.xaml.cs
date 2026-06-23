@@ -31,9 +31,9 @@ public partial class TrendChartPage : Page
 
     private static readonly ChannelDef[] Channels =
     [
-        new() { _key = "db1_6",  _label = "DB1.6",  _unit = "MPa",   _dbNumber = 1,  _byteOffset = 6,  _color = SKColor.Parse("#42A5F5"), _min = 0,  _max = 20  },
-        new() { _key = "db6_38", _label = "DB6.38", _unit = "°C",    _dbNumber = 6,  _byteOffset = 38, _color = SKColor.Parse("#66BB6A"), _min = 0,  _max = 200 },
-        new() { _key = "db7_38", _label = "DB7.38", _unit = "mm/s",  _dbNumber = 7,  _byteOffset = 38, _color = SKColor.Parse("#FFA726"), _min = 0,  _max = 50  },
+        new() { _key = "db1_6",  _label = "变频器频率",  _unit = "Hz",   _dbNumber = 1,  _byteOffset = 6,  _color = SKColor.Parse("#42A5F5"), _min = 0,  _max = 50  },
+        new() { _key = "db6_38", _label = "滑台位置", _unit = "mm",    _dbNumber = 6,  _byteOffset = 38, _color = SKColor.Parse("#66BB6A"), _min = -200,  _max = 100 },
+        new() { _key = "db7_38", _label = "圆盘角度", _unit = "°",  _dbNumber = 7,  _byteOffset = 38, _color = SKColor.Parse("#FFA726"), _min = 0,  _max = 360  },
     ];
 
     // 时间范围选项
@@ -102,16 +102,23 @@ public partial class TrendChartPage : Page
             _buffers[ch._key] = buf;
             _currentValues[ch._key] = 0;
 
+            double thickness = trendChart.LineStrokeThickness;
+            double smoothness = trendChart.LineSmoothness;
+            double geoSize = trendChart.GeometrySize;
+            double fillOpacity = trendChart.FillOpacity;
+
             _series.Add(new LineSeries<NormPoint>
             {
                 Values = buf,
                 Name = $"{ch._label} ({ch._unit})",
-                Stroke = new SolidColorPaint(ch._color) { StrokeThickness = 2 },
-                Fill = null,
-                GeometrySize = 0,
-                LineSmoothness = 0.3f,
-                GeometryStroke = null,
-                GeometryFill = null,
+                Stroke = new SolidColorPaint(ch._color) { StrokeThickness = (float)thickness },
+                Fill = fillOpacity > 0
+                    ? new SolidColorPaint(ch._color.WithAlpha((byte)(fillOpacity * 255)))
+                    : null,
+                GeometrySize = (float)geoSize,
+                LineSmoothness = (float)smoothness,
+                GeometryStroke = geoSize > 0 ? new SolidColorPaint(ch._color) : null,
+                GeometryFill = geoSize > 0 ? new SolidColorPaint(SKColors.White) : null,
             });
         }
 
@@ -372,10 +379,14 @@ public partial class TrendChartPage : Page
             {
                 ls.Name = mockLabels[i];
                 ls.Values = buf;
-                ls.Stroke = new SolidColorPaint(mockColors[i]) { StrokeThickness = 2 };
-                ls.Fill = null;
-                ls.GeometrySize = 0;
-                ls.LineSmoothness = 0.3f;
+                ls.Stroke = new SolidColorPaint(mockColors[i]) { StrokeThickness = (float)trendChart.LineStrokeThickness };
+                ls.Fill = trendChart.FillOpacity > 0
+                    ? new SolidColorPaint(mockColors[i].WithAlpha((byte)(trendChart.FillOpacity * 255)))
+                    : null;
+                ls.GeometrySize = (float)trendChart.GeometrySize;
+                ls.LineSmoothness = (float)trendChart.LineSmoothness;
+                ls.GeometryStroke = trendChart.GeometrySize > 0 ? new SolidColorPaint(mockColors[i]) : null;
+                ls.GeometryFill = trendChart.GeometrySize > 0 ? new SolidColorPaint(SKColors.White) : null;
             }
 
             // 更新图例
