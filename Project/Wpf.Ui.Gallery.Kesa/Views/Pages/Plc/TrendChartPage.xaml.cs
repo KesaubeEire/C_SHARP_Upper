@@ -506,7 +506,8 @@ public partial class TrendChartPage : Page
         else
             newVal = (byte)(current.Value & (byte)~(1 << bitOff));
 
-        _s7.WriteByte(S7Service.AreaDB, byteOff, newVal, dbNum);    }
+        _s7.WriteByte(S7Service.AreaDB, byteOff, newVal, dbNum);
+    }
 
 
     // ===================== 生命周期 =====================

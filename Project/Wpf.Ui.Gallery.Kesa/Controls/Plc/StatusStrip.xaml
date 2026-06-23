@@ -1,66 +1,98 @@
-<UserControl x:Class="Wpf.Ui.Gallery.Controls.Plc.StatusStrip"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
-             mc:Ignorable="d"
-             d:DesignWidth="600" d:DesignHeight="36"
-             x:Name="root">
-    <Border Background="{DynamicResource CardBackground}"
-            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-            BorderThickness="1" CornerRadius="6" Padding="12,8">
+﻿<UserControl
+    x:Class="Wpf.Ui.Gallery.Controls.Plc.StatusStrip"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+    x:Name="root"
+    d:DesignHeight="36"
+    d:DesignWidth="600"
+    mc:Ignorable="d">
+    <Border
+        Padding="12,8"
+        Background="{DynamicResource CardBackground}"
+        BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+        BorderThickness="1"
+        CornerRadius="6">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- Connection status -->
+            <!--  Connection status  -->
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <plc:LedIndicator x:Name="connLed" Width="10" Height="10"
-                                   Quality="{Binding ConnectionQuality, ElementName=root}"
-                                   VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding ConnectionText, ElementName=root, FallbackValue=未连接}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Center" Margin="6,0,16,0"/>
+                <plc:LedIndicator
+                    x:Name="connLed"
+                    Width="10"
+                    Height="10"
+                    VerticalAlignment="Center"
+                    Quality="{Binding ConnectionQuality, ElementName=root}" />
+                <TextBlock
+                    Margin="6,0,16,0"
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="{Binding ConnectionText, ElementName=root, FallbackValue=未连接}" />
             </StackPanel>
 
-            <!-- Separator -->
-            <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource ControlElevationBorderBrush}"
-                       VerticalAlignment="Stretch" Margin="0,2"/>
+            <!--  Separator  -->
+            <Rectangle
+                Grid.Column="1"
+                Width="1"
+                Margin="0,2"
+                VerticalAlignment="Stretch"
+                Fill="{DynamicResource ControlElevationBorderBrush}" />
 
-            <!-- Polling info -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16,0,0,0">
-                <TextBlock Text="轮询:"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextFillColorDisabledBrush}"
-                           VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding PollingText, ElementName=root, FallbackValue=--}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Center" Margin="4,0,16,0"/>
+            <!--  Polling info  -->
+            <StackPanel
+                Grid.Column="2"
+                Margin="16,0,0,0"
+                Orientation="Horizontal">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorDisabledBrush}"
+                    Text="轮询:" />
+                <TextBlock
+                    Margin="4,0,16,0"
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="{Binding PollingText, ElementName=root, FallbackValue=--}" />
             </StackPanel>
 
-            <!-- Separator -->
-            <Rectangle Grid.Column="3" Width="1" Fill="{DynamicResource ControlElevationBorderBrush}"
-                       VerticalAlignment="Stretch" Margin="0,2" Visibility="Collapsed"/>
+            <!--  Separator  -->
+            <Rectangle
+                Grid.Column="3"
+                Width="1"
+                Margin="0,2"
+                VerticalAlignment="Stretch"
+                Fill="{DynamicResource ControlElevationBorderBrush}"
+                Visibility="Collapsed" />
 
-            <!-- Error count -->
-            <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="0,0,0,0"
-                        Visibility="{Binding ShowErrors, ElementName=root, Converter={StaticResource BoolToVisibilityConverter}}">
-                <TextBlock Text="错误:"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextFillColorDisabledBrush}"
-                           VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding ErrorCount, ElementName=root, FallbackValue=0}"
-                           FontSize="12" FontWeight="Bold"
-                           Foreground="{DynamicResource SystemFillColorCriticalBrush}"
-                           VerticalAlignment="Center" Margin="4,0,0,0"/>
+            <!--  Error count  -->
+            <StackPanel
+                Grid.Column="4"
+                Margin="0,0,0,0"
+                Orientation="Horizontal"
+                Visibility="{Binding ShowErrors, ElementName=root, Converter={StaticResource BoolToVisibilityConverter}}">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorDisabledBrush}"
+                    Text="错误:" />
+                <TextBlock
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    FontWeight="Bold"
+                    Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                    Text="{Binding ErrorCount, ElementName=root, FallbackValue=0}" />
             </StackPanel>
         </Grid>
     </Border>

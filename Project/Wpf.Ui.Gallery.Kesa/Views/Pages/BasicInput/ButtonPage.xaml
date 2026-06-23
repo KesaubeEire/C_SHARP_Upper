@@ -1,4 +1,4 @@
-<Page
+﻿<Page
     x:Class="Wpf.Ui.Gallery.Views.Pages.BasicInput.ButtonPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -133,20 +133,55 @@
             <StackPanel>
                 <TextBlock Text="Enabled" />
                 <WrapPanel>
-                    <ui:Button Appearance="Primary"   Content="Primary"   Margin="4" />
-                    <ui:Button Appearance="Secondary" Content="Secondary" Margin="4" />
-                    <ui:Button Appearance="Success"   Content="Success"   Margin="4" />
-                    <ui:Button Appearance="Caution"   Content="Caution"   Margin="4" />
-                    <ui:Button Appearance="Danger"    Content="Danger"    Margin="4" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="Primary" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Secondary"
+                        Content="Secondary" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Success"
+                        Content="Success" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="Caution" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Danger"
+                        Content="Danger" />
                 </WrapPanel>
 
                 <TextBlock Text="Disabled" />
                 <WrapPanel>
-                    <ui:Button Appearance="Primary"   Content="Primary"   IsEnabled="False" Margin="4" />
-                    <ui:Button Appearance="Secondary" Content="Secondary" IsEnabled="False" Margin="4" />
-                    <ui:Button Appearance="Success"   Content="Success"   IsEnabled="False" Margin="4" />
-                    <ui:Button Appearance="Caution"   Content="Caution"   IsEnabled="False" Margin="4" />
-                    <ui:Button Appearance="Danger"    Content="Danger"    IsEnabled="False" Margin="4" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="Primary"
+                        IsEnabled="False" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Secondary"
+                        Content="Secondary"
+                        IsEnabled="False" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Success"
+                        Content="Success"
+                        IsEnabled="False" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="Caution"
+                        IsEnabled="False" />
+                    <ui:Button
+                        Margin="4"
+                        Appearance="Danger"
+                        Content="Danger"
+                        IsEnabled="False" />
                 </WrapPanel>
             </StackPanel>
         </controls:ControlExample>

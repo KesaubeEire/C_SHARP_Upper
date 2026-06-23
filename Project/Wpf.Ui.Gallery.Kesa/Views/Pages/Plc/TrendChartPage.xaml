@@ -1,22 +1,27 @@
-<Page x:Class="Wpf.Ui.Gallery.Views.Pages.Plc.TrendChartPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
-      xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
-      controls:PageControlDocumentation.Show="False"
-      ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
-      ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      Title="趋势图"
-      mc:Ignorable="d">
+﻿<Page
+    x:Class="Wpf.Ui.Gallery.Views.Pages.Plc.TrendChartPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="趋势图"
+    controls:PageControlDocumentation.Show="False"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
     <StackPanel Margin="0,0,0,24">
-        <!-- ===== 控制栏 ===== -->
-        <Border Background="{DynamicResource CardBackground}"
-                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+        <!--  ===== 控制栏 =====  -->
+        <Border
+            Margin="0,0,0,12"
+            Padding="16"
+            Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -25,56 +30,80 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="时间范围:" VerticalAlignment="Center" 
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                <ComboBox Grid.Column="2" x:Name="timeRangeCombo"
-                          SelectedIndex="4"
-                          SelectionChanged="OnTimeRangeChanged" />
-                <ui:Button Grid.Column="4" x:Name="btnMock"
-                           Content="▶ 模拟数据"
-                           Appearance="Secondary"
-                           Click="OnToggleMock" />
+                <TextBlock
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="时间范围:" />
+                <ComboBox
+                    x:Name="timeRangeCombo"
+                    Grid.Column="2"
+                    SelectedIndex="4"
+                    SelectionChanged="OnTimeRangeChanged" />
+                <ui:Button
+                    x:Name="btnMock"
+                    Grid.Column="4"
+                    Appearance="Secondary"
+                    Click="OnToggleMock"
+                    Content="▶ 模拟数据" />
             </Grid>
         </Border>
 
-        <!-- ===== 趋势图 ===== -->
-        <Border Background="{DynamicResource CardBackground}"
-                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="0" Margin="0,0,0,12"
-                MinHeight="420">
+        <!--  ===== 趋势图 =====  -->
+        <Border
+            MinHeight="420"
+            Margin="0,0,0,12"
+            Padding="0"
+            Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <controls:CartesianChartKesa Grid.Row="0" x:Name="trendChart" Margin="8"
-                                              AnimationsSpeed="00:00:00.050"
-                                              ZoomMode="X"
-                                              TooltipPosition="Top"
-                                              LineStrokeThickness="3"
-                                              LineSmoothness="0.2"
-                                              GeometrySize="0"
-                                              FillOpacity="0" />
-                <!-- 图例 + 实时值 -->
-                <Border Grid.Row="1" x:Name="legendBar"
-                        Background="{DynamicResource ApplicationBackgroundBrush}"
-                        BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                        BorderThickness="0,1,0,0"
-                        CornerRadius="0,0,8,8" Padding="12,8">
+                <controls:CartesianChartKesa
+                    x:Name="trendChart"
+                    Grid.Row="0"
+                    Margin="8"
+                    AnimationsSpeed="00:00:00.050"
+                    FillOpacity="0"
+                    GeometrySize="0"
+                    LineSmoothness="0.2"
+                    LineStrokeThickness="3"
+                    TooltipPosition="Top"
+                    ZoomMode="X" />
+                <!--  图例 + 实时值  -->
+                <Border
+                    x:Name="legendBar"
+                    Grid.Row="1"
+                    Padding="12,8"
+                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,8,8">
                     <StackPanel x:Name="legendPanel" Orientation="Horizontal" />
                 </Border>
             </Grid>
         </Border>
 
-        <!-- ===== 设备控制（3×3 按1松0） ===== -->
-        <Border Background="{DynamicResource CardBackground}"
-                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,12,0,0">
+        <!--  ===== 设备控制（3×3 按1松0） =====  -->
+        <Border
+            Margin="0,12,0,0"
+            Padding="20"
+            Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
             <StackPanel>
-                <TextBlock Text="设备控制" FontSize="16" FontWeight="SemiBold"
-                           Margin="0,0,0,12" />
+                <TextBlock
+                    Margin="0,0,0,12"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    Text="设备控制" />
 
-                <Grid HorizontalAlignment="Center" MinWidth="400">
+                <Grid MinWidth="400" HorizontalAlignment="Center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -86,53 +115,116 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <ui:Button Grid.Row="0" Width="160" Height="40" Grid.Column="0"
-                               Content="⚙ 传送带正转" Appearance="Success" Tag="1.0.0" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="0" Width="160" Height="40" Grid.Column="1"
-                               Content="⏸ 传送带暂停" Appearance="Caution" Tag="1.10.4" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="0" Width="160" Height="40" Grid.Column="2"
-                               Content="🔄 传送带反转" Appearance="Primary" Tag="1.0.1" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
+                    <ui:Button
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="⚙ 传送带正转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="1.0.0" />
+                    <ui:Button
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="⏸ 传送带暂停"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="1.10.4" />
+                    <ui:Button
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="🔄 传送带反转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="1.0.1" />
 
-                    <ui:Button Grid.Row="1" Width="160" Height="40" Grid.Column="0"
-                               Content="⬆ 滑台正转" Appearance="Success" Tag="6.0.2" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="1" Width="160" Height="40" Grid.Column="1"
-                               Content="🏠 滑台回原" Appearance="Caution" Tag="6.6.0" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="1" Width="160" Height="40" Grid.Column="2"
-                               Content="⬇ 滑台反转" Appearance="Primary" Tag="6.0.3" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="⬆ 滑台正转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.0.2" />
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="🏠 滑台回原"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.6.0" />
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="⬇ 滑台反转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.0.3" />
 
-                    <ui:Button Grid.Row="2" Width="160" Height="40" Grid.Column="0"
-                               Content="⭕ 圆盘正转" Appearance="Success" Tag="7.0.4" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="2" Width="160" Height="40" Grid.Column="1"
-                               Content="🏠 圆盘回原" Appearance="Caution" Tag="7.0.3" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="2" Width="160" Height="40" Grid.Column="2"
-                               Content="🔄 圆盘反转" Appearance="Primary" Tag="7.0.5" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="⭕ 圆盘正转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.4" />
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="🏠 圆盘回原"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.3" />
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="2"
+                        Width="160"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="🔄 圆盘反转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.5" />
                 </Grid>
 
             </StackPanel>

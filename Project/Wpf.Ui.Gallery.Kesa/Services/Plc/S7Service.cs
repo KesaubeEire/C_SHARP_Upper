@@ -40,9 +40,9 @@ public sealed class S7Service : IDisposable
         }
     }
 
-    public static int AreaI  => (int)S7Area.PE;
-    public static int AreaQ  => (int)S7Area.PA;
-    public static int AreaM  => (int)S7Area.MK;
+    public static int AreaI => (int)S7Area.PE;
+    public static int AreaQ => (int)S7Area.PA;
+    public static int AreaM => (int)S7Area.MK;
     public static int AreaDB => (int)S7Area.DB;
     private static S7Area A(int v) => (S7Area)v;
 

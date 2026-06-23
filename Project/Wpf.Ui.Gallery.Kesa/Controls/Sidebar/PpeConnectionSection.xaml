@@ -1,27 +1,29 @@
-<UserControl x:Class="Wpf.Ui.Gallery.Controls.Sidebar.PpeConnectionSection"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
-             mc:Ignorable="d"
-             d:DesignHeight="781.564" d:DesignWidth="300"
-             Padding="10"
-             PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown"
-             ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
-             ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-             Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+﻿<UserControl
+    x:Class="Wpf.Ui.Gallery.Controls.Sidebar.PpeConnectionSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Padding="10"
+    d:DesignHeight="781.564"
+    d:DesignWidth="300"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown"
+    mc:Ignorable="d">
 
     <StackPanel Margin="0,0,0,12">
 
-        <!-- ===== 本机网卡 ===== -->
-        <controls:ControlExample HeaderText="本机网卡" Margin="0,0,0,8">
+        <!--  ===== 本机网卡 =====  -->
+        <controls:ControlExample Margin="0,0,0,8" HeaderText="本机网卡">
             <ComboBox x:Name="adapterCombo" DisplayMemberPath="Display" />
         </controls:ControlExample>
 
-        <!-- ===== PLC 参数 + 连接控制 ===== -->
-        <controls:ControlExample HeaderText="PLC 参数" Margin="0,0,0,8">
+        <!--  ===== PLC 参数 + 连接控制 =====  -->
+        <controls:ControlExample Margin="0,0,0,8" HeaderText="PLC 参数">
             <StackPanel>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -34,14 +36,50 @@
                         <ColumnDefinition Width="80" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="IP 地址" VerticalAlignment="Center" />
-                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="ipInput" Text="192.168.0.1" Margin="0,4" />
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="端口" VerticalAlignment="Center" />
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="portInput" Text="102" Margin="0,4" />
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="机架" VerticalAlignment="Center" />
-                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="rackInput" Text="0" Margin="0,4" />
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="槽位" VerticalAlignment="Center" />
-                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="slotInput" Text="1" Margin="0,4" />
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Text="IP 地址" />
+                    <TextBox
+                        x:Name="ipInput"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="0,4"
+                        Text="192.168.0.1" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Text="端口" />
+                    <TextBox
+                        x:Name="portInput"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0,4"
+                        Text="102" />
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Text="机架" />
+                    <TextBox
+                        x:Name="rackInput"
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Margin="0,4"
+                        Text="0" />
+                    <TextBlock
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Text="槽位" />
+                    <TextBox
+                        x:Name="slotInput"
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        Margin="0,4"
+                        Text="1" />
                 </Grid>
 
                 <Grid Margin="0,8,0,0">
@@ -50,21 +88,49 @@
                         <ColumnDefinition Width="6" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ui:Button Grid.Column="0" x:Name="btnConnect" Content="连接" Appearance="Primary" Click="OnConnect" HorizontalAlignment="Stretch" />
-                    <ui:Button Grid.Column="2" x:Name="btnDisconnect" Content="断开" Appearance="Secondary" Click="OnDisconnect" IsEnabled="False" HorizontalAlignment="Stretch" />
+                    <ui:Button
+                        x:Name="btnConnect"
+                        Grid.Column="0"
+                        HorizontalAlignment="Stretch"
+                        Appearance="Primary"
+                        Click="OnConnect"
+                        Content="连接" />
+                    <ui:Button
+                        x:Name="btnDisconnect"
+                        Grid.Column="2"
+                        HorizontalAlignment="Stretch"
+                        Appearance="Secondary"
+                        Click="OnDisconnect"
+                        Content="断开"
+                        IsEnabled="False" />
                 </Grid>
 
-                <Border x:Name="statusBar" Background="{DynamicResource CardBackground}" CornerRadius="6" Padding="10,6" Margin="0,8,0,0" Visibility="Collapsed">
+                <Border
+                    x:Name="statusBar"
+                    Margin="0,8,0,0"
+                    Padding="10,6"
+                    Background="{DynamicResource CardBackground}"
+                    CornerRadius="6"
+                    Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal">
-                        <Ellipse x:Name="statusIndicator" Width="10" Height="10" Fill="#666" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBlock x:Name="statusText" Text="未连接" VerticalAlignment="Center" />
+                        <Ellipse
+                            x:Name="statusIndicator"
+                            Width="10"
+                            Height="10"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Fill="#666" />
+                        <TextBlock
+                            x:Name="statusText"
+                            VerticalAlignment="Center"
+                            Text="未连接" />
                     </StackPanel>
                 </Border>
             </StackPanel>
         </controls:ControlExample>
 
-        <!-- ===== 导入 ===== -->
-        <controls:ControlExample HeaderText="导入" Margin="0,0,0,8">
+        <!--  ===== 导入 =====  -->
+        <controls:ControlExample Margin="0,0,0,8" HeaderText="导入">
             <StackPanel>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -72,42 +138,87 @@
                         <ColumnDefinition Width="6" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ui:Button Grid.Column="0" Content="📂 导入 .db" Click="OnImportDb" HorizontalAlignment="Stretch" />
-                    <ui:Button Grid.Column="2" Content="📂 导入 .udt" Click="OnImportUdt" HorizontalAlignment="Stretch" />
+                    <ui:Button
+                        Grid.Column="0"
+                        HorizontalAlignment="Stretch"
+                        Click="OnImportDb"
+                        Content="📂 导入 .db" />
+                    <ui:Button
+                        Grid.Column="2"
+                        HorizontalAlignment="Stretch"
+                        Click="OnImportUdt"
+                        Content="📂 导入 .udt" />
                 </Grid>
 
-                <ui:TextBlock Text="已导入的 DB" FontTypography="BodyStrong" Margin="0,0,0,4" />
-                <ItemsControl x:Name="dbList" MaxHeight="100" Margin="0,0,0,8">
+                <ui:TextBlock
+                    Margin="0,0,0,4"
+                    FontTypography="BodyStrong"
+                    Text="已导入的 DB" />
+                <ItemsControl
+                    x:Name="dbList"
+                    MaxHeight="100"
+                    Margin="0,0,0,8">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="4,2">
+                            <Border
+                                Padding="4,2"
+                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                BorderThickness="0,0,0,1">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="11" VerticalAlignment="Center" />
-                                    <ui:Button Grid.Column="1" Content="✕" FontSize="10" Width="20" Height="20"
-                                            Tag="{Binding}" Click="OnDeleteDb" Appearance="Secondary" />
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        VerticalAlignment="Center"
+                                        FontSize="11"
+                                        Text="{Binding Label}" />
+                                    <ui:Button
+                                        Grid.Column="1"
+                                        Width="20"
+                                        Height="20"
+                                        Appearance="Secondary"
+                                        Click="OnDeleteDb"
+                                        Content="✕"
+                                        FontSize="10"
+                                        Tag="{Binding}" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <ui:TextBlock Text="已导入的 UDT" FontTypography="BodyStrong" Margin="0,0,0,4" />
+                <ui:TextBlock
+                    Margin="0,0,0,4"
+                    FontTypography="BodyStrong"
+                    Text="已导入的 UDT" />
                 <ItemsControl x:Name="udtList" MaxHeight="100">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,0,0,1" Padding="4,2">
+                            <Border
+                                Padding="4,2"
+                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                BorderThickness="0,0,0,1">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding UdtName}" FontSize="11" VerticalAlignment="Center" />
-                                    <ui:Button Grid.Column="1" Content="✕" FontSize="10" Width="20" Height="20"
-                                            Tag="{Binding}" Click="OnDeleteUdt" Appearance="Secondary" />
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        VerticalAlignment="Center"
+                                        FontSize="11"
+                                        Text="{Binding UdtName}" />
+                                    <ui:Button
+                                        Grid.Column="1"
+                                        Width="20"
+                                        Height="20"
+                                        Appearance="Secondary"
+                                        Click="OnDeleteUdt"
+                                        Content="✕"
+                                        FontSize="10"
+                                        Tag="{Binding}" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -116,8 +227,8 @@
             </StackPanel>
         </controls:ControlExample>
 
-        <!-- ===== 轮询参数 ===== -->
-        <controls:ControlExample HeaderText="轮询参数" Margin="0,0,0,0">
+        <!--  ===== 轮询参数 =====  -->
+        <controls:ControlExample Margin="0,0,0,0" HeaderText="轮询参数">
             <StackPanel>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -128,10 +239,28 @@
                         <ColumnDefinition Width="80" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="间隔 (ms)" VerticalAlignment="Center" />
-                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="intervalInput" Text="500" Margin="0,4" />
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="延迟" VerticalAlignment="Center" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="latencyText" Text="--" Margin="0,4" />
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Text="间隔 (ms)" />
+                    <TextBox
+                        x:Name="intervalInput"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="0,4"
+                        Text="500" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Text="延迟" />
+                    <TextBlock
+                        x:Name="latencyText"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0,4"
+                        Text="--" />
                 </Grid>
 
                 <Grid Margin="0,8,0,0">
@@ -140,13 +269,36 @@
                         <ColumnDefinition Width="6" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ui:Button Grid.Column="0" x:Name="btnStart" Content="▶ 启动" Appearance="Primary" Click="OnStart" HorizontalAlignment="Stretch" />
-                    <ui:Button Grid.Column="2" x:Name="btnStop" Content="■ 停止" Appearance="Secondary" Click="OnStop" IsEnabled="False" HorizontalAlignment="Stretch" />
+                    <ui:Button
+                        x:Name="btnStart"
+                        Grid.Column="0"
+                        HorizontalAlignment="Stretch"
+                        Appearance="Primary"
+                        Click="OnStart"
+                        Content="▶ 启动" />
+                    <ui:Button
+                        x:Name="btnStop"
+                        Grid.Column="2"
+                        HorizontalAlignment="Stretch"
+                        Appearance="Secondary"
+                        Click="OnStop"
+                        Content="■ 停止"
+                        IsEnabled="False" />
                 </Grid>
 
-                <Border Background="{DynamicResource CardBackground}" CornerRadius="6" Padding="10,6" Margin="0,8,0,0">
+                <Border
+                    Margin="0,8,0,0"
+                    Padding="10,6"
+                    Background="{DynamicResource CardBackground}"
+                    CornerRadius="6">
                     <StackPanel Orientation="Horizontal">
-                        <Ellipse x:Name="pollIndicator" Width="10" Height="10" Fill="#666" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <Ellipse
+                            x:Name="pollIndicator"
+                            Width="10"
+                            Height="10"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Fill="#666" />
                         <TextBlock x:Name="pollStatusText" Text="就绪" />
                     </StackPanel>
                 </Border>

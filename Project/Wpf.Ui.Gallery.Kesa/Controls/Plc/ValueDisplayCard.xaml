@@ -1,55 +1,71 @@
-<UserControl x:Class="Wpf.Ui.Gallery.Controls.Plc.ValueDisplayCard"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
-             mc:Ignorable="d"
-             d:DesignWidth="200" d:DesignHeight="90"
-             x:Name="root">
-    <Border Background="{DynamicResource CardBackground}"
-            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-            BorderThickness="1" CornerRadius="8" Padding="16">
+﻿<UserControl
+    x:Class="Wpf.Ui.Gallery.Controls.Plc.ValueDisplayCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+    x:Name="root"
+    d:DesignHeight="90"
+    d:DesignWidth="200"
+    mc:Ignorable="d">
+    <Border
+        Padding="16"
+        Background="{DynamicResource CardBackground}"
+        BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+        BorderThickness="1"
+        CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- LED quality indicator -->
-            <plc:LedIndicator Grid.Row="0" Grid.Column="0"
-                               Width="10" Height="10"
-                               Quality="{Binding Quality, ElementName=root}"
-                               VerticalAlignment="Center"
-                               Margin="0,0,8,0"/>
+            <!--  LED quality indicator  -->
+            <plc:LedIndicator
+                Grid.Row="0"
+                Grid.Column="0"
+                Width="10"
+                Height="10"
+                Margin="0,0,8,0"
+                VerticalAlignment="Center"
+                Quality="{Binding Quality, ElementName=root}" />
 
-            <!-- Title -->
-            <TextBlock Grid.Row="0" Grid.Column="1"
-                       Text="{Binding Title, ElementName=root}"
-                       FontSize="12"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                       VerticalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"/>
+            <!--  Title  -->
+            <TextBlock
+                Grid.Row="0"
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                FontSize="12"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="{Binding Title, ElementName=root}"
+                TextTrimming="CharacterEllipsis" />
 
-            <!-- Value + Unit -->
-            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                        Orientation="Horizontal"
-                        Margin="0,4,0,0">
-                <TextBlock x:Name="valueText"
-                           Text="{Binding Value, ElementName=root, FallbackValue=0.0}"
-                           FontSize="28" FontWeight="Bold"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                           VerticalAlignment="Bottom"/>
-                <TextBlock Text="{Binding Unit, ElementName=root, FallbackValue=mm}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Bottom"
-                           Margin="6,0,0,3"/>
+            <!--  Value + Unit  -->
+            <StackPanel
+                Grid.Row="1"
+                Grid.Column="0"
+                Grid.ColumnSpan="3"
+                Margin="0,4,0,0"
+                Orientation="Horizontal">
+                <TextBlock
+                    x:Name="valueText"
+                    VerticalAlignment="Bottom"
+                    FontSize="28"
+                    FontWeight="Bold"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="{Binding Value, ElementName=root, FallbackValue=0.0}" />
+                <TextBlock
+                    Margin="6,0,0,3"
+                    VerticalAlignment="Bottom"
+                    FontSize="14"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="{Binding Unit, ElementName=root, FallbackValue=mm}" />
             </StackPanel>
         </Grid>
     </Border>

@@ -1,4 +1,4 @@
-<Page
+﻿<Page
     x:Class="Wpf.Ui.Gallery.Views.Pages.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -41,7 +41,6 @@
             <ComboBox
                 Grid.Column="1"
                 MinWidth="200"
-                
                 SelectedIndex="{Binding ViewModel.CurrentApplicationTheme, Converter={StaticResource ThemeToIndexConverter}, Mode=TwoWay}">
                 <ComboBoxItem Content="Light" />
                 <ComboBoxItem Content="Dark" />

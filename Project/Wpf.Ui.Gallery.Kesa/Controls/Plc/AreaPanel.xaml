@@ -1,84 +1,124 @@
-<UserControl x:Class="Wpf.Ui.Gallery.Controls.Plc.AreaPanel"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
-             xmlns:local="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
-             xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             mc:Ignorable="d"
-             d:DesignHeight="300" d:DesignWidth="600"
-             x:Name="root">
-    <Border Background="{DynamicResource CardBackground}"
-            BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,0">
+﻿<UserControl
+    x:Class="Wpf.Ui.Gallery.Controls.Plc.AreaPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
+    xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Name="root"
+    d:DesignHeight="300"
+    d:DesignWidth="600"
+    mc:Ignorable="d">
+    <Border
+        Margin="0,0,0,0"
+        Padding="20"
+        Background="{DynamicResource CardBackground}"
+        BorderThickness="1"
+        CornerRadius="8">
         <StackPanel>
-            <!-- 标题行：色块 + 区名 + 地址输入 + 按钮 -->
+            <!--  标题行：色块 + 区名 + 地址输入 + 按钮  -->
             <Grid Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="180"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Ellipse Grid.Column="0" Width="12" Height="12"
-                         Fill="{Binding AreaColor, ElementName=root}"
-                         VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBlock Grid.Column="1"
-                           Text="{Binding AreaLabel, ElementName=root}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{Binding AreaColor, ElementName=root}"
-                           VerticalAlignment="Center"/>
-                <TextBox Grid.Column="2" x:Name="addrInput"
-                         Text="{Binding AddressText, ElementName=root, UpdateSourceTrigger=PropertyChanged}"
-                         VerticalAlignment="Center" Height="34"
-                         FontSize="13" Margin="8,0"/>
-                <ui:Button Grid.Column="3" x:Name="btnRead"
-                           Content="▶ 读取"
-                           Click="OnReadClick"
-                           Margin="4,0" Height="34" FontSize="13"
-                           Appearance="Primary"/>
-                <ui:Button Grid.Column="4" x:Name="btnWriteMode"
-                           Content="🔒 写模式"
-                           Click="OnWriteModeClick"
-                           Margin="4,0" Height="34" FontSize="13"
-                           Appearance="Secondary"/>
+                <Ellipse
+                    Grid.Column="0"
+                    Width="12"
+                    Height="12"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Fill="{Binding AreaColor, ElementName=root}" />
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontSize="16"
+                    FontWeight="Bold"
+                    Foreground="{Binding AreaColor, ElementName=root}"
+                    Text="{Binding AreaLabel, ElementName=root}" />
+                <TextBox
+                    x:Name="addrInput"
+                    Grid.Column="2"
+                    Height="34"
+                    Margin="8,0"
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    Text="{Binding AddressText, ElementName=root, UpdateSourceTrigger=PropertyChanged}" />
+                <ui:Button
+                    x:Name="btnRead"
+                    Grid.Column="3"
+                    Height="34"
+                    Margin="4,0"
+                    Appearance="Primary"
+                    Click="OnReadClick"
+                    Content="▶ 读取"
+                    FontSize="13" />
+                <ui:Button
+                    x:Name="btnWriteMode"
+                    Grid.Column="4"
+                    Height="34"
+                    Margin="4,0"
+                    Appearance="Secondary"
+                    Click="OnWriteModeClick"
+                    Content="🔒 写模式"
+                    FontSize="13" />
             </Grid>
 
-            <!-- 列标题 -->
+            <!--  列标题  -->
             <Grid Margin="0,0,0,4">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="64"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="64"/>
-                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="80" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="地址" FontSize="12"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                <TextBlock Grid.Column="1" Text="位 0 → 7" FontSize="12"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                <TextBlock Grid.Column="2" Text="HEX" FontSize="12"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                           HorizontalAlignment="Center"/>
-                <TextBlock Grid.Column="3" x:Name="colStatusHeader" Text="状态" FontSize="12"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                           HorizontalAlignment="Center"/>
+                <TextBlock
+                    Grid.Column="0"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="地址" />
+                <TextBlock
+                    Grid.Column="1"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="位 0 → 7" />
+                <TextBlock
+                    Grid.Column="2"
+                    HorizontalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="HEX" />
+                <TextBlock
+                    x:Name="colStatusHeader"
+                    Grid.Column="3"
+                    HorizontalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="状态" />
             </Grid>
 
-            <!-- 字节行列表 -->
+            <!--  字节行列表  -->
             <ItemsControl x:Name="byteList" ItemsSource="{Binding ByteRows}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="models:ByteRowViewModel">
-                    <local:ByteRow DataContext="{Binding}" BitToggled="OnRowBitToggled"/>
+                        <local:ByteRow BitToggled="OnRowBitToggled" DataContext="{Binding}" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- 空状态提示 -->
-            <TextBlock x:Name="emptyHint" Text="输入地址后点击 &#x25B6; 读取"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                       FontSize="13" Margin="0,12,0,0"/>
+            <!--  空状态提示  -->
+            <TextBlock
+                x:Name="emptyHint"
+                Margin="0,12,0,0"
+                FontSize="13"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                Text="输入地址后点击 &#x25B6; 读取" />
         </StackPanel>
     </Border>
 </UserControl>

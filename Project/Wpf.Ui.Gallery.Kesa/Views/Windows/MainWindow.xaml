@@ -1,4 +1,4 @@
-<ui:FluentWindow
+﻿<ui:FluentWindow
     x:Class="Wpf.Ui.Gallery.Views.Windows.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -92,13 +92,13 @@
             <ui:TitleBar.TrailingContent>
                 <ui:Button
                     x:Name="ThemeToggleButton"
-                    Icon="{ui:SymbolIcon WeatherSunny24}"
-                    ToolTip="切换深浅主题"
-                    Click="OnThemeToggle"
                     Background="Transparent"
                     BorderThickness="0"
+                    Click="OnThemeToggle"
+                    Cursor="Hand"
                     FontSize="16"
-                    Cursor="Hand" />
+                    Icon="{ui:SymbolIcon WeatherSunny24}"
+                    ToolTip="切换深浅主题" />
             </ui:TitleBar.TrailingContent>
         </ui:TitleBar>
 

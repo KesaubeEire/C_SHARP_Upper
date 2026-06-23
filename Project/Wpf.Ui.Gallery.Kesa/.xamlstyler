@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XAML Styler 配置文件
+  目标：仅控制续行属性缩进（固定4格，非列对齐），
+        尽可能保留原始风格，不额外改动。
+-->
+<XamlStyler>
+  <!-- ========== 缩进控制 ========== -->
+  <!-- 续行属性缩进4格（0=列对齐，4=固定缩进） -->
+  <AttributeIndentation>4</AttributeIndentation>
+  <IndentSize>4</IndentSize>
+  <IndentAttributes>true</IndentAttributes>
+  <IndentMarkupExtensions>false</IndentMarkupExtensions>
+
+  <!-- ========== 属性内联控制 ========== -->
+  <!-- 大数值=不主动拆开属性，保持原始布局 -->
+  <AttributesTolerance>999</AttributesTolerance>
+  <MaxAttributesPerLine>999</MaxAttributesPerLine>
+  <MaxAttributeCharactersPerLine>0</MaxAttributeCharactersPerLine>
+  <KeepFirstAttributeOnSameLine>true</KeepFirstAttributeOnSameLine>
+
+  <!-- ========== 属性顺序 ========== -->
+  <KeepCurrentAttributesOrder>True</KeepCurrentAttributesOrder>
+  <ReorderAttributes>false</ReorderAttributes>
+  <AttributeOrderRuleGroup></AttributeOrderRuleGroup>
+
+  <!-- ========== 标签风格 ========== -->
+  <PutEndingTagOnNewLine>false</PutEndingTagOnNewLine>
+  <PutOpeningBraceOnNewLine>false</PutOpeningBraceOnNewLine>
+  <RemoveEndingTagOfEmptyElement>false</RemoveEndingTagOfEmptyElement>
+  <PutEndingTagOnNewLineOfEmptyElement>false</PutEndingTagOnNewLineOfEmptyElement>
+
+  <!-- ========== 空行处理 ========== -->
+  <MaxPreserveNewLines>2</MaxPreserveNewLines>
+
+  <!-- ========== 命名空间 ========== -->
+  <RemoveDesignTimeReferences>false</RemoveDesignTimeReferences>
+
+  <!-- ========== 注释 ========== -->
+  <FormatComments>false</FormatComments>
+
+  <!-- ========== 分组/排序（全关） ========== -->
+  <SeparateByGroups>false</SeparateByGroups>
+  <EnableSeparateNamespaceGroups>false</EnableSeparateNamespaceGroups>
+  <FormatMarkupExtensions>false</FormatMarkupExtensions>
+  <ReorderGridChildren>false</ReorderGridChildren>
+  <ReorderSetters>false</ReorderSetters>
+  <ReorderEvents>false</ReorderEvents>
+
+  <!-- ========== 其他 ========== -->
+  <EnablePreviewInISEE>false</EnablePreviewInISEE>
+  <SearchForReference>false</SearchForReference>
+  <ThoroughValidation>false</ThoroughValidation>
+  <UseZealandGenericPropertyTrigger>false</UseZealandGenericPropertyTrigger>
+</XamlStyler>
