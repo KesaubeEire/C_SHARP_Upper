@@ -7,18 +7,13 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
       xmlns:plcc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+      controls:PageControlDocumentation.Show="False"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="报警管理"
       mc:Ignorable="d">
     <StackPanel Margin="0,0,0,24">
-        <ui:TextBlock Margin="0,0,0,12" FontTypography="Title" Text="报警管理" />
-        <TextBlock Text="实时报警监控与历史报警查询"
-                   FontSize="12"
-                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                   Margin="0,0,0,12" />
-
         <controls:ControlExample Margin="0" HeaderText="报警工具栏">
             <Grid>
                 <Grid.ColumnDefinitions>

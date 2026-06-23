@@ -4,16 +4,15 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
       xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
+      controls:PageControlDocumentation.Show="False"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="DB 块监控"
       mc:Ignorable="d">
     <StackPanel Margin="0,0,0,24">
-
-        <!-- ===== 标题 ===== -->
-        <ui:TextBlock Margin="0,0,0,12" FontTypography="Title" Text="DB 块变量监控" />
 
         <!-- ===== 顶部：导入 + 配置 ===== -->
         <Border Background="{DynamicResource CardBackground}"

@@ -13,8 +13,6 @@
       Title="I/Q/M 区监控"
       mc:Ignorable="d">
     <StackPanel Margin="0,0,0,24">
-        <ui:TextBlock Margin="0,0,0,12" FontTypography="Title" Text="I / Q / M 区监控" />
-
         <!-- ===== I 区（输入 · 只读） ===== -->
         <plc:AreaPanel x:Name="iPanel" AreaType="I" IsReadOnly="True" />
 

@@ -6,15 +6,13 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
       xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
+      controls:PageControlDocumentation.Show="False"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="趋势图"
       mc:Ignorable="d">
     <StackPanel Margin="0,0,0,24">
-
-        <ui:TextBlock Margin="0,0,0,12" FontTypography="Title" Text="实时趋势图" />
-
         <!-- ===== 控制栏 ===== -->
         <Border Background="{DynamicResource CardBackground}"
                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"

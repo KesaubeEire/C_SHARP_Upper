@@ -7,14 +7,13 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:skia="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
       xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
+      controls:PageControlDocumentation.Show="False"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="仪表盘"
       mc:Ignorable="d">
     <StackPanel Margin="0,0,0,24">
-        <ui:TextBlock Margin="0,0,0,12" FontTypography="Title" Text="仪表盘" />
-
         <controls:ControlExample Margin="0" HeaderText="单值仪表">
             <Grid>
                 <Grid.ColumnDefinitions>
