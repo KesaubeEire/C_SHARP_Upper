@@ -757,8 +757,9 @@ public partial class DbMonitorPage : Page
     }
 
     /// <summary>取反 — 翻转位值</summary>
-    private void OnBitToggle(object sender, RoutedEventArgs e)
+    private void OnBitToggle(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
+        e.Handled = true;
         if (sender is FrameworkElement fe && fe.DataContext is DbVariableDisplay v)
             ToggleBit(v);
     }
@@ -779,17 +780,27 @@ public partial class DbMonitorPage : Page
             newVal = (byte)(currentByte.Value & (byte)~(1 << v.BitOffset));
 
         if (_s7.WriteByte(S7Service.AreaDB, v.ByteOffset, newVal, dbNum))
+        {
             v.Value = setBit ? "true" : "false";
+            operStatusText.Text = $"✅ {(setBit ? "按下" : "松开")} {v.Name} = {(setBit ? "true" : "false")}";
+            operStatusText.Foreground = GetThemeBrush("SystemFillColorSuccessBrush", Color.FromRgb(39, 174, 96));
+        }
     }
 
     /// <summary>翻转位值</summary>
     private void ToggleBit(DbVariableDisplay v)
     {
-        if (_currentDb == null || !_s7.IsConnected) return;
+        if (_currentDb == null) { operStatusText.Text = "⚠ 未导入 DB"; return; }
+        if (!_s7.IsConnected) { operStatusText.Text = "⚠ PLC 未连接"; return; }
 
         int dbNum = _currentDb.DbNumber;
         byte? currentByte = _s7.ReadByte(S7Service.AreaDB, v.ByteOffset, dbNum);
-        if (!currentByte.HasValue) return;
+        if (!currentByte.HasValue)
+        {
+            operStatusText.Text = $"❌ 读取位失败: {_s7.LastError}";
+            operStatusText.Foreground = GetThemeBrush("SystemFillColorCriticalBrush", Color.FromRgb(231, 76, 60));
+            return;
+        }
 
         byte newVal = (byte)(currentByte.Value ^ (byte)(1 << v.BitOffset));
 
@@ -797,6 +808,13 @@ public partial class DbMonitorPage : Page
         {
             bool isSet = (newVal & (byte)(1 << v.BitOffset)) != 0;
             v.Value = isSet ? "true" : "false";
+            operStatusText.Text = $"✅ 取反 {v.Name} = {(isSet ? "true" : "false")}";
+            operStatusText.Foreground = GetThemeBrush("SystemFillColorSuccessBrush", Color.FromRgb(39, 174, 96));
+        }
+        else
+        {
+            operStatusText.Text = $"❌ 取反写入失败: {_s7.LastError}";
+            operStatusText.Foreground = GetThemeBrush("SystemFillColorCriticalBrush", Color.FromRgb(231, 76, 60));
         }
     }
 }

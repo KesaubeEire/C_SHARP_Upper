@@ -166,7 +166,7 @@
                                                                MouseLeave="OnBitPressLeave" />
                                                     <ui:Button Content="取反"
                                                                Appearance="Caution"
-                                                               Click="OnBitToggle" />
+                                                               PreviewMouseLeftButtonDown="OnBitToggle" />
                                                 </StackPanel>
 
                                                 <!-- 数值编辑 -->
