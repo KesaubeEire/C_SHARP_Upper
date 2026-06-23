@@ -21,16 +21,19 @@ public partial class TrendChartPage : Page
     private readonly AppConfigService _config;
 
     // 通道定义
-    private sealed record ChannelDef(
-        string Key, string Label, string Unit,
-        int DbNumber, int ByteOffset, SKColor Color,
-        double Min, double Max);
+    private sealed class ChannelDef
+    {
+        public string _key = "", _label = "", _unit = "";
+        public int _dbNumber, _byteOffset;
+        public SKColor _color;
+        public double _min, _max;
+    }
 
     private static readonly ChannelDef[] Channels =
     [
-        new("db1_6",  "DB1.6",  "MPa",   1, 6,  SKColor.Parse("#42A5F5"),  0, 20),
-        new("db6_38", "DB6.38", "°C",    6, 38, SKColor.Parse("#66BB6A"),  0, 200),
-        new("db7_38", "DB7.38", "mm/s",  7, 38, SKColor.Parse("#FFA726"),  0, 50),
+        new() { _key = "db1_6",  _label = "DB1.6",  _unit = "MPa",   _dbNumber = 1,  _byteOffset = 6,  _color = SKColor.Parse("#42A5F5"), _min = 0,  _max = 20  },
+        new() { _key = "db6_38", _label = "DB6.38", _unit = "°C",    _dbNumber = 6,  _byteOffset = 38, _color = SKColor.Parse("#66BB6A"), _min = 0,  _max = 200 },
+        new() { _key = "db7_38", _label = "DB7.38", _unit = "mm/s",  _dbNumber = 7,  _byteOffset = 38, _color = SKColor.Parse("#FFA726"), _min = 0,  _max = 50  },
     ];
 
     // 时间范围选项
@@ -47,8 +50,15 @@ public partial class TrendChartPage : Page
         ("24 小时",   TimeSpan.FromHours(24)),
     ];
 
+    // 归一化数据点（Value=归一化0~100, RawValue=原始值）
+    private sealed class NormPoint : DateTimePoint
+    {
+        public NormPoint(DateTime x, double normY, double rawVal) : base(x, normY) => RawValue = rawVal;
+        public double RawValue { get; }
+    }
+
     // 数据缓冲
-    private readonly Dictionary<string, ObservableCollection<DateTimePoint>> _buffers = [];
+    private readonly Dictionary<string, ObservableCollection<NormPoint>> _buffers = [];
     private readonly ObservableCollection<ISeries> _series = [];
     private readonly Dictionary<string, double> _currentValues = [];
     private readonly List<Border> _legendItems = [];
@@ -88,15 +98,15 @@ public partial class TrendChartPage : Page
     {
         foreach (var ch in Channels)
         {
-            var buf = new ObservableCollection<DateTimePoint>();
-            _buffers[ch.Key] = buf;
-            _currentValues[ch.Key] = 0;
+            var buf = new ObservableCollection<NormPoint>();
+            _buffers[ch._key] = buf;
+            _currentValues[ch._key] = 0;
 
-            _series.Add(new LineSeries<DateTimePoint>
+            _series.Add(new LineSeries<NormPoint>
             {
                 Values = buf,
-                Name = ch.Label,
-                Stroke = new SolidColorPaint(ch.Color) { StrokeThickness = 2 },
+                Name = $"{ch._label} ({ch._unit})",
+                Stroke = new SolidColorPaint(ch._color) { StrokeThickness = 2 },
                 Fill = null,
                 GeometrySize = 0,
                 LineSmoothness = 0.3f,
@@ -111,7 +121,7 @@ public partial class TrendChartPage : Page
         // X 轴 — 时间轴
         trendChart.XAxes =
         [
-            new DateTimeAxis(TimeSpan.FromSeconds(1), FormattableString => $"{FormattableString:HH:mm:ss}")
+            new DateTimeAxis(TimeSpan.FromSeconds(1), formattableString => $"{formattableString:HH:mm:ss}")
             {
                 Name = "时间",
                 NameTextSize = 12,
@@ -121,18 +131,20 @@ public partial class TrendChartPage : Page
             },
         ];
 
-        // Y 轴
+        // Y 轴 — 固定 0~100%
         trendChart.YAxes =
         [
             new Axis
             {
-                Name = "数值",
+                Name = "百分比",
                 NameTextSize = 12,
                 TextSize = 11,
+                MinLimit = 0,
+                MaxLimit = 100,
                 LabelsPaint = new SolidColorPaint(AxisColor),
                 SeparatorsPaint = new SolidColorPaint(GridColor) { StrokeThickness = 0.5f },
                 ShowSeparatorLines = true,
-                Labeler = v => $"{v:F1}",
+                Labeler = v => $"{v:F0}%",
             },
         ];
 
@@ -189,9 +201,10 @@ public partial class TrendChartPage : Page
             // 色点
             stack.Children.Add(new Ellipse
             {
-                Width = 10, Height = 10,
+                Width = 10,
+                Height = 10,
                 Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(
-                    ch.Color.Alpha, ch.Color.Red, ch.Color.Green, ch.Color.Blue)),
+                    ch._color.Alpha, ch._color.Red, ch._color.Green, ch._color.Blue)),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 6, 0),
             });
@@ -199,7 +212,7 @@ public partial class TrendChartPage : Page
             // 标签 + 实时值
             stack.Children.Add(new TextBlock
             {
-                Text = $"{ch.Label}: ",
+                Text = $"{ch._label}: ",
                 FontSize = 13,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = Application.Current.TryFindResource("TextFillColorPrimaryBrush") as Brush
@@ -212,7 +225,7 @@ public partial class TrendChartPage : Page
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = new SolidColorBrush(System.Windows.Media.Color.FromArgb(
-                    ch.Color.Alpha, ch.Color.Red, ch.Color.Green, ch.Color.Blue)),
+                    ch._color.Alpha, ch._color.Red, ch._color.Green, ch._color.Blue)),
                 VerticalAlignment = VerticalAlignment.Center,
                 Text = "---",
             };
@@ -221,7 +234,7 @@ public partial class TrendChartPage : Page
             // 单位
             stack.Children.Add(new TextBlock
             {
-                Text = $" {ch.Unit}",
+                Text = $" {ch._unit}",
                 FontSize = 12,
                 Foreground = Application.Current.TryFindResource("TextFillColorSecondaryBrush") as Brush
                              ?? new SolidColorBrush(Colors.Gray),
@@ -236,8 +249,9 @@ public partial class TrendChartPage : Page
 
     private void UpdateLegendValue(string key, double val)
     {
-        int idx = Array.FindIndex(Channels, c => c.Key == key);
-        if (idx < 0 || idx >= _legendItems.Count) return;
+        int idx = Array.FindIndex(Channels, c => c._key == key);
+        if (idx < 0 || idx >= _legendItems.Count)
+            return;
 
         var border = _legendItems[idx];
         if (border.Child is StackPanel stack && stack.Children.Count >= 3
@@ -255,10 +269,10 @@ public partial class TrendChartPage : Page
         {
             var monitor = new VariableMonitor(_s7)
             {
-                Key = ch.Key,
-                Label = ch.Label,
-                DbNumber = ch.DbNumber,
-                Offset = ch.ByteOffset,
+                Key = ch._key,
+                Label = ch._label,
+                DbNumber = ch._dbNumber,
+                Offset = ch._byteOffset,
                 DataType = "REAL",
                 IntervalMs = 100,
             };
@@ -280,12 +294,21 @@ public partial class TrendChartPage : Page
 
     private void OnSample(string key, double val, DateTime ts)
     {
-        if (_isMock) return; // mock 模式时不接收真实数据
+        if (_isMock)
+            return; // mock 模式时不接收真实数据
+
+        var ch = Channels.FirstOrDefault(c => c._key == key);
+        if (ch == null)
+            return;
+
+        double range = ch._max - ch._min;
+        double normVal = range > 0 ? Math.Clamp((val - ch._min) / range * 100, 0, 100) : 0;
 
         Dispatcher.Invoke(() =>
         {
-            if (!_buffers.TryGetValue(key, out var buf)) return;
-            buf.Add(new DateTimePoint(ts, val));
+            if (!_buffers.TryGetValue(key, out var buf))
+                return;
+            buf.Add(new NormPoint(ts, normVal, val));
             _currentValues[key] = val;
             UpdateLegendValue(key, val);
             TrimBuffer(buf);
@@ -293,7 +316,7 @@ public partial class TrendChartPage : Page
         });
     }
 
-    private void TrimBuffer(ObservableCollection<DateTimePoint> buf)
+    private void TrimBuffer(ObservableCollection<NormPoint> buf)
     {
         int maxPoints = (int)(_selectedDuration.TotalMilliseconds / 100) + 10;
         while (buf.Count > maxPoints)
@@ -334,17 +357,18 @@ public partial class TrendChartPage : Page
         StopMonitors();
         ClearAllBuffers();
 
-        // 注册假通道
+        // 注册假通道（归一化到 0~100，量程 0~100 即原值直接当百分比）
         var mockKeys = new[] { "mock_temp", "mock_press", "mock_flow" };
         var mockColors = new[] { SKColor.Parse("#E91E63"), SKColor.Parse("#9C27B0"), SKColor.Parse("#00BCD4") };
         var mockLabels = new[] { "温度模拟", "压力模拟", "流量模拟" };
+        var mockChs = mockKeys.Select((k, i) => new ChannelDef { _key = k, _label = mockLabels[i], _unit = "", _dbNumber = 0, _byteOffset = 0, _color = mockColors[i], _min = 0, _max = 100 }).ToArray();
 
         for (int i = 0; i < 3; i++)
         {
-            var buf = new ObservableCollection<DateTimePoint>();
+            var buf = new ObservableCollection<NormPoint>();
             _buffers[mockKeys[i]] = buf;
             _currentValues[mockKeys[i]] = 0;
-            if (_series[i] is LineSeries<DateTimePoint> ls)
+            if (_series[i] is LineSeries<NormPoint> ls)
             {
                 ls.Name = mockLabels[i];
                 ls.Values = buf;
@@ -364,22 +388,20 @@ public partial class TrendChartPage : Page
         {
             mockTick++;
             double t = mockTick;
-            // 3 条 mock 线
-            FeedMock(mockKeys[0], 50 + Math.Sin(t * 0.03) * 20 + new Random().NextDouble() * 2);
-            FeedMock(mockKeys[1], 30 + Math.Sin(t * 0.05) * 10 + Math.Sin(t * 0.20) * 3);
-            FeedMock(mockKeys[2], 70 + Math.Sin(t * 0.04) * 14 + new Random().NextDouble() * 4);
+            // 3 条 mock 线 — 生成原始值后用 mockChs 归一化
+            FeedMock(mockKeys[0], 50 + Math.Sin(t * 0.03) * 20 + Random.Shared.NextDouble() * 2, mockChs[0]);
+            FeedMock(mockKeys[1], 30 + Math.Sin(t * 0.05) * 10 + Math.Sin(t * 0.20) * 3, mockChs[1]);
+            FeedMock(mockKeys[2], 70 + Math.Sin(t * 0.04) * 14 + Random.Shared.NextDouble() * 4, mockChs[2]);
         };
         _mock.Start();
         btnMock.Content = "■ 停止模拟";
         btnMock.Appearance = Wpf.Ui.Controls.ControlAppearance.Danger;
-        if (_series[0] is LineSeries<DateTimePoint> ls0) ls0.Name = mockLabels[0];
-        if (_series[1] is LineSeries<DateTimePoint> ls1) ls1.Name = mockLabels[1];
-        if (_series[2] is LineSeries<DateTimePoint> ls2) ls2.Name = mockLabels[2];
     }
 
     private void UpdateLegendMock(int idx, string label, SKColor color)
     {
-        if (idx >= _legendItems.Count) return;
+        if (idx >= _legendItems.Count)
+            return;
         var border = _legendItems[idx];
         if (border.Child is StackPanel stack && stack.Children.Count >= 3)
         {
@@ -391,13 +413,17 @@ public partial class TrendChartPage : Page
         }
     }
 
-    private void FeedMock(string key, double val)
+    private void FeedMock(string key, double rawVal, ChannelDef ch)
     {
+        double range = ch._max - ch._min;
+        double normVal = range > 0 ? Math.Clamp((rawVal - ch._min) / range * 100, 0, 100) : rawVal;
+
         Dispatcher.Invoke(() =>
         {
-            if (!_buffers.TryGetValue(key, out var buf)) return;
-            buf.Add(new DateTimePoint(DateTime.Now, val));
-            _currentValues[key] = val;
+            if (!_buffers.TryGetValue(key, out var buf))
+                return;
+            buf.Add(new NormPoint(DateTime.Now, normVal, rawVal));
+            _currentValues[key] = rawVal;
             TrimBuffer(buf);
             SlideAxis();
         });
@@ -414,7 +440,8 @@ public partial class TrendChartPage : Page
     private void OnTimeRangeChanged(object sender, SelectionChangedEventArgs e)
     {
         int idx = timeRangeCombo.SelectedIndex;
-        if (idx < 0 || idx >= TimeRanges.Length) return;
+        if (idx < 0 || idx >= TimeRanges.Length)
+            return;
 
         _selectedDuration = TimeRanges[idx].Duration;
         SlideAxis();
@@ -448,27 +475,19 @@ public partial class TrendChartPage : Page
         }
     }
 
+    /// <summary>按1松0 — 从 Tag "db.byte.bit" 解析地址后写位</summary>
     private void WriteMotorBit(string tag, bool setBit)
     {
-        if (!_s7.IsConnected)
-        {
-            motorStatusText.Text = "⚠ PLC 未连接";
-            return;
-        }
-
         var parts = tag.Split('.');
-        if (parts.Length != 2 || !int.TryParse(parts[0], out int byteOff) || !int.TryParse(parts[1], out int bitOff))
+        if (parts.Length != 3
+            || !int.TryParse(parts[0], out int dbNum) || dbNum <= 0
+            || !int.TryParse(parts[1], out int byteOff)
+            || !int.TryParse(parts[2], out int bitOff) || bitOff < 0 || bitOff > 7)
             return;
-
-        if (!int.TryParse(motorDbInput.Text, out int dbNum) || dbNum <= 0)
-            dbNum = 1;
 
         byte? current = _s7.ReadByte(S7Service.AreaDB, byteOff, dbNum);
         if (!current.HasValue)
-        {
-            motorStatusText.Text = $"❌ 读取失败: {_s7.LastError}";
             return;
-        }
 
         byte newVal;
         if (setBit)
@@ -476,11 +495,8 @@ public partial class TrendChartPage : Page
         else
             newVal = (byte)(current.Value & (byte)~(1 << bitOff));
 
-        if (_s7.WriteByte(S7Service.AreaDB, byteOff, newVal, dbNum))
-            motorStatusText.Text = $"✅ DB{dbNum}.{tag} = {(setBit ? "1" : "0")}";
-        else
-            motorStatusText.Text = $"❌ 写入失败: {_s7.LastError}";
-    }
+        _s7.WriteByte(S7Service.AreaDB, byteOff, newVal, dbNum);    }
+
 
     // ===================== 生命周期 =====================
 

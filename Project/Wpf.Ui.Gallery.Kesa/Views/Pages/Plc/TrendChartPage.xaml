@@ -68,29 +68,8 @@
                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,12,0,0">
             <StackPanel>
-                <Grid Margin="0,0,0,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="设备控制" FontSize="16" FontWeight="SemiBold"
-                               VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0"
-                                VerticalAlignment="Center">
-                        <TextBlock Text="DB 号:" VerticalAlignment="Center" FontSize="13"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="4,0" />
-                        <TextBox x:Name="motorDbInput" Text="1"
-                                 Width="60" Height="30"
-                                 HorizontalContentAlignment="Center"
-                                 VerticalAlignment="Center" Margin="4,0" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="3" x:Name="motorStatusText" Text=""
-                               FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               VerticalAlignment="Center" />
-                </Grid>
+                <TextBlock Text="设备控制" FontSize="16" FontWeight="SemiBold"
+                           Margin="0,0,0,12" />
 
                 <Grid HorizontalAlignment="Center" MinWidth="400">
                     <Grid.RowDefinitions>
@@ -104,50 +83,50 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <ui:Button Grid.Row="0" Grid.Column="0"
-                               Content="⚙ 传送带正转" Appearance="Success" Tag="0.0" Margin="4"
+                    <ui:Button Grid.Row="0" Width="160" Height="40" Grid.Column="0"
+                               Content="⚙ 传送带正转" Appearance="Success" Tag="1.0.0" Margin="4"
                                PreviewMouseLeftButtonDown="OnMotorPressDown"
                                PreviewMouseLeftButtonUp="OnMotorPressUp"
                                MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="0" Grid.Column="1"
-                               Content="⏸ 传送带暂停" Appearance="Caution" Tag="0.1" Margin="4"
+                    <ui:Button Grid.Row="0" Width="160" Height="40" Grid.Column="1"
+                               Content="⏸ 传送带暂停" Appearance="Caution" Tag="1.10.4" Margin="4"
                                PreviewMouseLeftButtonDown="OnMotorPressDown"
                                PreviewMouseLeftButtonUp="OnMotorPressUp"
                                MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="0" Grid.Column="2"
-                               Content="🔄 传送带反转" Appearance="Primary" Tag="0.2" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-
-                    <ui:Button Grid.Row="1" Grid.Column="0"
-                               Content="⬆ 滑台正转" Appearance="Success" Tag="0.3" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="1" Grid.Column="1"
-                               Content="🏠 滑台回原" Appearance="Caution" Tag="0.4" Margin="4"
-                               PreviewMouseLeftButtonDown="OnMotorPressDown"
-                               PreviewMouseLeftButtonUp="OnMotorPressUp"
-                               MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="1" Grid.Column="2"
-                               Content="⬇ 滑台反转" Appearance="Primary" Tag="0.5" Margin="4"
+                    <ui:Button Grid.Row="0" Width="160" Height="40" Grid.Column="2"
+                               Content="🔄 传送带反转" Appearance="Primary" Tag="1.0.1" Margin="4"
                                PreviewMouseLeftButtonDown="OnMotorPressDown"
                                PreviewMouseLeftButtonUp="OnMotorPressUp"
                                MouseLeave="OnMotorPressLeave" />
 
-                    <ui:Button Grid.Row="2" Grid.Column="0"
-                               Content="⭕ 圆盘正转" Appearance="Success" Tag="0.6" Margin="4"
+                    <ui:Button Grid.Row="1" Width="160" Height="40" Grid.Column="0"
+                               Content="⬆ 滑台正转" Appearance="Success" Tag="6.0.2" Margin="4"
                                PreviewMouseLeftButtonDown="OnMotorPressDown"
                                PreviewMouseLeftButtonUp="OnMotorPressUp"
                                MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="2" Grid.Column="1"
-                               Content="🏠 圆盘回原" Appearance="Caution" Tag="0.7" Margin="4"
+                    <ui:Button Grid.Row="1" Width="160" Height="40" Grid.Column="1"
+                               Content="🏠 滑台回原" Appearance="Caution" Tag="6.6.0" Margin="4"
                                PreviewMouseLeftButtonDown="OnMotorPressDown"
                                PreviewMouseLeftButtonUp="OnMotorPressUp"
                                MouseLeave="OnMotorPressLeave" />
-                    <ui:Button Grid.Row="2" Grid.Column="2"
-                               Content="🔄 圆盘反转" Appearance="Primary" Tag="1.0" Margin="4"
+                    <ui:Button Grid.Row="1" Width="160" Height="40" Grid.Column="2"
+                               Content="⬇ 滑台反转" Appearance="Primary" Tag="6.0.3" Margin="4"
+                               PreviewMouseLeftButtonDown="OnMotorPressDown"
+                               PreviewMouseLeftButtonUp="OnMotorPressUp"
+                               MouseLeave="OnMotorPressLeave" />
+
+                    <ui:Button Grid.Row="2" Width="160" Height="40" Grid.Column="0"
+                               Content="⭕ 圆盘正转" Appearance="Success" Tag="7.0.4" Margin="4"
+                               PreviewMouseLeftButtonDown="OnMotorPressDown"
+                               PreviewMouseLeftButtonUp="OnMotorPressUp"
+                               MouseLeave="OnMotorPressLeave" />
+                    <ui:Button Grid.Row="2" Width="160" Height="40" Grid.Column="1"
+                               Content="🏠 圆盘回原" Appearance="Caution" Tag="7.0.3" Margin="4"
+                               PreviewMouseLeftButtonDown="OnMotorPressDown"
+                               PreviewMouseLeftButtonUp="OnMotorPressUp"
+                               MouseLeave="OnMotorPressLeave" />
+                    <ui:Button Grid.Row="2" Width="160" Height="40" Grid.Column="2"
+                               Content="🔄 圆盘反转" Appearance="Primary" Tag="7.0.5" Margin="4"
                                PreviewMouseLeftButtonDown="OnMotorPressDown"
                                PreviewMouseLeftButtonUp="OnMotorPressUp"
                                MouseLeave="OnMotorPressLeave" />
