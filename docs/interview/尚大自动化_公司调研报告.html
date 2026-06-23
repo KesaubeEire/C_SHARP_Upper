@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>  尚大自动化 · 求职调研报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #070b14;
+            --card: #0f1629;
+            --card2: #172236;
+            --card3: #1c2942;
+            --border: #1e3a5f;
+            --accent: #3b82f6;
+            --accent2: #22c55e;
+            --gold: #f59e0b;
+            --red: #ef4444;
+            --purple: #a78bfa;
+            --cyan: #22d3ee;
+            --pink: #f472b6;
+            --orange: #fb923c;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 15% 40%, rgba(59,130,246,.07) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(34,197,94,.04) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(251,146,60,.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .notice-bar {
+            background: linear-gradient(90deg, rgba(245,158,11,.12), rgba(239,68,68,.08));
+            border: 1px solid rgba(245,158,11,.3);
+            border-radius: 0 0 8px 8px;
+            padding: 10px 24px;
+            text-align: center;
+            font-size: .85rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+        .notice-bar strong { color: #fff; }
+
+        header {
+            text-align: center;
+            padding: 40px 0 30px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+        header .company-name {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #34d399, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        header .en-name { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+        header .sub { color: var(--muted); font-size: 1rem; margin-top: 6px; }
+        header .badge-row {
+            margin-top: 14px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        header .badge-row span {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: .78rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+        }
+        .b-blue  { border-color: var(--accent) !important; color: var(--accent) !important; }
+        .b-green { border-color: var(--accent2) !important; color: var(--accent2) !important; }
+        .b-gold  { border-color: var(--gold) !important; color: var(--gold) !important; }
+        .b-red   { border-color: var(--red) !important; color: var(--red) !important; }
+        .b-cyan  { border-color: var(--cyan) !important; color: var(--cyan) !important; }
+        .b-pink  { border-color: var(--pink) !important; color: var(--pink) !important; }
+
+        section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 26px 28px;
+            margin-bottom: 22px;
+        }
+        section h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        section h2 .icon { font-size: 1.4rem; }
+        section h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin: 18px 0 10px;
+            color: var(--accent);
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+        @media (max-width:800px) { .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
+
+        .info-card {
+            background: var(--card2);
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .info-card .label { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+        .info-card .value { font-size:1rem; font-weight:600; }
+        .info-card .desc { font-size:.82rem; color:var(--muted); margin-top:3px; }
+
+        .hl-card {
+            background: linear-gradient(135deg, rgba(59,130,246,.08), rgba(34,197,94,.05));
+            border: 1px solid var(--accent);
+        }
+
+        .table-wrap { overflow-x: auto; margin-top: 6px; }
+        table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+        thead th {
+            text-align: left; padding: 9px 12px;
+            background: rgba(59,130,246,.08);
+            border-bottom: 2px solid var(--border);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        tbody td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+        tbody tr:hover { background: rgba(255,255,255,.02); }
+
+        .tag {
+            display: inline-block; padding: 2px 10px; border-radius: 12px;
+            font-size: .73rem; font-weight: 600;
+        }
+        .tag-ok  { background: rgba(34,197,94,.15); color: var(--accent2); }
+        .tag-info { background: rgba(59,130,246,.12); color: var(--accent); }
+        .tag-warn { background: rgba(245,158,11,.12); color: var(--gold); }
+        .tag-hot { background: rgba(239,68,68,.12); color: var(--red); }
+
+        .qa-block {
+            background: var(--card2);
+            border-radius: 10px;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,.04);
+        }
+        .qa-block .q { font-weight: 700; color: var(--gold); margin-bottom: 4px; font-size: .92rem; }
+        .qa-block .a { font-size: .86rem; color: var(--text); }
+        .qa-block .a .hl { color: var(--accent2); font-weight: 600; }
+
+        .tip-box {
+            background: linear-gradient(135deg, rgba(59,130,246,.06), rgba(34,197,94,.04));
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin-top: 14px;
+        }
+        .tip-box .tip-title { font-weight: 700; color: var(--accent2); margin-bottom: 6px; }
+        .tip-box ul { padding-left: 18px; font-size: .88rem; }
+        .tip-box ul li { margin-bottom: 4px; }
+
+        .warn-box {
+            background: linear-gradient(135deg, rgba(245,158,11,.08), rgba(239,68,68,.05));
+            border: 1px solid var(--gold);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin-top: 14px;
+        }
+        .warn-box .warn-title { font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+
+        .timeline { list-style: none; padding: 0; }
+        .timeline li {
+            padding: 10px 0 10px 24px;
+            border-left: 2px solid var(--border);
+            position: relative;
+            margin-bottom: 4px;
+        }
+        .timeline li::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 16px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        .timeline li .t-year { font-weight: 700; color: var(--gold); }
+        .timeline li .t-desc { color: var(--text); font-size: .88rem; }
+        .timeline li .t-note { color: var(--muted); font-size: .78rem; }
+
+        .family-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            text-align: center;
+        }
+        .family-grid .person {
+            background: var(--card2);
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,.06);
+        }
+        .family-grid .person .name { font-size: 1.1rem; font-weight: 700; }
+        .family-grid .person .role { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+        .family-grid .person .detail { font-size: .78rem; color: var(--muted); margin-top: 4px; line-height: 1.6; }
+        .family-grid .arrow { display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--muted); }
+        @media (max-width:800px) { .family-grid { grid-template-columns: 1fr; } .family-grid .arrow { display: none; } }
+
+        .patent-block {
+            background: var(--card3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--gold);
+        }
+        .patent-block .p-title { font-weight: 700; color: var(--cyan); }
+        .patent-block .p-num { color: var(--muted); font-size: .8rem; }
+        .patent-block .p-desc { margin-top: 4px; font-size: .85rem; }
+        .patent-block .p-inventors { color: var(--muted); font-size: .78rem; margin-top: 3px; }
+
+        footer {
+            text-align: center; padding: 30px 0 10px;
+            color: var(--muted); font-size: .8rem;
+            border-top: 1px solid var(--border); margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="notice-bar">
+          <strong>求职目标公司 · 完整调研报告</strong> 基于官网抓取 + 专利数据库 + 招聘网站 + 员工评价 + 微信对话
+    </div>
+
+    <!-- ════════ HEADER ════════ -->
+    <header>
+        <div class="company-name">滕州市尚大自动化装备有限公司</div>
+        <div class="en-name">Tengzhou Shangda Automation Equipment Co., Ltd.</div>
+        <p class="sub">  ️ 校直机 · 压装机 · 压力机 · 全自动装配线</p>
+        <div class="badge-row">
+            <span class="b-blue">  ️ 国家高新技术企业</span>
+            <span class="b-green"> 省级专精特新</span>
+            <span class="b-gold"> 注册资本 2000 万</span>
+            <span class="b-cyan"> 28 项实用新型专利</span>
+            <span class="b-pink">  出口 6+ 国家</span>
+            <span class="b-red">  员工 200+ 人</span>
+        </div>
+    </header>
+
+    <!-- ════════ 0. 核心线索 ════════ -->
+    <section style="border-color: var(--gold); background: linear-gradient(135deg, rgba(245,158,11,.05), rgba(34,197,94,.03));">
+        <h2><span class="icon"> </span>核心人物：你的学长 = 孔凡齐</h2>
+
+        <div class="family-grid">
+            <div class="person" style="border: 2px solid var(--gold);">
+                <div class="name" style="color: var(--gold);">  孔凡齐</div>
+                <div class="role"><strong style="color: var(--accent2);">← 你的学长 / 面试对接人</strong></div>
+                <div class="detail">
+                    微信：马斯克头号粉丝<br>
+                    核心技术发明人<br>
+                    专利：校直机自动升降支撑板装置（<strong>唯一发明人</strong>）<br>
+                    外观专利唯一设计人<br>
+                    2024 年参与多项新专利
+                </div>
+            </div>
+            <div class="arrow">⬇</div>
+            <div class="person">
+                <div class="name">  孔庆安</div>
+                <div class="role">核心发明人 / 公司联系人</div>
+                <div class="detail">
+                    官网联系人「孔经理」<br>
+                    电话：15725691968<br>
+                    邮箱：kongqinganhefanji@163.com<br>
+                    多数专利第一发明人
+                </div>
+            </div>
+        </div>
+
+        <div class="tip-box" style="margin-top:16px; border-color: var(--gold); background: rgba(245,158,11,.06);">
+            <div class="tip-title" style="color: var(--gold);">  关键推论：这极大概率是家族企业</div>
+            <p style="font-size: .9rem; line-height: 1.8;">
+                <strong>孔庆安</strong>（公司主要发明人、对外联系人）和 <strong>孔凡齐</strong>（你学长、共同发明人）<br>
+                都姓孔 · 同在滕州 · 同在一家公司做核心研发 · 共同出现在多项专利中。<br><br>
+                官网联系邮箱 <code>kongqinganhefanji@163.com</code> 是 <strong>孔庆安 + 孔凡齐</strong> 两人名字的组合。<br><br>
+                <span style="color: var(--accent2); font-weight: 700;">→ 孔庆安大概率是他父亲/叔叔辈，孔凡齐是家里接班人 / 核心技术人员。</span><br>
+                所以他在微信里说"薪资都可以谈"、「15到35」不是随口说的 —— <strong style="color: var(--gold);">他在自己家厂里说话算数。</strong>
+            </p>
+        </div>
+    </section>
+
+    <!-- ════════ 1. 公司基本信息 ════════ -->
+    <section>
+        <h2><span class="icon">  </span>公司基本信息</h2>
+        <div class="grid-3">
+            <div class="info-card">
+                <div class="label">  全称 / 地址</div>
+                <div class="value">滕州市尚大自动化装备有限公司</div>
+                <div class="desc">滕州经济开发区腾飞西路455号</div>
+            </div>
+            <div class="info-card">
+                <div class="label">  ️ 成立 / 法人</div>
+                <div class="value">2008 年创立 · 2014 年注册</div>
+                <div class="desc">法人代表：王亚</div>
+            </div>
+            <div class="info-card">
+                <div class="label">  规模 / 产值</div>
+                <div class="value">员工 200+ 人 · 年销 ~4000 万</div>
+                <div class="desc">技术 40+ 人 · 厂区 3 万 m² · 固定资产 2600 万</div>
+            </div>
+        </div>
+        <div class="grid-3" style="margin-top:6px;">
+            <div class="info-card">
+                <div class="label">  出口</div>
+                <div class="value">出口额 ~1500 万/年</div>
+                <div class="desc">朝鲜 · 印尼 · 乌兹别克 · 南非 · 法国 · 美国</div>
+            </div>
+            <div class="info-card">
+                <div class="label">  知识产权</div>
+                <div class="value">28 项实用新型 · 6 项发明受理</div>
+                <div class="desc">1 项软著 · 25 项科技成果转化</div>
+            </div>
+            <div class="info-card">
+                <div class="label">  合作院校</div>
+                <div class="value">山东职业学院 · 北京大学经济学院</div>
+                <div class="desc">产学研一体化</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════ 2. 产品与技术 ════════ -->
+    <section>
+        <h2><span class="icon">⚙️</span>核心产品与技术体系</h2>
+
+        <h3>  校直机（绝对主力产品）</h3>
+        <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>产品系列</th><th>适用工件</th><th>核心精度</th><th>技术特点</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>门式全自动伺服电动校直机</strong></td><td>丝杆、光轴等</td><td>≤0.02mm</td><td>自动上下料，可一人操作多台</td></tr>
+                <tr><td><strong>C 型全自动校直机</strong></td><td>轴类、管类、型材</td><td>高精度传感器</td><td>电脑数控一键操作</td></tr>
+                <tr><td><strong>龙门移动式校直机</strong></td><td>大型钢管/抽油杆/石油转杆</td><td>≤0.02mm</td><td>压头移动非工件移动</td></tr>
+                <tr><td><strong>轴类全自动数控校直机</strong></td><td>电机轴、传动轴、汽车轴</td><td>0.01~0.02mm</td><td>单柱结构省空间，伺服液压</td></tr>
+                <tr><td><strong>超高精度数控校直机</strong></td><td>精密工件</td><td><strong>0.005mm</strong></td><td>自主研发操作系统，麦斯系统</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <div class="grid-3" style="margin-top:14px;">
+            <div class="info-card">
+                <div class="label">  压装机</div>
+                <div class="value">伺服压装机 · 数字压装机</div>
+                <div class="desc">自动化装配压装</div>
+            </div>
+            <div class="info-card">
+                <div class="label">  压力机</div>
+                <div class="value">四柱/单柱/框式/卧式</div>
+                <div class="desc">伺服压力机 · 液压机</div>
+            </div>
+            <div class="info-card">
+                <div class="label">  ️ 其他</div>
+                <div class="value">密胺成型机 · 粉末成型机</div>
+                <div class="desc">水涨机 · 拉伸机 · 试验机</div>
+            </div>
+        </div>
+
+        <h3 style="margin-top:18px;">  核心技术特色</h3>
+        <div class="grid-3">
+            <div class="info-card hl-card">
+                <div class="label">  控制方式</div>
+                <div class="value">内置电脑 + PLC 显示屏</div>
+                <div class="desc">CPU 智能分析变形数据，自动计算压力和行程</div>
+            </div>
+            <div class="info-card hl-card">
+                <div class="label">  ️ 检测系统</div>
+                <div class="value">多探测针 + 激光检测</div>
+                <div class="desc">2024 年新专利：方管自动翻转 + 激光检测装置</div>
+            </div>
+            <div class="info-card hl-card">
+                <div class="label">  操作模式</div>
+                <div class="value">手动 / 半自动 / 全自动</div>
+                <div class="desc">可链接流水线，随插随用</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════ 3. 自动化技术栈 ════════ -->
+    <section>
+        <h2><span class="icon"> </span>自动化技术栈深度分析</h2>
+        <p style="color:var(--muted); font-size:.85rem; margin-bottom:10px;">基于官网 + 专利信息 + 学长对话 + 招聘信息推断</p>
+
+        <div class="grid-2">
+            <div>
+                <h3>  已确认的技术栈</h3>
+                <div class="qa-block"><div class="q">PLC 品牌</div><div class="a"><span class="hl">欧姆龙 CP2E</span>（主力）+ 西门子 S7-1200（可选）</div></div>
+                <div class="qa-block"><div class="q">通讯协议</div><div class="a"><span class="hl">FINS</span>（学长主用）+ Modbus RTU/TCP</div></div>
+                <div class="qa-block"><div class="q">上位机语言</div><div class="a"><span class="hl">C#</span> + VS Code / Visual Studio</div></div>
+                <div class="qa-block"><div class="q">PLC 编程软件</div><div class="a"><span class="hl">CX-Programmer</span>（欧姆龙）</div></div>
+                <div class="qa-block"><div class="q">专利中的控制系统</div><div class="a">PLC 控制柜 + 伺服液压系统 + 激光检测 + 杠杆式传感器</div></div>
+                <div class="qa-block"><div class="q">最新技术方向</div><div class="a">2026 年在审专利：<span class="hl">"轴类工件的自动匹配校直机"</span> — PLC 控制柜 + 移动检测 + 智能匹配</div></div>
+            </div>
+            <div>
+                <h3>  岗位真实画像</h3>
+                <div class="qa-block"><div class="q">  ️ 你的岗位</div><div class="a"><strong style="color:var(--accent2);">C# 上位机开发</strong>（不是 PLC 工程师）<br>公司已有 PLC 电气工程师，缺的是上位机软件开发</div></div>
+                <div class="qa-block"><div class="q">  日常工作</div><div class="a">编程 + 调试 + 修 BUG + 新设备上位机开发<br>"各人负责各人的程序"</div></div>
+                <div class="qa-block"><div class="q">  核心任务</div><div class="a">
+                    ① 开发 C# 上位机通讯软件<br>
+                    ② 高频轮询（~100ms）+ 3 线程并行<br>
+                    ③ UI 监控（模拟量实时曲线 + 报警）<br>
+                    ④ 伺服位置读取<br>
+                    ⑤ 本地 SQLite 存储（离线需求）
+                </div></div>
+                <div class="qa-block"><div class="q">  公开招聘参考</div><div class="a">2025年1月招 <strong>PLC 电气工程师</strong>：月薪 1~1.5 万<br>要求 3 年经验，熟悉西门子/三菱/欧姆龙<br>但你做的是上位机，不是 PLC 编程</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════ 4. 专利技术进化 ════════ -->
+    <section>
+        <h2><span class="icon"> </span>技术进化：从专利看研发方向</h2>
+
+        <h3>  发展时间线</h3>
+        <ul class="timeline">
+            <li><span class="t-year">2019</span> — <span class="t-desc">第一批自动化专利</span> <span class="t-note">自动升降支撑板、自动送料、轴杆矫直 ｜ 发明人：孔凡齐、孔庆安</span></li>
+            <li><span class="t-year">2020</span> — <span class="t-desc">全自动龙门校直机、方形齿条自动检测</span> <span class="t-note">自动化程度提升</span></li>
+            <li><span class="t-year">2024</span> — <span class="t-desc"><strong style="color:var(--gold);"> 激光检测 + 自动翻转 + 卧式移动龙门 + 全自动方管校直</strong></span> <span class="t-note">专利数量和质量大幅提升，<strong>孔凡齐</strong>参与其中</span></li>
+            <li><span class="t-year">2025</span> — <span class="t-desc"><strong style="color:var(--cyan);">全自动移动龙门式校直扭拧一体机（发明专利已授权）</strong></span> <span class="t-note">从"单一校直"到"校直+扭拧"复合功能</span></li>
+            <li><span class="t-year">2026 (在审)</span> — <span class="t-desc"><strong style="color:var(--pink);">轴类工件的自动匹配校直机</strong> —— PLC 控制柜 + 移动检测 + 杠杆传感</span> <span class="t-note">智能化方向，发明人中含 <strong>孔凡齐</strong></span></li>
+        </ul>
+
+        <h3 style="margin-top:18px;">  孔凡齐参与的核心专利（完整列表）</h3>
+
+        <div class="patent-block" style="border-left-color:var(--gold);">
+            <div class="p-title">  校直机自动升降支撑板装置 <span class="p-num">CN210847739U</span></div>
+            <div class="p-desc"><strong style="color:var(--accent2);">唯一发明人：孔凡齐</strong> · 气缸驱动多级高度自动调节</div>
+            <div class="p-inventors">申请 2019-10 · 授权 2020-06</div>
+        </div>
+        <div class="patent-block" style="border-left-color:var(--orange);">
+            <div class="p-title">  校直机（外观设计）<span class="p-num">CN305733020S</span></div>
+            <div class="p-desc"><strong style="color:var(--accent2);">唯一设计人：孔凡齐</strong></div>
+            <div class="p-inventors">申请 2019-11 · 授权 2020-04</div>
+        </div>
+        <div class="patent-block" style="border-left-color:var(--accent2);">
+            <div class="p-title">  卧式移动龙门校直机 <span class="p-num">CN222036386U</span></div>
+            <div class="p-desc">适用于 5 米以上超长工件，龙门移动非工件移动</div>
+            <div class="p-inventors">发明人：孔庆安、田侯、赵国、<strong style="color:var(--gold);">孔凡齐</strong>、王鸿柏 · 2024-04 申请</div>
+        </div>
+        <div class="patent-block" style="border-left-color:var(--cyan);">
+            <div class="p-title">  全自动卧式方管校直机 <span class="p-num">CN222133226U</span></div>
+            <div class="p-desc"><strong style="color:var(--gold);">含激光检测装置</strong> · 自动检测弯曲处并翻转校直</div>
+            <div class="p-inventors">发明人：孔庆安、田侯、赵国、<strong style="color:var(--gold);">孔凡齐</strong>、王鸿柏 · 2024-04 申请</div>
+        </div>
+        <div class="patent-block" style="border-left-color:var(--pink);">
+            <div class="p-title">  全自动移动龙门式校直扭拧一体机 <span class="p-num">CN119346676B</span></div>
+            <div class="p-desc"><strong style="color:var(--gold);">发明专利（已授权）</strong> · 校直+扭拧复合，称重传感器隐藏防护</div>
+            <div class="p-inventors">共同发明人含 <strong style="color:var(--gold);">孔凡齐</strong> · 2025 授权</div>
+        </div>
+        <div class="patent-block" style="border-left-color:var(--accent);">
+            <div class="p-title">  轴类工件的自动匹配校直机 <span class="p-num">CN121988635A</span></div>
+            <div class="p-desc"><strong style="color:var(--gold);">在审发明专利</strong> · PLC 控制柜 + 移动检测机构 + 杠杆式传感 · 全长度检测</div>
+            <div class="p-inventors">共同发明人含 <strong style="color:var(--gold);">孔凡齐</strong> · 2026 年公布</div>
+        </div>
+
+        <div class="tip-box" style="margin-top:14px;">
+            <div class="tip-title">  专利给面试的启发</div>
+            <ul>
+                <li>2024 年大量新专利涉及 <strong>激光检测、自动翻转</strong> → 公司从半自动向全自动智能转型</li>
+                <li>最新专利涉及 <strong>PLC 控制柜 + 移动检测</strong> → 上位机需求越来越大，你是被需要的人</li>
+                <li>孔凡齐从 2019 年独立专利到 2024 年多人合著 → <strong>技术成长路径清晰，现在是核心骨干</strong></li>
+                <li>可以主动问学长："我看公司 2024 年上了激光检测专利，上位机这边需要配合做什么？" → <strong style="color:var(--gold);">杀手锏问题</strong></li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- ════════ 5. 薪资分析 ════════ -->
+    <section>
+        <h2><span class="icon">  </span>薪资分析</h2>
+
+        <div class="grid-3">
+            <div class="info-card hl-card">
+                <div class="label">  公开招聘薪资</div>
+                <div class="value" style="color:var(--gold);">10K ~ 15K</div>
+                <div class="desc">PLC 电气工程师岗位，2025 年 1 月发布</div>
+            </div>
+            <div class="info-card hl-card">
+                <div class="label">  学长承诺薪资</div>
+                <div class="value" style="color:var(--accent2);">15K ~ 35K</div>
+                <div class="desc">"相同岗位水平不一样我们可以给到15到35"</div>
+            </div>
+            <div class="info-card hl-card">
+                <div class="label">  枣庄地区平均</div>
+                <div class="value" style="color:var(--muted);">~10K</div>
+                <div class="desc">电气工程师平均 9K~11K，低于一二线</div>
+            </div>
+        </div>
+
+        <div class="warn-box" style="margin-top:10px;">
+            <div class="warn-title">  薪资谈判策略</div>
+            <p style="font-size:.88rem;">
+                <strong>底线 12K~15K</strong> → 与公开招聘 PLC 岗持平 · <strong>合理目标 15K~20K</strong> → 学长说 15 起步 · <strong>冲刺 20K+</strong> → 现场跑通 Demo<br>
+                滕州房租 ~1000/月就能租小两室，15K 购买力相当于一线 25K+
+            </p>
+        </div>
+    </section>
+
+    <!-- ════════ 6. 员工口碑 ════════ -->
+    <section>
+        <h2><span class="icon">  ️</span>员工口碑与工作环境</h2>
+        <p style="color:var(--muted); font-size:.78rem;">数据来源：找工易 · 26~100 人匿名反馈（2021~2023 年，样本偏小仅供参考）</p>
+
+        <div class="grid-3">
+            <div class="info-card"><div class="label">  综合评分</div><div class="value" style="color:var(--gold);">7.6 / 10</div><div class="desc">好评率 58%</div></div>
+            <div class="info-card"><div class="label">  工作氛围</div><div class="value" style="color:var(--accent2);">4.7 / 5</div><div class="desc">85% 认为氛围好</div></div>
+            <div class="info-card"><div class="label">  晋升机会</div><div class="value" style="color:var(--accent2);">4.6 / 5</div><div class="desc">80% 认为晋升快</div></div>
+            <div class="info-card"><div class="label">  ️ 管理人性化</div><div class="value" style="color:var(--accent);">4.3 / 5</div><div class="desc">66% 认为较人性化</div></div>
+            <div class="info-card"><div class="label">  工作压力</div><div class="value" style="color:var(--accent);">压力不大 66%</div><div class="desc">适中 32% · 山大 2%</div></div>
+            <div class="info-card"><div class="label">  加班情况</div><div class="value" style="color:var(--gold);">经常 30%</div><div class="desc">偶尔/不用 70%</div></div>
+        </div>
+    </section>
+
+    <!-- ════════ 7. 对话解读 ════════ -->
+    <section>
+        <h2><span class="icon"> </span>微信对话逐条解读</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th style="width:18%;">话题</th><th style="width:42%;">学长（孔凡齐）原话</th><th>对面试的指导</th></tr></thead>
+            <tbody>
+                <tr><td><strong>技术栈</strong></td><td>"csharp 你看看能不能做个通讯和UI事例"</td><td><span class="tag tag-ok">演示 C# + 通讯 + UI</span></td></tr>
+                <tr><td><strong>通讯协议</strong></td><td>"我个人用的fins" / "PLC没有太多强制要求"</td><td>FINS 加分非必须，Modbus/S7 也可</td></tr>
+                <tr><td><strong>评估标准</strong></td><td>"全部还是取决于能不能干"</td><td><strong style="color:var(--gold);">能跑通 = 核心指标</strong></td></tr>
+                <tr><td><strong>学历</strong></td><td>"这个没什么问题，能干活就可以"</td><td><span class="tag tag-ok">✅ 肄业不影响</span></td></tr>
+                <tr><td><strong>日常工作</strong></td><td>"各人负责各人的程序 / 编程调试修bug"</td><td>独立负责，不下产线</td></tr>
+                <tr><td><strong>出差</strong></td><td>"基本不出差"</td><td><span class="tag tag-ok">✅ 稳定不出差</span></td></tr>
+                <tr><td><strong>薪资</strong></td><td>"相同岗位水平不一样 15 到 35"</td><td>面试表现决定薪资</td></tr>
+                <tr><td><strong>面试</strong></td><td>"过来我们这一下面试一下 费用报销"</td><td>线下面试 · 路费报销</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <!-- ════════ 8. 你的竞争优势 ════════ -->
+    <section>
+        <h2><span class="icon">  </span>你的竞争优势</h2>
+        <div class="grid-2">
+            <div>
+                <h3 style="color:var(--accent2);">✅ 优势</h3>
+                <div class="qa-block"><div class="q">  完整 Modbus 上位机框架</div><div class="a">TEST_101 通讯层→协议层→业务层→存储层全链路</div></div>
+                <div class="qa-block"><div class="q">  WPF 技能加分</div><div class="a">学长说"会 wpf 肯定更好"，你有 WPF + MVVM</div></div>
+                <div class="qa-block"><div class="q">  双栈能力</div><div class="a">C# 原生 + Web 上位机都能做</div></div>
+                <div class="qa-block"><div class="q">  线程安全功底</div><div class="a">生产者-消费者 · ConcurrentQueue · 指数退避 · EventBus</div></div>
+            </div>
+            <div>
+                <h3 style="color:var(--gold);">  待补充</h3>
+                <div class="qa-block" style="border-left:2px solid var(--red);"><div class="q" style="color:var(--red);">① FINS 协议</div><div class="a">学长主用，面试前了解帧结构 + 命令码</div></div>
+                <div class="qa-block" style="border-left:2px solid var(--gold);"><div class="q" style="color:var(--gold);">② Modbus 写功能码</div><div class="a">项目里标注了"暂未实现"，面试前补上</div></div>
+                <div class="qa-block" style="border-left:2px solid var(--gold);"><div class="q" style="color:var(--gold);">③ Demo 演示脚本</div><div class="a">离线环境能完整演示全套功能</div></div>
+                <div class="qa-block" style="border-left:2px solid var(--purple);"><div class="q" style="color:var(--purple);">④ 伺服位置读取</div><div class="a">了解伺服驱动器 ↔ PLC 通信原理</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════ 9. 面试前必补 ════════ -->
+    <section>
+        <h2><span class="icon">  </span>面试前必补清单</h2>
+        <div class="grid-2">
+            <div class="info-card" style="border-left:3px solid var(--red);">
+                <div class="label" style="color:var(--red);">P1 紧急</div>
+                <div class="value" style="color:var(--red);font-size:.95rem;">  FINS 协议帧结构</div>
+                <div class="desc">10 字节命令头 ICF|RSV|GCT|DNA|DA1|DA2|SNA|SA1|SA2|SID · 命令码 01 01=读 CIO</div>
+            </div>
+            <div class="info-card" style="border-left:3px solid var(--red);">
+                <div class="label" style="color:var(--red);">P1 紧急</div>
+                <div class="value" style="color:var(--red);font-size:.95rem;">  补 Modbus 写功能码</div>
+                <div class="desc">05/06/15/16 的协议帧组装 + UI 交互</div>
+            </div>
+            <div class="info-card" style="border-left:3px solid var(--red);">
+                <div class="label" style="color:var(--red);">P1 紧急</div>
+                <div class="value" style="color:var(--red);font-size:.95rem;">  S7 握手流程 + DB 区</div>
+                <div class="desc">TCP→COTP CR/CC→S7 Setup · DB 优化/非优化块区别</div>
+            </div>
+            <div class="info-card" style="border-left:3px solid var(--red);">
+                <div class="label" style="color:var(--red);">P1 紧急</div>
+                <div class="value" style="color:var(--red);font-size:.95rem;">  PLC 地址区对照</div>
+                <div class="desc">西门子 I/Q/M/DB ↔ 欧姆龙 CIO/WR/HR/DM</div>
+            </div>
+            <div class="info-card" style="border-left:3px solid var(--gold);">
+                <div class="label" style="color:var(--gold);">P2 加分</div>
+                <div class="value" style="color:var(--gold);font-size:.95rem;">  伺服位置读取</div>
+                <div class="desc">伺服驱动器 ↔ PLC 通信 · 编码器位置读取</div>
+            </div>
+            <div class="info-card" style="border-left:3px solid var(--accent);">
+                <div class="label" style="color:var(--accent);">P3 准备</div>
+                <div class="value" style="color:var(--accent);font-size:.95rem;">  演示 + 录屏 + 架构图</div>
+                <div class="desc">Modbus→轮询→图表→报警 一条龙 · "三层架构"口头表达</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════ 10. 反问问题 ════════ -->
+    <section>
+        <h2><span class="icon"> </span>面试时可以问学长的问题</h2>
+        <div class="grid-2">
+            <div class="qa-block"><div class="q">  目前 FINS 走 UDP 还是 TCP？</div><div class="a">→ 显示你了解 FINS 有两种传输方式</div></div>
+            <div class="qa-block"><div class="q">  模拟量信号 4-20mA 还是 0-10V？多少通道？</div><div class="a">→ 显得你能直接上手</div></div>
+            <div class="qa-block"><div class="q">  现有校直机上位机是自研还是组态软件？</div><div class="a">→ 了解现状，快速融入</div></div>
+            <div class="qa-block"><div class="q">  一个人负责几台设备的上位机？开发周期？</div><div class="a">→ 评估工作量和节奏</div></div>
+            <div class="qa-block"><div class="q">  <strong style="color:var(--gold);">2024 年激光检测专利，上位机需要配合什么？</strong></div><div class="a">→ <strong style="color:var(--accent2);">杀手锏问题，显示做了功课</strong></div></div>
+            <div class="qa-block"><div class="q">  入职后主要维护还是新项目开发？</div><div class="a">→ 了解具体安排</div></div>
+        </div>
+    </section>
+
+    <!-- ════════ FOOTER ════════ -->
+    <section>
+        <h2><span class="icon"> </span>一句话总结</h2>
+        <div class="tip-box" style="border-color:var(--gold); background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(34,197,94,.04));">
+            <div class="tip-title" style="color:var(--gold);">  能干活就是硬道理</div>
+            <p style="font-size:1.05rem; line-height:1.8;">
+                <strong style="color:var(--accent2);">这是你学长孔凡齐的家族企业。</strong><br>
+                他们正在从半自动向全自动智能转型，<strong style="color:var(--gold);">急需一个能独立搭建 C# 上位机的人</strong>。<br>
+                你的 TEST_101 和 WPF_S71200 恰好就是他们最需要的东西。<br><br>
+                <strong>面试策略：</strong>带电脑去 · 现场跑一遍 Demo · 15K 起谈 · 不行就 12K 保底<br>
+                <strong>最强话术：</strong>"我的 Modbus 已经跑通了，FINS 的原理我研究过，给我 1-2 周就能用同样的架构搭起来"<br><br>
+                <span style="color:var(--muted); font-size:.9rem;">祝面试顺利</span>
+            </p>
+        </div>
+    </section>
+
+    <footer>
+        <p>  滕州市尚大自动化装备有限公司 · 完整求职调研报告</p>
+        <p style="margin-top:4px; font-size:.75rem;">
+            数据源：官网 www.yeyaji68.com · 专利数据库 CNIPA · 找工易 · 163 新闻 · 微信对话<br>
+            生成 2026-06-20 · 建议面试前再确认一次最新信息
+        </p>
+    </footer>
+
+</div>
+
+</body>
+</html>
