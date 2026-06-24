@@ -32,9 +32,6 @@
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
                     ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenFillBrush="{DynamicResource SystemFillColorSuccessBrush}"
-                    YellowFillBrush="{DynamicResource SystemFillColorCautionBrush}"
-                    RedFillBrush="{DynamicResource SystemFillColorCriticalBrush}"
                     GreenMax="96" YellowMax="160" RedMax="200" />
             </controls:ControlExample>
 
@@ -47,9 +44,6 @@
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
                     ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenFillBrush="{DynamicResource SystemFillColorSuccessBrush}"
-                    YellowFillBrush="{DynamicResource SystemFillColorCautionBrush}"
-                    RedFillBrush="{DynamicResource SystemFillColorCriticalBrush}"
                     GreenMax="108" YellowMax="180" RedMax="200" />
             </controls:ControlExample>
 
@@ -62,9 +56,6 @@
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
                     ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenFillBrush="{DynamicResource SystemFillColorSuccessBrush}"
-                    YellowFillBrush="{DynamicResource SystemFillColorCautionBrush}"
-                    RedFillBrush="{DynamicResource SystemFillColorCriticalBrush}"
                     GreenMax="96" YellowMax="160" RedMax="200" />
             </controls:ControlExample>
 
@@ -77,9 +68,6 @@
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
                     ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenFillBrush="{DynamicResource SystemFillColorSuccessBrush}"
-                    YellowFillBrush="{DynamicResource SystemFillColorCautionBrush}"
-                    RedFillBrush="{DynamicResource SystemFillColorCriticalBrush}"
                     GreenMax="108" YellowMax="180" RedMax="200" />
             </controls:ControlExample>
 
