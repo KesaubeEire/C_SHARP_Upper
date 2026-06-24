@@ -7,7 +7,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using Microsoft.Extensions.Localization;
 using Wpf.Ui.Controls;
-using Wpf.Ui.Gallery.Models.Navigation;
 using Wpf.Ui.Gallery.Resources;
 using Wpf.Ui.Gallery.Views.Pages;
 using Wpf.Ui.Gallery.Views.Pages.BasicInput;
@@ -32,207 +31,184 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
     private string _applicationTitle = localizer["Kesa_PCL"];
 
     [ObservableProperty]
-    private ObservableCollection<SidebarEntry> _menuItems =
+    private ObservableCollection<object> _menuItems =
     [
-        new SidebarEntry
+        new NavigationViewItem
         {
-            Label = "Gallery",
+            Content = "Gallery",
             Icon = new SymbolIcon { Symbol = SymbolRegular.Apps24 },
             IsExpanded = false,
-            Children =
+            MenuItemsSource = new object[]
             {
-                new SidebarEntry { Label = "Home", Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 }, TargetPageType = typeof(DashboardPage) },
-                new SidebarEntry
+                new NavigationViewItem("Home", SymbolRegular.Home24, typeof(DashboardPage)),
+                new NavigationViewItem()
                 {
-                    Label = "Design guidance",
+                    Content = "Design guidance",
                     Icon = new SymbolIcon { Symbol = SymbolRegular.DesignIdeas24 },
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = "Typography", Icon = new SymbolIcon { Symbol = SymbolRegular.TextFont24 }, TargetPageType = typeof(TypographyPage) },
-                        new SidebarEntry { Label = "Icons", Icon = new SymbolIcon { Symbol = SymbolRegular.Diversity24 }, TargetPageType = typeof(IconsPage) },
-                        new SidebarEntry { Label = "Colors", Icon = new SymbolIcon { Symbol = SymbolRegular.Color24 }, TargetPageType = typeof(ColorsPage) },
+                        new NavigationViewItem("Typography", SymbolRegular.TextFont24, typeof(TypographyPage)),
+                        new NavigationViewItem("Icons", SymbolRegular.Diversity24, typeof(IconsPage)),
+                        new NavigationViewItem("Colors", SymbolRegular.Color24, typeof(ColorsPage)),
                     },
                 },
-                new SidebarEntry { Label = "All samples", Icon = new SymbolIcon { Symbol = SymbolRegular.List24 }, TargetPageType = typeof(AllControlsPage) },
-                new SidebarEntry { IsSeparator = true },
-                new SidebarEntry
+                new NavigationViewItem("All samples", SymbolRegular.List24, typeof(AllControlsPage)),
+                new NavigationViewItemSeparator(),
+                new NavigationViewItem("Basic Input", SymbolRegular.CheckboxChecked24, typeof(BasicInputPage))
                 {
-                    Label = "Basic Input",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.CheckboxChecked24 },
-                    TargetPageType = typeof(BasicInputPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = nameof(Anchor), TargetPageType = typeof(AnchorPage) },
-                        new SidebarEntry { Label = nameof(Wpf.Ui.Controls.Button), TargetPageType = typeof(ButtonPage) },
-                        new SidebarEntry { Label = nameof(DropDownButton), TargetPageType = typeof(DropDownButtonPage) },
-                        new SidebarEntry { Label = nameof(HyperlinkButton), TargetPageType = typeof(HyperlinkButtonPage) },
-                        new SidebarEntry { Label = nameof(ToggleButton), TargetPageType = typeof(ToggleButtonPage) },
-                        new SidebarEntry { Label = nameof(ToggleSwitch), TargetPageType = typeof(ToggleSwitchPage) },
-                        new SidebarEntry { Label = nameof(CheckBox), TargetPageType = typeof(CheckBoxPage) },
-                        new SidebarEntry { Label = nameof(ComboBox), TargetPageType = typeof(ComboBoxPage) },
-                        new SidebarEntry { Label = nameof(RadioButton), TargetPageType = typeof(RadioButtonPage) },
-                        new SidebarEntry { Label = nameof(RatingControl), TargetPageType = typeof(RatingPage) },
-                        new SidebarEntry { Label = nameof(ThumbRate), TargetPageType = typeof(ThumbRatePage) },
-                        new SidebarEntry { Label = nameof(SplitButton), TargetPageType = typeof(SplitButtonPage) },
-                        new SidebarEntry { Label = nameof(Slider), TargetPageType = typeof(SliderPage) },
+                        new NavigationViewItem(nameof(Anchor), typeof(AnchorPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.Button), typeof(ButtonPage)),
+                        new NavigationViewItem(nameof(DropDownButton), typeof(DropDownButtonPage)),
+                        new NavigationViewItem(nameof(HyperlinkButton), typeof(HyperlinkButtonPage)),
+                        new NavigationViewItem(nameof(ToggleButton), typeof(ToggleButtonPage)),
+                        new NavigationViewItem(nameof(ToggleSwitch), typeof(ToggleSwitchPage)),
+                        new NavigationViewItem(nameof(CheckBox), typeof(CheckBoxPage)),
+                        new NavigationViewItem(nameof(ComboBox), typeof(ComboBoxPage)),
+                        new NavigationViewItem(nameof(RadioButton), typeof(RadioButtonPage)),
+                        new NavigationViewItem(nameof(RatingControl), typeof(RatingPage)),
+                        new NavigationViewItem(nameof(ThumbRate), typeof(ThumbRatePage)),
+                        new NavigationViewItem(nameof(SplitButton), typeof(SplitButtonPage)),
+                        new NavigationViewItem(nameof(Slider), typeof(SliderPage)),
                     },
                 },
-                new SidebarEntry
+                new NavigationViewItem
                 {
-                    Label = "Collections",
+                    Content = "Collections",
                     Icon = new SymbolIcon { Symbol = SymbolRegular.Table24 },
                     TargetPageType = typeof(CollectionsPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = nameof(System.Windows.Controls.DataGrid), TargetPageType = typeof(DataGridPage) },
-                        new SidebarEntry { Label = nameof(ListBox), TargetPageType = typeof(ListBoxPage) },
-                        new SidebarEntry { Label = nameof(Ui.Controls.ListView), TargetPageType = typeof(ListViewPage) },
-                        new SidebarEntry { Label = "TreeView", TargetPageType = typeof(TreeViewPage) },
+                        new NavigationViewItem(nameof(System.Windows.Controls.DataGrid), typeof(DataGridPage)),
+                        new NavigationViewItem(nameof(ListBox), typeof(ListBoxPage)),
+                        new NavigationViewItem(nameof(Ui.Controls.ListView), typeof(ListViewPage)),
+                        new NavigationViewItem(nameof(TreeView), typeof(TreeViewPage)),
 #if DEBUG
-                        new SidebarEntry { Label = "TreeList", TargetPageType = typeof(TreeListPage) },
+                        new NavigationViewItem("TreeList", typeof(TreeListPage)),
 #endif
                     },
                 },
-                new SidebarEntry
+                new NavigationViewItem("Date & time", SymbolRegular.CalendarClock24, typeof(DateAndTimePage))
                 {
-                    Label = "Date & time",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.CalendarClock24 },
-                    TargetPageType = typeof(DateAndTimePage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = nameof(CalendarDatePicker), TargetPageType = typeof(CalendarDatePickerPage) },
-                        new SidebarEntry { Label = nameof(System.Windows.Controls.Calendar), TargetPageType = typeof(CalendarPage) },
-                        new SidebarEntry { Label = nameof(DatePicker), TargetPageType = typeof(DatePickerPage) },
-                        new SidebarEntry { Label = nameof(TimePicker), TargetPageType = typeof(TimePickerPage) },
+                        new NavigationViewItem(nameof(CalendarDatePicker), typeof(CalendarDatePickerPage)),
+                        new NavigationViewItem(nameof(System.Windows.Controls.Calendar), typeof(CalendarPage)),
+                        new NavigationViewItem(nameof(DatePicker), typeof(DatePickerPage)),
+                        new NavigationViewItem(nameof(TimePicker), typeof(TimePickerPage)),
                     },
                 },
-                new SidebarEntry
+                new NavigationViewItem("Dialogs & flyouts", SymbolRegular.Chat24, typeof(DialogsAndFlyoutsPage))
                 {
-                    Label = "Dialogs & flyouts",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.Chat24 },
-                    TargetPageType = typeof(DialogsAndFlyoutsPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = nameof(Snackbar), TargetPageType = typeof(SnackbarPage) },
-                        new SidebarEntry { Label = nameof(ContentDialog), TargetPageType = typeof(ContentDialogPage) },
-                        new SidebarEntry { Label = nameof(Flyout), TargetPageType = typeof(FlyoutPage) },
-                        new SidebarEntry { Label = nameof(Wpf.Ui.Controls.MessageBox), TargetPageType = typeof(MessageBoxPage) },
+                        new NavigationViewItem(nameof(Snackbar), typeof(SnackbarPage)),
+                        new NavigationViewItem(nameof(ContentDialog), typeof(ContentDialogPage)),
+                        new NavigationViewItem(nameof(Flyout), typeof(FlyoutPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.MessageBox), typeof(MessageBoxPage)),
                     },
                 },
 #if DEBUG
-                new SidebarEntry
+                new NavigationViewItem("Layout", SymbolRegular.News24, typeof(LayoutPage))
                 {
-                    Label = "Layout",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.News24 },
-                    TargetPageType = typeof(LayoutPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = "Expander", TargetPageType = typeof(ExpanderPage) },
-                        new SidebarEntry { Label = "CardControl", TargetPageType = typeof(CardControlPage) },
-                        new SidebarEntry { Label = "CardAction", TargetPageType = typeof(CardActionPage) },
+                        new NavigationViewItem("Expander", typeof(ExpanderPage)),
+                        new NavigationViewItem("CardControl", typeof(CardControlPage)),
+                        new NavigationViewItem("CardAction", typeof(CardActionPage)),
                     },
                 },
 #endif
-                new SidebarEntry
+                new NavigationViewItem
                 {
-                    Label = "Media",
+                    Content = "Media",
                     Icon = new SymbolIcon { Symbol = SymbolRegular.PlayCircle24 },
                     TargetPageType = typeof(MediaPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = "Image", TargetPageType = typeof(ImagePage) },
-                        new SidebarEntry { Label = "Canvas", TargetPageType = typeof(CanvasPage) },
-                        new SidebarEntry { Label = "WebView", TargetPageType = typeof(WebViewPage) },
-                        new SidebarEntry { Label = "WebBrowser", TargetPageType = typeof(WebBrowserPage) },
+                        new NavigationViewItem("Image", typeof(ImagePage)),
+                        new NavigationViewItem("Canvas", typeof(CanvasPage)),
+                        new NavigationViewItem("WebView", typeof(WebViewPage)),
+                        new NavigationViewItem("WebBrowser", typeof(WebBrowserPage)),
                     },
                 },
-                new SidebarEntry
+                new NavigationViewItem("Navigation", SymbolRegular.Navigation24, typeof(NavigationPage))
                 {
-                    Label = "Navigation",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.Navigation24 },
-                    TargetPageType = typeof(NavigationPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = "BreadcrumbBar", TargetPageType = typeof(BreadcrumbBarPage) },
-                        new SidebarEntry { Label = "NavigationView", TargetPageType = typeof(NavigationViewPage) },
-                        new SidebarEntry { Label = "Menu", TargetPageType = typeof(MenuPage) },
-                        new SidebarEntry { Label = "Multilevel navigation", TargetPageType = typeof(MultilevelNavigationPage) },
-                        new SidebarEntry { Label = "TabControl", TargetPageType = typeof(TabControlPage) },
+                        new NavigationViewItem("BreadcrumbBar", typeof(BreadcrumbBarPage)),
+                        new NavigationViewItem("NavigationView", typeof(NavigationViewPage)),
+                        new NavigationViewItem("Menu", typeof(MenuPage)),
+                        new NavigationViewItem("Multilevel navigation", typeof(MultilevelNavigationPage)),
+                        new NavigationViewItem("TabControl", typeof(TabControlPage)),
                     },
                 },
-                new SidebarEntry
+                new NavigationViewItem(
+                    "Status & info",
+                    SymbolRegular.ChatBubblesQuestion24,
+                    typeof(StatusAndInfoPage)
+                )
                 {
-                    Label = "Status & info",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.ChatBubblesQuestion24 },
-                    TargetPageType = typeof(StatusAndInfoPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = "InfoBadge", TargetPageType = typeof(InfoBadgePage) },
-                        new SidebarEntry { Label = "InfoBar", TargetPageType = typeof(InfoBarPage) },
-                        new SidebarEntry { Label = "ProgressBar", TargetPageType = typeof(ProgressBarPage) },
-                        new SidebarEntry { Label = "ProgressRing", TargetPageType = typeof(ProgressRingPage) },
-                        new SidebarEntry { Label = "ToolTip", TargetPageType = typeof(ToolTipPage) },
+                        new NavigationViewItem("InfoBadge", typeof(InfoBadgePage)),
+                        new NavigationViewItem("InfoBar", typeof(InfoBarPage)),
+                        new NavigationViewItem("ProgressBar", typeof(ProgressBarPage)),
+                        new NavigationViewItem("ProgressRing", typeof(ProgressRingPage)),
+                        new NavigationViewItem("ToolTip", typeof(ToolTipPage)),
                     },
                 },
-                new SidebarEntry
+                new NavigationViewItem("Text", SymbolRegular.DrawText24, typeof(TextPage))
                 {
-                    Label = "Text",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.DrawText24 },
-                    TargetPageType = typeof(TextPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = nameof(AutoSuggestBox), TargetPageType = typeof(AutoSuggestBoxPage) },
-                        new SidebarEntry { Label = nameof(NumberBox), TargetPageType = typeof(NumberBoxPage) },
-                        new SidebarEntry { Label = nameof(Wpf.Ui.Controls.PasswordBox), TargetPageType = typeof(PasswordBoxPage) },
-                        new SidebarEntry { Label = nameof(Wpf.Ui.Controls.RichTextBox), TargetPageType = typeof(RichTextBoxPage) },
-                        new SidebarEntry { Label = nameof(Label), TargetPageType = typeof(LabelPage) },
-                        new SidebarEntry { Label = nameof(Wpf.Ui.Controls.TextBlock), TargetPageType = typeof(TextBlockPage) },
-                        new SidebarEntry { Label = nameof(Wpf.Ui.Controls.TextBox), TargetPageType = typeof(TextBoxPage) },
+                        new NavigationViewItem(nameof(AutoSuggestBox), typeof(AutoSuggestBoxPage)),
+                        new NavigationViewItem(nameof(NumberBox), typeof(NumberBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.PasswordBox), typeof(PasswordBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.RichTextBox), typeof(RichTextBoxPage)),
+                        new NavigationViewItem(nameof(Label), typeof(LabelPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBlock), typeof(TextBlockPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBox), typeof(TextBoxPage)),
                     },
                 },
-                new SidebarEntry
+                new NavigationViewItem("System", SymbolRegular.Desktop24, typeof(OpSystemPage))
                 {
-                    Label = "System",
-                    Icon = new SymbolIcon { Symbol = SymbolRegular.Desktop24 },
-                    TargetPageType = typeof(OpSystemPage),
-                    Children =
+                    MenuItemsSource = new object[]
                     {
-                        new SidebarEntry { Label = "Clipboard", TargetPageType = typeof(ClipboardPage) },
-                        new SidebarEntry { Label = "FilePicker", TargetPageType = typeof(FilePickerPage) },
+                        new NavigationViewItem("Clipboard", typeof(ClipboardPage)),
+                        new NavigationViewItem("FilePicker", typeof(FilePickerPage)),
                     },
                 },
-                new SidebarEntry { Label = "Windows", Icon = new SymbolIcon { Symbol = SymbolRegular.WindowApps24 }, TargetPageType = typeof(WindowsPage) },
+                new NavigationViewItem("Windows", SymbolRegular.WindowApps24, typeof(WindowsPage)),
             },
         },
-        new SidebarEntry { IsSeparator = true },
-        new SidebarEntry()
+        new NavigationViewItemSeparator(),
+        new NavigationViewItem()
         {
-            Label = "PLC 连接",
+            Content = "PLC 连接",
             Icon = new SymbolIcon { Symbol = SymbolRegular.PlugDisconnected24 },
-            // CustomContent 由代码后置注入 PpeConnectionSection 面板
+            // MenuItemsSource 由代码后置注入面板控件
         },
-        new SidebarEntry
+        new NavigationViewItem("PLC 监视模块", SymbolRegular.Desktop24, typeof(IoMonitorPage))
         {
-            Label = "PLC 监视模块",
-            Icon = new SymbolIcon { Symbol = SymbolRegular.Desktop24 },
-            TargetPageType = typeof(IoMonitorPage),
-            Children =
+            MenuItemsSource = new object[]
             {
-                new SidebarEntry { Label = "I/Q/M 监控", Icon = new SymbolIcon { Symbol = SymbolRegular.List24 }, TargetPageType = typeof(IoMonitorPage) },
-                new SidebarEntry { Label = "趋势图", Icon = new SymbolIcon { Symbol = SymbolRegular.ChartMultiple24 }, TargetPageType = typeof(TrendChartPage) },
-                new SidebarEntry { Label = "仪表盘", Icon = new SymbolIcon { Symbol = SymbolRegular.Gauge24 }, TargetPageType = typeof(GaugeDashboardPage) },
-                new SidebarEntry { Label = "DB 块", Icon = new SymbolIcon { Symbol = SymbolRegular.Box24 }, TargetPageType = typeof(DbMonitorPage) },
-                new SidebarEntry { Label = "报警管理", Icon = new SymbolIcon { Symbol = SymbolRegular.Alert24 }, TargetPageType = typeof(AlarmPage) },
-                new SidebarEntry { Label = "图库画廊", Icon = new SymbolIcon { Symbol = SymbolRegular.ChartMultiple24 }, TargetPageType = typeof(LvcGalleryPage) },
-                new SidebarEntry { Label = "配方管理", Icon = new SymbolIcon { Symbol = SymbolRegular.DocumentData24 }, TargetPageType = typeof(RecipePage) },
+                new NavigationViewItem("I/Q/M 监控", SymbolRegular.List24, typeof(IoMonitorPage)),
+                new NavigationViewItem("趋势图", SymbolRegular.ChartMultiple24, typeof(TrendChartPage)),
+                new NavigationViewItem("仪表盘", SymbolRegular.Gauge24, typeof(GaugeDashboardPage)),
+                new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
+                new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
+                new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
+                new NavigationViewItem("配方管理", SymbolRegular.DocumentData24, typeof(RecipePage)),
             },
         },
     ];
 
     [ObservableProperty]
-    private ObservableCollection<SidebarEntry> _footerMenuItems =
+    private ObservableCollection<object> _footerMenuItems =
     [
-        new SidebarEntry { Label = "Settings", Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 }, TargetPageType = typeof(SettingsPage) },
+        new NavigationViewItem("Settings", SymbolRegular.Settings24, typeof(SettingsPage)),
     ];
 
     [ObservableProperty]

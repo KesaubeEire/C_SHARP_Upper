@@ -8,7 +8,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Controls.Sidebar;
-using Wpf.Ui.Gallery.Models.Navigation;
 using Wpf.Ui.Gallery.Services.Contracts;
 using Wpf.Ui.Gallery.ViewModels.Windows;
 using Wpf.Ui.Gallery.Views.Pages;
@@ -55,16 +54,58 @@ public partial class MainWindow : IWindow
             config.Save();
         };
 
-        // 创建 PLC 连接面板并注入到 "PLC 连接" 的 CustomContent
+        // 创建 PLC 连接综合面板并注入到 "PLC 连接" 的 MenuItems 中
         var plcSection = serviceProvider.GetRequiredService<PpeConnectionSection>();
-        foreach (var entry in ViewModel.MenuItems)
+        foreach (var item in ViewModel.MenuItems)
         {
-            if (entry is SidebarEntry { Label: "PLC 连接" } plcEntry)
+            if (item is NavigationViewItem navItem && navItem.Content is string s && s == "PLC 连接")
             {
-                plcEntry.CustomContent = plcSection;
+                navItem.MenuItemsSource = new object[] { plcSection };
                 break;
             }
         }
+
+        // ═══ PLC 面板内点击拦截 ═══
+        // 在 NavigationView 层级拦截 PreviewMouseLeftButtonDown（隧道），
+        // 在事件到达 NavigationViewItem/ButtonBase.OnPreviewMouseLeftButtonDown 之前，
+        // 将非交互区域的点击标记为已处理，防止 ButtonBase 设置 _isPressed = true，
+        // 从而阻止后续 OnClick → IsExpanded 折叠。
+        NavigationView.PreviewMouseLeftButtonDown += (s, e) =>
+        {
+            if (e.Handled)
+                return;
+
+            // 检查点击是否发生在 PpeConnectionSection 内部
+            var insidePlcSection = false;
+            var dep = e.OriginalSource as DependencyObject;
+            while (dep != null)
+            {
+                if (dep.Equals(plcSection))
+                {
+                    insidePlcSection = true;
+                    break;
+                }
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            if (!insidePlcSection)
+                return;
+
+            // 在 PLC 面板内 → 检查是否在交互控件上
+            dep = e.OriginalSource as DependencyObject;
+            while (dep != null && !dep.Equals(plcSection))
+            {
+                if (dep is ButtonBase or System.Windows.Controls.ComboBox
+                    or ToggleButton or System.Windows.Controls.ListBoxItem
+                    or ScrollBar or Wpf.Ui.Controls.TextBox)
+                    return;
+
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            // 非交互区域 → 拦截，NavigationViewItem 不会收到事件
+            e.Handled = true;
+        };
 
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
         navigationService.SetNavigationControl(NavigationView);
@@ -73,11 +114,11 @@ public partial class MainWindow : IWindow
         // NavigationView 完全加载后强制将 Gallery 设为收起
         NavigationView.Loaded += (_, _) =>
         {
-            foreach (var entry in ViewModel.MenuItems)
+            foreach (var item in ViewModel.MenuItems)
             {
-                if (entry is SidebarEntry { Label: "Gallery" } galleryEntry)
+                if (item is NavigationViewItem navItem && navItem.Content is string s && s == "Gallery")
                 {
-                    galleryEntry.IsExpanded = false;
+                    navItem.SetCurrentValue(NavigationViewItem.IsExpandedProperty, false);
                     break;
                 }
             }
@@ -87,6 +128,10 @@ public partial class MainWindow : IWindow
     }
 
     public MainWindowViewModel ViewModel { get; }
+
+    private bool _isUserClosedPane;
+
+    private bool _isPaneOpenedOrClosedFromCode;
 
     private void SetupTrayMenuEvents()
     {
@@ -102,9 +147,12 @@ public partial class MainWindow : IWindow
     private void OnTrayMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (sender is not Wpf.Ui.Controls.MenuItem menuItem)
+        {
             return;
+        }
 
         var tag = menuItem.Tag?.ToString() ?? string.Empty;
+
         Debug.WriteLine($"System Tray Click: {menuItem.Header}, Tag: {tag}");
 
         switch (tag)
@@ -119,31 +167,47 @@ public partial class MainWindow : IWindow
                 HandleTrayCloseClick();
                 break;
             default:
+                if (!string.IsNullOrEmpty(tag))
+                {
+                    System.Diagnostics.Debug.WriteLine($"unknown Tag: {tag}");
+                }
+
                 break;
         }
     }
 
     private void HandleTrayHomeClick()
     {
+        System.Diagnostics.Debug.WriteLine("Tray menu - Home Click");
+
         ShowAndActivateWindow();
+
         NavigateToPage(typeof(DashboardPage));
     }
 
     private void HandleTraySettingsClick()
     {
+        System.Diagnostics.Debug.WriteLine("Tray menu - Settings Click");
+
         ShowAndActivateWindow();
+
         NavigateToPage(typeof(SettingsPage));
     }
 
     private static void HandleTrayCloseClick()
     {
+        System.Diagnostics.Debug.WriteLine("Tray menu - Close Click");
+
         Application.Current.Shutdown();
     }
 
     private void ShowAndActivateWindow()
     {
         if (WindowState == WindowState.Minimized)
+        {
             SetCurrentValue(WindowStateProperty, WindowState.Normal);
+        }
+
         Show();
         _ = Activate();
         _ = Focus();
@@ -157,47 +221,16 @@ public partial class MainWindow : IWindow
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"NavigateToPage {pageType.Name} Error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"NavigateToPage {pageType.Name} Error: {ex.Message}");
         }
-    }
-
-    /// <summary>
-    /// TreeView 选择变更 → 导航到对应页面
-    /// </summary>
-    private void OnSidebarTreeViewSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-    {
-        if (e.NewValue is not SidebarEntry entry)
-            return;
-        if (entry.TargetPageType is null)
-            return;
-
-        UpdateActiveState(entry);
-        NavigateToPage(entry.TargetPageType);
-    }
-
-    /// <summary>
-    /// 递归清除所有条目的 IsActive，然后将指定的 entry 设为活跃
-    /// </summary>
-    private void UpdateActiveState(SidebarEntry activeEntry)
-    {
-        foreach (var entry in ViewModel.MenuItems)
-            SetInactiveRecursive(entry);
-        foreach (var entry in ViewModel.FooterMenuItems)
-            SetInactiveRecursive(entry);
-        activeEntry.IsActive = true;
-    }
-
-    private static void SetInactiveRecursive(SidebarEntry entry)
-    {
-        entry.IsActive = false;
-        foreach (var child in entry.Children)
-            SetInactiveRecursive(child);
     }
 
     private void OnNavigationSelectionChanged(object sender, RoutedEventArgs e)
     {
-        if (sender is not NavigationView navigationView)
+        if (sender is not Wpf.Ui.Controls.NavigationView navigationView)
+        {
             return;
+        }
 
         NavigationView.SetCurrentValue(
             NavigationView.HeaderVisibilityProperty,
@@ -207,14 +240,36 @@ public partial class MainWindow : IWindow
         );
     }
 
-    /// <summary>
-    /// 窗口宽度 >1200 时展开侧栏，否则折叠
-    /// </summary>
     private void MainWindow_OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        SidebarColumn.Width = e.NewSize.Width > 1200
-            ? new GridLength(310)
-            : new GridLength(0);
+        if (_isUserClosedPane)
+        {
+            return;
+        }
+
+        _isPaneOpenedOrClosedFromCode = true;
+        NavigationView.SetCurrentValue(NavigationView.IsPaneOpenProperty, e.NewSize.Width > 1200);
+        _isPaneOpenedOrClosedFromCode = false;
+    }
+
+    private void NavigationView_OnPaneOpened(NavigationView sender, RoutedEventArgs args)
+    {
+        if (_isPaneOpenedOrClosedFromCode)
+        {
+            return;
+        }
+
+        _isUserClosedPane = false;
+    }
+
+    private void NavigationView_OnPaneClosed(NavigationView sender, RoutedEventArgs args)
+    {
+        if (_isPaneOpenedOrClosedFromCode)
+        {
+            return;
+        }
+
+        _isUserClosedPane = true;
     }
 
     private void OnThemeToggle(object sender, RoutedEventArgs e)
@@ -226,6 +281,7 @@ public partial class MainWindow : IWindow
 
         Appearance.ApplicationThemeManager.Apply(newTheme);
 
+        // 更新图标以匹配目标主题
         ThemeToggleButton.Icon = new SymbolIcon
         {
             Symbol = newTheme == Appearance.ApplicationTheme.Dark
@@ -233,6 +289,7 @@ public partial class MainWindow : IWindow
                 : SymbolRegular.WeatherSunny24
         };
 
+        // 持久化主题选择
         var config = App.GetRequiredService<Services.Plc.AppConfigService>();
         config.ThemeMode = newTheme == Appearance.ApplicationTheme.Dark ? "Dark" : "Light";
         config.Save();
