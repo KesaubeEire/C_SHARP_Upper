@@ -1,5 +1,5 @@
 using System.Windows.Controls;
-using LiveChartsCore.SkiaSharpView.WPF;
+using Wpf.Ui.Gallery.Controls.Plc;
 using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
 
@@ -10,40 +10,19 @@ public partial class GaugeDashboardPage : Page
     private readonly S7Service _s7;
     private readonly ServoGaugeConfig[] _configs;
 
+    private readonly ServoGauge[] _gauges;
+
     /// <summary>伺服危险速度阈值 [伺服1, 伺服2, 伺服3, 伺服4]</summary>
     private readonly double[] _dangerThresholds = [160, 180, 160, 180];
-
-    // 每个 gauge 的控件分组
-    private readonly (XamlAngularGaugeSeries Green, XamlAngularGaugeSeries Yellow, XamlAngularGaugeSeries Red, XamlNeedle Needle, TextBlock ValueText)[] _gauges;
 
     public GaugeDashboardPage(S7Service s7)
     {
         _s7 = s7;
         InitializeComponent();
 
-        // CornerRadius workaround (见原代码注释)
-        foreach (var g in AllGaugeSeries())
-            g.CornerRadius = 0.1;
-
-        Loaded += (_, _) =>
-        {
-            foreach (var g in AllGaugeSeries())
-                g.CornerRadius = 0;
-
-            InitFixedBands();
-            ReadAllServoValues();
-        };
-
-        _gauges =
-        [
-            (servo1Green, servo1Yellow, servo1Red, servo1Needle, servo1Value),
-            (servo2Green, servo2Yellow, servo2Red, servo2Needle, servo2Value),
-            (servo3Green, servo3Yellow, servo3Red, servo3Needle, servo3Value),
-            (servo4Green, servo4Yellow, servo4Red, servo4Needle, servo4Value),
-        ];
+        _gauges = [servo1, servo2, servo3, servo4];
 
         // 默认配置：DB1.DBX6.0 REAL, DB1.DBX10.0 REAL, DB1.DBX14.0 REAL, DB1.DBX18.0 REAL
-        // 改这里就行
         _configs =
         [
             new() { Name = "伺服 1", DbNumber = 1, Offset = 6, DataType = "REAL", DangerThreshold = _dangerThresholds[0] },
@@ -51,14 +30,6 @@ public partial class GaugeDashboardPage : Page
             new() { Name = "伺服 3", DbNumber = 1, Offset = 14, DataType = "REAL", DangerThreshold = _dangerThresholds[2] },
             new() { Name = "伺服 4", DbNumber = 1, Offset = 18, DataType = "REAL", DangerThreshold = _dangerThresholds[3] },
         ];
-    }
-
-    private IEnumerable<XamlAngularGaugeSeries> AllGaugeSeries()
-    {
-        yield return servo1Green; yield return servo1Yellow; yield return servo1Red;
-        yield return servo2Green; yield return servo2Yellow; yield return servo2Red;
-        yield return servo3Green; yield return servo3Yellow; yield return servo3Red;
-        yield return servo4Green; yield return servo4Yellow; yield return servo4Red;
     }
 
     /// <summary>读取所有伺服的 DB 值并更新仪表</summary>
@@ -75,31 +46,14 @@ public partial class GaugeDashboardPage : Page
         }
     }
 
-    /// <summary>为所有 gauge 设固定的绿/黄/红背景色条（不随值变化）</summary>
-    private void InitFixedBands()
-    {
-        for (int i = 0; i < _gauges.Length; i++)
-        {
-            var (green, yellow, red, _, _) = _gauges[i];
-            double danger = _dangerThresholds[i];
-            green.GaugeValue = danger * 0.6;    // 绿区 0 → 60%
-            yellow.GaugeValue = danger * 0.4;   // 黄区 60% → 100%
-            red.GaugeValue = 200 - danger;       // 红区 danger → 200
-        }
-    }
-
-    /// <summary>更新指定伺服的仪表值（只移指针和数字）。</summary>
-    /// <param name="index">0-based 伺服索引 (0-3)。</param>
-    /// <param name="value">速度值 (mm/s)。</param>
+    /// <summary>更新指定伺服的仪表值。</summary>
     public void UpdateServoValue(int index, double value)
     {
         if (index < 0 || index >= _gauges.Length) return;
 
         Dispatcher.InvokeAsync(() =>
         {
-            var (_, _, _, needle, valueText) = _gauges[index];
-            valueText.Text = value.ToString("F1");
-            needle.Value = Math.Clamp(value, 0, 200);
+            _gauges[index].UpdateValue(value);
         });
     }
 
