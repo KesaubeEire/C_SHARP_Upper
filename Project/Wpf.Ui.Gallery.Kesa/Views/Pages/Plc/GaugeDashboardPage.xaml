@@ -1,4 +1,4 @@
-﻿<Page
+<Page
     x:Class="Wpf.Ui.Gallery.Views.Pages.Plc.GaugeDashboardPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -6,7 +6,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="仪表盘"
     controls:PageControlDocumentation.Show="False"
@@ -15,100 +14,327 @@
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     mc:Ignorable="d">
 
-    <StackPanel Width="360" Margin="0,0,0,24">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid Margin="12,0,12,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <!--  ===== 单值仪表 (AngularGauge 带指针) =====  -->
-        <controls:ControlExample Margin="0" HeaderText="单值仪表">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            <!--  ===== 伺服 1 =====  -->
+            <controls:ControlExample Grid.Column="0" Margin="4" HeaderText="伺服 1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <ui:TextBlock
-                    Grid.Row="0"
-                    Margin="0,0,0,4"
-                    HorizontalAlignment="Center"
-                    FontTypography="Subtitle"
-                    Text="当前值" />
+                    <lvc:PieChart
+                        x:Name="servoGauge1"
+                        Grid.Row="0"
+                        Width="200"
+                        Height="200"
+                        InitialRotation="-225"
+                        MaxAngle="270"
+                        MaxValue="200"
+                        MinValue="0">
+                        <lvc:PieChart.Series>
+                            <lvc:SeriesCollection>
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo1Green"
+                                    CornerRadius="0"
+                                    Fill="#4ade80"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo1Yellow"
+                                    CornerRadius="0"
+                                    Fill="#facc15"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo1Red"
+                                    CornerRadius="0"
+                                    Fill="#ef4444"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                            </lvc:SeriesCollection>
+                        </lvc:PieChart.Series>
 
-                <!--  AngularGauge: 圆形进度条 + Needle 指针 + 刻度线  -->
-                <lvc:PieChart
-                    x:Name="singleGauge"
-                    Grid.Row="1"
-                    Width="280"
-                    Height="280"
-                    InitialRotation="-225"
-                    MaxAngle="270"
-                    MaxValue="50"
-                    MinValue="0">
-                    <lvc:PieChart.Series>
-                        <lvc:SeriesCollection>
-                            <!--  3 段色  -->
-                            <lvc:XamlAngularGaugeSeries
-                                x:Name="singleGaugeGreen"
-                                CornerRadius="0"
-                                Fill="#4ade80"
-                                GaugeValue="30"
-                                MaxRadialColumnWidth="20"
-                                OuterRadiusOffset="130" />
-                            <lvc:XamlAngularGaugeSeries
-                                x:Name="singleGaugeYellow"
-                                CornerRadius="0"
-                                Fill="#facc15"
-                                GaugeValue="10"
-                                MaxRadialColumnWidth="20"
-                                OuterRadiusOffset="130" />
-                            <lvc:XamlAngularGaugeSeries
-                                x:Name="singleGaugeRed"
-                                CornerRadius="0"
-                                Fill="#ef4444"
-                                GaugeValue="10"
-                                MaxRadialColumnWidth="20"
-                                OuterRadiusOffset="130" />
-                        </lvc:SeriesCollection>
-                    </lvc:PieChart.Series>
+                        <lvc:PieChart.VisualElements>
+                            <lvc:VisualsCollection>
+                                <lvc:XamlNeedle
+                                    x:Name="servo1Needle"
+                                    Width="16"
+                                    Value="0" />
+                                <lvc:XamlAngularTicks
+                                    x:Name="servo1Ticks"
+                                    LabelsOuterOffset="12"
+                                    LabelsSize="12"
+                                    OuterOffset="50"
+                                    TicksLength="14" />
+                            </lvc:VisualsCollection>
+                        </lvc:PieChart.VisualElements>
+                    </lvc:PieChart>
 
-                    <lvc:PieChart.VisualElements>
-                        <lvc:VisualsCollection>
-                            <!--  指针  -->
-                            <lvc:XamlNeedle
-                                x:Name="singleNeedle"
-                                Width="20"
-                                Value="0" />
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                        <TextBlock
+                            x:Name="servo1Value"
+                            HorizontalAlignment="Center"
+                            FontSize="22"
+                            FontWeight="Bold"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="0.0" />
+                        <TextBlock
+                            x:Name="servo1Unit"
+                            HorizontalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="mm/s" />
+                    </StackPanel>
+                </Grid>
+            </controls:ControlExample>
 
-                            <!--  刻度  -->
-                            <lvc:XamlAngularTicks
-                                x:Name="singleTicks"
-                                LabelsOuterOffset="15"
-                                LabelsSize="16"
-                                OuterOffset="65"
-                                TicksLength="20" />
-                        </lvc:VisualsCollection>
-                    </lvc:PieChart.VisualElements>
-                </lvc:PieChart>
+            <!--  ===== 伺服 2 =====  -->
+            <controls:ControlExample Grid.Column="1" Margin="4" HeaderText="伺服 2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <StackPanel
-                    Grid.Row="2"
-                    Margin="0,4,0,0"
-                    HorizontalAlignment="Center">
-                    <TextBlock
-                        x:Name="gaugeValueText"
-                        HorizontalAlignment="Center"
-                        FontSize="28"
-                        FontWeight="Bold"
-                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                        Text="0.0" />
-                    <TextBlock
-                        x:Name="gaugeUnitText"
-                        HorizontalAlignment="Center"
-                        FontSize="14"
-                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                        Text="mm" />
-                </StackPanel>
-            </Grid>
-        </controls:ControlExample>
+                    <lvc:PieChart
+                        x:Name="servoGauge2"
+                        Grid.Row="0"
+                        Width="200"
+                        Height="200"
+                        InitialRotation="-225"
+                        MaxAngle="270"
+                        MaxValue="200"
+                        MinValue="0">
+                        <lvc:PieChart.Series>
+                            <lvc:SeriesCollection>
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo2Green"
+                                    CornerRadius="0"
+                                    Fill="#4ade80"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo2Yellow"
+                                    CornerRadius="0"
+                                    Fill="#facc15"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo2Red"
+                                    CornerRadius="0"
+                                    Fill="#ef4444"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                            </lvc:SeriesCollection>
+                        </lvc:PieChart.Series>
 
-    </StackPanel>
+                        <lvc:PieChart.VisualElements>
+                            <lvc:VisualsCollection>
+                                <lvc:XamlNeedle
+                                    x:Name="servo2Needle"
+                                    Width="16"
+                                    Value="0" />
+                                <lvc:XamlAngularTicks
+                                    x:Name="servo2Ticks"
+                                    LabelsOuterOffset="12"
+                                    LabelsSize="12"
+                                    OuterOffset="50"
+                                    TicksLength="14" />
+                            </lvc:VisualsCollection>
+                        </lvc:PieChart.VisualElements>
+                    </lvc:PieChart>
+
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                        <TextBlock
+                            x:Name="servo2Value"
+                            HorizontalAlignment="Center"
+                            FontSize="22"
+                            FontWeight="Bold"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="0.0" />
+                        <TextBlock
+                            x:Name="servo2Unit"
+                            HorizontalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="mm/s" />
+                    </StackPanel>
+                </Grid>
+            </controls:ControlExample>
+
+            <!--  ===== 伺服 3 =====  -->
+            <controls:ControlExample Grid.Column="2" Margin="4" HeaderText="伺服 3">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <lvc:PieChart
+                        x:Name="servoGauge3"
+                        Grid.Row="0"
+                        Width="200"
+                        Height="200"
+                        InitialRotation="-225"
+                        MaxAngle="270"
+                        MaxValue="200"
+                        MinValue="0">
+                        <lvc:PieChart.Series>
+                            <lvc:SeriesCollection>
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo3Green"
+                                    CornerRadius="0"
+                                    Fill="#4ade80"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo3Yellow"
+                                    CornerRadius="0"
+                                    Fill="#facc15"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo3Red"
+                                    CornerRadius="0"
+                                    Fill="#ef4444"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                            </lvc:SeriesCollection>
+                        </lvc:PieChart.Series>
+
+                        <lvc:PieChart.VisualElements>
+                            <lvc:VisualsCollection>
+                                <lvc:XamlNeedle
+                                    x:Name="servo3Needle"
+                                    Width="16"
+                                    Value="0" />
+                                <lvc:XamlAngularTicks
+                                    x:Name="servo3Ticks"
+                                    LabelsOuterOffset="12"
+                                    LabelsSize="12"
+                                    OuterOffset="50"
+                                    TicksLength="14" />
+                            </lvc:VisualsCollection>
+                        </lvc:PieChart.VisualElements>
+                    </lvc:PieChart>
+
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                        <TextBlock
+                            x:Name="servo3Value"
+                            HorizontalAlignment="Center"
+                            FontSize="22"
+                            FontWeight="Bold"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="0.0" />
+                        <TextBlock
+                            x:Name="servo3Unit"
+                            HorizontalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="mm/s" />
+                    </StackPanel>
+                </Grid>
+            </controls:ControlExample>
+
+            <!--  ===== 伺服 4 =====  -->
+            <controls:ControlExample Grid.Column="3" Margin="4" HeaderText="伺服 4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <lvc:PieChart
+                        x:Name="servoGauge4"
+                        Grid.Row="0"
+                        Width="200"
+                        Height="200"
+                        InitialRotation="-225"
+                        MaxAngle="270"
+                        MaxValue="200"
+                        MinValue="0">
+                        <lvc:PieChart.Series>
+                            <lvc:SeriesCollection>
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo4Green"
+                                    CornerRadius="0"
+                                    Fill="#4ade80"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo4Yellow"
+                                    CornerRadius="0"
+                                    Fill="#facc15"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                                <lvc:XamlAngularGaugeSeries
+                                    x:Name="servo4Red"
+                                    CornerRadius="0"
+                                    Fill="#ef4444"
+                                    GaugeValue="0"
+                                    MaxRadialColumnWidth="16"
+                                    OuterRadiusOffset="100" />
+                            </lvc:SeriesCollection>
+                        </lvc:PieChart.Series>
+
+                        <lvc:PieChart.VisualElements>
+                            <lvc:VisualsCollection>
+                                <lvc:XamlNeedle
+                                    x:Name="servo4Needle"
+                                    Width="16"
+                                    Value="0" />
+                                <lvc:XamlAngularTicks
+                                    x:Name="servo4Ticks"
+                                    LabelsOuterOffset="12"
+                                    LabelsSize="12"
+                                    OuterOffset="50"
+                                    TicksLength="14" />
+                            </lvc:VisualsCollection>
+                        </lvc:PieChart.VisualElements>
+                    </lvc:PieChart>
+
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                        <TextBlock
+                            x:Name="servo4Value"
+                            HorizontalAlignment="Center"
+                            FontSize="22"
+                            FontWeight="Bold"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="0.0" />
+                        <TextBlock
+                            x:Name="servo4Unit"
+                            HorizontalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="mm/s" />
+                    </StackPanel>
+                </Grid>
+            </controls:ControlExample>
+
+        </Grid>
+    </ScrollViewer>
 </Page>
