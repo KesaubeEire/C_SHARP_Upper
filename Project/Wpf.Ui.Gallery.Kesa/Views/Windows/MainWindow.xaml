@@ -91,7 +91,6 @@
             </ui:TitleBar.Icon>
             <ui:TitleBar.TrailingContent>
                 <ui:Button
-                    x:Name="ThemeToggleButton"
                     Width="44"
                     Height="30"
                     Background="Transparent"
@@ -100,8 +99,26 @@
                     Cursor="Hand"
                     Focusable="False"
                     FontSize="16"
-                    Icon="{ui:SymbolIcon WeatherSunny24}"
-                    ToolTip="切换深浅主题" />
+                    ToolTip="切换深浅主题">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                            <Setter Property="Icon">
+                                <Setter.Value>
+                                    <ui:SymbolIcon Symbol="WeatherSunny24" />
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ApplicationTheme, ElementName=TitleBar}" Value="Dark">
+                                    <Setter Property="Icon">
+                                        <Setter.Value>
+                                            <ui:SymbolIcon Symbol="WeatherMoon24" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                </ui:Button>
             </ui:TitleBar.TrailingContent>
         </ui:TitleBar>
 

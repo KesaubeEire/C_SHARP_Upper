@@ -26,17 +26,10 @@
             <!--  ===== 伺服 1 =====  -->
             <controls:ControlExample Grid.Column="0" Margin="4" HeaderText="伺服 1">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
                     <lvc:PieChart
                         x:Name="servoGauge1"
-                        Grid.Row="0"
                         Width="200"
-                        Height="200"
+                        Height="230"
                         InitialRotation="-225"
                         MaxAngle="270"
                         MaxValue="200"
@@ -83,18 +76,22 @@
                         </lvc:PieChart.VisualElements>
                     </lvc:PieChart>
 
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,18">
                         <TextBlock
                             x:Name="servo1Value"
                             HorizontalAlignment="Center"
-                            FontSize="22"
+                            FontSize="20"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="0.0" />
                         <TextBlock
                             x:Name="servo1Unit"
+                            Margin="0,-2,0,0"
                             HorizontalAlignment="Center"
-                            FontSize="12"
+                            FontSize="11"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="mm/s" />
                     </StackPanel>
@@ -104,17 +101,10 @@
             <!--  ===== 伺服 2 =====  -->
             <controls:ControlExample Grid.Column="1" Margin="4" HeaderText="伺服 2">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
                     <lvc:PieChart
                         x:Name="servoGauge2"
-                        Grid.Row="0"
                         Width="200"
-                        Height="200"
+                        Height="230"
                         InitialRotation="-225"
                         MaxAngle="270"
                         MaxValue="200"
@@ -161,18 +151,22 @@
                         </lvc:PieChart.VisualElements>
                     </lvc:PieChart>
 
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,18">
                         <TextBlock
                             x:Name="servo2Value"
                             HorizontalAlignment="Center"
-                            FontSize="22"
+                            FontSize="20"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="0.0" />
                         <TextBlock
                             x:Name="servo2Unit"
+                            Margin="0,-2,0,0"
                             HorizontalAlignment="Center"
-                            FontSize="12"
+                            FontSize="11"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="mm/s" />
                     </StackPanel>
@@ -182,17 +176,10 @@
             <!--  ===== 伺服 3 =====  -->
             <controls:ControlExample Grid.Column="2" Margin="4" HeaderText="伺服 3">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
                     <lvc:PieChart
                         x:Name="servoGauge3"
-                        Grid.Row="0"
                         Width="200"
-                        Height="200"
+                        Height="230"
                         InitialRotation="-225"
                         MaxAngle="270"
                         MaxValue="200"
@@ -239,18 +226,22 @@
                         </lvc:PieChart.VisualElements>
                     </lvc:PieChart>
 
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,18">
                         <TextBlock
                             x:Name="servo3Value"
                             HorizontalAlignment="Center"
-                            FontSize="22"
+                            FontSize="20"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="0.0" />
                         <TextBlock
                             x:Name="servo3Unit"
+                            Margin="0,-2,0,0"
                             HorizontalAlignment="Center"
-                            FontSize="12"
+                            FontSize="11"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="mm/s" />
                     </StackPanel>
@@ -260,17 +251,10 @@
             <!--  ===== 伺服 4 =====  -->
             <controls:ControlExample Grid.Column="3" Margin="4" HeaderText="伺服 4">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
                     <lvc:PieChart
                         x:Name="servoGauge4"
-                        Grid.Row="0"
                         Width="200"
-                        Height="200"
+                        Height="230"
                         InitialRotation="-225"
                         MaxAngle="270"
                         MaxValue="200"
@@ -317,18 +301,22 @@
                         </lvc:PieChart.VisualElements>
                     </lvc:PieChart>
 
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,18">
                         <TextBlock
                             x:Name="servo4Value"
                             HorizontalAlignment="Center"
-                            FontSize="22"
+                            FontSize="20"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="0.0" />
                         <TextBlock
                             x:Name="servo4Unit"
+                            Margin="0,-2,0,0"
                             HorizontalAlignment="Center"
-                            FontSize="12"
+                            FontSize="11"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="mm/s" />
                     </StackPanel>

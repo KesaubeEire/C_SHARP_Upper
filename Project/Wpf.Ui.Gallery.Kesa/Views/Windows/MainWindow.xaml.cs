@@ -36,10 +36,6 @@ public partial class MainWindow : IWindow
         if (Enum.TryParse<Appearance.ApplicationTheme>(config.ThemeMode, out var savedTheme))
             Appearance.ApplicationThemeManager.Apply(savedTheme);
 
-        // 订阅主题切换事件，所有入口（按钮/设置页/系统自动）同步图标
-        UpdateThemeIcon(Appearance.ApplicationThemeManager.GetAppTheme());
-        Appearance.ApplicationThemeManager.Changed += (theme, _) => UpdateThemeIcon(theme);
-
         // 恢复窗口位置/大小
         if (config.WindowLeft >= 0 && config.WindowTop >= 0)
         {
@@ -278,16 +274,6 @@ public partial class MainWindow : IWindow
         }
 
         _isUserClosedPane = true;
-    }
-
-    private void UpdateThemeIcon(Appearance.ApplicationTheme theme)
-    {
-        ThemeToggleButton.Icon = new SymbolIcon
-        {
-            Symbol = theme == Appearance.ApplicationTheme.Dark
-                ? SymbolRegular.WeatherMoon24
-                : SymbolRegular.WeatherSunny24
-        };
     }
 
     private void OnThemeToggle(object sender, RoutedEventArgs e)

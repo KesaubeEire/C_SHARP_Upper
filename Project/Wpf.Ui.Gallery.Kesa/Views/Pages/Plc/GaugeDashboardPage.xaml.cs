@@ -30,6 +30,7 @@ public partial class GaugeDashboardPage : Page
             foreach (var g in AllGaugeSeries())
                 g.CornerRadius = 0;
 
+            InitFixedBands();
             ReadAllServoValues();
         };
 
@@ -74,7 +75,20 @@ public partial class GaugeDashboardPage : Page
         }
     }
 
-    /// <summary>更新指定伺服的仪表值。</summary>
+    /// <summary>为所有 gauge 设固定的绿/黄/红背景色条（不随值变化）</summary>
+    private void InitFixedBands()
+    {
+        for (int i = 0; i < _gauges.Length; i++)
+        {
+            var (green, yellow, red, _, _) = _gauges[i];
+            double danger = _dangerThresholds[i];
+            green.GaugeValue = danger * 0.6;    // 绿区 0 → 60%
+            yellow.GaugeValue = danger * 0.4;   // 黄区 60% → 100%
+            red.GaugeValue = 200 - danger;       // 红区 danger → 200
+        }
+    }
+
+    /// <summary>更新指定伺服的仪表值（只移指针和数字）。</summary>
     /// <param name="index">0-based 伺服索引 (0-3)。</param>
     /// <param name="value">速度值 (mm/s)。</param>
     public void UpdateServoValue(int index, double value)
@@ -83,32 +97,9 @@ public partial class GaugeDashboardPage : Page
 
         Dispatcher.InvokeAsync(() =>
         {
-            var (green, yellow, red, needle, valueText) = _gauges[index];
-            double danger = _dangerThresholds[index];
-            double greenMax = danger * 0.6; // 绿→黄分界点
-            double clamped = Math.Clamp(value, 0, 200);
-
+            var (_, _, _, needle, valueText) = _gauges[index];
             valueText.Text = value.ToString("F1");
-            needle.Value = clamped;
-
-            if (clamped <= greenMax)
-            {
-                green.GaugeValue = clamped;
-                yellow.GaugeValue = 0;
-                red.GaugeValue = 0;
-            }
-            else if (clamped <= danger)
-            {
-                green.GaugeValue = greenMax;
-                yellow.GaugeValue = clamped - greenMax;
-                red.GaugeValue = 0;
-            }
-            else
-            {
-                green.GaugeValue = greenMax;
-                yellow.GaugeValue = danger - greenMax;
-                red.GaugeValue = clamped - danger;
-            }
+            needle.Value = Math.Clamp(value, 0, 200);
         });
     }
 
