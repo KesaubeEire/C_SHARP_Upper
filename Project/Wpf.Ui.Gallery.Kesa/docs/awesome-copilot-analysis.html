@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Awesome GitHub Copilot 分析报告 — Wpf.Ui.Gallery.Kesa</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface-2: #1c2333;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-dim: #8b949e;
+            --accent: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --accent-purple: #bc8cff;
+            --star: #e3b341;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            padding: 0;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            background: linear-gradient(135deg, #0d1117 0%, #1a2332 50%, #0d1117 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 60px 40px 50px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(88,166,255,.06) 0%, transparent 60%),
+                        radial-gradient(circle at 70% 50%, rgba(188,140,255,.06) 0%, transparent 60%);
+        }
+        .hero h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: -.5px;
+            position: relative;
+        }
+        .hero h1 span { color: var(--accent); }
+        .hero .subtitle {
+            margin-top: 12px;
+            color: var(--text-dim);
+            font-size: 1.05rem;
+            position: relative;
+        }
+        .hero .badge-row {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            position: relative;
+        }
+        .hero .badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: .82rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--surface);
+        }
+        .hero .badge.accent { border-color: var(--accent); color: var(--accent); }
+        .hero .badge.green  { border-color: var(--accent-green); color: var(--accent-green); }
+        .hero .badge.purple { border-color: var(--accent-purple); color: var(--accent-purple); }
+
+        /* ── Layout ── */
+        .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+        section { padding: 50px 0; border-bottom: 1px solid var(--border); }
+        section:last-of-type { border-bottom: none; }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2 .emoji { font-size: 1.3rem; }
+        .section-desc {
+            color: var(--text-dim);
+            font-size: .92rem;
+            margin-bottom: 28px;
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin-bottom: 16px;
+            transition: border-color .2s;
+        }
+        .card:hover { border-color: #484f5a; }
+        .card:last-child { margin-bottom: 0; }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-size: 1.08rem;
+            font-weight: 600;
+        }
+        .card-title code {
+            font-size: .88rem;
+            background: var(--surface-2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+        .card-stars {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .8rem;
+            color: var(--star);
+            font-weight: 600;
+        }
+        .card-desc {
+            color: var(--text-dim);
+            font-size: .9rem;
+            margin-bottom: 12px;
+        }
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: .78rem;
+            font-weight: 500;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+        }
+        .tag.accent { color: var(--accent); border-color: rgba(88,166,255,.3); }
+        .tag.green  { color: var(--accent-green); border-color: rgba(63,185,80,.3); }
+        .tag.purple { color: var(--accent-purple); border-color: rgba(188,140,255,.3); }
+        .tag.orange { color: var(--accent-orange); border-color: rgba(210,153,34,.3); }
+        .tag.red    { color: var(--accent-red); border-color: rgba(248,81,73,.3); }
+
+        /* ── Repo stats ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px 16px;
+            text-align: center;
+        }
+        .stat-num {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: .82rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* ── Relevance meter ── */
+        .relevance { display: flex; align-items: center; gap: 8px; margin: 14px 0 6px; }
+        .relevance-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--surface-2);
+            border-radius: 3px;
+            overflow: hidden;
+            max-width: 120px;
+        }
+        .relevance-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width .6s ease;
+        }
+        .relevance-fill.l5 { width: 100%; background: var(--accent-green); }
+        .relevance-fill.l4 { width: 80%; background: var(--accent); }
+        .relevance-fill.l3 { width: 60%; background: var(--accent-orange); }
+        .relevance-label { font-size: .78rem; color: var(--text-dim); font-weight: 600; }
+
+        /* ── Code blocks ── */
+        .code-block {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 14px 18px;
+            font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+            font-size: .83rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 10px 0;
+            color: #c9d1d9;
+        }
+        .code-block .comment { color: #8b949e; }
+        .code-block .keyword { color: #ff7b72; }
+        .code-block .str     { color: #a5d6ff; }
+        .code-block .type    { color: #ffa657; }
+
+        /* ── Checklist ── */
+        .checklist { list-style: none; padding: 0; }
+        .checklist li {
+            padding: 8px 0 8px 28px;
+            position: relative;
+            color: var(--text-dim);
+            font-size: .9rem;
+        }
+        .checklist li::before {
+            content: '☐';
+            position: absolute;
+            left: 0;
+            color: var(--text-dim);
+        }
+        .checklist li.done { color: var(--text); }
+        .checklist li.done::before {
+            content: '✅';
+            color: var(--accent-green);
+        }
+
+        /* ── Footer ── */
+        footer {
+            text-align: center;
+            padding: 30px 24px;
+            color: var(--text-dim);
+            font-size: .82rem;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .hero { padding: 40px 20px 36px; }
+            .hero h1 { font-size: 1.6rem; }
+            .card { padding: 18px 20px; }
+            .card-header { flex-direction: column; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ── Collapsible details ── */
+        details.card {
+            cursor: pointer;
+            padding: 0;
+        }
+        details.card summary {
+            padding: 20px 28px;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        details.card summary::-webkit-details-marker { display: none; }
+        details.card .chevron {
+            transition: transform .25s;
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+        details.card[open] .chevron { transform: rotate(180deg); }
+        details.card .detail-body {
+            padding: 0 28px 20px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .agent-list {
+            columns: 3 200px;
+            column-gap: 16px;
+            list-style: none;
+        }
+        .agent-list li {
+            break-inside: avoid;
+            padding: 3px 0;
+            font-size: .84rem;
+            color: var(--text-dim);
+        }
+        .agent-list li::before { content: '· '; color: var(--accent); font-weight: 700; }
+
+        .mini-graph {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            margin: 4px 0;
+        }
+        .mini-graph .bar {
+            height: 8px;
+            border-radius: 2px;
+            background: var(--accent);
+            opacity: .7;
+        }
+        .mini-graph .bar.bg { background: var(--surface-2); opacity: 1; }
+
+        .platform-icons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .platform-icons .item {
+            text-align: center;
+        }
+        .platform-icons .item .icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .platform-icons .item .label {
+            font-size: .78rem;
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════ HERO ════════════════ -->
+<div class="hero">
+    <h1><span>Awesome GitHub Copilot</span> 分析报告</h1>
+    <p class="subtitle">
+        面向 <code>Wpf.Ui.Gallery.Kesa</code> 项目的可借鉴资源梳理
+    </p>
+    <div class="badge-row">
+        <span class="badge accent">github/awesome-copilot</span>
+        <span class="badge green">175+ Agents</span>
+        <span class="badge purple">208+ Skills</span>
+        <span class="badge">176+ Instructions</span>
+        <span class="badge">48+ Plugins</span>
+    </div>
+</div>
+
+<div class="container">
+
+<!-- ════════════════ STATS ════════════════ -->
+<section>
+    <h2><span class="emoji">📊</span> 资源概览</h2>
+    <p class="section-desc">
+        GitHub 官方社区驱动的 Copilot 增强仓库，专为 GitHub Copilot 提供 Agents、Instructions、Skills、Plugins 等资源。
+        <a href="https://github.com/github/awesome-copilot" style="color:var(--accent)">查看原始仓库 →</a>
+    </p>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-num">175+</div>
+            <div class="stat-label">Agents</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">208+</div>
+            <div class="stat-label">Skills</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">176+</div>
+            <div class="stat-label">Instructions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">48+</div>
+            <div class="stat-label">Plugins</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">7</div>
+            <div class="stat-label">Workflows</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">7</div>
+            <div class="stat-label">Hooks</div>
+        </div>
+    </div>
+
+    <div class="platform-icons">
+        <div class="item"><span class="icon">🖥️</span><span class="label">VS Code</span></div>
+        <div class="item"><span class="icon">🧩</span><span class="label">VS Code Insiders</span></div>
+        <div class="item"><span class="icon">🔌</span><span class="label">Copilot CLI</span></div>
+        <div class="item"><span class="icon">⚡</span><span class="label">GitHub Actions</span></div>
+    </div>
+</section>
+
+<!-- ════════════════ TOP PICKS ════════════════ -->
+<section>
+    <h2><span class="emoji">🔥</span> 对我们项目最有价值的资源</h2>
+    <p class="section-desc">
+        按推荐优先级排列。我们项目技术栈：<span class="tag green">WPF .NET 10</span>
+        <span class="tag accent">CommunityToolkit.Mvvm 8.4</span>
+        <span class="tag purple">LiveCharts / SkiaSharp</span>
+        <span class="tag">Sharp7 Siemens PLC</span>
+    </p>
+
+    <!-- ── Card 1: MVVM Toolkit Skill ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <span class="card-stars" style="margin-right:8px">⭐</span>
+                MVVM Toolkit Skill <code>skills/mvvm-toolkit</code>
+            </div>
+            <span class="card-stars">★★★★★</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l5"></div></div>
+            <span style="font-size:.8rem;color:var(--accent-green);font-weight:600">100%</span>
+        </div>
+        <p class="card-desc">
+            <strong>我们项目在用 <code>CommunityToolkit.Mvvm 8.4.2</code></strong>，这个 skill 专门教 Copilot 正确使用
+            MVVM Toolkit 源生成器。覆盖 <code>[ObservableProperty]</code>、<code>[RelayCommand]</code>、
+            <code>[NotifyPropertyChangedFor]</code>、<code>[NotifyCanExecuteChangedFor]</code>、
+            <code>[NotifyDataErrorInfo]</code> 等全部属性，以及 <code>ObservableObject</code> /
+            <code>ObservableValidator</code> / <code>ObservableRecipient</code> 三基类选择。还有配套的
+            <code>mvvm-toolkit-messenger</code> 和 <code>mvvm-toolkit-di</code> skill。
+        </p>
+        <div class="card-tags">
+            <span class="tag accent">MVVM</span>
+            <span class="tag green">源生成器</span>
+            <span class="tag purple">WPF</span>
+            <span class="tag">ViewModel</span>
+        </div>
+    </div>
+
+    <!-- ── Card 2: C# Expert Agent ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                C# Expert Agent <code>agents/CSharpExpert.agent.md</code>
+            </div>
+            <span class="card-stars">★★★★★</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l5"></div></div>
+            <span style="font-size:.8rem;color:var(--accent-green);font-weight:600">95%</span>
+        </div>
+        <p class="card-desc">
+            完整的 C#/.NET 专家 Agent，涵盖异步编程最佳实践（CancellationToken 全链路、<code>ConfigureAwait(false)</code> 规则）、
+            DI 设计、SOLID 原则、测试规范（xUnit/NUnit/MSTest 三框架写法）。强调：
+        </p>
+        <ul style="color:var(--text-dim);font-size:.9rem;margin:6px 0 10px 20px;line-height:1.8">
+            <li>参数校验用 <code>ArgumentNullException.ThrowIfNull</code></li>
+            <li>最简暴露原则：<code>private</code> &gt; <code>internal</code> &gt; <code>protected</code> &gt; <code>public</code></li>
+            <li>异步全链路传递 CancellationToken</li>
+            <li>注释写 why 不写 what</li>
+            <li>优先 modern C# 语法（file-scoped ns、raw string、switch expr）</li>
+        </ul>
+        <div class="card-tags">
+            <span class="tag accent">C#</span>
+            <span class="tag green">.NET 10</span>
+            <span class="tag purple">异步</span>
+            <span class="tag orange">设计模式</span>
+            <span class="tag">测试</span>
+        </div>
+    </div>
+
+    <!-- ── Card 3: WinForms Expert Agent ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                WinForms Expert Agent <code>agents/WinFormsExpert.agent.md</code>
+            </div>
+            <span class="card-stars">★★★★☆</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l4"></div></div>
+            <span style="font-size:.8rem;color:var(--accent);font-weight:600">80%</span>
+        </div>
+        <p class="card-desc">
+            我们主项目是 <strong>WPF</strong> 而非 WinForms，但 Agent 中关于 .NET 10 新特性、<code>Application.SetColorMode</code>、
+            HighDPI 设置等规范有参考价值。而且它详细说明了 <strong>Designer 代码</strong> 与 <strong>业务代码</strong> 的两套语境规则，
+            对 WPF 中 XAML/代码分离有类比意义。
+        </p>
+        <div class="card-tags">
+            <span class="tag accent">WinForms</span>
+            <span class="tag green">.NET 10</span>
+            <span class="tag">Designer</span>
+        </div>
+    </div>
+
+    <!-- ── Card 4: Code Review Instructions ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                Code Review Instructions <code>instructions/code-review-generic.instructions.md</code>
+            </div>
+            <span class="card-stars">★★★★☆</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l4"></div></div>
+            <span style="font-size:.8rem;color:var(--accent);font-weight:600">85%</span>
+        </div>
+        <p class="card-desc">
+            三级严重度评审体系，可直接融入我们现有的 code-review skill：
+        </p>
+        <ul style="color:var(--text-dim);font-size:.9rem;margin:6px 0 10px 20px;line-height:1.8">
+            <li><span style="color:var(--accent-red)">🔴 CRITICAL</span> — 安全漏洞、数据丢失、竞态条件，阻塞合并</li>
+            <li><span style="color:var(--accent-orange)">🟡 IMPORTANT</span> — SOLID 违反、测试缺失、性能瓶颈</li>
+            <li><span style="color:var(--accent-green)">🟢 SUGGESTION</span> — 可读性、优化、最佳实践</li>
+        </ul>
+        <p class="card-desc">
+            还包含安全审查清单（SQL注入、凭据泄露、输入校验）和测试质量审查标准。
+        </p>
+        <div class="card-tags">
+            <span class="tag accent">Code Review</span>
+            <span class="tag green">安全</span>
+            <span class="tag orange">质量</span>
+            <span class="tag">测试</span>
+        </div>
+    </div>
+
+    <!-- ── Card 5: Thinking Beast Mode ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                Thinking Beast Mode Agent <code>agents/Thinking-Beast-Mode.agent.md</code>
+            </div>
+            <span class="card-stars">★★★★☆</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l3"></div></div>
+            <span style="font-size:.8rem;color:var(--accent-orange);font-weight:600">60%</span>
+        </div>
+        <p class="card-desc">
+            量子认知架构的 Agent——典型「递归直到完成」模式。适合复杂调试场景：不轻易交回控制权，
+            持续迭代直到问题解决。包含多维度分析（表里元系统四层）、对抗性预分析（"哪里可能出错"）、
+            宪法性规划（原则驱动设计 + 约束满足）。可作为 Claude 处理复杂 PLC 调试任务的参考 prompt。
+        </p>
+        <div class="card-tags">
+            <span class="tag purple">思考框架</span>
+            <span class="tag orange">递归</span>
+            <span class="tag">调试</span>
+        </div>
+    </div>
+
+    <!-- ── Card 6: .NET Best Practices Skill ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                .NET Best Practices Skill <code>skills/dotnet-best-practices</code>
+            </div>
+            <span class="card-stars">★★★★☆</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l4"></div></div>
+            <span style="font-size:.8rem;color:var(--accent);font-weight:600">85%</span>
+        </div>
+        <p class="card-desc">
+            .NET/C# 最佳实践 Skill，覆盖主构造函数语法（我们 .NET 10 可用！）、DI 生命周期管理、
+            资源本地化模式、async/await 模式。包含 XML 文档注释规范、日志结构化、安全编码等内容。
+        </p>
+        <div class="card-tags">
+            <span class="tag accent">.NET</span>
+            <span class="tag green">DI</span>
+            <span class="tag">主构造函数</span>
+            <span class="tag purple">日志</span>
+        </div>
+    </div>
+
+    <!-- ── Card 7: Task Implementation ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                Task Implementation Instructions <code>instructions/task-implementation.instructions.md</code>
+            </div>
+            <span class="card-stars">★★★☆☆</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l3"></div></div>
+            <span style="font-size:.8rem;color:var(--accent-orange);font-weight:600">60%</span>
+        </div>
+        <p class="card-desc">
+            基于 <code>.copilot-tracking/</code> 目录结构的任务规划与追踪工作流模板。适合我们做 PLC 功能扩展时
+            （如多寄存器读写、断线重连）按计划一步步追踪进度。每完成一个 task 自动标记、更新变更清单。
+        </p>
+        <div class="card-tags">
+            <span class="tag orange">项目管理</span>
+            <span class="tag">工作流</span>
+        </div>
+    </div>
+
+    <!-- ── Card 8: C# MCP Server ── -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                C# MCP Server Instructions <code>instructions/csharp-mcp-server.instructions.md</code>
+            </div>
+            <span class="card-stars">★★★☆☆</span>
+        </div>
+        <div class="relevance">
+            <span class="relevance-label">项目关联度</span>
+            <div class="relevance-bar"><div class="relevance-fill l3"></div></div>
+            <span style="font-size:.8rem;color:var(--accent-orange);font-weight:600">40%</span>
+        </div>
+        <p class="card-desc">
+            如果以后我们要做 MCP 服务器集成（Model Context Protocol），这里有完整的 C# MCP Server 开发指南。
+            使用 <code>ModelContextProtocol</code> NuGet 包，支持 <code>[McpServerToolType]</code> 属性、
+            DI 注入、stdio 传输等。目前项目没有 MCP 需求，但作为前瞻性参考。
+        </p>
+        <div class="card-tags">
+            <span class="tag purple">MCP</span>
+            <span class="tag accent">C#</span>
+            <span class="tag">AI</span>
+        </div>
+    </div>
+</section>
+
+<!-- ════════════════ AGENTS LIST ════════════════ -->
+<section>
+    <h2><span class="emoji">🤖</span> Agents 一览</h2>
+    <p class="section-desc">仓库中包含的 175+ 个 Agent（部分展示），按领域分类</p>
+
+    <details class="card" open>
+        <summary>
+            <span style="font-weight:600">C# / .NET / 桌面开发相关</span>
+            <span class="chevron">▼</span>
+        </summary>
+        <div class="detail-body">
+            <ul class="agent-list">
+                <li>CSharpExpert.agent.md</li>
+                <li>WinFormsExpert.agent.md</li>
+                <li>csharp-dotnet-janitor.agent.md</li>
+                <li>csharp-mcp-expert.agent.md</li>
+                <li>api-architect.agent.md</li>
+                <li>debug.agent.md</li>
+                <li>arch.agent.md</li>
+                <li>critical-thinking.agent.md</li>
+                <li>devops-expert.agent.md</li>
+                <li>blueprint-mode.agent.md</li>
+                <li>demonstrate-understanding.agent.md</li>
+                <li>devils-advocate.agent.md</li>
+                <li>code-tour.agent.md</li>
+                <li>adr-generator.agent.md</li>
+            </ul>
+        </div>
+    </details>
+
+    <details class="card">
+        <summary>
+            <span style="font-weight:600">云 / Azure / AWS</span>
+            <span class="chevron">▼</span>
+        </summary>
+        <div class="detail-body">
+            <ul class="agent-list">
+                <li>azure-principal-architect.agent.md</li>
+                <li>azure-saas-architect.agent.md</li>
+                <li>azure-iac-generator.agent.md</li>
+                <li>azure-iac-exporter.agent.md</li>
+                <li>azure-policy-analyzer.agent.md</li>
+                <li>azure-logic-apps-expert.agent.md</li>
+                <li>azure-verified-modules-bicep.agent.md</li>
+                <li>azure-verified-modules-terraform.agent.md</li>
+                <li>aws-cloud-expert.agent.md</li>
+                <li>aws-principal-architect.agent.md</li>
+                <li>aws-serverless-architect.agent.md</li>
+                <li>aws-incident-triage.agent.md</li>
+                <li>arm-migration.agent.md</li>
+            </ul>
+        </div>
+    </details>
+
+    <details class="card">
+        <summary>
+            <span style="font-weight:600">思考框架 / 特殊模式</span>
+            <span class="chevron">▼</span>
+        </summary>
+        <div class="detail-body">
+            <ul class="agent-list">
+                <li>Thinking-Beast-Mode.agent.md</li>
+                <li>Ultimate-Transparent-Thinking-Beast-Mode.agent.md</li>
+                <li>caveman-mode.agent.md</li>
+                <li>context-architect.agent.md</li>
+                <li>context7.agent.md</li>
+                <li>custom-agent-foundry.agent.md</li>
+                <li>accessibility.agent.md</li>
+                <li>security-review.agent.md</li>
+                <li>threat-model-analyst.agent.md</li>
+            </ul>
+        </div>
+    </details>
+</section>
+
+<!-- ════════════════ INSTRUCTIONS ════════════════ -->
+<section>
+    <h2><span class="emoji">📋</span> Instructions — 编码规范</h2>
+    <p class="section-desc">与 C# / .NET / WPF 开发直接相关的 instructions 文件</p>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><code>csharp.instructions.md</code></div>
+        </div>
+        <p class="card-desc">
+            C# 编码规范：命名约定、文件结构、modern C# 语法使用（file-scoped ns、raw string、switch expr）、
+            异常处理最佳实践、async/await 规范。包含日本语和韩国语本地化版本。
+        </p>
+        <div class="card-tags">
+            <span class="tag accent">C# 规范</span>
+            <span class="tag green">NET 10</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><code>csharp-mcp-server.instructions.md</code></div>
+        </div>
+        <p class="card-desc">
+            C# MCP 服务器开发完整指南：<code>ModelContextProtocol</code> 包配置、<code>[McpServerToolType]</code> 属性用法、
+            DI 集成、stdio 传输、CancellationToken 支持、测试方法。
+        </p>
+        <div class="card-tags">
+            <span class="tag purple">MCP</span>
+            <span class="tag accent">C#</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><code>code-review-generic.instructions.md</code></div>
+        </div>
+        <p class="card-desc">
+            通用代码审查指南，三段式严重度体系 + 安全审查清单 + 测试质量审查标准。可适配任何项目。
+        </p>
+        <div class="card-tags">
+            <span class="tag accent">Code Review</span>
+            <span class="tag orange">安全</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><code>task-implementation.instructions.md</code></div>
+        </div>
+        <p class="card-desc">
+            Task Plan 实现指令，基于 <code>.copilot-tracking/</code> 结构，从计划分析到完成验证的全流程追踪。
+            每次完成一个 task 自动更新变更清单。
+        </p>
+        <div class="card-tags">
+            <span class="tag orange">项目管理</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">更多相关 Instructions</div>
+        </div>
+        <p class="card-desc">其他可参考的文件：</p>
+        <ul style="color:var(--text-dim);font-size:.9rem;margin:6px 0 0 20px;line-height:1.8">
+            <li><code>security-and-owasp.instructions.md</code> — 安全与 OWASP 规范</li>
+            <li><code>performance-optimization.instructions.md</code> — 性能优化规范（Web 为主）</li>
+            <li><code>oop-design-patterns.instructions.md</code> — OOP 设计模式</li>
+            <li><code>powershell.instructions.md</code> — PowerShell 规范（我们 Windows 环境用）</li>
+            <li><code>self-explanatory-code-commenting.instructions.md</code> — 注释规范</li>
+            <li><code>agent-skills.instructions.md</code> — Agent Skill 开发规范</li>
+        </ul>
+    </div>
+</section>
+
+<!-- ════════════════ PLUGINS ════════════════ -->
+<section>
+    <h2><span class="emoji">🔌</span> Plugins 一览</h2>
+    <p class="section-desc">可用插件（共 48+），可一键安装到 VS Code 或 Copilot CLI</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">csharp-dotnet-development</span> — C#/.NET 全套</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">devops-oncall</span> — DevOps 值班工具集</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">security-best-practices</span> — 安全审查</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">frontend-web-dev</span> — 前端开发</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">database-data-management</span> — 数据库</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">azure-cloud-development</span> — Azure 云开发</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">context-engineering</span> — 上下文工程</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">project-planning</span> — 项目规划</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">ai-team-orchestration</span> — AI 团队编排</div>
+        <div class="card" style="padding:12px 16px"><span style="font-weight:600">automate-this</span> — 自动化一切</div>
+    </div>
+</section>
+
+<!-- ════════════════ HOOKS & WORKFLOWS ════════════════ -->
+<section>
+    <h2><span class="emoji">⚙️</span> Hooks &amp; Workflows</h2>
+    <p class="section-desc">预处理/后处理钩子和 GitHub Actions 工作流</p>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Hooks（7 个）</div>
+        </div>
+        <ul style="color:var(--text-dim);font-size:.9rem;margin:6px 0 0 20px;line-height:1.8">
+            <li><code>dependency-license-checker</code> — 依赖许可证检查</li>
+            <li><code>fix-broken-links</code> — 自动修复损坏链接</li>
+            <li><code>governance-audit</code> — 治理审计</li>
+            <li><code>secrets-scanner</code> — 密钥扫描</li>
+            <li><code>session-auto-commit</code> — 会话自动提交</li>
+            <li><code>session-logger</code> — 会话日志</li>
+            <li><code>tool-guardian</code> — 工具守护</li>
+        </ul>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+        <div class="card-header">
+            <div class="card-title">Workflows（7 个）</div>
+        </div>
+        <ul style="color:var(--text-dim);font-size:.9rem;margin:6px 0 0 20px;line-height:1.8">
+            <li><code>daily-issues-report.md</code> — 每日 Issue 报告</li>
+            <li><code>ospo-contributors-report.md</code> — 贡献者报告</li>
+            <li><code>ospo-org-health.md</code> — 组织健康报告</li>
+            <li><code>ospo-release-compliance-checker.md</code> — 发布合规检查</li>
+            <li><code>ospo-stale-repos.md</code> — 废弃仓库检测</li>
+            <li><code>relevance-check.md</code> — 相关性检查</li>
+            <li><code>relevance-summary.md</code> — 相关性摘要</li>
+        </ul>
+    </div>
+</section>
+
+<!-- ════════════════ ACTION PLAN ════════════════ -->
+<section>
+    <h2><span class="emoji">🎯</span> 建议采纳计划</h2>
+    <p class="section-desc">分优先级，逐步整合到我们项目中</p>
+
+    <div class="card" style="border-left:4px solid var(--accent-green)">
+        <div class="card-header">
+            <div class="card-title">🟢 P0 — 立即采纳</div>
+        </div>
+        <ul class="checklist">
+            <li class="done">将 <strong>MVVM Toolkit Skill</strong> 的源生成器规则提取到 <code>.claude/skills/mvvm-toolkit/</code></li>
+            <li class="done">使用 <code>ArgumentNullException.ThrowIfNull</code> 替代手写 null 检查</li>
+            <li class="done">确保所有 async 方法全链路传递 CancellationToken</li>
+            <li class="done">代码审查采用三级分类（CRITICAL / IMPORTANT / SUGGESTION）</li>
+        </ul>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--accent);margin-top:12px">
+        <div class="card-header">
+            <div class="card-title">🟡 P1 — 短期优化</div>
+        </div>
+        <ul class="checklist">
+            <li>更新 CLAUDE.md 融入 C# Expert Agent 规范（异步、DI、测试）</li>
+            <li>将 <code>csharp.instructions.md</code> 的关键规范写入项目 rules</li>
+            <li>PLC 新功能开发时用 Task Implementation 工作流追踪进度</li>
+            <li>为 AlarmService / RecipeService 等关键服务编写单元测试（参考 Agent 测试规范）</li>
+        </ul>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--accent-purple);margin-top:12px">
+        <div class="card-header">
+            <div class="card-title">🔵 P2 — 长期参考</div>
+        </div>
+        <ul class="checklist">
+            <li>主构造函数语法在 .NET 10 项目中逐步采用</li>
+            <li>MCP Server 集成调研（未来 AI 功能扩展方向）</li>
+            <li>Thinking Beast Mode 的递归调试法用于复杂 PLC 通信故障排查</li>
+            <li>Secrets Scanner Hook 的密钥检测逻辑参考</li>
+        </ul>
+    </div>
+</section>
+
+<!-- ════════════════ REFERENCE ════════════════ -->
+<section>
+    <h2><span class="emoji">📚</span> 参考链接</h2>
+    <ul style="list-style:none;padding:0">
+        <li style="padding:6px 0">
+            <a href="https://awesome-copilot.github.com/" style="color:var(--accent);text-decoration:none">
+                🌐 awesome-copilot.github.com
+            </a>
+            <span style="color:var(--text-dim);font-size:.86rem">— 官方网站（搜索 + 一键安装）</span>
+        </li>
+        <li style="padding:6px 0">
+            <a href="https://github.com/github/awesome-copilot" style="color:var(--accent);text-decoration:none">
+                📦 github/github/awesome-copilot
+            </a>
+            <span style="color:var(--text-dim);font-size:.86rem">— GitHub 仓库</span>
+        </li>
+        <li style="padding:6px 0">
+            <a href="https://developer.microsoft.com/blog/awesome-github-copilot-just-got-a-website-and-a-learning-hub-and-plugins" style="color:var(--accent);text-decoration:none">
+                📰 Microsoft Dev Blog 介绍文章
+            </a>
+        </li>
+        <li style="padding:6px 0">
+            <span style="color:var(--text-dim);font-size:.86rem">安装方式：</span>
+            <code style="font-size:.86rem;background:var(--surface-2);padding:2px 8px;border-radius:4px">copilot plugin install &lt;plugin-name&gt;@awesome-copilot</code>
+        </li>
+    </ul>
+</section>
+
+</div>
+
+<footer>
+    <p>生成于 2026-06-24 | 基于 <a href="https://awesome-copilot.github.com/">Awesome GitHub Copilot</a> 仓库分析</p>
+    <p style="margin-top:4px">项目: <code>Wpf.Ui.Gallery.Kesa (Kesa_PLC_TEST)</code></p>
+</footer>
+
+</body>
+</html>
