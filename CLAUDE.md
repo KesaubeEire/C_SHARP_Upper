@@ -83,6 +83,13 @@ Windows PowerShell 5.1 环境下：
 3. **面试题库** — Modbus 协议 + 上位机开发相关面试题汇总
 4. **最佳实践** — 2024-2026 WinForms 开发工程化最佳实践
 
+## 子项目
+
+`Project/Wpf.Ui.Gallery.Kesa/` 是独立的 WPF UI 项目，有专属编码规范：
+- 在该目录下工作时，`.claude/rules/wpf-conventions.md` 和 `wpfui-official-conventions.md` 会**自动加载**
+- 规则涵盖：主题适配（禁止硬编码色）、ViewModel基类约定、INPC规范、WPF UI 控件使用优先级等
+- **切目录后规则会自动切换**，无需手动操作
+
 ## 下一步方向（待定）
 
 - [ ] 完善 Modbus 功能（多寄存器读写、异常处理、断线重连）
