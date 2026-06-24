@@ -16,6 +16,8 @@
                 <ui:ThemesDictionary Theme="Dark" />
                 <ui:ControlsDictionary />
 
+                <ResourceDictionary Source="Controls/TitleBarStyles.xaml" />
+
                 <syntax:SyntaxHighlightDictionary />
 
                 <ResourceDictionary Source="Controls/GalleryNavigationPresenter.xaml" />
