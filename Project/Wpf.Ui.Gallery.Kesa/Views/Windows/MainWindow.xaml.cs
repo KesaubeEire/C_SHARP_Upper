@@ -4,6 +4,8 @@
 // All Rights Reserved.
 
 using Microsoft.Extensions.DependencyInjection;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Controls.Sidebar;
 using Wpf.Ui.Gallery.Services.Contracts;
@@ -62,6 +64,48 @@ public partial class MainWindow : IWindow
                 break;
             }
         }
+
+        // ═══ PLC 面板内点击拦截 ═══
+        // 在 NavigationView 层级拦截 PreviewMouseLeftButtonDown（隧道），
+        // 在事件到达 NavigationViewItem/ButtonBase.OnPreviewMouseLeftButtonDown 之前，
+        // 将非交互区域的点击标记为已处理，防止 ButtonBase 设置 _isPressed = true，
+        // 从而阻止后续 OnClick → IsExpanded 折叠。
+        NavigationView.PreviewMouseLeftButtonDown += (s, e) =>
+        {
+            if (e.Handled)
+                return;
+
+            // 检查点击是否发生在 PpeConnectionSection 内部
+            var insidePlcSection = false;
+            var dep = e.OriginalSource as DependencyObject;
+            while (dep != null)
+            {
+                if (dep.Equals(plcSection))
+                {
+                    insidePlcSection = true;
+                    break;
+                }
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            if (!insidePlcSection)
+                return;
+
+            // 在 PLC 面板内 → 检查是否在交互控件上
+            dep = e.OriginalSource as DependencyObject;
+            while (dep != null && !dep.Equals(plcSection))
+            {
+                if (dep is ButtonBase or System.Windows.Controls.ComboBox
+                    or ToggleButton or System.Windows.Controls.ListBoxItem
+                    or ScrollBar or Wpf.Ui.Controls.TextBox)
+                    return;
+
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            // 非交互区域 → 拦截，NavigationViewItem 不会收到事件
+            e.Handled = true;
+        };
 
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
         navigationService.SetNavigationControl(NavigationView);
