@@ -30,7 +30,7 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -69,8 +69,8 @@
                         <TextBox
                             x:Name="dbNumberInput"
                             Width="60"
-                            Height="30"
-                            Margin="4,0"
+                            Padding="5"
+                            Margin="6,0"
                             VerticalAlignment="Center"
                             HorizontalContentAlignment="Center"
                             Text="1" />
@@ -81,9 +81,6 @@
                         Margin="4,0"
                         Appearance="Success"
                         Click="OnReadDb">
-                        <ui:Button.Icon>
-                            <ui:SymbolIcon Symbol="Wifi424" />
-                        </ui:Button.Icon>
                         读取 DB
                     </ui:Button>
                     <ui:Button
@@ -231,11 +228,13 @@
                                                 VerticalAlignment="Center"
                                                 Orientation="Horizontal">
                                                 <ui:TextBlock FontTypography="Body" FontWeight="SemiBold" Text="{Binding Name}" />
-                                                <ui:TextBlock
-                                                    Margin="4,0,0,0"
-                                                    FontTypography="Caption"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{Binding UdtName, StringFormat=' [{0}]'}" />
+                                                <ui:InfoBadge
+                                                    Margin="6,0,0,0"
+                                                    Padding="6,0"
+                                                    Severity="Informational"
+                                                    Style="{DynamicResource ValueInfoBadgeStyle}"
+                                                    Value="{Binding UdtName}"
+                                                    Visibility="{Binding UdtName, Converter={StaticResource NullToVisibilityConverter}}" />
                                             </StackPanel>
 
                                             <!--  数据处理  -->
