@@ -3,6 +3,7 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
+using System.Windows.Media;
 using Lepo.i18n.DependencyInjection;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.DependencyInjection;
@@ -112,7 +113,24 @@ public partial class App
         var config = Services.Plc.AppConfigService.Load();
         var theme = config.ThemeMode == "Light" ? ApplicationTheme.Light : ApplicationTheme.Dark;
         ApplicationThemeManager.Apply(theme);
+
+        // 自适应当前主题，覆盖 CardBackground 以在浅色模式下加深
+        OverrideCardBackground(theme);
+        ApplicationThemeManager.Changed += (_, _) =>
+        {
+            OverrideCardBackground(ApplicationThemeManager.GetAppTheme());
+        };
+
         _host.Start();
+    }
+
+    /// <summary>浅色模式下加深 CardBackground，深色还原为库默认值。</summary>
+    private static void OverrideCardBackground(ApplicationTheme theme)
+    {
+        if (theme == ApplicationTheme.Light)
+            Current.Resources["CardBackground"] = new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2));
+        else
+            Current.Resources.Remove("CardBackground");
     }
 
     /// <summary>
