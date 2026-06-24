@@ -19,7 +19,8 @@ public partial class MainWindow : IWindow
         INavigationService navigationService,
         IServiceProvider serviceProvider,
         ISnackbarService snackbarService,
-        IContentDialogService contentDialogService
+        IContentDialogService contentDialogService,
+        Services.Plc.AppConfigService config
     )
     {
         Appearance.SystemThemeWatcher.Watch(this);
@@ -28,6 +29,28 @@ public partial class MainWindow : IWindow
         DataContext = this;
 
         InitializeComponent();
+
+        // 恢复窗口位置/大小
+        if (config.WindowLeft >= 0 && config.WindowTop >= 0)
+        {
+            Left = config.WindowLeft;
+            Top = config.WindowTop;
+        }
+        Width = config.WindowWidth;
+        Height = config.WindowHeight;
+        if (Enum.TryParse<WindowState>(config.WindowState, out var ws))
+            WindowState = ws;
+
+        // 关闭时保存配置
+        Closed += (_, _) =>
+        {
+            config.WindowLeft = Left;
+            config.WindowTop = Top;
+            config.WindowWidth = Width;
+            config.WindowHeight = Height;
+            config.WindowState = WindowState.ToString();
+            config.Save();
+        };
 
         // 创建 PLC 连接综合面板并注入到 "PLC 连接" 的 MenuItems 中
         var plcSection = serviceProvider.GetRequiredService<PpeConnectionSection>();
@@ -213,5 +236,18 @@ public partial class MainWindow : IWindow
             : Appearance.ApplicationTheme.Light;
 
         Appearance.ApplicationThemeManager.Apply(newTheme);
+
+        // 更新图标以匹配目标主题
+        ThemeToggleButton.Icon = new SymbolIcon
+        {
+            Symbol = newTheme == Appearance.ApplicationTheme.Dark
+                ? SymbolRegular.WeatherMoon24
+                : SymbolRegular.WeatherSunny24
+        };
+
+        // 持久化主题选择
+        var config = App.GetRequiredService<Services.Plc.AppConfigService>();
+        config.ThemeMode = newTheme == Appearance.ApplicationTheme.Dark ? "Dark" : "Light";
+        config.Save();
     }
 }

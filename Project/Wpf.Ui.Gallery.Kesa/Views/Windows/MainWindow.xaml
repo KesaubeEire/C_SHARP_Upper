@@ -89,17 +89,20 @@
             <ui:TitleBar.Icon>
                 <ui:ImageIcon Source="pack://application:,,,/Assets/wpfui.png" />
             </ui:TitleBar.Icon>
-            <ui:TitleBar.TrailingContent>
+            <ui:TitleBar.ChromeContent>
                 <ui:Button
                     x:Name="ThemeToggleButton"
+                    Width="44"
+                    Height="30"
                     Background="Transparent"
                     BorderThickness="0"
                     Click="OnThemeToggle"
                     Cursor="Hand"
                     FontSize="16"
+                    Focusable="False"
                     Icon="{ui:SymbolIcon WeatherSunny24}"
                     ToolTip="切换深浅主题" />
-            </ui:TitleBar.TrailingContent>
+            </ui:TitleBar.ChromeContent>
         </ui:TitleBar>
 
         <tray:NotifyIcon
