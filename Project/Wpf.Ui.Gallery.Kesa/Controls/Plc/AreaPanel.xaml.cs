@@ -25,7 +25,13 @@ public partial class AreaPanel : UserControl
 
     public static readonly DependencyProperty AddressTextProperty =
         DependencyProperty.Register(nameof(AddressText), typeof(string), typeof(AreaPanel),
-            new PropertyMetadata(null));
+            new PropertyMetadata(null, (d, _) => { if (d is AreaPanel p) p.RaiseAddressTextChanged(); }));
+
+    /// <summary>地址文本变更事件（用于 IoMonitorPage 即时保存）</summary>
+    public event EventHandler? AddressTextChanged;
+
+    private void RaiseAddressTextChanged() =>
+        AddressTextChanged?.Invoke(this, EventArgs.Empty);
 
     public static readonly DependencyProperty ShowEmptyHintProperty =
         DependencyProperty.Register(nameof(ShowEmptyHint), typeof(bool), typeof(AreaPanel),
@@ -140,8 +146,10 @@ public partial class AreaPanel : UserControl
         ShowStatusColumn = !ro;
 
         // 默认地址（仅第一次）
-        if (!_manualSet && string.IsNullOrEmpty(addrInput.Text))
-            addrInput.Text = AreaType == "I" ? "0,1" : "0";
+        if (!_manualSet && string.IsNullOrEmpty(AddressText))
+        {
+            AddressText = AreaType == "I" ? "0,1" : "0";
+        }
     }
 
     private void OnReadClick(object sender, RoutedEventArgs e)

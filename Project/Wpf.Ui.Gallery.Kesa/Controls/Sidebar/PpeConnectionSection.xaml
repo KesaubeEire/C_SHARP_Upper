@@ -198,6 +198,8 @@
                                         Height="24"
                                         Padding="0"
                                         Appearance="Secondary"
+                                        Command="{Binding DataContext.DeleteDbCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
                                         ToolTip="删除">
                                         <ui:Button.Icon>
                                             <ui:SymbolIcon Symbol="Dismiss24" />
@@ -239,6 +241,8 @@
                                         Height="24"
                                         Padding="0"
                                         Appearance="Secondary"
+                                        Command="{Binding DataContext.DeleteUdtCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
                                         ToolTip="删除">
                                         <ui:Button.Icon>
                                             <ui:SymbolIcon Symbol="Dismiss24" />

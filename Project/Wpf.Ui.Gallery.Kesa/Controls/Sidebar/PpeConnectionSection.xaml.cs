@@ -17,7 +17,6 @@ public partial class PpeConnectionSection : UserControl
         ViewModel = new PpeConnectionSectionViewModel(s7, scheduler, config);
         DataContext = ViewModel;
         InitializeComponent();
-        Loaded += (_, _) => ViewModel.OnLoaded();
     }
 
     /// <summary>

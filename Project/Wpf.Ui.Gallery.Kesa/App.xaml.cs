@@ -52,7 +52,7 @@ public partial class App
                 // PLC Services
                 _ = services.AddSingleton<S7Service>();
                 _ = services.AddSingleton<PollingScheduler>();
-                _ = services.AddSingleton(AppConfigService.Load());
+                _ = services.AddSingleton<AppConfigService>(_ => AppConfigService.Load());
                 _ = services.AddSingleton<AlarmService>();
                 _ = services.AddSingleton<RecipeService>();
 
@@ -108,8 +108,10 @@ public partial class App
     /// </summary>
     private void OnStartup(object sender, StartupEventArgs e)
     {
-        // Apply dark theme before host starts, so all controls see correct colors
-        ApplicationThemeManager.Apply(ApplicationTheme.Dark);
+        // 加载已保存的主题配置
+        var config = Services.Plc.AppConfigService.Load();
+        var theme = config.ThemeMode == "Light" ? ApplicationTheme.Light : ApplicationTheme.Dark;
+        ApplicationThemeManager.Apply(theme);
         _host.Start();
     }
 

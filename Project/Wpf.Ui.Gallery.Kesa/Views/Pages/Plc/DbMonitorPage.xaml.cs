@@ -26,6 +26,12 @@ public partial class DbMonitorPage : Page
         InitializeComponent();
         variableList.ItemsSource = _variables;
         LoadPersistedUdts();
+        LoadPersistedDb();
+        dbNumberInput.TextChanged += (_, _) =>
+        {
+            _config.DbNumberInput = dbNumberInput.Text;
+            _config.Save();
+        };
         UpdateEmptyState();
     }
 
@@ -53,6 +59,50 @@ public partial class DbMonitorPage : Page
                 });
             }
         }
+    }
+
+    /// <summary>从持久化配置恢复上次导入的 DB</summary>
+    private void LoadPersistedDb()
+    {
+        dbNumberInput.Text = _config.DbNumberInput;
+
+        var lastDb = _config.ImportedDbs.LastOrDefault();
+        if (lastDb == null) return;
+
+        var variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(lastDb.VariablesJson);
+        if (variables == null) return;
+
+        _currentDb = new DbStructure
+        {
+            DbNumber = lastDb.DbNumber,
+            DbName = lastDb.DbName,
+            SourceFile = lastDb.SourceFile,
+            Variables = variables
+        };
+
+        DetectMissingUdts();
+        ExpandVariables();
+        dbInfoText.Text = $"已恢复: {_currentDb.Label}";
+        dbInfoText.Foreground = GetThemeBrush("SystemFillColorSuccessBrush", Color.FromRgb(39, 174, 96));
+        UpdateDbSizeInfo();
+        UpdateEmptyState();
+    }
+
+    /// <summary>保存当前 DB 到持久化配置</summary>
+    private void PersistDbs()
+    {
+        _config.ImportedDbs.Clear();
+        if (_currentDb != null)
+        {
+            _config.ImportedDbs.Add(new ImportedDbInfo
+            {
+                DbNumber = _currentDb.DbNumber,
+                DbName = _currentDb.DbName,
+                SourceFile = _currentDb.SourceFile,
+                VariablesJson = System.Text.Json.JsonSerializer.Serialize(_currentDb.Variables)
+            });
+        }
+        _config.Save();
     }
 
     /// <summary>保存当前 UDT 列表到持久化配置</summary>
@@ -166,6 +216,7 @@ public partial class DbMonitorPage : Page
             db.DbNumber = dbNum;
             _currentDb = db;
             dbNumberInput.Text = dbNum.ToString();
+            PersistDbs();
 
             // UDT 检测
             DetectMissingUdts();
@@ -190,6 +241,9 @@ public partial class DbMonitorPage : Page
     {
         _currentDb = null;
         _variables.Clear();
+        _missingUdts = null;
+        _config.ImportedDbs.Clear();
+        _config.Save();
         dbInfoText.Text = "未导入 DB 文件";
         dbInfoText.Foreground = GetThemeBrush("TextFillColorSecondaryBrush", Color.FromRgb(128, 128, 128));
         dbSizeText.Text = "";

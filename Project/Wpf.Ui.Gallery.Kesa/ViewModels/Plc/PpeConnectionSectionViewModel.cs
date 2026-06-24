@@ -19,6 +19,11 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         _s7 = s7;
         _scheduler = scheduler;
         _config = config;
+
+        // 构造函数：直接从配置恢复字段（不走属性 setter，避免触发 Save）
+        LoadAdapters();
+        RestoreImports();
+        RestoreConnectionParams();
     }
 
     // ===== Observable Properties =====
@@ -55,7 +60,14 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     public NetworkAdapter? SelectedAdapter
     {
         get => _selectedAdapter;
-        set => SetProperty(ref _selectedAdapter, value);
+        set
+        {
+            if (SetProperty(ref _selectedAdapter, value))
+            {
+                _config.LocalIP = value?.Ip ?? "";
+                _config.Save();
+            }
+        }
     }
 
     // ===== Connection params =====
@@ -64,35 +76,70 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     public string IpAddress
     {
         get => _ipAddress;
-        set => SetProperty(ref _ipAddress, value);
+        set
+        {
+            if (SetProperty(ref _ipAddress, value))
+            {
+                _config.IP = value;
+                _config.Save();
+            }
+        }
     }
 
     private string _port = "102";
     public string Port
     {
         get => _port;
-        set => SetProperty(ref _port, value);
+        set
+        {
+            if (SetProperty(ref _port, value))
+            {
+                if (int.TryParse(value, out int p)) _config.Port = p;
+                _config.Save();
+            }
+        }
     }
 
     private string _rack = "0";
     public string Rack
     {
         get => _rack;
-        set => SetProperty(ref _rack, value);
+        set
+        {
+            if (SetProperty(ref _rack, value))
+            {
+                if (int.TryParse(value, out int r)) _config.Rack = r;
+                _config.Save();
+            }
+        }
     }
 
     private string _slot = "1";
     public string Slot
     {
         get => _slot;
-        set => SetProperty(ref _slot, value);
+        set
+        {
+            if (SetProperty(ref _slot, value))
+            {
+                if (int.TryParse(value, out int s)) _config.Slot = s;
+                _config.Save();
+            }
+        }
     }
 
     private string _pollInterval = "500";
     public string PollInterval
     {
         get => _pollInterval;
-        set => SetProperty(ref _pollInterval, value);
+        set
+        {
+            if (SetProperty(ref _pollInterval, value))
+            {
+                if (int.TryParse(value, out int ms)) _config.PollInterval = ms;
+                _config.Save();
+            }
+        }
     }
 
     // ===== Import lists =====
@@ -104,19 +151,30 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
 
     // ===== Initialize =====
 
-    public void OnLoaded()
-    {
-        LoadAdapters();
-        RestoreImports();
-    }
-
     private void LoadAdapters()
     {
         Adapters.Clear();
         foreach (var adapter in NetworkAdapter.Enumerate())
             Adapters.Add(adapter);
+
+        // 恢复上次选择的本机网卡
+        if (!string.IsNullOrEmpty(_config.LocalIP))
+        {
+            var matched = Adapters.FirstOrDefault(a =>
+                string.Equals(a.Ip, _config.LocalIP, StringComparison.OrdinalIgnoreCase));
+            if (matched != null)
+            {
+                _selectedAdapter = matched;
+                OnPropertyChanged(nameof(SelectedAdapter));
+                return;
+            }
+        }
+
         if (Adapters.Count > 0)
-            SelectedAdapter = Adapters[0];
+        {
+            _selectedAdapter = Adapters[0];
+            OnPropertyChanged(nameof(SelectedAdapter));
+        }
     }
 
     private void RestoreImports()
@@ -140,6 +198,45 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
                 Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(u.VariablesJson) ?? []
             });
         }
+    }
+
+    /// <summary>直接从配置恢复连接参数（写字段不走 setter，不触发 Save）</summary>
+    private void RestoreConnectionParams()
+    {
+        SetField(ref _ipAddress, _config.IP, nameof(IpAddress));
+        SetField(ref _port, _config.Port.ToString(), nameof(Port));
+        SetField(ref _rack, _config.Rack.ToString(), nameof(Rack));
+        SetField(ref _slot, _config.Slot.ToString(), nameof(Slot));
+        SetField(ref _pollInterval, _config.PollInterval.ToString(), nameof(PollInterval));
+    }
+
+    /// <summary>更新字段并通知 UI，不触发额外逻辑</summary>
+    private void SetField<T>(ref T field, T value, string propertyName)
+    {
+        if (!EqualityComparer<T>.Default.Equals(field, value))
+        {
+            field = value;
+            OnPropertyChanged(propertyName);
+        }
+    }
+
+    /// <summary>将当前导入列表同步到 _config 并持久化</summary>
+    private void SyncAndSaveConfig()
+    {
+        _config.ImportedDbs = ImportedDbs.Select(d => new ImportedDbInfo
+        {
+            DbNumber = d.DbNumber,
+            DbName = d.DbName,
+            SourceFile = d.SourceFile,
+            VariablesJson = System.Text.Json.JsonSerializer.Serialize(d.Variables)
+        }).ToList();
+        _config.ImportedUdts = ImportedUdts.Select(u => new ImportedUdtInfo
+        {
+            UdtName = u.UdtName,
+            SourceFile = u.SourceFile,
+            VariablesJson = System.Text.Json.JsonSerializer.Serialize(u.Variables)
+        }).ToList();
+        _config.Save();
     }
 
     // ===== Commands =====
@@ -192,6 +289,7 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
             var db = DbFileParser.Parse(dialog.FileName);
             db.DbNumber = 1;
             ImportedDbs.Add(db);
+            SyncAndSaveConfig();
             ListChanged?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
@@ -213,6 +311,7 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         {
             var udt = UdtFileParser.Parse(dialog.FileName);
             ImportedUdts.Add(udt);
+            SyncAndSaveConfig();
             ListChanged?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
@@ -221,15 +320,19 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         }
     }
 
-    private void OnDeleteDb(DbStructure db)
+    [RelayCommand]
+    private void DeleteDb(DbStructure db)
     {
         ImportedDbs.Remove(db);
+        SyncAndSaveConfig();
         ListChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void OnDeleteUdt(UdtStructure udt)
+    [RelayCommand]
+    private void DeleteUdt(UdtStructure udt)
     {
         ImportedUdts.Remove(udt);
+        SyncAndSaveConfig();
         ListChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -246,9 +349,9 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
             interval = 500;
 
         _scheduler.Config.FastInterval = interval;
-        _scheduler.Config.Fast.PollIAddr = "0,1,8";
-        _scheduler.Config.Fast.PollQAddr = "0";
-        _scheduler.Config.Fast.PollMAddr = "0";
+        _scheduler.Config.Fast.PollIAddr = _config.ManualIAddress;
+        _scheduler.Config.Fast.PollQAddr = _config.ManualQAddress;
+        _scheduler.Config.Fast.PollMAddr = _config.ManualMAddress;
 
         _scheduler.DataUpdated += OnPollDataUpdated;
         _scheduler.Start(_s7);
