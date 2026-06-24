@@ -56,7 +56,7 @@
 <div class="container">
 
 <h1>工控报警记录系统 <small>改动记录 &amp; 使用教程</small></h1>
-<div class="subtitle">Session: 2026-06-24 · 基于 ISA 18.2 / EEMUA 191 标准改造</div>
+<div class="subtitle">Session: 2026-06-25 · 基于 ISA 18.2 / EEMUA 191 标准改造</div>
 
 <div class="toc">
 <strong>目录</strong>
@@ -68,6 +68,8 @@
   <li><a href="#alarmviewmodel">AlarmViewModel.cs — 排序/过滤/统计/规则管理</a></li>
   <li><a href="#alarmpage">AlarmPage.xaml — 全新工业级 UI</a></li>
   <li><a href="#rules-ui">规则管理 UI — 新增功能</a></li>
+  <li><a href="#db-typed">DB 变量类型化解码</a></li>
+  <li><a href="#ui-datatype">数据类型 UI 集成</a></li>
   <li><a href="#tutorial">使用教程</a></li>
   <li><a href="#faq">常见问题</a></li>
 </ol>
@@ -75,7 +77,7 @@
 
 <h2 id="overview">一、Session 概览</h2>
 
-<p>本次 Session 将原有的简易报警面板改造为符合行业标准的报警管理系统，主要工作分为两轮：</p>
+<p>本次 Session 将原有的简易报警面板改造为符合行业标准的报警管理系统，主要工作分为四轮：</p>
 
 <table>
   <tr><th>轮次</th><th>改动的文件</th><th>新增代码</th><th>核心内容</th></tr>
@@ -90,6 +92,18 @@
     <td>3 个文件</td>
     <td>~550 行</td>
     <td>规则管理 UI（增删改查 + 持久化）</td>
+  </tr>
+  <tr>
+    <td>第三轮</td>
+    <td>3 个文件</td>
+    <td>~85 行</td>
+    <td>DB 类型化解码（REAL/LREAL/INT/DINT/WORD 支持）</td>
+  </tr>
+  <tr>
+    <td>第四轮</td>
+    <td>4 个文件</td>
+    <td>~45 行</td>
+    <td>数据类型集成至 UI 编辑表单 + DbPollItem 自动同步</td>
   </tr>
 </table>
 
@@ -128,6 +142,18 @@
     <td>code-behind 已足够精简，无需改动</td>
   </tr>
   <tr>
+    <td class="file-path">Models/Plc/PollingConfig.cs</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td><span class="diff-add">+28</span> <span class="diff-del">-0</span></td>
+    <td>DbPollItem 新增 DataType / EffectiveLength，支持 REAL/LREAL/INT/DINT/WORD</td>
+  </tr>
+  <tr>
+    <td class="file-path">Services/Plc/PollingScheduler.cs</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td><span class="diff-add">+55</span> <span class="diff-del">-4</span></td>
+    <td>新增 _typedValues 字典 + GetDoubleValue() + 类型化解码 + LReal 解码</td>
+  </tr>
+  <tr>
     <td class="file-path">App.xaml</td>
     <td><span class="tag tag-yellow">+1 行</span></td>
     <td><span class="diff-add">+1</span></td>
@@ -138,6 +164,24 @@
     <td><span class="tag tag-green">新建</span></td>
     <td><span class="diff-add">+290</span></td>
     <td>行业标准调研 + 设计方案</td>
+  </tr>
+  <tr>
+    <td class="file-path">Services/Plc/AlarmService.cs</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td><span class="diff-add">+1</span></td>
+    <td>AlarmRule 新增 DataType 属性</td>
+  </tr>
+  <tr>
+    <td class="file-path">ViewModels/Pages/Plc/AlarmViewModel.cs</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td><span class="diff-add">+40</span></td>
+    <td>EditDataType + SyncDbPollItem 自动创建 DbPollItem</td>
+  </tr>
+  <tr>
+    <td class="file-path">Views/Pages/Plc/AlarmPage.xaml</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td><span class="diff-add">+15</span></td>
+    <td>规则列表新增 DataType 列 + 编辑表单添加数据类型下拉</td>
   </tr>
 </table>
 
@@ -402,7 +446,92 @@
   <tr><td><code>Digital</code></td><td>数字量状态 (=触发值)</td><td>急停按钮 = 1</td></tr>
 </table>
 
-<h2 id="tutorial">八、使用教程</h2>
+<h2 id="db-typed">八、DB 变量类型化解码 — 新增功能</h2>
+
+<h3>改动原因</h3>
+<p>原有的 DbPollItem 只有 <code>Length</code>（字节数），<code>PollingScheduler</code> 按字节逐个存到 <code>_lastValues</code>，<code>AlarmService</code> 只读单个 <code>byte</code> 做阈值比较。对于 DB 中的 REAL/LREAL/INT/DINT 等多字节类型，读到的只是第 1 个字节（0~255），无法做正确的浮点数/整形比较。</p>
+
+<h3>解决方案</h3>
+<ul>
+  <li><code>DbPollItem.DataType</code> — 新增字符串属性，声明 PLC 数据类型</li>
+  <li><code>DbPollItem.EffectiveLength</code> — 根据 DataType 自动推导应读的字节数，不用再手动设 <code>Length</code></li>
+  <li><code>PollingScheduler._typedValues</code> — 新增 <code>ConcurrentDictionary&lt;string, double&gt;</code> 存放解码后的值</li>
+  <li><code>PollingScheduler.GetDoubleValue(key)</code> — 优先查 <code>_typedValues</code>，没有再回退到 byte</li>
+  <li><code>AlarmService.OnDataUpdated</code> — 改用 <code>GetDoubleValue()</code>，阈值比较使用真实浮点数</li>
+</ul>
+
+<h3>支持的数据类型</h3>
+<table>
+  <tr><th>DataType</th><th>字节数</th><th>解码方法</th><th>说明</th></tr>
+  <tr><td><code>BYTE</code></td><td>使用 Length</td><td><code>buf[0]</code></td><td>原行为，单字节</td></tr>
+  <tr><td><code>WORD</code> / <code>INT</code></td><td>2</td><td><code>S7.GetWordAt</code> / <code>S7.GetIntAt</code></td><td>无符号/有符号 16 位</td></tr>
+  <tr><td><code>DINT</code> / <code>REAL</code></td><td>4</td><td><code>S7.GetDIntAt</code> / <code>S7.GetRealAt</code></td><td>32 位整数 / 单精度浮点</td></tr>
+  <tr><td><code>LREAL</code></td><td>8</td><td><code>BitConverter.ToDouble</code> (大端)</td><td>64 位双精度浮点</td></tr>
+</table>
+
+<h3>Key 格式</h3>
+<p>类型化解码后的值以 <code>DB{DbNumber}:{Offset}</code> 格式存入 <code>_typedValues</code>。<code>AlarmRule.VariableKey</code> 填入同样的 key 即可触发报警检测。</p>
+<pre>DbPollItem: DbNumber=1, Offset=6, DataType="REAL"    → key = "DB1:6"
+AlarmRule:  VariableKey="DB1:6", Threshold=200, Condition=Above</pre>
+
+<p>旧的 <code>DB1[6]</code> 格式（单字节 key）仍然保留，与新的 typed key 互不干扰。</p>
+
+<h2 id="ui-datatype">九、数据类型 UI 集成 — 第四轮</h2>
+
+<h3>改动原因</h3>
+<p>第三轮添加了 <code>DbPollItem.DataType</code> 和 <code>PollingScheduler</code> 类型化解码，但用户仍需要手动写代码创建 <code>DbPollItem</code> 实例才能开始轮询。报警规则的 UI 编辑表单也没有 <code>DataType</code> 字段，DB 类型变量无法在 UI 中完整配置。</p>
+
+<h3>解决方案</h3>
+<ul>
+  <li><strong>AlarmRule 新增 <code>DataType</code> 属性</strong> — 默认 <code>"BYTE"</code>，与 DbPollItem 对齐</li>
+  <li><strong>ViewModel 新增 <code>EditDataType</code></strong> — 编辑表单绑定属性，提供 <code>EditDataTypeOptions</code> 下拉列表（BYTE/WORD/INT/DINT/REAL/LREAL）</li>
+  <li><strong>XAML 编辑表单重构</strong> — 第一行改为「变量名 | 数据类型 | 级别 | 报警类型」，描述下移到第三行</li>
+  <li><strong>规则列表新增 DataType 列</strong> — 每条规则直观显示数据类型</li>
+  <li><strong><code>SyncDbPollItem()</code> 自动同步</strong> — 保存规则时，若 VariableKey 是 <code>DB{N}:{O}</code> 格式，自动创建或更新对应的 DbPollItem：</li>
+</ul>
+
+<h3>SyncDbPollItem 工作流程</h3>
+<pre>用户填写: VariableKey="DB1:6", DataType="REAL", IsEnabled=true
+                        │
+                        ▼
+          Regex.Match("DB1:6") → 命中 DB{N}:{O} 格式
+                        │
+            ┌───────────┴───────────┐
+            ▼                       ▼
+       已有 DbPollItem?        无对应项?
+          (更新 DataType)      (创建新 DbPollItem)
+                                        │
+                                        ▼
+                          new DbPollItem {
+                              DbNumber = 1,
+                              Offset = 6,
+                              DataType = "REAL",
+                              Label = rule.Description,
+                              Enabled = true
+                          }
+                        /
+              添加到 scheduler.Config.DbItems
+
+  → PollingScheduler 下一 tick 自动开始轮询 DB1 偏移 6 的 4 字节 REAL</pre>
+
+<h3>改动的文件</h3>
+<table>
+  <tr><th>文件</th><th>操作</th><th>说明</th></tr>
+  <tr><td class="file-path">Services/Plc/AlarmService.cs</td><td><span class="tag tag-blue">增强</span></td><td>AlarmRule 新增 <code>DataType</code> 属性（默认 "BYTE"）</td></tr>
+  <tr><td class="file-path">ViewModels/Pages/Plc/AlarmViewModel.cs</td><td><span class="tag tag-blue">增强</span></td><td><code>EditDataType</code> + <code>EditDataTypeOptions</code> + <code>SyncDbPollItem()</code> 方法</td></tr>
+  <tr><td class="file-path">Views/Pages/Plc/AlarmPage.xaml</td><td><span class="tag tag-blue">增强</span></td><td>规则列表 DataType 列 + 编辑表单数据类型 ComboBox</td></tr>
+</table>
+
+<h3>使用方式</h3>
+<p>添加 DB 变量的报警规则时，UI 中直接填写：</p>
+<pre>变量名: DB1:6
+数据类型: REAL          ← 从下拉选择
+描述: 反应釜A温度高限
+阈值: 200
+死区: 5</pre>
+<p>保存后自动创建 DbPollItem，PLC 下一轮询周期即开始采集并解码该变量。</p>
+
+<h2 id="tutorial">十、使用教程</h2>
 
 <div class="card">
 <h4>🎬 快速开始</h4>
@@ -435,19 +564,45 @@
   <tr><td>清空所有报警历史</td><td>工具栏「清除历史」（也会清空持久化文件）</td></tr>
 </table>
 
-<h3>高级用法：代码添加规则</h3>
+<h3 id="code-add-hint">高级用法：代码添加规则</h3>
 
-<pre><code>// 在任意地方（注入 AlarmService 后）：
+<p>通过 UI 保存规则时会自动创建 DbPollItem，但代码添加规则时仍需手动配置 DbPollItem：</p>
+
+<pre><code>// ===== I/Q/M 单字节 (原行为) =====
 alarmService.AddRule(new AlarmRule
 {
-    VariableKey    = "DB1[42]",           // DB1 的第 42 个字节
+    VariableKey    = "I0",              // I0 单字节
+    Description    = "I0 高限报警",
+    Severity       = AlarmSeverity.Critical,
+    ConditionType  = AlarmConditionType.High,
+    Threshold      = 200,
+    Deadband       = 5,
+    OnDelayMs      = 1000,
+    OffDelayMs     = 2000,
+    Area           = "反应釜A",
+    IsEnabled      = true,
+});
+
+// ===== DB 多字节 (REAL/DINT/LREAL/INT/WORD) =====
+// 先配置 DbPollItem
+config.DbItems.Add(new DbPollItem
+{
+    DbNumber = 1,                        // DB1
+    Offset   = 6,                        // 从字节 6 开始
+    DataType = "REAL",                   // 自动读 4 字节，解码为 float
+    Enabled  = true,
+});
+// 再添加报警规则，key 格式 DB{DbNumber}:{Offset}
+alarmService.AddRule(new AlarmRule
+{
+    VariableKey    = "DB1:6",            // 对应 DB1 偏移 6 的 REAL 值
     Description    = "反应釜A温度高限",
     Severity       = AlarmSeverity.Critical,
     ConditionType  = AlarmConditionType.High,
     Threshold      = 200,
-    Deadband       = 5,                   // 死区 5，到 195 才恢复
-    OnDelayMs      = 1000,                // 持续超限 1 秒才触发
-    OffDelayMs     = 2000,                // 正常 2 秒才恢复
+    Deadband       = 5,
+    OnDelayMs      = 1000,
+    OffDelayMs     = 2000,
     Area           = "反应釜A",
     IsEnabled      = true,
 });</code></pre>
@@ -459,7 +614,7 @@ alarmService.AddRule(new AlarmRule
 ├── alarms.json       ← 报警历史（最多 10000 条）
 └── rules.json        ← 报警规则（UI + 代码共用）</pre>
 
-<h2 id="faq">九、常见问题</h2>
+<h2 id="faq">十一、常见问题</h2>
 
 <div class="card">
 <h4>Q: 为什么点「启动监控」后没有报警产生？</h4>
@@ -499,7 +654,7 @@ alarmService.AddRule(new AlarmRule
 <hr style="border-color:var(--border);margin:48px 0 24px;">
 <p style="text-align:center;color:var(--text-secondary);font-size:.9em">
   基于 ISA 18.2 / EEMUA 191 标准 · WPF UI + CommunityToolkit.Mvvm + .NET 10.0<br>
-  生成日期: 2026-06-24
+  生成日期: 2026-06-25
 </p>
 
 </div>

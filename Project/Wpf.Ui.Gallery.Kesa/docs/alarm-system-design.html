@@ -163,6 +163,7 @@
       <li><span class="tag tag-red">新</span> 报警详情面板</li>
       <li><span class="tag tag-red">新</span> 操作员备注</li>
       <li><span class="tag tag-red">新</span> 严重报警闪烁</li>
+      <li><span class="tag tag-red">新</span> DB 类型化解码 (REAL/LREAL/INT/DINT/WORD)</li>
     </ul>
   </div>
 </div>
@@ -271,6 +272,21 @@
   <tr><td><code>GetStatistics()</code></td><td>获取报警统计数据</td></tr>
 </table>
 
+<h3>DB 类型化解码 (新增)</h3>
+<p>报警规则的阈值比较使用 <code>GetDoubleValue()</code> 统一获取数值：</p>
+<ul>
+  <li><code>DbPollItem.DataType</code> 声明 PLC 变量类型，决定读取字节数和解码方式</li>
+  <li><code>PollingScheduler</code> 使用 <code>_typedValues</code> 字典存放解码后的 double，key 格式 <code>DB{DbNumber}:{Offset}</code></li>
+  <li><code>AlarmService</code> 通过 <code>GetDoubleValue()</code> 优先查 typed 值，没有再回退到 byte</li>
+</ul>
+<table>
+  <tr><th>DataType</th><th>字节数</th><th>解码方法</th></tr>
+  <tr><td><code>BYTE</code></td><td>使用 Length</td><td><code>buf[0]</code></td></tr>
+  <tr><td><code>WORD</code> / <code>INT</code></td><td>2</td><td><code>S7.GetWordAt</code> / <code>S7.GetIntAt</code></td></tr>
+  <tr><td><code>DINT</code> / <code>REAL</code></td><td>4</td><td><code>S7.GetDIntAt</code> / <code>S7.GetRealAt</code></td></tr>
+  <tr><td><code>LREAL</code></td><td>8</td><td><code>BitConverter.ToDouble</code> (大端)</td></tr>
+</table>
+
 <h3>持久化方案</h3>
 <div class="card">
   <p><strong>存储路径：</strong><code>%APPDATA%\KesaPlc\alarms.json</code></p>
@@ -283,6 +299,14 @@
     <li>搁置状态、备注、确认信息一并持久化</li>
   </ul>
 </div>
+
+<h3>数据类型 UI 集成</h3>
+<p>报警规则的编辑界面直接集成 DataType 下拉选择，实现「规则即配置」：</p>
+<ul>
+  <li><strong>AlarmRule.DataType</strong> — 新增属性，默认 "BYTE"，与 DbPollItem.DataType 对齐</li>
+  <li><strong>绑定联动的 DbPollItem</strong> — 保存规则时若 VariableKey 为 <code>DB{N}:{O}</code> 格式，自动在 PollingScheduler 中创建对应的 DbPollItem</li>
+  <li><strong>无需手动配置</strong> — 用户在 UI 中选好变量名和数据类型，PLC 轮询在下一周期自动生效</li>
+</ul>
 
 <h3>CSV 导出格式</h3>
 <pre><code>时间,严重度,类型,变量,描述,区域,值,阈值,状态,确认人,确认时间,备注
@@ -390,15 +414,20 @@
   <tr><td><code>ViewModels/Pages/Plc/AlarmViewModel.cs</code></td><td><span class="tag tag-red">重写</span></td><td>排序/过滤/统计/导出命令</td></tr>
   <tr><td><code>Views/Pages/Plc/AlarmPage.xaml</code></td><td><span class="tag tag-red">重写</span></td><td>全新工业级 UI</td></tr>
   <tr><td><code>Views/Pages/Plc/AlarmPage.xaml.cs</code></td><td><span class="tag tag-yellow">修改</span></td><td>适配新 ViewModel</td></tr>
+  <tr><td><code>Models/Plc/PollingConfig.cs</code></td><td><span class="tag tag-blue">增强</span></td><td>DbPollItem 新增 DataType / EffectiveLength</td></tr>
+  <tr><td><code>Services/Plc/PollingScheduler.cs</code></td><td><span class="tag tag-blue">增强</span></td><td>新增类型化解码引擎 + GetDoubleValue</td></tr>
   <tr><td><code>Helpers/CsvExporter.cs</code></td><td><span class="tag tag-green">新建</span></td><td>CSV 导出辅助类</td></tr>
   <tr><td><code>docs/alarm-system-design.html</code></td><td><span class="tag tag-green">新建</span></td><td>本设计文档</td></tr>
+  <tr><td><code>Services/Plc/AlarmService.cs</code></td><td><span class="tag tag-blue">增强</span></td><td>AlarmRule 新增 DataType 属性</td></tr>
+  <tr><td><code>ViewModels/Pages/Plc/AlarmViewModel.cs</code></td><td><span class="tag tag-blue">增强</span></td><td>EditDataType + SyncDbPollItem 自动同步</td></tr>
+  <tr><td><code>Views/Pages/Plc/AlarmPage.xaml</code></td><td><span class="tag tag-blue">增强</span></td><td>规则列表 DataType 列 + 编辑表单 DataType 下拉</td></tr>
 </table>
 
 <hr style="border-color:var(--border);margin:48px 0 24px;">
 <p style="text-align:center;color:var(--text-secondary);font-size:.9em">
   设计参考: ISA 18.2 | EEMUA 191 | IEC 62682 | NAMUR NA 102<br>
   实现: WPF UI (CommunityToolkit.Mvvm + System.Text.Json) · .NET 10.0<br>
-  生成日期: 2026-06-24
+  生成日期: 2026-06-25
 </p>
 
 </div>

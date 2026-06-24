@@ -144,6 +144,9 @@ public partial class AlarmViewModel : ViewModel
     private string _editVariableKey = string.Empty;
 
     [ObservableProperty]
+    private string _editDataType = "BYTE";
+
+    [ObservableProperty]
     private string _editDescription = string.Empty;
 
     [ObservableProperty]
@@ -180,6 +183,10 @@ public partial class AlarmViewModel : ViewModel
         [AlarmConditionType.High, AlarmConditionType.HighHigh, AlarmConditionType.Low,
          AlarmConditionType.LowLow, AlarmConditionType.NotEqual, AlarmConditionType.RateOfChange,
          AlarmConditionType.Digital];
+
+    /// <summary>可用 PLC 数据类型选项。</summary>
+    public List<string> EditDataTypeOptions { get; } =
+        ["BYTE", "WORD", "INT", "DINT", "REAL", "LREAL"];
 
     // ========== 过滤选项 ==========
 
@@ -268,6 +275,7 @@ public partial class AlarmViewModel : ViewModel
     {
         // 重置编辑表单
         EditVariableKey = string.Empty;
+        EditDataType = "BYTE";
         EditDescription = string.Empty;
         EditSeverity = AlarmSeverity.Warning;
         EditConditionType = AlarmConditionType.High;
@@ -286,6 +294,7 @@ public partial class AlarmViewModel : ViewModel
     {
         if (rule == null) return;
         EditVariableKey = rule.VariableKey;
+        EditDataType = rule.DataType;
         EditDescription = rule.Description;
         EditSeverity = rule.Severity;
         EditConditionType = rule.ConditionType;
@@ -311,6 +320,7 @@ public partial class AlarmViewModel : ViewModel
         var rule = new AlarmRule
         {
             VariableKey = EditVariableKey.Trim(),
+            DataType = EditDataType,
             Description = EditDescription.Trim(),
             Severity = EditSeverity,
             ConditionType = EditConditionType,
@@ -333,6 +343,9 @@ public partial class AlarmViewModel : ViewModel
             StatusText = $"规则已添加: {rule.Description}";
         }
 
+        // 若 VariableKey 是 DB{N}:{O} 格式，自动同步 DbPollItem
+        SyncDbPollItem(rule);
+
         IsEditingRule = false;
         _ruleBeingEdited = null;
     }
@@ -342,6 +355,44 @@ public partial class AlarmViewModel : ViewModel
     {
         IsEditingRule = false;
         _ruleBeingEdited = null;
+    }
+
+    /// <summary>
+    /// 若 VariableKey 是 DB{N}:{O} 格式，自动同步 DbPollItem 到 PollingScheduler。
+    /// 确保 PLC 确实在轮询该变量，否则报警规则永远收不到数据。
+    /// </summary>
+    private void SyncDbPollItem(AlarmRule rule)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(rule.VariableKey, @"^DB(\d+):(\d+)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!match.Success) return;
+
+        int dbNumber = int.Parse(match.Groups[1].ValueSpan);
+        int offset = int.Parse(match.Groups[2].ValueSpan);
+
+        // 查找是否已有对应 DbPollItem
+        var items = _scheduler.Config.DbItems;
+        var existing = items.FirstOrDefault(i =>
+            i.DbNumber == dbNumber && i.Offset == offset);
+
+        if (existing != null)
+        {
+            // 更新 DataType（用户可能改了类型）
+            existing.DataType = rule.DataType;
+            existing.Enabled = rule.IsEnabled;
+        }
+        else
+        {
+            // 自动创建 DbPollItem
+            var item = new DbPollItem
+            {
+                DbNumber = dbNumber,
+                Offset = offset,
+                DataType = rule.DataType,
+                Label = rule.Description,
+                Enabled = rule.IsEnabled,
+            };
+            items.Add(item);
+        }
     }
 
     [RelayCommand]

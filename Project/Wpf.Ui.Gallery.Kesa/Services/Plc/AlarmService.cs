@@ -22,8 +22,11 @@ public enum AlarmCondition
 /// </summary>
 public class AlarmRule
 {
-    /// <summary>变量键 (如 "I0", "Q5", "M10", "DB100[42]")。</summary>
+    /// <summary>变量键 (如 "I0", "Q5", "M10", "DB1:6")。</summary>
     public string VariableKey { get; set; } = string.Empty;
+
+    /// <summary>PLC 数据类型 (用于 DB 变量，如 REAL/DINT/INT/WORD/BYTE)。</summary>
+    public string DataType { get; set; } = "BYTE";
 
     /// <summary>可读描述。</summary>
     public string Description { get; set; } = string.Empty;

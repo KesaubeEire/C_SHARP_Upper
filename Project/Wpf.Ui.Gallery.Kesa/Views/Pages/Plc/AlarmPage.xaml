@@ -350,10 +350,11 @@
                                         BorderThickness="0,0,0,0.5">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="100" />
+                                                <ColumnDefinition Width="90" />
+                                                <ColumnDefinition Width="50" />
                                                 <ColumnDefinition Width="56" />
                                                 <ColumnDefinition Width="60" />
-                                                <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="60" />
                                                 <ColumnDefinition Width="50" />
                                                 <ColumnDefinition Width="60" />
                                                 <ColumnDefinition Width="60" />
@@ -369,8 +370,15 @@
                                                 FontWeight="Medium"
                                                 Text="{Binding VariableKey}" />
 
-                                            <Border
+                                            <TextBlock
                                                 Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                FontSize="9"
+                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                Text="{Binding DataType}" />
+
+                                            <Border
+                                                Grid.Column="2"
                                                 Height="18"
                                                 VerticalAlignment="Center"
                                                 CornerRadius="3">
@@ -498,15 +506,17 @@
                                         FontSize="10"
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                         Text="变量名 *" />
-                                    <ui:TextBox PlaceholderText="I0, Q5, M10..." Text="{Binding EditVariableKey}" />
+                                    <ui:TextBox PlaceholderText="I0, Q5, M10, DB1:6..." Text="{Binding EditVariableKey}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="0" Grid.Column="1" Margin="4,0,8,0">
                                     <TextBlock
                                         FontSize="10"
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                        Text="描述" />
-                                    <ui:TextBox PlaceholderText="例如：温度高限报警" Text="{Binding EditDescription}" />
+                                        Text="数据类型" />
+                                    <ComboBox
+                                        ItemsSource="{Binding EditDataTypeOptions}"
+                                        SelectedItem="{Binding EditDataType}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="0" Grid.Column="2" Margin="4,0,8,0">
@@ -578,11 +588,19 @@
                                     <TextBlock
                                         FontSize="10"
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="描述" />
+                                    <ui:TextBox PlaceholderText="例如：温度高限报警" Text="{Binding EditDescription}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="2" Grid.Column="1" Margin="4,8,8,0">
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                         Text="区域" />
                                     <ui:TextBox PlaceholderText="反应釜A、蒸馏塔..." Text="{Binding EditArea}" />
                                 </StackPanel>
 
-                                <StackPanel Grid.Row="2" Grid.Column="1" Margin="4,8,8,0">
+                                <StackPanel Grid.Row="2" Grid.Column="2" Margin="4,8,8,0">
                                     <TextBlock
                                         FontSize="10"
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
