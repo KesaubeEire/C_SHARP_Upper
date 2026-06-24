@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Win32;
 using Wpf.Ui.Gallery.Controls.Plc;
 using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
@@ -22,7 +21,6 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
 
         // 构造函数：直接从配置恢复字段（不走属性 setter，避免触发 Save）
         LoadAdapters();
-        RestoreImports();
         RestoreConnectionParams();
     }
 
@@ -142,13 +140,6 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         }
     }
 
-    // ===== Import lists =====
-
-    public ObservableCollection<DbStructure> ImportedDbs { get; } = [];
-    public ObservableCollection<UdtStructure> ImportedUdts { get; } = [];
-
-    public event EventHandler? ListChanged;
-
     // ===== Initialize =====
 
     private void LoadAdapters()
@@ -177,29 +168,6 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         }
     }
 
-    private void RestoreImports()
-    {
-        foreach (var d in _config.ImportedDbs)
-        {
-            ImportedDbs.Add(new DbStructure
-            {
-                DbNumber = d.DbNumber,
-                DbName = d.DbName,
-                SourceFile = d.SourceFile,
-                Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(d.VariablesJson) ?? []
-            });
-        }
-        foreach (var u in _config.ImportedUdts)
-        {
-            ImportedUdts.Add(new UdtStructure
-            {
-                UdtName = u.UdtName,
-                SourceFile = u.SourceFile,
-                Variables = System.Text.Json.JsonSerializer.Deserialize<List<DbVariable>>(u.VariablesJson) ?? []
-            });
-        }
-    }
-
     /// <summary>直接从配置恢复连接参数（写字段不走 setter，不触发 Save）</summary>
     private void RestoreConnectionParams()
     {
@@ -218,25 +186,6 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
             field = value;
             OnPropertyChanged(propertyName);
         }
-    }
-
-    /// <summary>将当前导入列表同步到 _config 并持久化</summary>
-    private void SyncAndSaveConfig()
-    {
-        _config.ImportedDbs = ImportedDbs.Select(d => new ImportedDbInfo
-        {
-            DbNumber = d.DbNumber,
-            DbName = d.DbName,
-            SourceFile = d.SourceFile,
-            VariablesJson = System.Text.Json.JsonSerializer.Serialize(d.Variables)
-        }).ToList();
-        _config.ImportedUdts = ImportedUdts.Select(u => new ImportedUdtInfo
-        {
-            UdtName = u.UdtName,
-            SourceFile = u.SourceFile,
-            VariablesJson = System.Text.Json.JsonSerializer.Serialize(u.Variables)
-        }).ToList();
-        _config.Save();
     }
 
     // ===== Commands =====
@@ -273,67 +222,6 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         IsConnected = false;
         ConnectionQuality = LedQuality.Disabled;
         StatusText = "已断开";
-    }
-
-    [RelayCommand]
-    private async Task ImportDb()
-    {
-        var dialog = new OpenFileDialog
-        {
-            Filter = "DB 文件|*.db;*.txt|All files|*.*",
-            Title = "导入 DB 结构"
-        };
-        if (dialog.ShowDialog() != true) return;
-        try
-        {
-            var db = DbFileParser.Parse(dialog.FileName);
-            db.DbNumber = 1;
-            ImportedDbs.Add(db);
-            SyncAndSaveConfig();
-            ListChanged?.Invoke(this, EventArgs.Empty);
-        }
-        catch (Exception ex)
-        {
-            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
-        }
-    }
-
-    [RelayCommand]
-    private async Task ImportUdt()
-    {
-        var dialog = new OpenFileDialog
-        {
-            Filter = "UDT 文件|*.udt;*.txt|All files|*.*",
-            Title = "导入 UDT 结构"
-        };
-        if (dialog.ShowDialog() != true) return;
-        try
-        {
-            var udt = UdtFileParser.Parse(dialog.FileName);
-            ImportedUdts.Add(udt);
-            SyncAndSaveConfig();
-            ListChanged?.Invoke(this, EventArgs.Empty);
-        }
-        catch (Exception ex)
-        {
-            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
-        }
-    }
-
-    [RelayCommand]
-    private void DeleteDb(DbStructure db)
-    {
-        ImportedDbs.Remove(db);
-        SyncAndSaveConfig();
-        ListChanged?.Invoke(this, EventArgs.Empty);
-    }
-
-    [RelayCommand]
-    private void DeleteUdt(UdtStructure udt)
-    {
-        ImportedUdts.Remove(udt);
-        SyncAndSaveConfig();
-        ListChanged?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]

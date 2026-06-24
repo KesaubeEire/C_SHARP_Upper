@@ -8,7 +8,7 @@
     xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Padding="12"
-    d:DesignHeight="781.564"
+    d:DesignHeight="655.988"
     d:DesignWidth="300"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -16,7 +16,7 @@
     PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown"
     mc:Ignorable="d">
 
-    <StackPanel Margin="0,0,0,12">
+    <StackPanel Margin="0,0,0,0">
 
         <!--  ===== 本机网卡 =====  -->
         <controls:ControlExample Margin="0,0,0,8" HeaderText="本机网卡">
@@ -49,7 +49,7 @@
                     <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="0,4"
+                        Margin="0,2"
                         Text="{Binding IpAddress, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="1"
@@ -60,7 +60,7 @@
                     <ui:TextBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Margin="0,4"
+                        Margin="0,2"
                         Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="2"
@@ -71,7 +71,7 @@
                     <ui:TextBox
                         Grid.Row="2"
                         Grid.Column="1"
-                        Margin="0,4"
+                        Margin="0,2"
                         Text="{Binding Rack, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="3"
@@ -82,7 +82,7 @@
                     <ui:TextBox
                         Grid.Row="3"
                         Grid.Column="1"
-                        Margin="0,4"
+                        Margin="0,2"
                         Text="{Binding Slot, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>
 
@@ -138,124 +138,6 @@
             </StackPanel>
         </controls:ControlExample>
 
-        <!--  ===== 导入 =====  -->
-        <controls:ControlExample Margin="0,0,0,8" HeaderText="导入">
-            <StackPanel>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="6" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <ui:Button
-                        Grid.Column="0"
-                        HorizontalAlignment="Stretch"
-                        Command="{Binding ImportDbCommand}">
-                        <ui:Button.Icon>
-                            <ui:SymbolIcon Symbol="FolderOpen24" />
-                        </ui:Button.Icon>
-                        导入 .db
-                    </ui:Button>
-                    <ui:Button
-                        Grid.Column="2"
-                        HorizontalAlignment="Stretch"
-                        Command="{Binding ImportUdtCommand}">
-                        <ui:Button.Icon>
-                            <ui:SymbolIcon Symbol="FolderOpen24" />
-                        </ui:Button.Icon>
-                        导入 .udt
-                    </ui:Button>
-                </Grid>
-
-                <ui:TextBlock
-                    Margin="0,0,0,4"
-                    FontTypography="BodyStrong"
-                    Text="已导入的 DB" />
-                <ItemsControl
-                    MaxHeight="100"
-                    Margin="0,0,0,8"
-                    ItemsSource="{Binding ImportedDbs}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="models:DbStructure"
-                            xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc">
-                            <Border
-                                Padding="4,2"
-                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                                BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <ui:TextBlock
-                                        Grid.Column="0"
-                                        VerticalAlignment="Center"
-                                        FontTypography="Caption"
-                                        Text="{Binding Label}" />
-                                    <ui:Button
-                                        Grid.Column="1"
-                                        Width="24"
-                                        Height="24"
-                                        Padding="0"
-                                        Appearance="Secondary"
-                                        Command="{Binding DataContext.DeleteDbCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        ToolTip="删除">
-                                        <ui:Button.Icon>
-                                            <ui:SymbolIcon Symbol="Dismiss24" />
-                                        </ui:Button.Icon>
-                                    </ui:Button>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <ui:TextBlock
-                    Margin="0,0,0,4"
-                    FontTypography="BodyStrong"
-                    Text="已导入的 UDT" />
-                <ItemsControl
-                    MaxHeight="100"
-                    ItemsSource="{Binding ImportedUdts}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="models:UdtStructure"
-                            xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc">
-                            <Border
-                                Padding="4,2"
-                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                                BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <ui:TextBlock
-                                        Grid.Column="0"
-                                        VerticalAlignment="Center"
-                                        FontTypography="Caption"
-                                        Text="{Binding UdtName}" />
-                                    <ui:Button
-                                        Grid.Column="1"
-                                        Width="24"
-                                        Height="24"
-                                        Padding="0"
-                                        Appearance="Secondary"
-                                        Command="{Binding DataContext.DeleteUdtCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        ToolTip="删除">
-                                        <ui:Button.Icon>
-                                            <ui:SymbolIcon Symbol="Dismiss24" />
-                                        </ui:Button.Icon>
-                                    </ui:Button>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-        </controls:ControlExample>
-
         <!--  ===== 轮询参数 =====  -->
         <controls:ControlExample Margin="0,0,0,0" HeaderText="轮询参数">
             <StackPanel>
@@ -277,7 +159,7 @@
                     <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="0,4"
+                        Margin="0,2"
                         Text="{Binding PollInterval, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="1"
@@ -288,7 +170,7 @@
                     <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="1"
-                        Margin="0,4"
+                        Margin="0,2"
                         FontTypography="Body"
                         Text="{Binding LatencyText}" />
                 </Grid>
