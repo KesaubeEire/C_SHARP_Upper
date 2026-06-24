@@ -19,6 +19,22 @@ public partial class GaugeDashboardPage : Page
     {
         InitializeComponent();
         InitSectionItems();
+
+        // WPF DP 注册默认值 0 时 XAML 设 CornerRadius="0" 不触发 PropertyChangedCallback，
+        // MapChangeToBaseType 不执行，导致核心 _baseType.CornerRadius 始终为默认值 0，
+        // 且 WPF SetThemedValue (ReadLocalValue == UnsetValue 时) 会覆盖为非零值。
+        // 设一个非零值 "占位"，使 ReadLocalValue 返回非 UnsetValue → 主题跳过覆盖。
+        foreach (var gauge in new[] { singleGaugeGreen, singleGaugeYellow, singleGaugeRed })
+            gauge.CornerRadius = 0.1;
+
+        Loaded += OnPageLoaded;
+    }
+
+    private void OnPageLoaded(object sender, RoutedEventArgs e)
+    {
+        // 主题/图表初始化完成后，设回目标值 0
+        foreach (var gauge in new[] { singleGaugeGreen, singleGaugeYellow, singleGaugeRed })
+            gauge.CornerRadius = 0;
     }
 
     public void UpdateSingleGauge(double value)
