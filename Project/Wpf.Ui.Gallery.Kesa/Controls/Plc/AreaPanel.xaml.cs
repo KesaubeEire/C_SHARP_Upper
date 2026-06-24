@@ -152,12 +152,22 @@ public partial class AreaPanel : UserControl
         }
     }
 
-    private void OnRowBitToggled(object sender, BitToggledEventArgs e)
+    private async void OnRowBitToggled(object sender, BitToggledEventArgs e)
     {
         if (_s7 == null || IsReadOnly || !_writeMode) return;
+        if (!_s7.IsConnected)
+        {
+            await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+            return;
+        }
         var bit = e.Bit;
         if (bit.Parent == null) return;
-        _s7.WriteByte(_areaCode, bit.Parent.ByteAddress, bit.Parent.ToByte());
+        bit.Toggle();
+        if (!_s7.WriteByte(_areaCode, bit.Parent.ByteAddress, bit.Parent.ToByte()))
+        {
+            bit.Toggle(); // 写入失败还原
+            await new Wpf.Ui.Controls.MessageBox { Title = "PLC 写入错误", Content = _s7.LastError ?? "未知错误" }.ShowDialogAsync();
+        }
     }
 
     public void UpdateFromPoll(HashSet<string> updated, PollingScheduler scheduler)

@@ -15,6 +15,7 @@ using Wpf.Ui.Gallery.Services.Plc;
 
 namespace Wpf.Ui.Gallery.Views.Pages.Plc;
 
+#pragma warning disable IDE1006 // 静态只读字段按项目约定需 _ 前缀，但图表页使用广泛，暂不修改
 public partial class TrendChartPage : Page
 {
     private readonly S7Service _s7;
@@ -23,17 +24,17 @@ public partial class TrendChartPage : Page
     // 通道定义
     private sealed class ChannelDef
     {
-        public string _key = "", _label = "", _unit = "";
-        public int _dbNumber, _byteOffset;
-        public SKColor _color;
-        public double _min, _max;
+        public string Key = "", Label = "", Unit = "";
+        public int DbNumber, ByteOffset;
+        public SKColor Color;
+        public double Min, Max;
     }
 
     private static readonly ChannelDef[] Channels =
     [
-        new() { _key = "db1_6",  _label = "变频器频率",  _unit = "Hz",   _dbNumber = 1,  _byteOffset = 6,  _color = SKColor.Parse("#42A5F5"), _min = 0,  _max = 50  },
-        new() { _key = "db6_38", _label = "滑台位置", _unit = "mm",    _dbNumber = 6,  _byteOffset = 38, _color = SKColor.Parse("#66BB6A"), _min = -200,  _max = 100 },
-        new() { _key = "db7_38", _label = "圆盘角度", _unit = "°",  _dbNumber = 7,  _byteOffset = 38, _color = SKColor.Parse("#FFA726"), _min = 0,  _max = 360  },
+        new() { Key = "db1_6",  Label = "变频器频率",  Unit = "Hz",   DbNumber = 1,  ByteOffset = 6,  Color = SKColor.Parse("#42A5F5"), Min = 0,  Max = 50  },
+        new() { Key = "db6_38", Label = "滑台位置", Unit = "mm",    DbNumber = 6,  ByteOffset = 38, Color = SKColor.Parse("#66BB6A"), Min = -200,  Max = 100 },
+        new() { Key = "db7_38", Label = "圆盘角度", Unit = "°",  DbNumber = 7,  ByteOffset = 38, Color = SKColor.Parse("#FFA726"), Min = 0,  Max = 360  },
     ];
 
     // 时间范围选项
@@ -99,8 +100,8 @@ public partial class TrendChartPage : Page
         foreach (var ch in Channels)
         {
             var buf = new ObservableCollection<NormPoint>();
-            _buffers[ch._key] = buf;
-            _currentValues[ch._key] = 0;
+            _buffers[ch.Key] = buf;
+            _currentValues[ch.Key] = 0;
 
             double thickness = trendChart.LineStrokeThickness;
             double smoothness = trendChart.LineSmoothness;
@@ -110,14 +111,14 @@ public partial class TrendChartPage : Page
             _series.Add(new LineSeries<NormPoint>
             {
                 Values = buf,
-                Name = $"{ch._label} ({ch._unit})",
-                Stroke = new SolidColorPaint(ch._color) { StrokeThickness = (float)thickness },
+                Name = $"{ch.Label} ({ch.Unit})",
+                Stroke = new SolidColorPaint(ch.Color) { StrokeThickness = (float)thickness },
                 Fill = fillOpacity > 0
-                    ? new SolidColorPaint(ch._color.WithAlpha((byte)(fillOpacity * 255)))
+                    ? new SolidColorPaint(ch.Color.WithAlpha((byte)(fillOpacity * 255)))
                     : null,
                 GeometrySize = (float)geoSize,
                 LineSmoothness = (float)smoothness,
-                GeometryStroke = geoSize > 0 ? new SolidColorPaint(ch._color) : null,
+                GeometryStroke = geoSize > 0 ? new SolidColorPaint(ch.Color) : null,
                 GeometryFill = geoSize > 0 ? new SolidColorPaint(SKColors.White) : null,
             });
         }
@@ -211,7 +212,7 @@ public partial class TrendChartPage : Page
                 Width = 10,
                 Height = 10,
                 Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(
-                    ch._color.Alpha, ch._color.Red, ch._color.Green, ch._color.Blue)),
+                    ch.Color.Alpha, ch.Color.Red, ch.Color.Green, ch.Color.Blue)),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 6, 0),
             });
@@ -219,7 +220,7 @@ public partial class TrendChartPage : Page
             // 标签 + 实时值
             stack.Children.Add(new TextBlock
             {
-                Text = $"{ch._label}: ",
+                Text = $"{ch.Label}: ",
                 FontSize = 13,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = Application.Current.TryFindResource("TextFillColorPrimaryBrush") as Brush
@@ -232,7 +233,7 @@ public partial class TrendChartPage : Page
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = new SolidColorBrush(System.Windows.Media.Color.FromArgb(
-                    ch._color.Alpha, ch._color.Red, ch._color.Green, ch._color.Blue)),
+                    ch.Color.Alpha, ch.Color.Red, ch.Color.Green, ch.Color.Blue)),
                 VerticalAlignment = VerticalAlignment.Center,
                 Text = "---",
             };
@@ -241,7 +242,7 @@ public partial class TrendChartPage : Page
             // 单位
             stack.Children.Add(new TextBlock
             {
-                Text = $" {ch._unit}",
+                Text = $" {ch.Unit}",
                 FontSize = 12,
                 Foreground = Application.Current.TryFindResource("TextFillColorSecondaryBrush") as Brush
                              ?? new SolidColorBrush(Colors.Gray),
@@ -256,7 +257,7 @@ public partial class TrendChartPage : Page
 
     private void UpdateLegendValue(string key, double val)
     {
-        int idx = Array.FindIndex(Channels, c => c._key == key);
+        int idx = Array.FindIndex(Channels, c => c.Key == key);
         if (idx < 0 || idx >= _legendItems.Count)
             return;
 
@@ -276,10 +277,10 @@ public partial class TrendChartPage : Page
         {
             var monitor = new VariableMonitor(_s7)
             {
-                Key = ch._key,
-                Label = ch._label,
-                DbNumber = ch._dbNumber,
-                Offset = ch._byteOffset,
+                Key = ch.Key,
+                Label = ch.Label,
+                DbNumber = ch.DbNumber,
+                Offset = ch.ByteOffset,
                 DataType = "REAL",
                 IntervalMs = 100,
             };
@@ -304,12 +305,12 @@ public partial class TrendChartPage : Page
         if (_isMock)
             return; // mock 模式时不接收真实数据
 
-        var ch = Channels.FirstOrDefault(c => c._key == key);
+        var ch = Channels.FirstOrDefault(c => c.Key == key);
         if (ch == null)
             return;
 
-        double range = ch._max - ch._min;
-        double normVal = range > 0 ? Math.Clamp((val - ch._min) / range * 100, 0, 100) : 0;
+        double range = ch.Max - ch.Min;
+        double normVal = range > 0 ? Math.Clamp((val - ch.Min) / range * 100, 0, 100) : 0;
 
         Dispatcher.Invoke(() =>
         {
@@ -368,7 +369,7 @@ public partial class TrendChartPage : Page
         var mockKeys = new[] { "mock_temp", "mock_press", "mock_flow" };
         var mockColors = new[] { SKColor.Parse("#E91E63"), SKColor.Parse("#9C27B0"), SKColor.Parse("#00BCD4") };
         var mockLabels = new[] { "温度模拟", "压力模拟", "流量模拟" };
-        var mockChs = mockKeys.Select((k, i) => new ChannelDef { _key = k, _label = mockLabels[i], _unit = "", _dbNumber = 0, _byteOffset = 0, _color = mockColors[i], _min = 0, _max = 100 }).ToArray();
+        var mockChs = mockKeys.Select((k, i) => new ChannelDef { Key = k, Label = mockLabels[i], Unit = "", DbNumber = 0, ByteOffset = 0, Color = mockColors[i], Min = 0, Max = 100 }).ToArray();
 
         for (int i = 0; i < 3; i++)
         {
@@ -426,8 +427,8 @@ public partial class TrendChartPage : Page
 
     private void FeedMock(string key, double rawVal, ChannelDef ch)
     {
-        double range = ch._max - ch._min;
-        double normVal = range > 0 ? Math.Clamp((rawVal - ch._min) / range * 100, 0, 100) : rawVal;
+        double range = ch.Max - ch.Min;
+        double normVal = range > 0 ? Math.Clamp((rawVal - ch.Min) / range * 100, 0, 100) : rawVal;
 
         Dispatcher.Invoke(() =>
         {
@@ -464,27 +465,42 @@ public partial class TrendChartPage : Page
 
     // ===================== 设备控制（3×3 按1松0） =====================
 
-    private void OnMotorPressDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+#pragma warning disable IDE1006 // XAML 事件绑定不能加 Async 后缀
+    private async void OnMotorPressDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         e.Handled = true;
         if (sender is FrameworkElement fe && fe.Tag is string tag)
-            WriteMotorBit(tag, true);
+        {
+            if (!_s7.IsConnected)
+                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+            else
+                WriteMotorBit(tag, true);
+        }
     }
 
-    private void OnMotorPressUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private async void OnMotorPressUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement fe && fe.Tag is string tag)
-            WriteMotorBit(tag, false);
+        {
+            if (!_s7.IsConnected)
+                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+            else
+                WriteMotorBit(tag, false);
+        }
     }
 
-    private void OnMotorPressLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    private async void OnMotorPressLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (sender is FrameworkElement { IsMouseCaptured: true } fe && fe.Tag is string tag)
         {
             fe.ReleaseMouseCapture();
-            WriteMotorBit(tag, false);
+            if (!_s7.IsConnected)
+                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+            else
+                WriteMotorBit(tag, false);
         }
     }
+#pragma warning restore IDE1006
 
     /// <summary>按1松0 — 从 Tag "db.byte.bit" 解析地址后写位</summary>
     private void WriteMotorBit(string tag, bool setBit)

@@ -68,7 +68,7 @@ public partial class PpeConnectionSection : UserControl
         if (result == 0)
         {
             statusBar.Visibility = Visibility.Visible;
-            statusIndicator.Fill = new SolidColorBrush(Color.FromRgb(39, 174, 96));
+            statusIndicator.Fill = (Brush)Application.Current.FindResource("SystemFillColorSuccessBrush");
             statusText.Text = "已连接";
             btnConnect.IsEnabled = false;
             btnDisconnect.IsEnabled = true;
@@ -76,7 +76,7 @@ public partial class PpeConnectionSection : UserControl
         else
         {
             statusBar.Visibility = Visibility.Visible;
-            statusIndicator.Fill = new SolidColorBrush(Color.FromRgb(231, 76, 60));
+            statusIndicator.Fill = (Brush)Application.Current.FindResource("SystemFillColorCriticalBrush");
             statusText.Text = $"连接失败: {_s7.LastError ?? "未知错误"}";
         }
     }
@@ -84,7 +84,7 @@ public partial class PpeConnectionSection : UserControl
     private void OnDisconnect(object sender, RoutedEventArgs e)
     {
         _s7.Disconnect();
-        statusIndicator.Fill = new SolidColorBrush(Color.FromRgb(102, 102, 102));
+        statusIndicator.Fill = (Brush)Application.Current.FindResource("SystemFillColorNeutralBrush");
         statusText.Text = "已断开";
         btnConnect.IsEnabled = true;
         btnDisconnect.IsEnabled = false;
@@ -123,7 +123,7 @@ public partial class PpeConnectionSection : UserControl
         }
     }
 
-    private void OnImportDb(object sender, RoutedEventArgs e)
+    private async void OnImportDb(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
@@ -140,11 +140,11 @@ public partial class PpeConnectionSection : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"导入失败: {ex.Message}", "错误");
+            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
         }
     }
 
-    private void OnImportUdt(object sender, RoutedEventArgs e)
+    private async void OnImportUdt(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
@@ -160,7 +160,7 @@ public partial class PpeConnectionSection : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"导入失败: {ex.Message}", "错误");
+            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
         }
     }
 
@@ -186,11 +186,11 @@ public partial class PpeConnectionSection : UserControl
 
     public int Interval => int.TryParse(intervalInput.Text, out int v) ? v : 500;
 
-    private void OnStart(object sender, RoutedEventArgs e)
+    private async void OnStart(object sender, RoutedEventArgs e)
     {
         if (!_s7.IsConnected)
         {
-            MessageBox.Show("请先连接 PLC", "提示");
+            await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "请先连接 PLC" }.ShowDialogAsync();
             return;
         }
 
@@ -228,8 +228,8 @@ public partial class PpeConnectionSection : UserControl
         btnStart.IsEnabled = !running;
         btnStop.IsEnabled = running;
         pollIndicator.Fill = running
-            ? new SolidColorBrush(Color.FromRgb(39, 174, 96))
-            : new SolidColorBrush(Color.FromRgb(102, 102, 102));
+            ? (Brush)Application.Current.FindResource("SystemFillColorSuccessBrush")
+            : (Brush)Application.Current.FindResource("SystemFillColorNeutralBrush");
         pollStatusText.Text = running ? "轮询运行中" : "已停止";
     }
 

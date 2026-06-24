@@ -14,10 +14,7 @@ public partial class BitBlock : UserControl
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is BitViewModel bvm)
-        {
-            bvm.Toggle();
             Toggled?.Invoke(this, new BitToggledEventArgs(bvm));
-        }
     }
 }
 

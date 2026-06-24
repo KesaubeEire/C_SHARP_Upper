@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
+using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
 
@@ -71,7 +72,7 @@ public partial class DbMonitorPage : Page
     }
 
     /// <summary>导入 .udt 文件</summary>
-    private void OnImportUdt(object sender, RoutedEventArgs e)
+    private async void OnImportUdt(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
@@ -85,7 +86,7 @@ public partial class DbMonitorPage : Page
             var udt = UdtFileParser.Parse(dialog.FileName);
             if (udt.ParseError != null)
             {
-                MessageBox.Show($"解析失败: {udt.ParseError}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"解析失败: {udt.ParseError}" }.ShowDialogAsync();
                 return;
             }
 
@@ -94,10 +95,10 @@ public partial class DbMonitorPage : Page
                 string.Equals(u.UdtName, udt.UdtName, StringComparison.OrdinalIgnoreCase));
             if (existing >= 0)
             {
-                var r = MessageBox.Show(
+                var r = System.Windows.MessageBox.Show(
                     $"UDT \"{udt.UdtName}\" 已导入，是否替换？", "提示",
-                    MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (r != MessageBoxResult.Yes) return;
+                    System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+                if (r != System.Windows.MessageBoxResult.Yes) return;
                 _importedUdts.RemoveAt(existing);
             }
 
@@ -116,7 +117,7 @@ public partial class DbMonitorPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
         }
     }
 
@@ -137,7 +138,7 @@ public partial class DbMonitorPage : Page
 
     // ===================== 导入 .db =====================
 
-    private void OnImportDb(object sender, RoutedEventArgs e)
+    private async void OnImportDb(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
@@ -151,12 +152,11 @@ public partial class DbMonitorPage : Page
             var db = DbFileParser.Parse(dialog.FileName);
             if (db.HasUnknownType)
             {
-                MessageBox.Show($"解析警告: {db.ParseError}\n\n未识别的变量类型将被跳过。", "未知数据类型",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                await new Wpf.Ui.Controls.MessageBox { Title = "未知数据类型", Content = $"解析警告: {db.ParseError}\n\n未识别的变量类型将被跳过。" }.ShowDialogAsync();
             }
             if (db.ParseError != null && db.Variables.Count == 0)
             {
-                MessageBox.Show($"解析失败: {db.ParseError}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"解析失败: {db.ParseError}" }.ShowDialogAsync();
                 return;
             }
 
@@ -182,7 +182,7 @@ public partial class DbMonitorPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
         }
     }
 
@@ -428,10 +428,10 @@ public partial class DbMonitorPage : Page
         // UDT 缺失检查
         if (_missingUdts != null && _missingUdts.Count > 0)
         {
-            var r = MessageBox.Show(
+            var r = System.Windows.MessageBox.Show(
                 $"以下 UDT 未导入，相关变量可能无法正确读取:\n{string.Join("\n", _missingUdts.Select(u => $"  • {u}"))}\n\n是否继续读取？",
-                "UDT 引用缺失", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (r != MessageBoxResult.Yes) return;
+                "UDT 引用缺失", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
+            if (r != System.Windows.MessageBoxResult.Yes) return;
         }
 
         btnReadDb.IsEnabled = false;
@@ -630,15 +630,28 @@ public partial class DbMonitorPage : Page
     // ===================== 数值写入 =====================
 
     /// <summary>改动按钮 — 写入数值到 PLC</summary>
-    private void OnValueEdit(object sender, RoutedEventArgs e)
+    private async void OnValueEdit(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement fe && fe.DataContext is DbVariableDisplay v)
-            WriteEditedValue(v);
+        {
+            if (_currentDb == null) return;
+            if (!_s7.IsConnected)
+            {
+                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+                return;
+            }
+            await WriteEditedValue(v);
+        }
     }
 
-    private void WriteEditedValue(DbVariableDisplay v)
+    private async Task WriteEditedValue(DbVariableDisplay v)
     {
-        if (_currentDb == null || !_s7.IsConnected) return;
+        if (_currentDb == null) return;
+        if (!_s7.IsConnected)
+        {
+            await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+            return;
+        }
 
         string input = v.InputValue?.Trim() ?? "";
         if (input.Length == 0) return;
