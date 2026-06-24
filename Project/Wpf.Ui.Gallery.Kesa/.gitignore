@@ -1,0 +1,13 @@
+## 临时文件 / 缓存
+.scratch/
+
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+
+## VS
+.vs/
+*.csproj.user
