@@ -557,7 +557,7 @@ public class AlarmService
             if (!updatedKeys.Contains(rule.VariableKey))
                 continue;
 
-            byte? rawValue = _scheduler.GetValue(rule.VariableKey);
+            double? rawValue = _scheduler.GetDoubleValue(rule.VariableKey);
             if (rawValue == null)
                 continue;
 
