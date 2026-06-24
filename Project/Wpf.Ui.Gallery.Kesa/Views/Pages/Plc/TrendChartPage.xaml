@@ -63,7 +63,7 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <controls:CartesianChartKesa
+                <controls:CartesianChartKesaTrend
                     x:Name="trendChart"
                     Grid.Row="0"
                     Margin="8"
@@ -73,7 +73,10 @@
                     LineSmoothness="0.2"
                     LineStrokeThickness="3"
                     TooltipPosition="Top"
-                    ZoomMode="X" />
+                    ZoomMode="X"
+                    AxisLabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                    AxisGridBrush="{DynamicResource ControlElevationBorderBrush}"
+                    TooltipBgBrush="{DynamicResource CardBackground}" />
                 <!--  图例 + 实时值  -->
                 <Border
                     x:Name="legendBar"
