@@ -191,7 +191,7 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     // ===== Commands =====
 
     [RelayCommand]
-    private void Connect()
+    private async Task Connect()
     {
         string localIp = SelectedAdapter?.Ip ?? "";
         string ip = IpAddress.Trim();
@@ -199,19 +199,41 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         int rack = int.TryParse(Rack, out int r) ? r : 0;
         int slot = int.TryParse(Slot, out int s) ? s : 1;
 
-        int result = _s7.Connect(localIp, ip, port, rack, slot);
-        IsConnected = result == 0;
-        ShowStatusBar = true;
+        try
+        {
+            // 异步执行 TCP 连接，不阻塞 UI
+            int result = await Task.Run(() => _s7.Connect(localIp, ip, port, rack, slot));
 
-        if (result == 0)
-        {
-            StatusText = "已连接";
-            ConnectionQuality = LedQuality.Good;
+            IsConnected = result == 0;
+            ShowStatusBar = true;
+
+            if (result == 0)
+            {
+                StatusText = "已连接";
+                ConnectionQuality = LedQuality.Good;
+            }
+            else
+            {
+                StatusText = $"连接失败: {_s7.LastError ?? "未知错误"}";
+                ConnectionQuality = LedQuality.Bad;
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "连接失败",
+                    Content = _s7.LastError ?? "未知错误"
+                }.ShowDialogAsync();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            StatusText = $"连接失败: {_s7.LastError ?? "未知错误"}";
+            IsConnected = false;
+            ShowStatusBar = true;
+            StatusText = $"连接异常: {ex.Message}";
             ConnectionQuality = LedQuality.Bad;
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "连接异常",
+                Content = ex.Message
+            }.ShowDialogAsync();
         }
     }
 
