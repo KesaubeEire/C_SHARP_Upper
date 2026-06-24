@@ -25,6 +25,7 @@ Thumbs.db
 .localhistory/
 
 ### 本地工具配置
+.claude/settings.json
 .claude/settings.local.json
 .nezha/attachments/
 
