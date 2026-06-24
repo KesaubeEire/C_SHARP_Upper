@@ -1,0 +1,1704 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vercel Geist 设计规范可视化解读</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='black' d='M16 4 30 28H2z'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --bg-soft: #fafafa;
+      --fg: #171717;
+      --fg-secondary: #4d4d4d;
+      --fg-tertiary: #8f8f8f;
+      --line: #00000014;
+      --line-strong: #00000024;
+      --surface: #ffffff;
+      --surface-raised: #ffffff;
+      --surface-subtle: #f2f2f2;
+      --focus: #006bff;
+      --accent: #006bff;
+      --danger: #ea001d;
+      --warning: #ff9300;
+      --success: #28a948;
+      --shadow-card: 0 2px 2px rgba(0, 0, 0, 0.04);
+      --shadow-menu: 0 1px 1px rgba(0, 0, 0, 0.02), 0 4px 8px -4px rgba(0, 0, 0, 0.04), 0 16px 24px -8px rgba(0, 0, 0, 0.06);
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --max: 1200px;
+      --pad: clamp(16px, 4vw, 40px);
+      --mono: "Geist Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: "Geist Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #000000;
+      --bg-soft: #000000;
+      --fg: #ededed;
+      --fg-secondary: #a0a0a0;
+      --fg-tertiary: #8f8f8f;
+      --line: #ffffff24;
+      --line-strong: #ffffff3d;
+      --surface: #000000;
+      --surface-raised: #1a1a1a;
+      --surface-subtle: #1f1f1f;
+      --focus: #47a8ff;
+      --accent: #006efe;
+      --danger: #e2162a;
+      --warning: #ff9300;
+      --success: #00ac3a;
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.16);
+      --shadow-menu: 0 1px 1px rgba(0, 0, 0, 0.02), 0 4px 8px -4px rgba(0, 0, 0, 0.04), 0 16px 24px -8px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      line-height: 1.5;
+      transition: background-color 160ms ease, color 160ms ease;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .topbar-inner {
+      width: min(100%, var(--max));
+      margin: 0 auto;
+      padding: 12px var(--pad);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .mark {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .mark::before {
+      content: "";
+      width: 0;
+      height: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-bottom: 16px solid var(--fg);
+      transform: translateY(-1px);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .nav a {
+      color: var(--fg-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 18px;
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      white-space: nowrap;
+    }
+
+    .nav a:hover {
+      background: var(--surface-subtle);
+      color: var(--fg);
+    }
+
+    .theme-toggle {
+      height: 32px;
+      min-width: 82px;
+      border: 1px solid var(--line);
+      border-radius: 9999px;
+      background: var(--surface);
+      color: var(--fg);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 10px;
+      font-size: 13px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--line-strong);
+      background: var(--surface-subtle);
+    }
+
+    .page {
+      width: min(100%, var(--max));
+      margin: 0 auto;
+      padding: 0 var(--pad) 80px;
+    }
+
+    .hero {
+      min-height: 620px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.92fr);
+      align-items: center;
+      gap: clamp(32px, 6vw, 72px);
+      padding: 80px 0 48px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      color: var(--fg-secondary);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 18px;
+      margin: 0 0 16px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(48px, 8vw, 88px);
+      line-height: 0.94;
+      letter-spacing: 0;
+      font-weight: 600;
+      margin-bottom: 24px;
+      max-width: 760px;
+    }
+
+    .lead {
+      max-width: 640px;
+      color: var(--fg-secondary);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.62;
+      margin-bottom: 32px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .button {
+      min-height: 40px;
+      border-radius: var(--radius-sm);
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .button.primary {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .button.secondary {
+      background: var(--surface);
+      color: var(--fg);
+      border-color: var(--line);
+    }
+
+    .button.secondary:hover {
+      background: var(--surface-subtle);
+      border-color: var(--line-strong);
+    }
+
+    .console {
+      min-height: 430px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-menu);
+      overflow: hidden;
+    }
+
+    .console-head {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--fg-tertiary);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      background: var(--fg-tertiary);
+      opacity: 0.65;
+    }
+
+    .console-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .console-cell {
+      min-height: 122px;
+      background: var(--surface-raised);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .metric-label {
+      color: var(--fg-secondary);
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      line-height: 40px;
+      letter-spacing: 0;
+      font-weight: 600;
+    }
+
+    .tiny-code {
+      color: var(--fg-secondary);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .signal-row {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 4px;
+      align-items: end;
+      min-height: 72px;
+    }
+
+    .signal-bar {
+      border-radius: 3px;
+      min-height: 16px;
+      border: 1px solid var(--line);
+    }
+
+    section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.72fr) minmax(280px, 0.88fr);
+      gap: clamp(24px, 5vw, 56px);
+      align-items: start;
+      margin-bottom: 32px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.08;
+      letter-spacing: 0;
+      font-weight: 600;
+      margin-bottom: 0;
+    }
+
+    .section-copy {
+      color: var(--fg-secondary);
+      font-size: 16px;
+      line-height: 24px;
+      margin: 0;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .insight {
+      background: var(--surface);
+      min-height: 210px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .insight h3 {
+      font-size: 20px;
+      line-height: 26px;
+      letter-spacing: 0;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .insight p {
+      color: var(--fg-secondary);
+      font-size: 14px;
+      line-height: 20px;
+      margin: 0;
+    }
+
+    .index-number {
+      color: var(--fg-tertiary);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .theme-board {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .theme-panel {
+      min-height: 350px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--panel-bg);
+      color: var(--panel-fg);
+      box-shadow: var(--shadow-card);
+    }
+
+    .theme-panel.light-preview {
+      --panel-bg: #ffffff;
+      --panel-fg: #171717;
+      --panel-secondary: #4d4d4d;
+      --panel-line: #00000014;
+      --panel-soft: #fafafa;
+      --panel-button: #171717;
+      --panel-button-text: #ffffff;
+      --panel-blue: #006bff;
+      --panel-red: #ea001d;
+      --panel-amber: #ff9300;
+      --panel-green: #28a948;
+    }
+
+    .theme-panel.dark-preview {
+      --panel-bg: #000000;
+      --panel-fg: #ededed;
+      --panel-secondary: #a0a0a0;
+      --panel-line: #ffffff24;
+      --panel-soft: #1a1a1a;
+      --panel-button: #ededed;
+      --panel-button-text: #000000;
+      --panel-blue: #006efe;
+      --panel-red: #e2162a;
+      --panel-amber: #ff9300;
+      --panel-green: #00ac3a;
+    }
+
+    .preview-title {
+      min-height: 48px;
+      border-bottom: 1px solid var(--panel-line);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 600;
+    }
+
+    .preview-body {
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .mock-card {
+      border: 1px solid var(--panel-line);
+      border-radius: 6px;
+      background: var(--panel-bg);
+      padding: 18px;
+    }
+
+    .mock-card h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 26px;
+      letter-spacing: 0;
+      font-weight: 600;
+    }
+
+    .mock-card p {
+      margin: 0;
+      color: var(--panel-secondary);
+      font-size: 14px;
+      line-height: 20px;
+    }
+
+    .mock-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .mock-button {
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-line);
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      font-size: 13px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+
+    .mock-button.primary {
+      background: var(--panel-button);
+      color: var(--panel-button-text);
+      border-color: var(--panel-button);
+    }
+
+    .preview-status {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .status-pill {
+      border: 1px solid var(--panel-line);
+      background: var(--panel-soft);
+      border-radius: 9999px;
+      min-height: 34px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--panel-secondary);
+      font-size: 12px;
+      line-height: 16px;
+      min-width: 0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      flex: 0 0 auto;
+      background: var(--panel-blue);
+    }
+
+    .status-dot.red {
+      background: var(--panel-red);
+    }
+
+    .status-dot.amber {
+      background: var(--panel-amber);
+    }
+
+    .token-matrix {
+      display: grid;
+      gap: 18px;
+    }
+
+    .palette-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+    }
+
+    .palette-name {
+      color: var(--fg-secondary);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .swatch {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .swatch span {
+      position: absolute;
+      inset: auto 4px 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+      line-height: 12px;
+      color: color-mix(in srgb, var(--fg) 72%, transparent);
+      mix-blend-mode: difference;
+    }
+
+    .intent-ladder {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--line);
+      overflow: hidden;
+      margin-top: 32px;
+    }
+
+    .intent {
+      min-height: 150px;
+      padding: 18px;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .intent strong {
+      display: block;
+      font-size: 18px;
+      line-height: 24px;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+
+    .intent p {
+      color: var(--fg-secondary);
+      font-size: 13px;
+      line-height: 18px;
+      margin: 0;
+    }
+
+    .typography-board {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(300px, 0.65fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .type-stack {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .type-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) 110px;
+      gap: 16px;
+      align-items: center;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .type-row:last-child {
+      border-bottom: 0;
+    }
+
+    .token-name {
+      color: var(--fg-secondary);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .sample {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0;
+    }
+
+    .sample.h72 {
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    .sample.h40 {
+      font-size: 40px;
+      line-height: 48px;
+      font-weight: 600;
+    }
+
+    .sample.h24 {
+      font-size: 24px;
+      line-height: 32px;
+      font-weight: 600;
+    }
+
+    .sample.copy16 {
+      white-space: normal;
+      font-size: 16px;
+      line-height: 24px;
+      color: var(--fg-secondary);
+    }
+
+    .sample.label14 {
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--fg);
+    }
+
+    .sample.mono13 {
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 18px;
+      color: var(--fg-secondary);
+    }
+
+    .type-use {
+      color: var(--fg-tertiary);
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .rule-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .rule {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      background: var(--surface);
+    }
+
+    .rule strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      line-height: 20px;
+    }
+
+    .rule p {
+      margin: 0;
+      color: var(--fg-secondary);
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .layout-map {
+      display: grid;
+      grid-template-columns: minmax(0, 0.75fr) minmax(320px, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .space-scale {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      background: var(--surface);
+      display: grid;
+      gap: 14px;
+    }
+
+    .space-item {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 60px;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .space-label {
+      color: var(--fg-secondary);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .space-bar {
+      height: 12px;
+      border-radius: 9999px;
+      background: var(--fg);
+      min-width: 4px;
+    }
+
+    .space-value {
+      color: var(--fg-tertiary);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+      text-align: right;
+    }
+
+    .rhythm-demo {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      padding: 24px;
+      display: grid;
+      grid-template-rows: auto 8px auto 16px auto 32px auto;
+    }
+
+    .rhythm-block {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-subtle);
+      min-height: 56px;
+      padding: 14px;
+      color: var(--fg-secondary);
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .gap-label {
+      display: grid;
+      place-items: center;
+      color: var(--fg-tertiary);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 12px;
+    }
+
+    .component-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(320px, 1fr);
+      gap: 24px;
+    }
+
+    .component-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .component-panel h3 {
+      margin-bottom: 4px;
+      font-size: 20px;
+      line-height: 26px;
+      letter-spacing: 0;
+      font-weight: 600;
+    }
+
+    .component-note {
+      margin: 0 0 4px;
+      color: var(--fg-secondary);
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .button.demo-primary {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .button.demo-secondary {
+      background: var(--surface);
+      color: var(--fg);
+      border-color: var(--line);
+    }
+
+    .button.demo-tertiary {
+      background: transparent;
+      color: var(--fg);
+    }
+
+    .button.demo-error {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .button.small {
+      min-height: 32px;
+      padding: 0 8px;
+    }
+
+    .button.large {
+      min-height: 48px;
+      padding: 0 16px;
+      font-size: 16px;
+    }
+
+    .field {
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--fg);
+      padding: 0 12px;
+      width: min(100%, 320px);
+    }
+
+    .state-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .state {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) 78px;
+      gap: 12px;
+      align-items: center;
+      min-height: 38px;
+    }
+
+    .state .chip {
+      height: 30px;
+      border-radius: 9999px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--fg-secondary);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 12px;
+      white-space: nowrap;
+    }
+
+    .state .line {
+      height: 8px;
+      border-radius: 9999px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--line);
+    }
+
+    .state .line.hover {
+      background: color-mix(in srgb, var(--surface-subtle) 60%, var(--fg) 8%);
+    }
+
+    .state .line.active {
+      background: color-mix(in srgb, var(--surface-subtle) 48%, var(--fg) 15%);
+    }
+
+    .state .line.focus {
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
+    }
+
+    .voice-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .voice-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      padding: 20px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .voice-card h3 {
+      font-size: 18px;
+      line-height: 24px;
+      letter-spacing: 0;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .voice-card p {
+      margin: 0;
+      color: var(--fg-secondary);
+      font-size: 14px;
+      line-height: 20px;
+    }
+
+    .example {
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-subtle);
+      padding: 14px;
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 18px;
+    }
+
+    .dos-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .dos-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .dos-card h3 {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      margin: 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+
+    .dos-card ul {
+      margin: 0;
+      padding: 18px 18px 18px 36px;
+      color: var(--fg-secondary);
+      font-size: 14px;
+      line-height: 22px;
+    }
+
+    .source {
+      padding: 32px 0 0;
+      color: var(--fg-tertiary);
+      font-size: 13px;
+      line-height: 20px;
+    }
+
+    .source a {
+      color: var(--fg-secondary);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 960px) {
+      .nav a {
+        display: none;
+      }
+
+      .hero,
+      .section-head,
+      .typography-board,
+      .layout-map,
+      .component-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 56px;
+      }
+
+      .insight-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .intent-ladder {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .voice-board {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding-bottom: 56px;
+      }
+
+      .hero {
+        gap: 28px;
+      }
+
+      .console {
+        min-height: 0;
+      }
+
+      .console-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .console-cell {
+        min-height: 96px;
+        padding: 14px;
+      }
+
+      .console > .console-cell {
+        display: none;
+      }
+
+      .metric-value {
+        font-size: 24px;
+        line-height: 32px;
+      }
+
+      section {
+        padding: 48px 0;
+      }
+
+      .theme-board,
+      .dos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .insight-grid,
+      .intent-ladder {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-status {
+        grid-template-columns: 1fr;
+      }
+
+      .palette-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .swatches {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .type-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .state {
+        grid-template-columns: 74px minmax(0, 1fr);
+      }
+
+      .state .tiny-code {
+        display: none;
+      }
+
+      h1 {
+        font-size: clamp(42px, 14vw, 60px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <span>Geist Design System 解读</span>
+      </div>
+      <nav class="nav" aria-label="页面导航">
+        <a href="#summary">核心判断</a>
+        <a href="#colors">颜色</a>
+        <a href="#type">排版</a>
+        <a href="#components">组件</a>
+        <button class="theme-toggle" type="button" id="themeToggle" aria-label="切换明暗主题">
+          <span id="themeIcon">◐</span>
+          <span id="themeText">Dark</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Vercel / design.md + design.dark.md / version alpha</p>
+        <h1>一套给开发者界面的克制系统</h1>
+        <p class="lead">Geist 的重点不是制造品牌视觉，而是把界面压回到清晰、可读、可维护：同名 token 管住明暗主题，灰阶承担层级，强调色只表达状态和少数关键动作。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#summary">查看解读</a>
+          <a class="button secondary" href="#colors">看 Token 图谱</a>
+        </div>
+      </div>
+      <aside class="console" aria-label="设计系统摘要面板">
+        <div class="console-head">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span>geist.tokens</span>
+        </div>
+        <div class="console-grid">
+          <div class="console-cell">
+            <div class="metric-label">色阶</div>
+            <div>
+              <div class="metric-value">10</div>
+              <div class="tiny-code">100 → 1000 = 语义层级</div>
+            </div>
+          </div>
+          <div class="console-cell">
+            <div class="metric-label">默认间距基准</div>
+            <div>
+              <div class="metric-value">4px</div>
+              <div class="tiny-code">8 / 16 / 32-40 rhythm</div>
+            </div>
+          </div>
+          <div class="console-cell">
+            <div class="metric-label">控件半径</div>
+            <div>
+              <div class="metric-value">6px</div>
+              <div class="tiny-code">md 12px / lg 16px / full pill</div>
+            </div>
+          </div>
+          <div class="console-cell">
+            <div class="metric-label">动效原则</div>
+            <div>
+              <div class="metric-value">0ms</div>
+              <div class="tiny-code">能瞬时就瞬时，有意义再动</div>
+            </div>
+          </div>
+        </div>
+        <div class="console-cell" style="min-height: 148px;">
+          <div class="metric-label">Neutral-first palette</div>
+          <div class="signal-row" aria-hidden="true">
+            <span class="signal-bar" style="height: 18px; background: #f2f2f2;"></span>
+            <span class="signal-bar" style="height: 22px; background: #ebebeb;"></span>
+            <span class="signal-bar" style="height: 26px; background: #e6e6e6;"></span>
+            <span class="signal-bar" style="height: 30px; background: #eaeaea;"></span>
+            <span class="signal-bar" style="height: 36px; background: #c9c9c9;"></span>
+            <span class="signal-bar" style="height: 44px; background: #a8a8a8;"></span>
+            <span class="signal-bar" style="height: 52px; background: #8f8f8f;"></span>
+            <span class="signal-bar" style="height: 60px; background: #7d7d7d;"></span>
+            <span class="signal-bar" style="height: 68px; background: #4d4d4d;"></span>
+            <span class="signal-bar" style="height: 76px; background: #171717;"></span>
+          </div>
+        </div>
+      </aside>
+    </header>
+
+    <section id="summary">
+      <div class="section-head">
+        <h2>核心判断</h2>
+        <p class="section-copy">Vercel 这套规范本质上是“开发工具审美”的工程化表达：高对比、低装饰、强 token、轻动效、强文案约束。它适合控制台、SaaS、配置面板、技术文档和 AI 工具界面，不适合需要强情绪化营销视觉的场景。</p>
+      </div>
+      <div class="insight-grid">
+        <article class="insight">
+          <span class="index-number">01</span>
+          <div>
+            <h3>Token 先于组件</h3>
+            <p>颜色、字号、间距、半径、组件尺寸都先被命名，再被组件引用。价值在于明暗主题和状态变化可以稳定替换。</p>
+          </div>
+        </article>
+        <article class="insight">
+          <span class="index-number">02</span>
+          <div>
+            <h3>灰阶负责大部分表达</h3>
+            <p>信息层级主要靠 gray 与 alpha gray。强调色不是装饰材料，而是状态、链接、聚焦和关键操作的信号。</p>
+          </div>
+        </article>
+        <article class="insight">
+          <span class="index-number">03</span>
+          <div>
+            <h3>排版是界面骨架</h3>
+            <p>Sans 管 UI 与正文，Mono 管代码和数据。copy 与 label 分开，避免多行正文被压成控件文字的节奏。</p>
+          </div>
+        </article>
+        <article class="insight">
+          <span class="index-number">04</span>
+          <div>
+            <h3>体验偏向即时反馈</h3>
+            <p>规范明确允许 0ms。动效只在揭示变化时出现，强调短、物理、可被关闭，而不是制造注意力。</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="themes">
+      <div class="section-head">
+        <h2>同名 Token，双主题换值</h2>
+        <p class="section-copy">Light 与 Dark 的关键是“名字不变，值改变”。组件引用 primary、background-100、gray-1000 等语义名，而不是在业务代码里到处写黑白色值。</p>
+      </div>
+      <div class="theme-board">
+        <article class="theme-panel light-preview">
+          <div class="preview-title">
+            <span>Light Theme</span>
+            <span style="color: var(--panel-secondary); font-family: var(--mono);">background-100 #fff</span>
+          </div>
+          <div class="preview-body">
+            <div class="mock-card">
+              <h3>Deploy Project</h3>
+              <p>Primary text uses gray-1000. Secondary metadata stays on gray-900.</p>
+              <div class="mock-actions">
+                <span class="mock-button primary">Deploy Project</span>
+                <span class="mock-button">View Logs</span>
+              </div>
+            </div>
+            <div class="preview-status">
+              <span class="status-pill"><span class="status-dot"></span>Focus</span>
+              <span class="status-pill"><span class="status-dot amber"></span>Warning</span>
+              <span class="status-pill"><span class="status-dot red"></span>Error</span>
+            </div>
+          </div>
+        </article>
+        <article class="theme-panel dark-preview">
+          <div class="preview-title">
+            <span>Dark Theme</span>
+            <span style="color: var(--panel-secondary); font-family: var(--mono);">background-100 #000</span>
+          </div>
+          <div class="preview-body">
+            <div class="mock-card">
+              <h3>Deploy Project</h3>
+              <p>Same component tokens. Different values. Contrast remains intentional.</p>
+              <div class="mock-actions">
+                <span class="mock-button primary">Deploy Project</span>
+                <span class="mock-button">View Logs</span>
+              </div>
+            </div>
+            <div class="preview-status">
+              <span class="status-pill"><span class="status-dot"></span>Focus</span>
+              <span class="status-pill"><span class="status-dot amber"></span>Warning</span>
+              <span class="status-pill"><span class="status-dot red"></span>Error</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="colors">
+      <div class="section-head">
+        <h2>色阶不是亮度表，而是意图表</h2>
+        <p class="section-copy">每条非背景色阶都有 100 到 1000 十个等级。100-300 管背景状态，400-600 管边框状态，700-800 管高对比填充，900-1000 管文字和图标。</p>
+      </div>
+      <div class="token-matrix" aria-label="Light theme color token matrix">
+        <div class="palette-row">
+          <div class="palette-name">gray</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#f2f2f2;"><span>100</span></span>
+            <span class="swatch" style="background:#ebebeb;"><span>200</span></span>
+            <span class="swatch" style="background:#e6e6e6;"><span>300</span></span>
+            <span class="swatch" style="background:#eaeaea;"><span>400</span></span>
+            <span class="swatch" style="background:#c9c9c9;"><span>500</span></span>
+            <span class="swatch" style="background:#a8a8a8;"><span>600</span></span>
+            <span class="swatch" style="background:#8f8f8f;"><span>700</span></span>
+            <span class="swatch" style="background:#7d7d7d;"><span>800</span></span>
+            <span class="swatch" style="background:#4d4d4d;"><span>900</span></span>
+            <span class="swatch" style="background:#171717;"><span>1000</span></span>
+          </div>
+        </div>
+        <div class="palette-row">
+          <div class="palette-name">blue</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#f0f7ff;"><span>100</span></span>
+            <span class="swatch" style="background:#e9f4ff;"><span>200</span></span>
+            <span class="swatch" style="background:#dfefff;"><span>300</span></span>
+            <span class="swatch" style="background:#cae7ff;"><span>400</span></span>
+            <span class="swatch" style="background:#94ccff;"><span>500</span></span>
+            <span class="swatch" style="background:#48aeff;"><span>600</span></span>
+            <span class="swatch" style="background:#006bff;"><span>700</span></span>
+            <span class="swatch" style="background:#0059ec;"><span>800</span></span>
+            <span class="swatch" style="background:#005ff2;"><span>900</span></span>
+            <span class="swatch" style="background:#002359;"><span>1000</span></span>
+          </div>
+        </div>
+        <div class="palette-row">
+          <div class="palette-name">red</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#ffeeef;"><span>100</span></span>
+            <span class="swatch" style="background:#ffe8ea;"><span>200</span></span>
+            <span class="swatch" style="background:#ffe3e4;"><span>300</span></span>
+            <span class="swatch" style="background:#ffd7d6;"><span>400</span></span>
+            <span class="swatch" style="background:#ffb1b3;"><span>500</span></span>
+            <span class="swatch" style="background:#ff676d;"><span>600</span></span>
+            <span class="swatch" style="background:#fc0035;"><span>700</span></span>
+            <span class="swatch" style="background:#ea001d;"><span>800</span></span>
+            <span class="swatch" style="background:#d8001b;"><span>900</span></span>
+            <span class="swatch" style="background:#47000c;"><span>1000</span></span>
+          </div>
+        </div>
+        <div class="palette-row">
+          <div class="palette-name">amber</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#fff6de;"><span>100</span></span>
+            <span class="swatch" style="background:#fff4cf;"><span>200</span></span>
+            <span class="swatch" style="background:#fff1c1;"><span>300</span></span>
+            <span class="swatch" style="background:#ffdc73;"><span>400</span></span>
+            <span class="swatch" style="background:#ffc543;"><span>500</span></span>
+            <span class="swatch" style="background:#ffa600;"><span>600</span></span>
+            <span class="swatch" style="background:#ffae00;"><span>700</span></span>
+            <span class="swatch" style="background:#ff9300;"><span>800</span></span>
+            <span class="swatch" style="background:#aa4d00;"><span>900</span></span>
+            <span class="swatch" style="background:#561900;"><span>1000</span></span>
+          </div>
+        </div>
+        <div class="palette-row">
+          <div class="palette-name">green</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#ecfdec;"><span>100</span></span>
+            <span class="swatch" style="background:#e5fce7;"><span>200</span></span>
+            <span class="swatch" style="background:#d3fad1;"><span>300</span></span>
+            <span class="swatch" style="background:#b9f5bc;"><span>400</span></span>
+            <span class="swatch" style="background:#82eb8d;"><span>500</span></span>
+            <span class="swatch" style="background:#4ce15e;"><span>600</span></span>
+            <span class="swatch" style="background:#28a948;"><span>700</span></span>
+            <span class="swatch" style="background:#279141;"><span>800</span></span>
+            <span class="swatch" style="background:#107d32;"><span>900</span></span>
+            <span class="swatch" style="background:#003a00;"><span>1000</span></span>
+          </div>
+        </div>
+        <div class="palette-row">
+          <div class="palette-name">teal</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#defffb;"><span>100</span></span>
+            <span class="swatch" style="background:#ddfef6;"><span>200</span></span>
+            <span class="swatch" style="background:#ccf9f1;"><span>300</span></span>
+            <span class="swatch" style="background:#b1f7ec;"><span>400</span></span>
+            <span class="swatch" style="background:#52f0db;"><span>500</span></span>
+            <span class="swatch" style="background:#00e3c4;"><span>600</span></span>
+            <span class="swatch" style="background:#00ac96;"><span>700</span></span>
+            <span class="swatch" style="background:#00927f;"><span>800</span></span>
+            <span class="swatch" style="background:#007f70;"><span>900</span></span>
+            <span class="swatch" style="background:#003f34;"><span>1000</span></span>
+          </div>
+        </div>
+        <div class="palette-row">
+          <div class="palette-name">purple</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#faf0ff;"><span>100</span></span>
+            <span class="swatch" style="background:#f9f0ff;"><span>200</span></span>
+            <span class="swatch" style="background:#f6e8ff;"><span>300</span></span>
+            <span class="swatch" style="background:#f2d9ff;"><span>400</span></span>
+            <span class="swatch" style="background:#dfa7ff;"><span>500</span></span>
+            <span class="swatch" style="background:#c979ff;"><span>600</span></span>
+            <span class="swatch" style="background:#a000f8;"><span>700</span></span>
+            <span class="swatch" style="background:#8500d1;"><span>800</span></span>
+            <span class="swatch" style="background:#7d00cc;"><span>900</span></span>
+            <span class="swatch" style="background:#2f004e;"><span>1000</span></span>
+          </div>
+        </div>
+        <div class="palette-row">
+          <div class="palette-name">pink</div>
+          <div class="swatches">
+            <span class="swatch" style="background:#ffe8f6;"><span>100</span></span>
+            <span class="swatch" style="background:#ffe8f3;"><span>200</span></span>
+            <span class="swatch" style="background:#ffdfeb;"><span>300</span></span>
+            <span class="swatch" style="background:#ffd3e1;"><span>400</span></span>
+            <span class="swatch" style="background:#fdb3cc;"><span>500</span></span>
+            <span class="swatch" style="background:#f97ea7;"><span>600</span></span>
+            <span class="swatch" style="background:#f22782;"><span>700</span></span>
+            <span class="swatch" style="background:#e4106e;"><span>800</span></span>
+            <span class="swatch" style="background:#c41562;"><span>900</span></span>
+            <span class="swatch" style="background:#460523;"><span>1000</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="intent-ladder">
+        <div class="intent">
+          <strong>100-300</strong>
+          <p>背景状态：default、hover、active。适合淡底、列表行和提示底色。</p>
+        </div>
+        <div class="intent">
+          <strong>400-600</strong>
+          <p>边框状态：default、hover、active。状态推进时边界感增强。</p>
+        </div>
+        <div class="intent">
+          <strong>700-800</strong>
+          <p>实体填充：高对比按钮、状态标签、关键视觉锚点。</p>
+        </div>
+        <div class="intent">
+          <strong>900</strong>
+          <p>次级文字与图标。比正文弱，但仍能稳定扫读。</p>
+        </div>
+        <div class="intent">
+          <strong>1000</strong>
+          <p>主文字与主图标。页面里的最高阅读优先级。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="type">
+      <div class="section-head">
+        <h2>排版把界面分成三种阅读模式</h2>
+        <p class="section-copy">Heading 负责结构和标题，Label 负责单行可扫读信息，Copy 负责多行正文。这个区分比单纯给字号命名更有工程价值。</p>
+      </div>
+      <div class="typography-board">
+        <div class="type-stack">
+          <div class="type-row">
+            <span class="token-name">heading-72</span>
+            <span class="sample h72">Build Output</span>
+            <span class="type-use">标题页</span>
+          </div>
+          <div class="type-row">
+            <span class="token-name">heading-40</span>
+            <span class="sample h40">Deployment Summary</span>
+            <span class="type-use">大区块</span>
+          </div>
+          <div class="type-row">
+            <span class="token-name">heading-24</span>
+            <span class="sample h24">Runtime Logs</span>
+            <span class="type-use">卡片标题</span>
+          </div>
+          <div class="type-row">
+            <span class="token-name">copy-16</span>
+            <span class="sample copy16">Use copy tokens for multi-line reading. The line height is intentionally taller than labels.</span>
+            <span class="type-use">正文</span>
+          </div>
+          <div class="type-row">
+            <span class="token-name">label-14</span>
+            <span class="sample label14">Environment Variables</span>
+            <span class="type-use">导航/表头</span>
+          </div>
+          <div class="type-row">
+            <span class="token-name">copy-13-mono</span>
+            <span class="sample mono13">p95_latency_ms = 128.44</span>
+            <span class="type-use">代码/数据</span>
+          </div>
+        </div>
+        <div class="rule-list">
+          <div class="rule">
+            <strong>大号标题收紧字距</strong>
+            <p>规范里的 heading token 随字号变大而负向 letter-spacing 更明显，使标题更像一个整体。</p>
+          </div>
+          <div class="rule">
+            <strong>copy-14 与 label-14 是默认主力</strong>
+            <p>多数界面文字落在 14px，靠 line-height 和职责区分阅读节奏。</p>
+          </div>
+          <div class="rule">
+            <strong>Mono 只在信息结构需要时出现</strong>
+            <p>代码、路径、构建日志、数值对齐适合 Mono；普通说明继续用 Sans。</p>
+          </div>
+          <div class="rule">
+            <strong>不要手写字号组合</strong>
+            <p>使用 token 可以避免同一页面出现过多字重、行高和层级噪音。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="layout">
+      <div class="section-head">
+        <h2>布局节奏是 4px 的倍数</h2>
+        <p class="section-copy">规范给出的实用节奏是 8px 组内、16px 组间、32-40px 区块间。页面容器以 1200px 为中心列，断点覆盖移动端到 2xl。</p>
+      </div>
+      <div class="layout-map">
+        <div class="space-scale">
+          <div class="space-item"><span class="space-label">space-1</span><span class="space-bar" style="width:4px;"></span><span class="space-value">4px</span></div>
+          <div class="space-item"><span class="space-label">space-2</span><span class="space-bar" style="width:8px;"></span><span class="space-value">8px</span></div>
+          <div class="space-item"><span class="space-label">space-3</span><span class="space-bar" style="width:12px;"></span><span class="space-value">12px</span></div>
+          <div class="space-item"><span class="space-label">space-4</span><span class="space-bar" style="width:16px;"></span><span class="space-value">16px</span></div>
+          <div class="space-item"><span class="space-label">space-6</span><span class="space-bar" style="width:24px;"></span><span class="space-value">24px</span></div>
+          <div class="space-item"><span class="space-label">space-8</span><span class="space-bar" style="width:32px;"></span><span class="space-value">32px</span></div>
+          <div class="space-item"><span class="space-label">space-10</span><span class="space-bar" style="width:40px;"></span><span class="space-value">40px</span></div>
+          <div class="space-item"><span class="space-label">space-16</span><span class="space-bar" style="width:64px;"></span><span class="space-value">64px</span></div>
+          <div class="space-item"><span class="space-label">space-24</span><span class="space-bar" style="width:96px;"></span><span class="space-value">96px</span></div>
+        </div>
+        <div class="rhythm-demo">
+          <div class="rhythm-block">控件内部与紧密元素</div>
+          <div class="gap-label">8px</div>
+          <div class="rhythm-block">同一组内的第二个元素</div>
+          <div class="gap-label">16px</div>
+          <div class="rhythm-block">相邻信息组</div>
+          <div class="gap-label">32px</div>
+          <div class="rhythm-block">下一段页面内容</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="components">
+      <div class="section-head">
+        <h2>组件只是 Token 的具象化</h2>
+        <p class="section-copy">按钮和输入框没有复杂造型：40px 默认高度、6px 半径、少量 padding。状态变化沿着色阶前进，聚焦态用双层 ring 保证可访问性。</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-panel">
+          <h3>Controls</h3>
+          <p class="component-note">Primary 只给当前视图最重要动作；Error 只给破坏性动作。</p>
+          <div class="control-row">
+            <button class="button demo-primary" type="button">Deploy Project</button>
+            <button class="button demo-secondary" type="button">View Logs</button>
+            <button class="button demo-tertiary" type="button">Open Settings</button>
+            <button class="button demo-error" type="button">Delete Member</button>
+          </div>
+          <div class="control-row">
+            <button class="button demo-secondary small" type="button">Small</button>
+            <button class="button demo-primary large" type="button">Large Action</button>
+          </div>
+          <input class="field" value="production.vercel.app" aria-label="示例输入框">
+        </div>
+        <div class="component-panel">
+          <h3>State Progression</h3>
+          <p class="component-note">同一元素的 hover、active、focus 不是随机变色，而是按 token 阶梯推进。</p>
+          <div class="state-stack">
+            <div class="state">
+              <span class="chip">default</span>
+              <span class="line"></span>
+              <span class="tiny-code">100/400</span>
+            </div>
+            <div class="state">
+              <span class="chip">hover</span>
+              <span class="line hover"></span>
+              <span class="tiny-code">200/500</span>
+            </div>
+            <div class="state">
+              <span class="chip">active</span>
+              <span class="line active"></span>
+              <span class="tiny-code">300/600</span>
+            </div>
+            <div class="state">
+              <span class="chip">focus</span>
+              <span class="line focus"></span>
+              <span class="tiny-code">2+2 ring</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="voice">
+      <div class="section-head">
+        <h2>文案也是设计系统</h2>
+        <p class="section-copy">Geist 对文案的约束很强：按钮是“动词 + 名词”，错误是“发生了什么 + 下一步”，Toast 说具体变化，不说 successfully。</p>
+      </div>
+      <div class="voice-board">
+        <article class="voice-card">
+          <div>
+            <h3>动作要具体</h3>
+            <p>不要用 Confirm、OK 或孤立动词。动作名本身要让用户知道会影响什么对象。</p>
+          </div>
+          <div class="example">Deploy Project<br>Delete Member<br>Invite Teammate</div>
+        </article>
+        <article class="voice-card">
+          <div>
+            <h3>错误要可处理</h3>
+            <p>错误不是情绪提示，而是诊断信息。先说事实，再给下一步。</p>
+          </div>
+          <div class="example">Build failed. Bundle exceeds 50 MB. Reduce it or raise the limit.</div>
+        </article>
+        <article class="voice-card">
+          <div>
+            <h3>反馈要少废话</h3>
+            <p>Toast 去掉句号，去掉 successfully，直接命名改变的对象。</p>
+          </div>
+          <div class="example">Project deleted<br>Domain added<br>Environment variable saved</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="dos">
+      <div class="section-head">
+        <h2>落地时的取舍</h2>
+        <p class="section-copy">如果把这套规范用于自己的产品，重点不是照抄 Vercel 的黑白外观，而是复用它的约束方式：少变量、强语义、强可访问性、少装饰。</p>
+      </div>
+      <div class="dos-grid">
+        <article class="dos-card">
+          <h3>建议做</h3>
+          <ul>
+            <li>用 gray-1000、900、700 排出主次禁用层级。</li>
+            <li>把强调色留给状态、链接、focus 和单一主操作。</li>
+            <li>每个交互元素保留 :focus-visible 可见焦点环。</li>
+            <li>文案用具体对象命名动作和结果。</li>
+            <li>用同名 token 支撑明暗主题，而不是两套组件。</li>
+          </ul>
+        </article>
+        <article class="dos-card">
+          <h3>不要做</h3>
+          <ul>
+            <li>不要把 background-200 当万能浅灰填充。</li>
+            <li>不要用颜色单独表达状态，要配图标或文字。</li>
+            <li>不要在同一视图混用过多圆角、字重和阴影。</li>
+            <li>不要手写散落的字号、行高和按钮尺寸。</li>
+            <li>不要用长循环动画或强装饰打断任务流。</li>
+          </ul>
+        </article>
+      </div>
+      <p class="source">
+        来源：<a href="https://vercel.com/design.md">vercel.com/design.md</a> 与
+        <a href="https://vercel.com/design.dark.md">vercel.com/design.dark.md</a>，抓取日期 2026-06-24。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const toggle = document.getElementById("themeToggle");
+    const icon = document.getElementById("themeIcon");
+    const text = document.getElementById("themeText");
+
+    toggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      icon.textContent = isDark ? "●" : "◐";
+      text.textContent = isDark ? "Light" : "Dark";
+    });
+  </script>
+</body>
+</html>
