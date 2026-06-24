@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工控报警记录系统 — 改动记录 & 使用教程</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-card: #161b22; --bg-hover: #1c2333;
+    --border: #30363d; --text: #e6edf3; --text-secondary: #8b949e;
+    --accent: #58a6ff; --green: #3fb950; --yellow: #d29922;
+    --orange: #db6d28; --red: #f85149; --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system,'Segoe UI',Helvetica,Arial,sans-serif; line-height: 1.7; padding: 0; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2.2em; margin-bottom:.2em; }
+  h1 small { display: block; font-size: .45em; color: var(--text-secondary); font-weight:400; margin-top:4px; }
+  .subtitle { color: var(--text-secondary); font-size:1.05em; margin-bottom:40px; border-left:3px solid var(--accent); padding-left:16px; }
+  h2 { font-size:1.5em; margin:48px 0 16px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  h3 { font-size:1.15em; margin:28px 0 12px; color: var(--accent); }
+  h4 { font-size:1em; margin:20px 0 8px; }
+  p, li { color: var(--text-secondary); }
+  p { margin-bottom:12px; }
+  ul, ol { padding-left:20px; margin-bottom:16px; }
+  li { margin-bottom:6px; }
+  strong { color: var(--text); }
+  code { background:#1e2a3a; padding:2px 6px; border-radius:4px; font-size:.88em; color:#c9d1d9; }
+  pre { background:#1e2a3a; padding:16px; border-radius:8px; overflow-x:auto; margin:16px 0; font-size:.85em; border:1px solid var(--border); }
+  pre code { background:none; padding:0; }
+  .card { background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:20px; margin:20px 0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0; }
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+  .tag { display:inline-block; padding:2px 10px; border-radius:12px; font-size:.78em; font-weight:600; margin-right:4px; }
+  .tag-green { background:#1a3a2a; color:var(--green); }
+  .tag-yellow { background:#2d2810; color:var(--yellow); }
+  .tag-red { background:#3a1a1a; color:var(--red); }
+  .tag-blue { background:#0a2a4a; color:var(--accent); }
+  .tag-purple { background:#1a0a3a; color:var(--purple); }
+  .tag-orange { background:#3a2a10; color:var(--orange); }
+  table { width:100%; border-collapse:collapse; margin:16px 0; font-size:.9em; }
+  th, td { border:1px solid var(--border); padding:8px 12px; text-align:left; }
+  th { background:var(--bg-hover); font-weight:600; }
+  td { color:var(--text-secondary); }
+  .toc { background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:20px 24px; margin:24px 0; }
+  .toc a { color:var(--accent); text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  .diff-add { background:#0a3a1a; color:var(--green); padding:1px 4px; border-radius:3px; font-size:.85em; }
+  .diff-del { background:#3a1a1a; color:var(--red); padding:1px 4px; border-radius:3px; font-size:.85em; }
+  .diff-mod { background:#1a2a3a; color:var(--yellow); padding:1px 4px; border-radius:3px; font-size:.85em; }
+  kbd { background:#2a2a2a; border:1px solid var(--border); border-radius:3px; padding:1px 5px; font-size:.85em; }
+  .file-path { font-family:Consolas; font-size:.88em; color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>工控报警记录系统 <small>改动记录 &amp; 使用教程</small></h1>
+<div class="subtitle">Session: 2026-06-24 · 基于 ISA 18.2 / EEMUA 191 标准改造</div>
+
+<div class="toc">
+<strong>目录</strong>
+<ol>
+  <li><a href="#overview">Session 概览</a></li>
+  <li><a href="#files">改动的文件</a></li>
+  <li><a href="#alarmitem">AlarmItem.cs — 数据模型增强</a></li>
+  <li><a href="#alarmservice">AlarmService.cs — 服务层全面升级</a></li>
+  <li><a href="#alarmviewmodel">AlarmViewModel.cs — 排序/过滤/统计/规则管理</a></li>
+  <li><a href="#alarmpage">AlarmPage.xaml — 全新工业级 UI</a></li>
+  <li><a href="#rules-ui">规则管理 UI — 新增功能</a></li>
+  <li><a href="#tutorial">使用教程</a></li>
+  <li><a href="#faq">常见问题</a></li>
+</ol>
+</div>
+
+<h2 id="overview">一、Session 概览</h2>
+
+<p>本次 Session 将原有的简易报警面板改造为符合行业标准的报警管理系统，主要工作分为两轮：</p>
+
+<table>
+  <tr><th>轮次</th><th>改动的文件</th><th>新增代码</th><th>核心内容</th></tr>
+  <tr>
+    <td>第一轮</td>
+    <td>6 个文件</td>
+    <td>~1700 行</td>
+    <td>报警模型增强 + 服务层升级 + 全新 UI 布局</td>
+  </tr>
+  <tr>
+    <td>第二轮</td>
+    <td>3 个文件</td>
+    <td>~550 行</td>
+    <td>规则管理 UI（增删改查 + 持久化）</td>
+  </tr>
+</table>
+
+<h2 id="files">二、改动的文件</h2>
+
+<table>
+  <tr><th>文件</th><th>操作</th><th>改动量</th><th>原因</th></tr>
+  <tr>
+    <td class="file-path">Models/Plc/AlarmItem.cs</td>
+    <td><span class="tag tag-red">重写</span></td>
+    <td><span class="diff-add">+159</span> <span class="diff-del">-80</span></td>
+    <td>需要工业级字段（死区、搁置、区域、备注等），且改用 ObservableObject 源生成器替换手写 INPC</td>
+  </tr>
+  <tr>
+    <td class="file-path">Services/Plc/AlarmService.cs</td>
+    <td><span class="tag tag-red">重写</span></td>
+    <td><span class="diff-add">+634</span> <span class="diff-del">-272</span></td>
+    <td>新增持久化/死区/延迟/搁置/CSV 导出/规则 UI 集合/规则持久化</td>
+  </tr>
+  <tr>
+    <td class="file-path">ViewModels/Pages/Plc/AlarmViewModel.cs</td>
+    <td><span class="tag tag-red">重写</span></td>
+    <td><span class="diff-add">+556</span> <span class="diff-del">-142</span></td>
+    <td>新增排序/过滤/统计/导出/规则管理命令</td>
+  </tr>
+  <tr>
+    <td class="file-path">Views/Pages/Plc/AlarmPage.xaml</td>
+    <td><span class="tag tag-red">重写</span></td>
+    <td><span class="diff-add">+1319</span> <span class="diff-del">-427</span></td>
+    <td>全新工业级 UI：统计卡片/过滤栏/可排序列/详情面板/规则管理</td>
+  </tr>
+  <tr>
+    <td class="file-path">Views/Pages/Plc/AlarmPage.xaml.cs</td>
+    <td><span class="tag tag-yellow">不改</span></td>
+    <td><span class="diff-mod">±0</span></td>
+    <td>code-behind 已足够精简，无需改动</td>
+  </tr>
+  <tr>
+    <td class="file-path">App.xaml</td>
+    <td><span class="tag tag-yellow">+1 行</span></td>
+    <td><span class="diff-add">+1</span></td>
+    <td>注册 NullToVisibilityConverter 供详情面板使用</td>
+  </tr>
+  <tr>
+    <td class="file-path">docs/alarm-system-design.html</td>
+    <td><span class="tag tag-green">新建</span></td>
+    <td><span class="diff-add">+290</span></td>
+    <td>行业标准调研 + 设计方案</td>
+  </tr>
+</table>
+
+<h2 id="alarmitem">三、AlarmItem.cs — 数据模型增强</h2>
+
+<h3>改动原因</h3>
+<p>原有的 AlarmItem 模型过于简单：手写 INPC（被项目规范禁止）、缺少工控场景必要的字段（区域、死区、搁置、报警类型等）、无法序列化到 JSON 做持久化。</p>
+
+<h3>具体变更</h3>
+
+<table>
+  <tr><th>类别</th><th>变更</th><th>说明</th></tr>
+  <tr>
+    <td>基类</td>
+    <td><span class="tag tag-blue">改</span></td>
+    <td>从手写 <code>INotifyPropertyChanged</code> 改为继承 <code>ObservableObject</code> + <code>[ObservableProperty]</code> 源生成器</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>AlarmConditionType</code> 枚举：High、HighHigh、Low、LowLow、NotEqual、RateOfChange、Digital</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>Area</code> 属性 — 所属区域/工段/设备组，用于分组过滤</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>Deadband</code> 死区宽度 — 防抖核心参数</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>IsShelved</code> + <code>ShelvedBy</code> + <code>ShelvedUntil</code> — 报警搁置状态</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>Comment</code> — 操作员备注</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>Duration</code> 计算属性 — 报警持续时长</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>NeedsFlash</code> 计算属性 — 严重未确认报警标记</td>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><span class="tag tag-green">+</span></td>
+    <td><code>DateTimeText</code> 完整日期 + <code>DeadbandLow/High</code> 滞回区间</td>
+  </tr>
+</table>
+
+<h3>为什么用 ObservableObject</h3>
+<p>项目规范要求在 Models 中使用 <code>ObservableObject</code> + <code>[ObservableProperty]</code> 源生成器：</p>
+<ul>
+  <li><strong>禁止</strong>手写 INotifyPropertyChanged</li>
+  <li><strong>禁止</strong>"半 INPC"（部分通知部分不通知）</li>
+  <li>源生成器自动生成属性 + 通知代码，减少手写错误</li>
+</ul>
+
+<h2 id="alarmservice">四、AlarmService.cs — 服务层全面升级</h2>
+
+<h3>改动原因</h3>
+<p>原有 AlarmService 仅有规则检查 + 基本确认/清除功能，缺少工业报警系统必备的：持久化、死区、延时、搁置、导出、统计、UI 可用规则集合。</p>
+
+<h3>新增特性一览</h3>
+
+<table>
+  <tr><th>特性</th><th>改动</th><th>关键方法</th></tr>
+  <tr>
+    <td>报警持久化</td><td><span class="tag tag-green">新增</span></td>
+    <td><code>SaveToFile()</code> / <code>LoadFromFile()</code> — JSON 格式，%APPDATA%/KesaPlc/alarms.json</td>
+  </tr>
+  <tr>
+    <td>报警搁置</td><td><span class="tag tag-green">新增</span></td>
+    <td><code>ShelveAlarm(item, duration, by)</code> / <code>UnshelveAlarm(item)</code> / <code>CheckShelvedAlarms()</code></td>
+  </tr>
+  <tr>
+    <td>死区防抖</td><td><span class="tag tag-green">新增</span></td>
+    <td><code>CheckWithDeadband()</code> — 触发需要超过阈值，恢复需要回到阈值 ± 死区</td>
+  </tr>
+  <tr>
+    <td>OnDelay / OffDelay</td><td><span class="tag tag-green">新增</span></td>
+    <td>规则层面的 <code>OnDelayMs</code> / <code>OffDelayMs</code> — UTC 计时，防止短暂超限报警</td>
+  </tr>
+  <tr>
+    <td>CSV 导出</td><td><span class="tag tag-green">新增</span></td>
+    <td><code>ExportToCsv(path, items?)</code> — 含所有字段，UTF-8 with BOM</td>
+  </tr>
+  <tr>
+    <td>统计追踪</td><td><span class="tag tag-green">新增</span></td>
+    <td><code>GetStatistics()</code> — 活动/未确认/今日/本时/紧急/严重/搁置数</td>
+  </tr>
+  <tr>
+    <td>规则 UI 集合</td><td><span class="tag tag-blue">增强</span></td>
+    <td><code>Rules</code> (ObservableCollection) + <code>UpdateRule()</code> — 代码和 UI 共用同一份数据</td>
+  </tr>
+  <tr>
+    <td>规则持久化</td><td><span class="tag tag-green">新增</span></td>
+    <td><code>SaveRules()</code> / <code>LoadRules()</code> — 独立 JSON 文件，重启不丢失</td>
+  </tr>
+  <tr>
+    <td>事件通知</td><td><span class="tag tag-blue">增强</span></td>
+    <td>新增 <code>AlarmAcknowledged</code> / <code>AlarmShelved</code> / <code>AlarmUnshelved</code> / <code>TodayCountChanged</code> / <code>ThisHourCountChanged</code></td>
+  </tr>
+  <tr>
+    <td>防抖写入</td><td><span class="tag tag-blue">增强</span></td>
+    <td><code>DebouncedSave()</code> — 2 秒内多次触发只写一次，减少 IO</td>
+  </tr>
+</table>
+
+<h3>死区原理</h3>
+<pre>值 ──┬────────────────┐
+     │                │
+阈值 ┼────────────────┼────
+     │    ←死区→       │
+     │  ┌──────────┐   │
+     │  │ 不回切    │   │
+     └──┴──────────┴───┘
+  报警┌──────────────────┘ 稳定恢复
+
+触发条件：值 > 阈值 + 死区（从正常到报警）
+恢复条件：值 < 阈值 - 死区（从报警到正常，防止临界抖动）</pre>
+
+<h3>OnDelay/OffDelay 原理</h3>
+<pre>正常 ──┬─────────────────────────┬────
+       │                         │
+       │  条件满足                │  条件恢复
+       │  ┌── OnDelay ──┐        │  ┌── OffDelay ──┐
+       │  │ 等待 N ms   │        │  │ 等待 N ms   │
+       v  v             v        v  v             v
+报警 ────────────────────────────── ────────────────────
+                             触发报警              恢复报警</pre>
+
+<h2 id="alarmviewmodel">五、AlarmViewModel.cs — 排序/过滤/统计/规则管理</h2>
+
+<h3>改动原因</h3>
+<p>原有 ViewModel 只有基础的订阅/确认/清除/简单过滤，缺少工业界面必备的列排序、组合过滤、统计看板、搁置操作、CSV 导出、规则管理。</p>
+
+<h3>新增的命令</h3>
+
+<table>
+  <tr><th>分类</th><th>命令</th><th>说明</th></tr>
+  <tr><td>排 序</td><td><code>SortByTime / Severity / Variable / Status / Area</code></td><td>点击列头正反排序</td></tr>
+  <tr><td>过 滤</td><td><code>ApplyFilter / ResetFilter</code></td><td>文本+级别+区域+日期 组合过滤</td></tr>
+  <tr><td>统 计</td><td><code>RefreshStatistics</code></td><td>刷新统计卡片</td></tr>
+  <tr><td>导 出</td><td><code>ExportCsv</code></td><td>SaveFileDialog → CSV</td></tr>
+  <tr><td>搁 置</td><td><code>ShelveAlarm / ShelveAlarm1h / 8h / 24h / UnshelveAlarm / ShelveAll</code></td><td>多种搁置时长</td></tr>
+  <tr><td>规 则</td><td><code>ToggleRuleManager / AddNewRule / EditRule / SaveRule / CancelEditRule / DeleteRule</code></td><td>UI 增删改查规则</td></tr>
+  <tr><td>备 注</td><td><code>SaveComment</code></td><td>保存操作员备注</td></tr>
+</table>
+
+<h2 id="alarmpage">六、AlarmPage.xaml — 全新工业级 UI</h2>
+
+<h3>改动原因</h3>
+<p>原有页面仅有简单的工具栏 + ListBox，缺少工业报警界面应有的信息密度和操作效率。</p>
+
+<h3>UI 布局（自上而下）</h3>
+
+<pre>┌─ 报警控制 ────────────────────────────────────────────────────┐
+│ [▶启动][■停止] | [全部确认][全部搁置] | [导出CSV][清除] [⚙规则] │
+└───────────────────────────────────────────────────────────────┘
+┌─ 统计卡片 ────────────────────────────────────────────────────┐
+│ 活动:3🔴   未确认:2🟡   今日:15   搁置:1 本时:2 紧急:0 严重:1  │
+└───────────────────────────────────────────────────────────────┘
+┌─ 规则管理 (点击⚙展开) ──────────── [＋添加] ──────────────────┐
+│ I0  │Warning│High│温度高限│200│2.0│反应釜A│☑ │[编辑][删除]   │
+│ 编辑表单...                                                   │
+└───────────────────────────────────────────────────────────────┘
+┌─ 过滤栏 ──────────────────────────────────────────────────────┐
+│ [搜索...] [级别▼] [区域▼] [日期~日期] □显示搁置 [筛选][重置]  │
+└───────────────────────────────────────────────────────────────┘
+┌─ 报警列表 ──────────────────────────┬─ 详情面板 ─────────────┐
+│ ↗时间 │↕级别│↕变量│↕状态│↕区域│操作  │ 描述: 温度高限       │
+│ ▶14:30│🔴│ I0 │未确认│反应釜A│[确认][搁]│ 当前值: 215     │
+│ 14:28 │🟡│ I1 │已确认│反应釜A│[搁]    │ 阈值: 200        │
+│ 14:25 │  │ I2 │已恢复│蒸馏塔│        │ 备注: [____] [保存] │
+│                                      │ [1h][8h][24h][取消] │
+└──────────────────────────────────────┴──────────────────────┘</pre>
+
+<h3>关键 UI 设计决策</h3>
+
+<table>
+  <tr><th>设计点</th><th>实现方式</th><th>原因</th></tr>
+  <tr>
+    <td>颜色主题</td>
+    <td>全部使用 <code>DynamicResource</code></td>
+    <td>支持运行时亮/暗主题切换（WPF UI 规范强制要求）</td>
+  </tr>
+  <tr>
+    <td>严重度颜色</td>
+    <td>Info=蓝 / Warning=黄 / Critical=橙 / Emergency=红</td>
+    <td>EEMUA 191 推荐，操作员凭色觉即可快速判断</td>
+  </tr>
+  <tr>
+    <td>未确认闪烁</td>
+    <td>红色左边条 (BorderThickness="4,0,0,0.5")</td>
+    <td>DataTrigger 绑定 <code>NeedsFlash</code>，严重/紧急未确认自动高亮</td>
+  </tr>
+  <tr>
+    <td>状态标签</td>
+    <td>未确认=红底 / 已确认=黄底 / 已恢复=透明灰边 / 已搁置=蓝底</td>
+    <td>操作员扫一眼状态列就知道哪些需要处理</td>
+  </tr>
+  <tr>
+    <td>统计卡片</td>
+    <td>大数字 + 颜色 + 分隔线</td>
+    <td>一目了然的当前报警态势</td>
+  </tr>
+  <tr>
+    <td>详情面板</td>
+    <td>右侧 280px 条件可见</td>
+    <td>不占用主列表空间，点击报警即展开</td>
+  </tr>
+  <tr>
+    <td>列排序</td>
+    <td>列头按钮 + ▼/▲ 指示符</td>
+    <td>操作员可按时间/级别/变量/状态/区域快速重排</td>
+  </tr>
+</table>
+
+<h2 id="rules-ui">七、规则管理 UI — 新增功能</h2>
+
+<h3>改动原因</h3>
+<p>第一次改版时规则只能通过代码 <code>alarmService.AddRule()</code> 添加，操作员无法在运行时调整报警阈值和参数。用户要求增加 UI 方式 + 保持代码方式兼容。</p>
+
+<h3>实现方式</h3>
+<ul>
+  <li><code>AlarmService</code> 内部维持 <code>_rules</code> 列表用于轮询检查</li>
+  <li>新增 <code>Rules</code> (ObservableCollection) 暴露给 UI</li>
+  <li><code>AddRule()</code> / <code>RemoveRule()</code> / <code>UpdateRule()</code> 同时操作两个集合</li>
+  <li>规则独立持久化到 <code>%APPDATA%\KesaPlc\rules.json</code></li>
+  <li>代码和 UI 添加的规则完全等价，共用轮询逻辑</li>
+</ul>
+
+<h3>ViewModel 新增字段</h3>
+<table>
+  <tr><th>分类</th><th>属性/命令</th></tr>
+  <tr><td>状态</td><td><code>IsRuleManagerVisible</code> / <code>IsEditingRule</code></td></tr>
+  <tr><td>集合</td><td><code>Rules</code> (绑定 AlarmService.Rules)</td></tr>
+  <tr><td>编辑字段</td><td><code>EditVariableKey</code> / <code>EditDescription</code> / <code>EditSeverity</code> / <code>EditConditionType</code> / <code>EditThreshold</code> / <code>EditDeadband</code> / <code>EditOnDelayMs</code> / <code>EditOffDelayMs</code> / <code>EditArea</code> / <code>EditIsEnabled</code></td></tr>
+  <tr><td>下拉选项</td><td><code>EditSeverityOptions</code> / <code>EditConditionTypeOptions</code> (List&lt;T&gt;)</td></tr>
+  <tr><td>编辑状态</td><td><code>_ruleBeingEdited</code> (private field)</td></tr>
+</table>
+
+<h3>支持的报警条件类型</h3>
+<table>
+  <tr><th>类型</th><th>含义</th><th>示例</th></tr>
+  <tr><td><code>High</code></td><td>高限 (value &gt; threshold)</td><td>温度 &gt; 200°C</td></tr>
+  <tr><td><code>HighHigh</code></td><td>高高限 (更高优先级)</td><td>温度 &gt; 250°C</td></tr>
+  <tr><td><code>Low</code></td><td>低限 (value &lt; threshold)</td><td>压力 &lt; 5 bar</td></tr>
+  <tr><td><code>LowLow</code></td><td>低低限 (更高优先级)</td><td>压力 &lt; 2 bar</td></tr>
+  <tr><td><code>NotEqual</code></td><td>不等于（数字量故障）</td><td>阀门反馈 ≠ 指令</td></tr>
+  <tr><td><code>RateOfChange</code></td><td>变化率超限 (|dv/dt|)</td><td>温度上升速度 &gt; 10°/min</td></tr>
+  <tr><td><code>Digital</code></td><td>数字量状态 (=触发值)</td><td>急停按钮 = 1</td></tr>
+</table>
+
+<h2 id="tutorial">八、使用教程</h2>
+
+<div class="card">
+<h4>🎬 快速开始</h4>
+<ol>
+  <li><strong>打开报警页面</strong> → 导航到 PLC → 报警管理</li>
+  <li><strong>点「⚙ 规则管理」</strong> → 点「＋ 添加规则」</li>
+  <li>填写变量名（如 <code>I0</code>）、描述、级别、阈值 → 「保存规则」</li>
+  <li>回到工具栏 → <strong>点「▶ 启动监控」</strong></li>
+  <li>当 PLC 变量值超过阈值时，自动产生报警</li>
+</ol>
+</div>
+
+<h3>日常操作</h3>
+
+<table>
+  <tr><th>你要做什么</th><th>操作</th></tr>
+  <tr><td>查看当前有多少活动报警</td><td>看统计卡片：活动/未确认数字</td></tr>
+  <tr><td>查看某条报警的详细信息</td><td>点击报警行 → 右侧详情面板</td></tr>
+  <tr><td>确认报警</td><td>行上点「确认」或详情面板操作</td></tr>
+  <tr><td>一次性确认所有报警</td><td>工具栏「全部确认」</td></tr>
+  <tr><td>暂时隐藏某个报警</td><td>行上点「搁置」（默认30分钟）</td></tr>
+  <tr><td>指定搁置时长</td><td>选中报警打开详情面板 → [1h][8h][24h]</td></tr>
+  <tr><td>取消搁置</td><td>先勾选过滤栏「显示搁置」→ 找到报警 → 详情面板点「取消」</td></tr>
+  <tr><td>给报警加备注</td><td>点击报警 → 详情面板 → 输入 → 「保存备注」</td></tr>
+  <tr><td>导出报警记录</td><td>工具栏「📥 导出 CSV」</td></tr>
+  <tr><td>按时间/级别/变量排序</td><td>点击对应的列头</td></tr>
+  <tr><td>搜索特定报警</td><td>过滤栏输入关键词 + 选择级别/区域/日期</td></tr>
+  <tr><td>调整报警阈值</td><td>「⚙ 规则管理」→ 找到规则 → 「编辑」→ 修改阈值</td></tr>
+  <tr><td>删除一条规则</td><td>「⚙ 规则管理」→ 「删除」</td></tr>
+  <tr><td>清空所有报警历史</td><td>工具栏「清除历史」（也会清空持久化文件）</td></tr>
+</table>
+
+<h3>高级用法：代码添加规则</h3>
+
+<pre><code>// 在任意地方（注入 AlarmService 后）：
+alarmService.AddRule(new AlarmRule
+{
+    VariableKey    = "DB1[42]",           // DB1 的第 42 个字节
+    Description    = "反应釜A温度高限",
+    Severity       = AlarmSeverity.Critical,
+    ConditionType  = AlarmConditionType.High,
+    Threshold      = 200,
+    Deadband       = 5,                   // 死区 5，到 195 才恢复
+    OnDelayMs      = 1000,                // 持续超限 1 秒才触发
+    OffDelayMs     = 2000,                // 正常 2 秒才恢复
+    Area           = "反应釜A",
+    IsEnabled      = true,
+});</code></pre>
+
+<p>代码添加的规则会自动出现在 UI 列表中，反之亦然。</p>
+
+<h3>存储路径</h3>
+<pre>%APPDATA%\KesaPlc\
+├── alarms.json       ← 报警历史（最多 10000 条）
+└── rules.json        ← 报警规则（UI + 代码共用）</pre>
+
+<h2 id="faq">九、常见问题</h2>
+
+<div class="card">
+<h4>Q: 为什么点「启动监控」后没有报警产生？</h4>
+<p><strong>A:</strong> 因为还没有添加任何报警规则。必须先「⚙ 规则管理」→「＋ 添加规则」，指定变量名和阈值。</p>
+</div>
+
+<div class="card">
+<h4>Q: 报警老是一闪一闪地反复触发/恢复怎么办？</h4>
+<p><strong>A:</strong> 给规则设置死区（Deadband）和触发延时（OnDelayMs）。死区推荐 2-5%，OnDelay 推荐 500-1000ms。</p>
+</div>
+
+<div class="card">
+<h4>Q: 重启程序后报警记录还在吗？</h4>
+<p><strong>A:</strong> 在。报警历史保存到 <code>%APPDATA%\KesaPlc\alarms.json</code>，规则保存到 <code>rules.json</code>，启动时自动加载。</p>
+</div>
+
+<div class="card">
+<h4>Q: 我可以用代码一次性添加很多规则吗？</h4>
+<p><strong>A:</strong> 可以。在任意位置多次调用 <code>alarmService.AddRule()</code> 即可，它们会与 UI 添加的规则合并显示。</p>
+</div>
+
+<div class="card">
+<h4>Q: 报警列表最多能存多少条？</h4>
+<p><strong>A:</strong> 内存默认 1000 条，持久化最多 10000 条。超过上限时删除最早的。</p>
+</div>
+
+<div class="card">
+<h4>Q: 导出的 CSV 打不开怎么办？</h4>
+<p><strong>A:</strong> CSV 是 UTF-8 编码。Excel 打开时如果乱码，用"数据 → 自文本/CSV"导入，选择 UTF-8 编码。</p>
+</div>
+
+<div class="card">
+<h4>Q: 怎么关掉规则管理面板？</h4>
+<p><strong>A:</strong> 再次点工具栏的「⚙ 规则管理」按钮即可切换显示/隐藏。</p>
+</div>
+
+<hr style="border-color:var(--border);margin:48px 0 24px;">
+<p style="text-align:center;color:var(--text-secondary);font-size:.9em">
+  基于 ISA 18.2 / EEMUA 191 标准 · WPF UI + CommunityToolkit.Mvvm + .NET 10.0<br>
+  生成日期: 2026-06-24
+</p>
+
+</div>
+</body>
+</html>

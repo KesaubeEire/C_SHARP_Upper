@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工控报警记录系统 — 设计方案</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-hover: #1c2333;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --orange: #db6d28;
+    --red: #f85149;
+    --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.7; padding: 0; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2.2em; margin-bottom: .2em; letter-spacing: -.02em; }
+  h1 small { display: block; font-size: .45em; color: var(--text-secondary); font-weight: 400; margin-top: 4px; }
+  .subtitle { color: var(--text-secondary); font-size: 1.05em; margin-bottom: 40px; border-left: 3px solid var(--accent); padding-left: 16px; }
+  h2 { font-size: 1.5em; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1.15em; margin: 28px 0 12px; color: var(--accent); }
+  p, li { color: var(--text-secondary); }
+  p { margin-bottom: 12px; }
+  ul, ol { padding-left: 20px; margin-bottom: 16px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text); }
+  code { background: #1e2a3a; padding: 2px 6px; border-radius: 4px; font-size: .88em; color: #c9d1d9; }
+  pre { background: #1e2a3a; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 16px 0; font-size: .85em; border: 1px solid var(--border); }
+  pre code { background: none; padding: 0; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .card h4 { margin-bottom: 8px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .78em; font-weight: 600; margin-right: 4px; }
+  .tag-green { background: #1a3a2a; color: var(--green); }
+  .tag-yellow { background: #2d2810; color: var(--yellow); }
+  .tag-red { background: #3a1a1a; color: var(--red); }
+  .tag-blue { background: #0a2a4a; color: var(--accent); }
+  .tag-purple { background: #1a0a3a; color: var(--purple); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+  th { background: var(--bg-hover); font-weight: 600; font-size: .9em; }
+  td { font-size: .9em; color: var(--text-secondary); }
+  .badge { display: inline-block; min-width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 10px; font-size: .75em; font-weight: 700; padding: 0 6px; }
+  .toc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin: 24px 0; }
+  .toc ol { margin: 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .severity-info { background: var(--accent); color: #000; }
+  .severity-warning { background: var(--yellow); color: #000; }
+  .severity-critical { background: var(--orange); color: #000; }
+  .severity-emergency { background: var(--red); color: #fff; }
+  kbd { background: #2a2a2a; border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-size: .85em; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>工控报警记录系统 <small>Industrial Alarm Recording System</small></h1>
+<div class="subtitle">基于 ISA 18.2 / EEMUA 191 标准设计 · WPF UI 实现 · Kesa_PLC_TEST</div>
+
+<div class="toc">
+<strong>目录</strong>
+<ol>
+  <li><a href="#overview">项目概述</a></li>
+  <li><a href="#standards">行业标准参考</a></li>
+  <li><a href="#features">功能清单</a></li>
+  <li><a href="#architecture">架构设计</a></li>
+  <li><a href="#model">数据模型</a></li>
+  <li><a href="#service">服务层设计</a></li>
+  <li><a href="#ui">UI 设计</a></li>
+  <li><a href="#persistence">持久化方案</a></li>
+  <li><a href="#files">文件变更清单</a></li>
+</ol>
+</div>
+
+<h2 id="overview">一、项目概述</h2>
+<p>
+在工控（SCADA / DCS / PLC）系统中，<strong>报警管理</strong>是操作员最核心的交互界面之一。
+本系统将现有的简易报警面板改造为符合行业标准的报警管理模块，涵盖报警产生、确认、恢复、
+归档、统计全生命周期。
+</p>
+
+<div class="card">
+  <h4>📐 设计原则</h4>
+  <ul>
+    <li><strong>少即是多</strong> — 只展示操作员<em>需要行动</em>的报警，避免报警洪流</li>
+    <li><strong>可见性优先</strong> — 未确认的严重报警必须有强烈的视觉提示（闪烁）</li>
+    <li><strong>追责可溯</strong> — 谁在什么时候确认/搁置了报警，留痕</li>
+    <li><strong>顺手导出</strong> — 一键导出 CSV，方便对接第三方分析工具</li>
+    <li><strong>不死数据</strong> — 重启程序不丢历史报警，自动持久化</li>
+  </ul>
+</div>
+
+<h2 id="standards">二、行业标准参考</h2>
+
+<table>
+  <tr><th>标准</th><th>名称</th><th>核心内容</th></tr>
+  <tr><td>ISA 18.2</td><td>Management of Alarm Systems for the Process Industries</td><td>报警生命周期管理、绩效指标、合理化流程</td></tr>
+  <tr><td>IEC 62682</td><td>同 ISA 18.2 的国际版本</td><td>与 ISA 18.2 一致</td></tr>
+  <tr><td>EEMUA 191</td><td>Alarm Systems — A Guide to Design, Management and Procurement</td><td>报警系统设计指南、KPIs 目标值</td></tr>
+  <tr><td>NAMUR NA 102</td><td>Alarm Management for Process Industries</td><td>化工行业报警管理建议</td></tr>
+</table>
+
+<h3>EEMUA 191 推荐报警绩效目标</h3>
+<table>
+  <tr><th>指标</th><th>目标值</th><th>说明</th></tr>
+  <tr><td>平均报警率</td><td>≤ 6 条/小时/操作台</td><td>超过 12 条/小时为不可接受</td></tr>
+  <tr><td>10 分钟内最大报警数</td><td>≤ 10 条</td><td>超过即为"报警洪流"</td></tr>
+  <tr><td>报警洪流占比</td><td>&lt; 1% 时间</td><td>超过需要报警合理化</td></tr>
+  <tr><td>抖动/瞬闪报警</td><td>0</td><td>通过死区(Deadband)和延时消除</td></tr>
+  <tr><td>过期报警(Stale)</td><td>≤ 5 条/天</td><td>长期未恢复的报警需要处理</td></tr>
+  <tr><td>优先级分布</td><td>~80% 低 / ~15% 中 / ~5% 高</td><td>确保高优先级真正稀缺</td></tr>
+</table>
+
+<div class="card">
+  <h4>🔑 关键概念：什么是"好报警"？</h4>
+  <p>ISA 18.2 定义：报警是<em>"向操作员指示设备故障、过程偏差或异常情况，需要及时响应的可听/可视手段"</em></p>
+  <p>一个好的报警必须同时满足：</p>
+  <ul>
+    <li><strong>相关</strong> — 不是正常工况的确认信息</li>
+    <li><strong>唯一</strong> — 不与其他报警重复</li>
+    <li><strong>及时</strong> — 有足够响应时间</li>
+    <li><strong>有优先级</strong> — 区分重要程度</li>
+    <li><strong>可理解</strong> — 信息清晰明确</li>
+    <li><strong>有诊断性</strong> — 能定位问题原因</li>
+    <li><strong>有建议动作</strong> — 告诉操作员该做什么</li>
+  </ul>
+</div>
+
+<h2 id="features">三、功能清单</h2>
+
+<div class="grid2">
+  <div class="card">
+    <h4>✅ 核心功能 (已有+增强)</h4>
+    <ul>
+      <li><span class="tag tag-green">已有</span> 报警产生/恢复</li>
+      <li><span class="tag tag-green">已有</span> 报警确认</li>
+      <li><span class="tag tag-green">已有</span> 多级严重度</li>
+      <li><span class="tag tag-green">已有</span> 规则引擎</li>
+      <li><span class="tag tag-blue">增强</span> 死区(Deadband)防抖</li>
+      <li><span class="tag tag-blue">增强</span> ON延时 / OFF延时</li>
+      <li><span class="tag tag-blue">增强</span> 区域/设备分组</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>🚀 新增功能</h4>
+    <ul>
+      <li><span class="tag tag-red">新</span> 报警持久化 (JSON)</li>
+      <li><span class="tag tag-red">新</span> 报警搁置 (Shelving)</li>
+      <li><span class="tag tag-red">新</span> CSV 导出</li>
+      <li><span class="tag tag-red">新</span> 报警统计条</li>
+      <li><span class="tag tag-red">新</span> 列排序</li>
+      <li><span class="tag tag-red">新</span> 组合过滤</li>
+      <li><span class="tag tag-red">新</span> 报警详情面板</li>
+      <li><span class="tag tag-red">新</span> 操作员备注</li>
+      <li><span class="tag tag-red">新</span> 严重报警闪烁</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="architecture">四、架构设计</h2>
+
+<pre>┌─────────────────────────────────────────────────────────┐
+│                     AlarmPage (XAML)                      │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │  统计条 (总计 / 活动 / 未确认 / 搁置)              │   │
+│  ├───────────────────────────────────────────────────┤   │
+│  │  过滤栏 (文本 / 严重度 / 区域 / 日期范围)          │   │
+│  ├───────────────────────────────────────────────────┤   │
+│  │  报警列表 (可排序列头)     │  详情面板            │   │
+│  │  ┌────┬────┬────┬────┐   │  ┌────────────────┐  │   │
+│  │  │时间│级别│变量│状态│   │  │变量: I0        │  │   │
+│  │  ├────┼────┼────┼────┤   │  │阈值: >200      │  │   │
+│  │  │... │ 🔴 │ I0 │未确│   │  │当前值: 215     │  │   │
+│  │  └────┴────┴────┴────┘   │  │持续: 00:03:15  │  │   │
+│  │                          │  │备注: ________  │  │   │
+│  └──────────────────────────┴──┴────────────────┘   │
+├─────────────────────────────────────────────────────┤
+│  AlarmViewModel (CommunityToolkit.Mvvm)              │
+├─────────────────────────────────────────────────────┤
+│  AlarmService (持久化 / 规则引擎 / 统计)            │
+├─────────────────────────────────────────────────────┤
+│  PollingScheduler → S7Service (PLC 数据源)          │
+└─────────────────────────────────────────────────────┘</pre>
+
+<h3>分层职责</h3>
+<table>
+  <tr><th>层</th><th>职责</th><th>技术</th></tr>
+  <tr><td><strong>Model</strong></td><td>报警项数据模型 (AlarmItem)、报警规则 (AlarmRule)、枚举</td><td>ObservableObject 源生成器</td></tr>
+  <tr><td><strong>Service</strong></td><td>规则检查、事件触发、持久化存储、CSV导出、统计</td><td>JSON (System.Text.Json)</td></tr>
+  <tr><td><strong>ViewModel</strong></td><td>排序/过滤逻辑、命令绑定、UI 状态</td><td>CommunityToolkit.Mvvm [RelayCommand]</td></tr>
+  <tr><td><strong>View</strong></td><td>数据显示、用户交互、视觉反馈</td><td>WPF UI 控件、DynamicResource 主题</td></tr>
+</table>
+
+<h2 id="model">五、数据模型</h2>
+
+<h3>AlarmSeverity (已有，扩展)</h3>
+<table>
+  <tr><th>级别</th><th>含义</th><th>颜色</th><th>响应时间</th></tr>
+  <tr><td><span class="tag tag-blue">Info</span></td><td>提示信息</td><td>蓝色</td><td>无要求</td></tr>
+  <tr><td><span class="tag tag-yellow">Warning</span></td><td>警告</td><td>黄色</td><td>操作员知情</td></tr>
+  <tr><td><span class="tag tag-orange" style="background:#db6d28;color:#fff">Critical</span></td><td>严重</td><td>橙色</td><td>&lt; 5 分钟</td></tr>
+  <tr><td><span class="tag tag-red" style="background:#f85149;color:#fff">Emergency</span></td><td>紧急</td><td>红色</td><td>&lt; 1 分钟</td></tr>
+</table>
+
+<h3>AlarmConditionType (新增)</h3>
+<table>
+  <tr><th>枚举值</th><th>含义</th><th>触发条件</th></tr>
+  <tr><td><code>High</code></td><td>高限 (HI)</td><td>值 &gt; 阈值</td></tr>
+  <tr><td><code>HighHigh</code></td><td>高高限 (HIHI)</td><td>值 &gt;&gt; 阈值 (比 HI 更严重)</td></tr>
+  <tr><td><code>Low</code></td><td>低限 (LO)</td><td>值 &lt; 阈值</td></tr>
+  <tr><td><code>LowLow</code></td><td>低低限 (LOLO)</td><td>值 &lt;&lt; 阈值</td></tr>
+  <tr><td><code>NotEqual</code></td><td>不等于 (数字故障)</td><td>值 ≠ 阈值 (允许 ±容忍度)</td></tr>
+  <tr><td><code>RateOfChange</code></td><td>变化率</td><td>|dv/dt| &gt; 阈值</td></tr>
+  <tr><td><code>Digital</code></td><td>数字量状态</td><td>布尔位 = 触发值</td></tr>
+</table>
+
+<h3>AlarmItem (核心模型)</h3>
+<pre><code>public partial class AlarmItem : ObservableObject
+{
+    // ========== 不可变属性 (Init-only) ==========
+    public DateTime        Timestamp     { get; init; }  // 产生时间
+    public AlarmSeverity   Severity      { get; init; }  // 严重度
+    public AlarmConditionType AlarmType  { get; init; }  // 报警类型
+    public string          VariableName  { get; init; }  // 变量名 (I0, Q5...)
+    public string          Description   { get; init; }  // 描述文本
+    public string          Area          { get; init; }  // 所属区域
+    public double          CurrentValue  { get; init; }  // 触发时刻值
+    public double?         Threshold     { get; init; }  // 阈值
+    public double          Deadband      { get; init; }  // 死区宽度
+
+    // ========== 可变属性 (ObservableProperty) ==========
+    bool _isActive;          // 报警是否活动
+    bool _isAcknowledged;    // 是否已确认
+    bool _isShelved;         // 是否已搁置
+    string? _acknowledgedBy; // 确认人
+    string? _shelvedBy;      // 搁置人
+    DateTime? _acknowledgedAt;   // 确认时间
+    DateTime? _shelvedUntil;     // 搁置到期
+    string? _comment;           // 操作员备注
+
+    // ========== 计算属性 ==========
+    string  TimeText    => Timestamp.ToString("HH:mm:ss");
+    string  StatusText  => (IsActive, IsAcknowledged, IsShelved) switch { ... };
+    TimeSpan? Duration  => IsActive ? DateTime.Now - Timestamp : null;
+}</code></pre>
+
+<h2 id="service">六、服务层设计</h2>
+
+<h3>AlarmService 增强</h3>
+<table>
+  <tr><th>方法</th><th>说明</th></tr>
+  <tr><td><code>Subscribe()</code></td><td>订阅 PollingScheduler 数据更新</td></tr>
+  <tr><td><code>AcknowledgeAlarm()</code></td><td>确认单条报警</td></tr>
+  <tr><td><code>AcknowledgeAll()</code></td><td>确认所有活动报警</td></tr>
+  <tr><td><code>ShelveAlarm(item, duration)</code></td><td>搁置报警指定时长</td></tr>
+  <tr><td><code>UnshelveAlarm(item)</code></td><td>取消搁置</td></tr>
+  <tr><td><code>AddComment(item, text)</code></td><td>添加操作员备注</td></tr>
+  <tr><td><code>SaveToFile()</code></td><td>持久化到 JSON 文件</td></tr>
+  <tr><td><code>LoadFromFile()</code></td><td>从 JSON 文件加载历史</td></tr>
+  <tr><td><code>ExportToCsv(path)</code></td><td>导出报警历史到 CSV</td></tr>
+  <tr><td><code>GetStatistics()</code></td><td>获取报警统计数据</td></tr>
+</table>
+
+<h3>持久化方案</h3>
+<div class="card">
+  <p><strong>存储路径：</strong><code>%APPDATA%\KesaPlc\alarms.json</code></p>
+  <p><strong>格式：</strong>JSON 数组，UTF-8 编码</p>
+  <p><strong>策略：</strong></p>
+  <ul>
+    <li>每次新报警产生时 <strong>追加保存</strong>（性能优化：防抖 2 秒写一次）</li>
+    <li>最大保留 <strong>10000 条</strong>历史报警，超出时删除最早的</li>
+    <li>启动时自动加载，关机时自动保存</li>
+    <li>搁置状态、备注、确认信息一并持久化</li>
+  </ul>
+</div>
+
+<h3>CSV 导出格式</h3>
+<pre><code>时间,严重度,类型,变量,描述,区域,值,阈值,状态,确认人,确认时间,备注
+2026-06-24 14:30:15,Critical,High,I0,温度高限报警,反应釜A,215,200,未确认,,,
+2026-06-24 14:28:10,Warning,Low,I1,压力低限报警,反应釜A,1.2,2.0,已确认,操作员A,14:29:00,已通知仪表检修</code></pre>
+
+<h3>Deadband（死区）原理</h3>
+<pre>常规触发 (抖动):
+  值  ├───┬───┬───┬───┬───┬───┬───┲━━━┓
+      │   │   │   │   │   │   │   ┃   ┃
+ 阈───┼───┼───┼───┼───┼───┼───┼───╂───╂───
+      │   │   │   │   │   │   │   ┃   ┃
+      └───┴───┴───┴───┴───┴───┴───┚   ┃
+      报警╌╌╌╌╌╌╌╌╌╌╌╌┐  ┌╌╌╌╌╌╌╌╌╌╌╌  恢复
+                      ↓  ↑
+                      ON OFF ON OFF (抖动!)
+
+带死区 (稳定):
+  值  ───┬─────────────────────┐
+         │                     │
+ 阈──────┼─────────────────────┼────
+         │    死区 ↑           │
+         │  ┌──────────┐       │
+         │  │ 不回切    │       │
+         └──┴──────────┴───────┘
+      报警╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌   稳定恢复
+
+  > 值超过阈值+死区 → 触发报警
+  > 值降到阈值以下 → 不立即恢复，需降到阈值-死区才恢复
+  > 死区宽度 = 阈值 × 死区百分比（默认 2%）</pre>
+
+<h2 id="ui">七、UI 设计</h2>
+
+<h3>页面布局</h3>
+<pre>┌─────────────────────────────────────────────────────────┐
+│ [启动/停止] [全部确认] [全部搁置] [导出CSV] [清除]      │
+│ ─────────────────────────────────────────────────────── │
+│ 活动: 3 🔴  未确认: 2 ⚠  今日: 15   搁置: 1           │
+│ ─────────────────────────────────────────────────────── │
+│ 搜索: [________]  级别: [全部▼]  区域: [全部▼]        │
+│ ─────────────────────────────────────────────────────── │
+│ ↗时间  │↕级别│↕变量│↕状态│↕区域│描述        │操作    │
+│ ─────────────────────────────────────────────────────── │
+│ 14:30  │🔴  │ I0  │未确认│反应釜A │温度高限  │[确认][搁]│
+│ 14:28  │🟡  │ I1  │已确认│反应釜A │压力低限  │[搁]    │
+│ 14:25  │🟢  │ I2  │已恢复│蒸馏塔  │液位正常  │        │
+│ ...    │    │     │      │        │          │        │
+│ ─────────────────────────────────────────────────────── │
+│ [详情面板 (点击报警展开)]                               │
+│ 变量: I0  当前值: 215  阈值: >200  类型: High          │
+│ 产生: 14:30:15  持续: 00:03:15  死区: 4.0              │
+│ 备注: [____________________] [保存]                     │
+└─────────────────────────────────────────────────────────┘</pre>
+
+<h3>视觉反馈规则</h3>
+<table>
+  <tr><th>报警状态</th><th>行背景</th><th>操作</th></tr>
+  <tr><td>Emergency + 未确认</td><td><span class="tag tag-red">红色闪烁</span></td><td>操作员必须立即处理</td></tr>
+  <tr><td>Critical + 未确认</td><td><span class="tag tag-orange" style="background:#db6d28;color:#fff">橙色闪烁</span></td><td>需要尽快确认</td></tr>
+  <tr><td>已确认 (任何级别)</td><td>正常</td><td>已有人负责</td></tr>
+  <tr><td>已恢复</td><td><span style="color:var(--text-secondary)">灰色淡化</span></td><td>历史记录，只读</td></tr>
+  <tr><td>已搁置</td><td><span style="color:var(--text-secondary)">斜体淡化</span></td><td>暂时隐藏，到期恢复</td></tr>
+</table>
+
+<h3>交互细节</h3>
+<ul>
+  <li><strong>列排序</strong> — 点击列头排序 (时间/级别/变量/状态/区域)，再次点击反向</li>
+  <li><strong>报警详情</strong> — 点击行展开详情面板，显示完整信息</li>
+  <li><strong>闪烁效果</strong> — 未确认的 Emergency/Critical 报警行使用 <code>DoubleAnimation</code> 背景闪烁</li>
+  <li><strong>搁置对话框</strong> — 点击搁置弹出选择时长 (15min / 1h / 8h / 24h / 自定义)</li>
+  <li><strong>导出 CSV</strong> — 自动打开保存对话框，默认文件名含时间戳</li>
+</ul>
+
+<h2 id="persistence">八、持久化方案</h2>
+
+<div class="grid2">
+  <div class="card">
+    <h4>💾 存储机制</h4>
+    <ul>
+      <li>路径: <code>%APPDATA%\KesaPlc\alarms.json</code></li>
+      <li>序列化: <code>System.Text.Json</code></li>
+      <li>最大记录数: 10000 条</li>
+      <li>写入策略: 防抖 2 秒批写入</li>
+      <li>启动时: 自动加载到内存</li>
+      <li>关机时: 自动保存</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>📤 导出机制</h4>
+    <ul>
+      <li>格式: CSV UTF-8 with BOM</li>
+      <li>列: 时间、严重度、类型、变量、描述、区域、值、阈值、状态、确认人、确认时间、备注</li>
+      <li>保存对话框: 默认文件名 <code>报警记录_2026-06-24.csv</code></li>
+      <li>导出数据: 当前过滤后的可见行 (所见即所得)</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="files">九、文件变更清单</h2>
+
+<table>
+  <tr><th>文件</th><th>操作</th><th>说明</th></tr>
+  <tr><td><code>Models/Plc/AlarmItem.cs</code></td><td><span class="tag tag-red">重写</span></td><td>改用 ObservableObject 源生成器，新增字段</td></tr>
+  <tr><td><code>Services/Plc/AlarmService.cs</code></td><td><span class="tag tag-red">重写</span></td><td>增强规则引擎，新增持久化/搁置/导出</td></tr>
+  <tr><td><code>ViewModels/Pages/Plc/AlarmViewModel.cs</code></td><td><span class="tag tag-red">重写</span></td><td>排序/过滤/统计/导出命令</td></tr>
+  <tr><td><code>Views/Pages/Plc/AlarmPage.xaml</code></td><td><span class="tag tag-red">重写</span></td><td>全新工业级 UI</td></tr>
+  <tr><td><code>Views/Pages/Plc/AlarmPage.xaml.cs</code></td><td><span class="tag tag-yellow">修改</span></td><td>适配新 ViewModel</td></tr>
+  <tr><td><code>Helpers/CsvExporter.cs</code></td><td><span class="tag tag-green">新建</span></td><td>CSV 导出辅助类</td></tr>
+  <tr><td><code>docs/alarm-system-design.html</code></td><td><span class="tag tag-green">新建</span></td><td>本设计文档</td></tr>
+</table>
+
+<hr style="border-color:var(--border);margin:48px 0 24px;">
+<p style="text-align:center;color:var(--text-secondary);font-size:.9em">
+  设计参考: ISA 18.2 | EEMUA 191 | IEC 62682 | NAMUR NA 102<br>
+  实现: WPF UI (CommunityToolkit.Mvvm + System.Text.Json) · .NET 10.0<br>
+  生成日期: 2026-06-24
+</p>
+
+</div>
+</body>
+</html>
