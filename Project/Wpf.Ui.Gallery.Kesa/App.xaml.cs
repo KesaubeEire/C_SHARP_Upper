@@ -15,6 +15,7 @@ using Wpf.Ui.Gallery.Services.Contracts;
 using Wpf.Ui.Gallery.Services.Plc;
 using Wpf.Ui.Gallery.ViewModels.Pages;
 using Wpf.Ui.Gallery.ViewModels.Pages.Plc;
+using Wpf.Ui.Gallery.ViewModels.Plc;
 using Wpf.Ui.Gallery.ViewModels.Windows;
 using Wpf.Ui.Gallery.Views.Pages;
 using Wpf.Ui.Gallery.Views.Pages.Plc;
@@ -51,6 +52,7 @@ public partial class App
                 _ = services.AddSingleton<WindowsProviderService>();
 
                 // PLC Services
+                _ = services.AddSingleton<PpeConnectionSectionViewModel>();
                 _ = services.AddSingleton<S7Service>();
                 _ = services.AddSingleton<PollingScheduler>();
                 _ = services.AddSingleton<AppConfigService>(_ => AppConfigService.Load());

@@ -9,6 +9,7 @@ using System.Windows.Media;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Controls.Sidebar;
 using Wpf.Ui.Gallery.Services.Contracts;
+using Wpf.Ui.Gallery.ViewModels.Plc;
 using Wpf.Ui.Gallery.ViewModels.Windows;
 using Wpf.Ui.Gallery.Views.Pages;
 
@@ -22,12 +23,14 @@ public partial class MainWindow : IWindow
         IServiceProvider serviceProvider,
         ISnackbarService snackbarService,
         IContentDialogService contentDialogService,
-        Services.Plc.AppConfigService config
+        Services.Plc.AppConfigService config,
+        PpeConnectionSectionViewModel plcViewModel
     )
     {
         Appearance.SystemThemeWatcher.Watch(this);
 
         ViewModel = viewModel;
+        PlcViewModel = plcViewModel;
         DataContext = this;
 
         InitializeComponent();
@@ -132,6 +135,8 @@ public partial class MainWindow : IWindow
     }
 
     public MainWindowViewModel ViewModel { get; }
+
+    public PpeConnectionSectionViewModel PlcViewModel { get; }
 
     private bool _isUserClosedPane;
 

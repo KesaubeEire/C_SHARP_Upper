@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Wpf.Ui.Controls;
@@ -44,6 +45,7 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     private LedQuality _pollQuality = LedQuality.Disabled;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LatencyColor))]
     private string _latencyText = "--";
 
     [ObservableProperty]
@@ -54,6 +56,27 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _showStatusBar;
+
+    public Brush LatencyColor
+    {
+        get
+        {
+            if (long.TryParse(LatencyText?.Replace(" ms", ""), out var ms))
+            {
+                if (ms < 100)
+                    return (Application.Current.TryFindResource("SystemFillColorSuccessBrush")
+                        ?? Application.Current.TryFindResource("SystemFillColorAttentionBrush")
+                        ?? new SolidColorBrush(Colors.Green)) as Brush ?? new SolidColorBrush(Colors.Green);
+                if (ms < 250)
+                    return (Application.Current.TryFindResource("SystemFillColorCautionBrush")
+                        ?? new SolidColorBrush(Colors.Orange)) as Brush ?? new SolidColorBrush(Colors.Orange);
+                return (Application.Current.TryFindResource("SystemFillColorCriticalBrush")
+                    ?? new SolidColorBrush(Colors.Red)) as Brush ?? new SolidColorBrush(Colors.Red);
+            }
+            return (Application.Current.TryFindResource("TextFillColorSecondaryBrush")
+                ?? new SolidColorBrush(Colors.Gray)) as Brush ?? new SolidColorBrush(Colors.Gray);
+        }
+    }
 
     // ===== Network adapters =====
 

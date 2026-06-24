@@ -3,8 +3,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using Wpf.Ui.Controls;
-using Wpf.Ui.Gallery.Services.Plc;
 using Wpf.Ui.Gallery.ViewModels.Plc;
 
 namespace Wpf.Ui.Gallery.Controls.Sidebar;
@@ -13,10 +11,9 @@ public partial class PpeConnectionSection : UserControl
 {
     public PpeConnectionSectionViewModel ViewModel { get; }
 
-    public PpeConnectionSection(S7Service s7, AppConfigService config, PollingScheduler scheduler,
-        IContentDialogService contentDialog)
+    public PpeConnectionSection(PpeConnectionSectionViewModel viewModel)
     {
-        ViewModel = new PpeConnectionSectionViewModel(s7, scheduler, config, contentDialog);
+        ViewModel = viewModel;
         DataContext = ViewModel;
         InitializeComponent();
     }
