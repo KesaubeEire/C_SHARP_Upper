@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Models.Plc;
-using UiButton = Wpf.Ui.Controls.Button;
 using Wpf.Ui.Gallery.Services.Plc;
 
 namespace Wpf.Ui.Gallery.Controls.Plc;
@@ -28,6 +27,18 @@ public partial class AreaPanel : UserControl
         DependencyProperty.Register(nameof(AddressText), typeof(string), typeof(AreaPanel),
             new PropertyMetadata(null));
 
+    public static readonly DependencyProperty ShowEmptyHintProperty =
+        DependencyProperty.Register(nameof(ShowEmptyHint), typeof(bool), typeof(AreaPanel),
+            new PropertyMetadata(true));
+
+    public static readonly DependencyProperty ShowWriteButtonProperty =
+        DependencyProperty.Register(nameof(ShowWriteButton), typeof(bool), typeof(AreaPanel),
+            new PropertyMetadata(false));
+
+    public static readonly DependencyProperty ShowStatusColumnProperty =
+        DependencyProperty.Register(nameof(ShowStatusColumn), typeof(bool), typeof(AreaPanel),
+            new PropertyMetadata(false));
+
     public string AreaType
     {
         get => (string)GetValue(AreaTypeProperty);
@@ -44,6 +55,24 @@ public partial class AreaPanel : UserControl
     {
         get => (bool)GetValue(IsReadOnlyProperty);
         set => SetValue(IsReadOnlyProperty, value);
+    }
+
+    public bool ShowEmptyHint
+    {
+        get => (bool)GetValue(ShowEmptyHintProperty);
+        set => SetValue(ShowEmptyHintProperty, value);
+    }
+
+    public bool ShowWriteButton
+    {
+        get => (bool)GetValue(ShowWriteButtonProperty);
+        set => SetValue(ShowWriteButtonProperty, value);
+    }
+
+    public bool ShowStatusColumn
+    {
+        get => (bool)GetValue(ShowStatusColumnProperty);
+        set => SetValue(ShowStatusColumnProperty, value);
     }
 
     public string? AddressText
@@ -107,8 +136,8 @@ public partial class AreaPanel : UserControl
 
         // I 区隐藏写模式按钮和状态列，Q/M 显示
         bool ro = IsReadOnly || AreaType == "I";
-        btnWriteMode.Visibility = ro ? Visibility.Collapsed : Visibility.Visible;
-        colStatusHeader.Visibility = ro ? Visibility.Collapsed : Visibility.Visible;
+        ShowWriteButton = !ro;
+        ShowStatusColumn = !ro;
 
         // 默认地址（仅第一次）
         if (!_manualSet && string.IsNullOrEmpty(addrInput.Text))
@@ -125,7 +154,7 @@ public partial class AreaPanel : UserControl
 
         var bytes = _s7.ReadBytes(_areaCode, addrs);
         ByteRows.Clear();
-        emptyHint.Visibility = Visibility.Collapsed;
+        ShowEmptyHint = false;
 
         foreach (var addr in addrs)
         {
@@ -146,9 +175,9 @@ public partial class AreaPanel : UserControl
             row.WriteModeEnabled = _writeMode;
         if (sender is System.Windows.Controls.Primitives.ButtonBase btn)
         {
-            btn.Content = _writeMode ? "🔓 写入" : "🔒 写模式";
-            if (btn is UiButton uiBtn)
-                uiBtn.Appearance = _writeMode ? ControlAppearance.Danger : ControlAppearance.Secondary;
+            btn.Content = _writeMode ? "写入" : "写模式";
+            btn.SetCurrentValue(Wpf.Ui.Controls.Button.AppearanceProperty,
+                _writeMode ? ControlAppearance.Danger : ControlAppearance.Secondary);
         }
     }
 

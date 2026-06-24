@@ -21,11 +21,10 @@
         Cursor="Hand"
         MouseDown="OnMouseDown"
         ToolTip="点击切换">
-        <TextBlock
+        <ui:TextBlock
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            FontSize="13"
-            FontWeight="Bold"
+            FontTypography="BodyStrong"
             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
             Text="{Binding DisplayChar}" />
     </Border>

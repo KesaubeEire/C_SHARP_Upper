@@ -31,6 +31,7 @@
             <helpers:BoolToIndicatorConverter x:Key="IndicatorConverter" />
             <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
             <helpers:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
+            <helpers:InverseBoolConverter x:Key="InverseBoolConverter" />
             <helpers:BoolToQualityConverter x:Key="BoolToQualityConverter" />
 
         </ResourceDictionary>

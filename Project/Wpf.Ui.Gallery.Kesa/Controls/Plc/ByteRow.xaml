@@ -13,7 +13,7 @@
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     mc:Ignorable="d">
-    <Grid MinHeight="36" Margin="0,2">
+    <Grid MinHeight="32" Margin="0,4">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="64" />
             <ColumnDefinition Width="Auto" />
@@ -21,10 +21,10 @@
             <ColumnDefinition Width="80" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock
+        <ui:TextBlock
             Grid.Column="0"
             VerticalAlignment="Center"
-            FontSize="13"
+            FontTypography="BodyStrong"
             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
             Text="{Binding Label}" />
 
@@ -44,19 +44,19 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <TextBlock
+        <ui:TextBlock
             Grid.Column="2"
             Margin="8,0,0,0"
             VerticalAlignment="Center"
-            FontSize="12"
+            FontTypography="Caption"
             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
             Text="{Binding HexText}" />
 
-        <TextBlock
+        <ui:TextBlock
             Grid.Column="3"
             VerticalAlignment="Center"
-            FontSize="12"
-            Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+            FontTypography="Caption"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
             Text="已修改"
             Visibility="{Binding HasChanges, Converter={StaticResource BoolToVisibilityConverter}}" />
     </Grid>

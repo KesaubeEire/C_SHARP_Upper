@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="root"
     d:DesignHeight="90"
     d:DesignWidth="200"
@@ -37,11 +38,11 @@
                 Quality="{Binding Quality, ElementName=root}" />
 
             <!--  Title  -->
-            <TextBlock
+            <ui:TextBlock
                 Grid.Row="0"
                 Grid.Column="1"
                 VerticalAlignment="Center"
-                FontSize="12"
+                FontTypography="Caption"
                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                 Text="{Binding Title, ElementName=root}"
                 TextTrimming="CharacterEllipsis" />
@@ -53,17 +54,15 @@
                 Grid.ColumnSpan="3"
                 Margin="0,4,0,0"
                 Orientation="Horizontal">
-                <TextBlock
-                    x:Name="valueText"
+                <ui:TextBlock
                     VerticalAlignment="Bottom"
-                    FontSize="28"
-                    FontWeight="Bold"
+                    FontTypography="Title"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     Text="{Binding Value, ElementName=root, FallbackValue=0.0}" />
-                <TextBlock
-                    Margin="6,0,0,3"
+                <ui:TextBlock
+                    Margin="8,0,0,0"
                     VerticalAlignment="Bottom"
-                    FontSize="14"
+                    FontTypography="Body"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="{Binding Unit, ElementName=root, FallbackValue=mm}" />
             </StackPanel>

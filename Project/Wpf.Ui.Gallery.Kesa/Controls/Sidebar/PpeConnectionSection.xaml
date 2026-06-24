@@ -1,12 +1,13 @@
-﻿<UserControl
+<UserControl
     x:Class="Wpf.Ui.Gallery.Controls.Sidebar.PpeConnectionSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Padding="10"
+    Padding="12"
     d:DesignHeight="781.564"
     d:DesignWidth="300"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -19,7 +20,10 @@
 
         <!--  ===== 本机网卡 =====  -->
         <controls:ControlExample Margin="0,0,0,8" HeaderText="本机网卡">
-            <ComboBox x:Name="adapterCombo" DisplayMemberPath="Display" />
+            <ComboBox
+                DisplayMemberPath="Display"
+                ItemsSource="{Binding Adapters}"
+                SelectedItem="{Binding SelectedAdapter, Mode=TwoWay}" />
         </controls:ControlExample>
 
         <!--  ===== PLC 参数 + 连接控制 =====  -->
@@ -36,50 +40,50 @@
                         <ColumnDefinition Width="80" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock
+                    <ui:TextBlock
                         Grid.Row="0"
                         Grid.Column="0"
                         VerticalAlignment="Center"
+                        FontTypography="Body"
                         Text="IP 地址" />
-                    <TextBox
-                        x:Name="ipInput"
+                    <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="0,4"
-                        Text="192.168.0.1" />
-                    <TextBlock
+                        Text="{Binding IpAddress, UpdateSourceTrigger=PropertyChanged}" />
+                    <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
                         VerticalAlignment="Center"
+                        FontTypography="Body"
                         Text="端口" />
-                    <TextBox
-                        x:Name="portInput"
+                    <ui:TextBox
                         Grid.Row="1"
                         Grid.Column="1"
                         Margin="0,4"
-                        Text="102" />
-                    <TextBlock
+                        Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
+                    <ui:TextBlock
                         Grid.Row="2"
                         Grid.Column="0"
                         VerticalAlignment="Center"
+                        FontTypography="Body"
                         Text="机架" />
-                    <TextBox
-                        x:Name="rackInput"
+                    <ui:TextBox
                         Grid.Row="2"
                         Grid.Column="1"
                         Margin="0,4"
-                        Text="0" />
-                    <TextBlock
+                        Text="{Binding Rack, UpdateSourceTrigger=PropertyChanged}" />
+                    <ui:TextBlock
                         Grid.Row="3"
                         Grid.Column="0"
                         VerticalAlignment="Center"
+                        FontTypography="Body"
                         Text="槽位" />
-                    <TextBox
-                        x:Name="slotInput"
+                    <ui:TextBox
                         Grid.Row="3"
                         Grid.Column="1"
                         Margin="0,4"
-                        Text="1" />
+                        Text="{Binding Slot, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>
 
                 <Grid Margin="0,8,0,0">
@@ -89,41 +93,46 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <ui:Button
-                        x:Name="btnConnect"
                         Grid.Column="0"
                         HorizontalAlignment="Stretch"
                         Appearance="Primary"
-                        Click="OnConnect"
-                        Content="连接" />
+                        Command="{Binding ConnectCommand}"
+                        IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="PlugDisconnected24" />
+                        </ui:Button.Icon>
+                        连接
+                    </ui:Button>
                     <ui:Button
-                        x:Name="btnDisconnect"
                         Grid.Column="2"
                         HorizontalAlignment="Stretch"
                         Appearance="Secondary"
-                        Click="OnDisconnect"
-                        Content="断开"
-                        IsEnabled="False" />
+                        Command="{Binding DisconnectCommand}"
+                        IsEnabled="{Binding IsConnected}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="PlugConnected24" />
+                        </ui:Button.Icon>
+                        断开
+                    </ui:Button>
                 </Grid>
 
                 <Border
-                    x:Name="statusBar"
                     Margin="0,8,0,0"
-                    Padding="10,6"
+                    Padding="16,8"
                     Background="{DynamicResource CardBackground}"
-                    CornerRadius="6"
-                    Visibility="Collapsed">
+                    CornerRadius="8"
+                    Visibility="{Binding ShowStatusBar, Converter={StaticResource BoolToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <Ellipse
-                            x:Name="statusIndicator"
+                        <plc:LedIndicator
                             Width="10"
                             Height="10"
                             Margin="0,0,8,0"
                             VerticalAlignment="Center"
-                            Fill="{DynamicResource SystemFillColorNeutralBrush}" />
-                        <TextBlock
-                            x:Name="statusText"
+                            Quality="{Binding ConnectionQuality}" />
+                        <ui:TextBlock
                             VerticalAlignment="Center"
-                            Text="未连接" />
+                            FontTypography="Caption"
+                            Text="{Binding StatusText}" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -141,13 +150,21 @@
                     <ui:Button
                         Grid.Column="0"
                         HorizontalAlignment="Stretch"
-                        Click="OnImportDb"
-                        Content="📂 导入 .db" />
+                        Command="{Binding ImportDbCommand}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="FolderOpen24" />
+                        </ui:Button.Icon>
+                        导入 .db
+                    </ui:Button>
                     <ui:Button
                         Grid.Column="2"
                         HorizontalAlignment="Stretch"
-                        Click="OnImportUdt"
-                        Content="📂 导入 .udt" />
+                        Command="{Binding ImportUdtCommand}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="FolderOpen24" />
+                        </ui:Button.Icon>
+                        导入 .udt
+                    </ui:Button>
                 </Grid>
 
                 <ui:TextBlock
@@ -155,11 +172,12 @@
                     FontTypography="BodyStrong"
                     Text="已导入的 DB" />
                 <ItemsControl
-                    x:Name="dbList"
                     MaxHeight="100"
-                    Margin="0,0,0,8">
+                    Margin="0,0,0,8"
+                    ItemsSource="{Binding ImportedDbs}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate DataType="models:DbStructure"
+                            xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc">
                             <Border
                                 Padding="4,2"
                                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"
@@ -169,20 +187,22 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock
+                                    <ui:TextBlock
                                         Grid.Column="0"
                                         VerticalAlignment="Center"
-                                        FontSize="11"
+                                        FontTypography="Caption"
                                         Text="{Binding Label}" />
                                     <ui:Button
                                         Grid.Column="1"
-                                        Width="20"
-                                        Height="20"
+                                        Width="24"
+                                        Height="24"
+                                        Padding="0"
                                         Appearance="Secondary"
-                                        Click="OnDeleteDb"
-                                        Content="✕"
-                                        FontSize="10"
-                                        Tag="{Binding}" />
+                                        ToolTip="删除">
+                                        <ui:Button.Icon>
+                                            <ui:SymbolIcon Symbol="Dismiss24" />
+                                        </ui:Button.Icon>
+                                    </ui:Button>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -193,9 +213,12 @@
                     Margin="0,0,0,4"
                     FontTypography="BodyStrong"
                     Text="已导入的 UDT" />
-                <ItemsControl x:Name="udtList" MaxHeight="100">
+                <ItemsControl
+                    MaxHeight="100"
+                    ItemsSource="{Binding ImportedUdts}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate DataType="models:UdtStructure"
+                            xmlns:models="clr-namespace:Wpf.Ui.Gallery.Models.Plc">
                             <Border
                                 Padding="4,2"
                                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"
@@ -205,20 +228,22 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock
+                                    <ui:TextBlock
                                         Grid.Column="0"
                                         VerticalAlignment="Center"
-                                        FontSize="11"
+                                        FontTypography="Caption"
                                         Text="{Binding UdtName}" />
                                     <ui:Button
                                         Grid.Column="1"
-                                        Width="20"
-                                        Height="20"
+                                        Width="24"
+                                        Height="24"
+                                        Padding="0"
                                         Appearance="Secondary"
-                                        Click="OnDeleteUdt"
-                                        Content="✕"
-                                        FontSize="10"
-                                        Tag="{Binding}" />
+                                        ToolTip="删除">
+                                        <ui:Button.Icon>
+                                            <ui:SymbolIcon Symbol="Dismiss24" />
+                                        </ui:Button.Icon>
+                                    </ui:Button>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -239,28 +264,29 @@
                         <ColumnDefinition Width="80" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock
+                    <ui:TextBlock
                         Grid.Row="0"
                         Grid.Column="0"
                         VerticalAlignment="Center"
+                        FontTypography="Body"
                         Text="间隔 (ms)" />
-                    <TextBox
-                        x:Name="intervalInput"
+                    <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="0,4"
-                        Text="500" />
-                    <TextBlock
+                        Text="{Binding PollInterval, UpdateSourceTrigger=PropertyChanged}" />
+                    <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
                         VerticalAlignment="Center"
+                        FontTypography="Body"
                         Text="延迟" />
-                    <TextBlock
-                        x:Name="latencyText"
+                    <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="1"
                         Margin="0,4"
-                        Text="--" />
+                        FontTypography="Body"
+                        Text="{Binding LatencyText}" />
                 </Grid>
 
                 <Grid Margin="0,8,0,0">
@@ -270,36 +296,44 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <ui:Button
-                        x:Name="btnStart"
                         Grid.Column="0"
                         HorizontalAlignment="Stretch"
                         Appearance="Primary"
-                        Click="OnStart"
-                        Content="▶ 启动" />
+                        Command="{Binding StartPollingCommand}"
+                        IsEnabled="{Binding IsConnected}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Play24" />
+                        </ui:Button.Icon>
+                        启动
+                    </ui:Button>
                     <ui:Button
-                        x:Name="btnStop"
                         Grid.Column="2"
                         HorizontalAlignment="Stretch"
                         Appearance="Secondary"
-                        Click="OnStop"
-                        Content="■ 停止"
-                        IsEnabled="False" />
+                        Command="{Binding StopPollingCommand}"
+                        IsEnabled="{Binding IsPolling}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Stop24" />
+                        </ui:Button.Icon>
+                        停止
+                    </ui:Button>
                 </Grid>
 
                 <Border
                     Margin="0,8,0,0"
-                    Padding="10,6"
+                    Padding="16,8"
                     Background="{DynamicResource CardBackground}"
-                    CornerRadius="6">
+                    CornerRadius="8">
                     <StackPanel Orientation="Horizontal">
-                        <Ellipse
-                            x:Name="pollIndicator"
+                        <plc:LedIndicator
                             Width="10"
                             Height="10"
                             Margin="0,0,8,0"
                             VerticalAlignment="Center"
-                            Fill="{DynamicResource SystemFillColorNeutralBrush}" />
-                        <TextBlock x:Name="pollStatusText" Text="就绪" />
+                            Quality="{Binding PollQuality}" />
+                        <ui:TextBlock
+                            FontTypography="Caption"
+                            Text="{Binding PollStatusText}" />
                     </StackPanel>
                 </Border>
             </StackPanel>

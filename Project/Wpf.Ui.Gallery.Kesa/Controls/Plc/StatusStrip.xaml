@@ -5,16 +5,17 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="root"
     d:DesignHeight="36"
     d:DesignWidth="600"
     mc:Ignorable="d">
     <Border
-        Padding="12,8"
+        Padding="16,8"
         Background="{DynamicResource CardBackground}"
         BorderBrush="{DynamicResource ControlElevationBorderBrush}"
         BorderThickness="1"
-        CornerRadius="6">
+        CornerRadius="8">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -32,10 +33,10 @@
                     Height="10"
                     VerticalAlignment="Center"
                     Quality="{Binding ConnectionQuality, ElementName=root}" />
-                <TextBlock
+                <ui:TextBlock
                     Margin="6,0,16,0"
                     VerticalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="{Binding ConnectionText, ElementName=root, FallbackValue=未连接}" />
             </StackPanel>
@@ -53,15 +54,15 @@
                 Grid.Column="2"
                 Margin="16,0,0,0"
                 Orientation="Horizontal">
-                <TextBlock
+                <ui:TextBlock
                     VerticalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorDisabledBrush}"
                     Text="轮询:" />
-                <TextBlock
+                <ui:TextBlock
                     Margin="4,0,16,0"
                     VerticalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="{Binding PollingText, ElementName=root, FallbackValue=--}" />
             </StackPanel>
@@ -81,15 +82,15 @@
                 Margin="0,0,0,0"
                 Orientation="Horizontal"
                 Visibility="{Binding ShowErrors, ElementName=root, Converter={StaticResource BoolToVisibilityConverter}}">
-                <TextBlock
+                <ui:TextBlock
                     VerticalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorDisabledBrush}"
                     Text="错误:" />
-                <TextBlock
+                <ui:TextBlock
                     Margin="4,0,0,0"
                     VerticalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     FontWeight="Bold"
                     Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                     Text="{Binding ErrorCount, ElementName=root, FallbackValue=0}" />

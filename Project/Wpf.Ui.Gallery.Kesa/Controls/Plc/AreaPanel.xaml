@@ -14,7 +14,7 @@
     mc:Ignorable="d">
     <Border
         Margin="0,0,0,0"
-        Padding="20"
+        Padding="16"
         Background="{DynamicResource CardBackground}"
         BorderThickness="1"
         CornerRadius="8">
@@ -28,46 +28,45 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Ellipse
+                <plc:LedIndicator
                     Grid.Column="0"
                     Width="12"
                     Height="12"
                     Margin="0,0,8,0"
                     VerticalAlignment="Center"
-                    Fill="{Binding AreaColor, ElementName=root}" />
-                <TextBlock
+                    Quality="Info"
+                    ToolTipText="{Binding AreaLabel, ElementName=root}"
+                    LedColor="{Binding AreaColor, ElementName=root}" />
+                <ui:TextBlock
                     Grid.Column="1"
                     VerticalAlignment="Center"
-                    FontSize="16"
-                    FontWeight="Bold"
+                    FontTypography="Subtitle"
                     Foreground="{Binding AreaColor, ElementName=root}"
                     Text="{Binding AreaLabel, ElementName=root}" />
                 <TextBox
                     x:Name="addrInput"
                     Grid.Column="2"
-                    Height="34"
+                    Height="32"
                     Margin="8,0"
                     VerticalAlignment="Center"
-                    FontSize="13"
                     Text="{Binding AddressText, ElementName=root, UpdateSourceTrigger=PropertyChanged}" />
                 <ui:Button
                     x:Name="btnRead"
                     Grid.Column="3"
-                    Height="34"
+                    Height="32"
                     Margin="4,0"
                     Appearance="Primary"
                     Click="OnReadClick"
-                    Content="▶ 读取"
-                    FontSize="13" />
+                    Content="读取" />
                 <ui:Button
                     x:Name="btnWriteMode"
                     Grid.Column="4"
-                    Height="34"
+                    Height="32"
                     Margin="4,0"
                     Appearance="Secondary"
                     Click="OnWriteModeClick"
-                    Content="🔒 写模式"
-                    FontSize="13" />
+                    Content="写模式"
+                    Visibility="{Binding ShowWriteButton, Converter={StaticResource BoolToVisibilityConverter}}" />
             </Grid>
 
             <!--  列标题  -->
@@ -78,29 +77,30 @@
                     <ColumnDefinition Width="64" />
                     <ColumnDefinition Width="80" />
                 </Grid.ColumnDefinitions>
-                <TextBlock
+                <ui:TextBlock
                     Grid.Column="0"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     Text="地址" />
-                <TextBlock
+                <ui:TextBlock
                     Grid.Column="1"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     Text="位 0 → 7" />
-                <TextBlock
+                <ui:TextBlock
                     Grid.Column="2"
                     HorizontalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     Text="HEX" />
-                <TextBlock
+                <ui:TextBlock
                     x:Name="colStatusHeader"
                     Grid.Column="3"
                     HorizontalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                    Text="状态" />
+                    Text="状态"
+                    Visibility="{Binding ShowStatusColumn, Converter={StaticResource BoolToVisibilityConverter}}" />
             </Grid>
 
             <!--  字节行列表  -->
@@ -113,12 +113,13 @@
             </ItemsControl>
 
             <!--  空状态提示  -->
-            <TextBlock
+            <ui:TextBlock
                 x:Name="emptyHint"
                 Margin="0,12,0,0"
-                FontSize="13"
+                FontTypography="Body"
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                Text="输入地址后点击 &#x25B6; 读取" />
+                Text="输入地址后点击 读取"
+                Visibility="{Binding ShowEmptyHint, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibilityConverter}}" />
         </StackPanel>
     </Border>
 </UserControl>

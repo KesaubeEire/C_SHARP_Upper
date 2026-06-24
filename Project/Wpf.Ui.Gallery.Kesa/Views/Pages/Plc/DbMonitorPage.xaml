@@ -18,7 +18,7 @@
         <!--  ===== 顶部：导入 + 配置 =====  -->
         <Border
             Margin="0,0,0,12"
-            Padding="20"
+            Padding="16"
             Background="{DynamicResource CardBackground}"
             BorderBrush="{DynamicResource ControlElevationBorderBrush}"
             BorderThickness="1"
@@ -40,22 +40,30 @@
                         Grid.Column="0"
                         Margin="0,0,4,0"
                         Appearance="Primary"
-                        Click="OnImportDb"
-                        Content="📂 导入 .db" />
+                        Click="OnImportDb">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="FolderOpen24" />
+                        </ui:Button.Icon>
+                        导入 .db
+                    </ui:Button>
                     <ui:Button
                         Grid.Column="1"
                         Margin="4,0"
-                        Click="OnImportUdt"
-                        Content="📂 导入 .udt" />
+                        Click="OnImportUdt">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="FolderOpen24" />
+                        </ui:Button.Icon>
+                        导入 .udt
+                    </ui:Button>
                     <StackPanel
                         Grid.Column="2"
                         Margin="8,0"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
-                        <TextBlock
+                        <ui:TextBlock
                             Margin="4,0"
                             VerticalAlignment="Center"
-                            FontSize="13"
+                            FontTypography="Body"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="DB 号:" />
                         <TextBox
@@ -72,27 +80,35 @@
                         Grid.Column="4"
                         Margin="4,0"
                         Appearance="Success"
-                        Click="OnReadDb"
-                        Content="📡 读取 DB" />
+                        Click="OnReadDb">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Wifi424" />
+                        </ui:Button.Icon>
+                        读取 DB
+                    </ui:Button>
                     <ui:Button
                         Grid.Column="6"
                         Margin="8,0,0,0"
                         Appearance="Secondary"
-                        Click="OnClearDb"
-                        Content="✕ 清除" />
+                        Click="OnClearDb">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Dismiss24" />
+                        </ui:Button.Icon>
+                        清除
+                    </ui:Button>
                 </Grid>
 
                 <!--  DB 信息 + UDT 提示  -->
-                <TextBlock
+                <ui:TextBlock
                     x:Name="dbInfoText"
                     Margin="0,8,0,0"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="未导入 DB 文件" />
-                <TextBlock
+                <ui:TextBlock
                     x:Name="udtHintText"
                     Margin="0,4,0,0"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="" />
             </StackPanel>
@@ -131,46 +147,46 @@
                             <ColumnDefinition Width="140" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="0"
-                            FontSize="12"
+                            FontTypography="Caption"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="偏移量" />
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="1"
-                            FontSize="12"
+                            FontTypography="Caption"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="变量名" />
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="2"
-                            FontSize="12"
+                            FontTypography="Caption"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="数据处理" />
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="3"
-                            FontSize="12"
+                            FontTypography="Caption"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="数据类型" />
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="4"
-                            FontSize="12"
+                            FontTypography="Caption"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="大小" />
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="5"
-                            FontSize="12"
+                            FontTypography="Caption"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="值" />
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="6"
                             Margin="8,0,0,0"
-                            FontSize="12"
+                            FontTypography="Caption"
                             FontWeight="Bold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="注释" />
@@ -202,9 +218,10 @@
                                             </Grid.ColumnDefinitions>
 
                                             <!--  偏移量  -->
-                                            <TextBlock
+                                            <ui:TextBlock
                                                 Grid.Column="0"
                                                 VerticalAlignment="Center"
+                                                FontTypography="Caption"
                                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                 Text="{Binding OffsetDisplay}" />
 
@@ -213,10 +230,10 @@
                                                 Grid.Column="1"
                                                 VerticalAlignment="Center"
                                                 Orientation="Horizontal">
-                                                <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
-                                                <TextBlock
+                                                <ui:TextBlock FontTypography="Body" FontWeight="SemiBold" Text="{Binding Name}" />
+                                                <ui:TextBlock
                                                     Margin="4,0,0,0"
-                                                    FontWeight="Normal"
+                                                    FontTypography="Caption"
                                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                     Text="{Binding UdtName, StringFormat=' [{0}]'}" />
                                             </StackPanel>
@@ -257,16 +274,18 @@
                                             </StackPanel>
 
                                             <!--  数据类型  -->
-                                            <TextBlock
+                                            <ui:TextBlock
                                                 Grid.Column="3"
                                                 VerticalAlignment="Center"
+                                                FontTypography="Caption"
                                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                 Text="{Binding DataType}" />
 
                                             <!--  大小  -->
-                                            <TextBlock
+                                            <ui:TextBlock
                                                 Grid.Column="4"
                                                 VerticalAlignment="Center"
+                                                FontTypography="Caption"
                                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                 Text="{Binding Size, StringFormat='{}{0}B'}" />
 
@@ -280,19 +299,20 @@
                                                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="4">
-                                                <TextBlock
+                                                <ui:TextBlock
                                                     VerticalAlignment="Center"
-                                                    FontWeight="Bold"
+                                                    FontTypography="BodyStrong"
                                                     Foreground="{DynamicResource SystemFillColorAttentionBrush}"
                                                     Text="{Binding Value}"
                                                     TextTrimming="CharacterEllipsis" />
                                             </Border>
 
                                             <!--  注释  -->
-                                            <TextBlock
+                                            <ui:TextBlock
                                                 Grid.Column="6"
                                                 Margin="8,0,0,0"
                                                 VerticalAlignment="Center"
+                                                FontTypography="Caption"
                                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                 Text="{Binding Comment}"
                                                 TextTrimming="CharacterEllipsis" />
@@ -315,15 +335,15 @@
                             Background="Transparent"
                             Visibility="Visible">
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock
+                                <ui:TextBlock
                                     HorizontalAlignment="Center"
-                                    FontSize="48"
+                                    FontTypography="TitleLarge"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                     Text="📄" />
-                                <TextBlock
+                                <ui:TextBlock
                                     Margin="0,8,0,0"
                                     HorizontalAlignment="Center"
-                                    FontSize="14"
+                                    FontTypography="Body"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                     Text="请导入 .db 文件并点击读取" />
                             </StackPanel>
@@ -356,30 +376,30 @@
                         Height="10"
                         VerticalAlignment="Center"
                         Fill="{DynamicResource TextFillColorDisabledBrush}" />
-                    <TextBlock
+                    <ui:TextBlock
                         x:Name="statusText"
                         Margin="6,0,16,0"
                         VerticalAlignment="Center"
-                        FontSize="12"
+                        FontTypography="Caption"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                         Text="未连接" />
                 </StackPanel>
 
                 <!--  DB 大小  -->
-                <TextBlock
+                <ui:TextBlock
                     x:Name="dbSizeText"
                     Grid.Column="1"
                     VerticalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="" />
 
                 <!--  操作信息  -->
-                <TextBlock
+                <ui:TextBlock
                     x:Name="operStatusText"
                     Grid.Column="3"
                     VerticalAlignment="Center"
-                    FontSize="12"
+                    FontTypography="Caption"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="" />
             </Grid>

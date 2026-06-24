@@ -26,8 +26,8 @@
         <!-- ===== Left Panel: Recipe List ===== -->
         <Border
             Grid.Column="0"
-            Padding="12"
-            Background="{DynamicResource CardBackgroundBrush}"
+            Padding="16"
+            Background="{DynamicResource CardBackground}"
             BorderBrush="{DynamicResource ControlElevationBorderBrush}"
             BorderThickness="1"
             CornerRadius="8">
@@ -39,19 +39,22 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBlock
+                <ui:TextBlock
                     Grid.Row="0"
                     Margin="0,0,0,8"
-                    FontSize="16"
-                    FontWeight="SemiBold"
+                    FontTypography="BodyStrong"
                     Text="配方列表" />
 
                 <ui:Button
                     Grid.Row="1"
                     Margin="0,0,0,8"
                     Appearance="Primary"
-                    Command="{Binding NewRecipeCommand}"
-                    Content="＋ 新建配方" />
+                    Command="{Binding NewRecipeCommand}">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="Add24" />
+                    </ui:Button.Icon>
+                    新建配方
+                </ui:Button>
 
                 <!-- Recipe list -->
                 <ListBox
@@ -77,32 +80,31 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock
+                                    <ui:TextBlock
                                         Grid.Row="0"
                                         Grid.Column="0"
-                                        FontSize="13"
-                                        FontWeight="Medium"
+                                        FontTypography="Body"
                                         Text="{Binding Name}" />
 
-                                    <TextBlock
+                                    <ui:TextBlock
                                         Grid.Row="0"
                                         Grid.Column="1"
-                                        FontSize="11"
+                                        FontTypography="Caption"
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                         Text="v" />
-                                    <TextBlock
+                                    <ui:TextBlock
                                         Grid.Row="0"
                                         Grid.Column="1"
                                         Margin="12,0,0,0"
-                                        FontSize="11"
+                                        FontTypography="Caption"
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                         Text="{Binding Version}" />
 
-                                    <TextBlock
+                                    <ui:TextBlock
                                         Grid.Row="1"
                                         Grid.Column="0"
                                         Grid.ColumnSpan="2"
-                                        FontSize="11"
+                                        FontTypography="Caption"
                                         Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                         Text="{Binding ModifiedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" />
                                 </Grid>
@@ -116,8 +118,12 @@
                     <ui:Button
                         Margin="0,0,0,4"
                         Appearance="Secondary"
-                        Command="{Binding RefreshRecipeListCommand}"
-                        Content="⟳ 刷新" />
+                        Command="{Binding RefreshRecipeListCommand}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="ArrowSync24" />
+                        </ui:Button.Icon>
+                        刷新
+                    </ui:Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -133,7 +139,7 @@
         <Border
             Grid.Column="2"
             Padding="16"
-            Background="{DynamicResource CardBackgroundBrush}"
+            Background="{DynamicResource CardBackground}"
             BorderBrush="{DynamicResource ControlElevationBorderBrush}"
             BorderThickness="1"
             CornerRadius="8">
@@ -158,17 +164,16 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock
+                    <ui:TextBlock
                         Grid.Row="0"
                         Grid.Column="0"
-                        FontSize="16"
-                        FontWeight="SemiBold"
+                        FontTypography="Subtitle"
                         Text="配方编辑器" />
-                    <TextBlock
+                    <ui:TextBlock
                         Grid.Row="0"
                         Grid.Column="1"
                         VerticalAlignment="Center"
-                        FontSize="12"
+                        FontTypography="Caption"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                         Text="{Binding CurrentVersion, StringFormat=版本: v{0}}" />
 
@@ -178,10 +183,10 @@
                             <ColumnDefinition Width="60" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="0"
                             VerticalAlignment="Center"
-                            FontSize="12"
+                            FontTypography="Body"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="名称:" />
                         <ui:TextBox
@@ -196,10 +201,10 @@
                             <ColumnDefinition Width="60" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
+                        <ui:TextBlock
                             Grid.Column="0"
                             VerticalAlignment="Center"
-                            FontSize="12"
+                            FontTypography="Body"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="描述:" />
                         <ui:TextBox
@@ -216,11 +221,10 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock
+                    <ui:TextBlock
                         Grid.Row="0"
                         Margin="0,0,0,6"
-                        FontSize="13"
-                        FontWeight="SemiBold"
+                        FontTypography="BodyStrong"
                         Text="参数列表" />
 
                     <DataGrid
@@ -271,14 +275,22 @@
                     <ui:Button
                         Margin="0,0,8,0"
                         Appearance="Primary"
-                        Command="{Binding AddParameterCommand}"
-                        Content="＋ 添加参数" />
+                        Command="{Binding AddParameterCommand}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Add24" />
+                        </ui:Button.Icon>
+                        添加参数
+                    </ui:Button>
                     <ui:Button
                         Margin="0,0,8,0"
                         Appearance="Secondary"
                         Command="{Binding RemoveParameterCommand}"
-                        CommandParameter="{Binding SelectedParameter}"
-                        Content="－ 删除选中" />
+                        CommandParameter="{Binding SelectedParameter}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Subtract24" />
+                        </ui:Button.Icon>
+                        删除选中
+                    </ui:Button>
                 </StackPanel>
 
                 <!-- ===== Action buttons ===== -->
@@ -289,10 +301,10 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock
+                    <ui:TextBlock
                         Grid.Column="0"
                         VerticalAlignment="Center"
-                        FontSize="12"
+                        FontTypography="Caption"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                         Text="{Binding StatusText}" />
 
@@ -300,8 +312,12 @@
                         Grid.Column="1"
                         Margin="0,0,8,0"
                         Appearance="Success"
-                        Command="{Binding SaveRecipeCommand}"
-                        Content="💾 保存配方" />
+                        Command="{Binding SaveRecipeCommand}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Save24" />
+                        </ui:Button.Icon>
+                        保存配方
+                    </ui:Button>
                 </Grid>
             </Grid>
         </Border>
