@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
 using Wpf.Ui.Controls;
+using Wpf.Ui.Extensions;
 using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
 
@@ -14,15 +15,17 @@ public partial class DbMonitorPage : Page
 {
     private readonly S7Service _s7;
     private readonly AppConfigService _config;
+    private readonly IContentDialogService _contentDialog;
     private DbStructure? _currentDb;
     private List<UdtStructure> _importedUdts = [];
     private HashSet<string>? _missingUdts;
     private readonly ObservableCollection<DbVariableDisplay> _variables = [];
 
-    public DbMonitorPage(S7Service s7, AppConfigService config)
+    public DbMonitorPage(S7Service s7, AppConfigService config, IContentDialogService contentDialog)
     {
         _s7 = s7;
         _config = config;
+        _contentDialog = contentDialog;
         InitializeComponent();
         variableList.ItemsSource = _variables;
         LoadPersistedUdts();
@@ -136,7 +139,13 @@ public partial class DbMonitorPage : Page
             var udt = UdtFileParser.Parse(dialog.FileName);
             if (udt.ParseError != null)
             {
-                await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"解析失败: {udt.ParseError}" }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "错误",
+                        Content = $"解析失败: {udt.ParseError}",
+                        CloseButtonText = "确定",
+                    });
                 return;
             }
 
@@ -145,10 +154,15 @@ public partial class DbMonitorPage : Page
                 string.Equals(u.UdtName, udt.UdtName, StringComparison.OrdinalIgnoreCase));
             if (existing >= 0)
             {
-                var r = System.Windows.MessageBox.Show(
-                    $"UDT \"{udt.UdtName}\" 已导入，是否替换？", "提示",
-                    System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
-                if (r != System.Windows.MessageBoxResult.Yes) return;
+                var replace = await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "提示",
+                        Content = $"UDT \"{udt.UdtName}\" 已导入，是否替换？",
+                        PrimaryButtonText = "替换",
+                        CloseButtonText = "取消",
+                    });
+                if (replace != ContentDialogResult.Primary) return;
                 _importedUdts.RemoveAt(existing);
             }
 
@@ -167,7 +181,13 @@ public partial class DbMonitorPage : Page
         }
         catch (Exception ex)
         {
-            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
+            await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "错误",
+                    Content = $"导入失败: {ex.Message}",
+                    CloseButtonText = "确定",
+                });
         }
     }
 
@@ -202,11 +222,23 @@ public partial class DbMonitorPage : Page
             var db = DbFileParser.Parse(dialog.FileName);
             if (db.HasUnknownType)
             {
-                await new Wpf.Ui.Controls.MessageBox { Title = "未知数据类型", Content = $"解析警告: {db.ParseError}\n\n未识别的变量类型将被跳过。" }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "未知数据类型",
+                        Content = $"解析警告: {db.ParseError}\n\n未识别的变量类型将被跳过。",
+                        CloseButtonText = "确定",
+                    });
             }
             if (db.ParseError != null && db.Variables.Count == 0)
             {
-                await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"解析失败: {db.ParseError}" }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "错误",
+                        Content = $"解析失败: {db.ParseError}",
+                        CloseButtonText = "确定",
+                    });
                 return;
             }
 
@@ -233,7 +265,13 @@ public partial class DbMonitorPage : Page
         }
         catch (Exception ex)
         {
-            await new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"导入失败: {ex.Message}" }.ShowDialogAsync();
+            await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "错误",
+                    Content = $"导入失败: {ex.Message}",
+                    CloseButtonText = "确定",
+                });
         }
     }
 
@@ -482,10 +520,15 @@ public partial class DbMonitorPage : Page
         // UDT 缺失检查
         if (_missingUdts != null && _missingUdts.Count > 0)
         {
-            var r = System.Windows.MessageBox.Show(
-                $"以下 UDT 未导入，相关变量可能无法正确读取:\n{string.Join("\n", _missingUdts.Select(u => $"  • {u}"))}\n\n是否继续读取？",
-                "UDT 引用缺失", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-            if (r != System.Windows.MessageBoxResult.Yes) return;
+            var r = await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "UDT 引用缺失",
+                    Content = $"以下 UDT 未导入，相关变量可能无法正确读取:\n{string.Join("\n", _missingUdts.Select(u => $"  • {u}"))}\n\n是否继续读取？",
+                    PrimaryButtonText = "继续读取",
+                    CloseButtonText = "取消",
+                });
+            if (r != ContentDialogResult.Primary) return;
         }
 
         btnReadDb.IsEnabled = false;
@@ -691,7 +734,13 @@ public partial class DbMonitorPage : Page
             if (_currentDb == null) return;
             if (!_s7.IsConnected)
             {
-                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "提示",
+                        Content = "PLC 未连接",
+                        CloseButtonText = "确定",
+                    });
                 return;
             }
             await WriteEditedValue(v);
@@ -703,7 +752,13 @@ public partial class DbMonitorPage : Page
         if (_currentDb == null) return;
         if (!_s7.IsConnected)
         {
-            await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+            await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "提示",
+                    Content = "PLC 未连接",
+                    CloseButtonText = "确定",
+                });
             return;
         }
 

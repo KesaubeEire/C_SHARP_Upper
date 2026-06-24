@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Wpf.Ui.Controls;
+using Wpf.Ui.Extensions;
 using Wpf.Ui.Gallery.Controls.Plc;
 using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
@@ -12,12 +14,15 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     private readonly S7Service _s7;
     private readonly AppConfigService _config;
     private readonly PollingScheduler _scheduler;
+    private readonly IContentDialogService _contentDialog;
 
-    public PpeConnectionSectionViewModel(S7Service s7, PollingScheduler scheduler, AppConfigService config)
+    public PpeConnectionSectionViewModel(S7Service s7, PollingScheduler scheduler, AppConfigService config,
+        IContentDialogService contentDialog)
     {
         _s7 = s7;
         _scheduler = scheduler;
         _config = config;
+        _contentDialog = contentDialog;
 
         // 构造函数：直接从配置恢复字段（不走属性 setter，避免触发 Save）
         LoadAdapters();
@@ -216,11 +221,13 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
             {
                 StatusText = $"连接失败: {_s7.LastError ?? "未知错误"}";
                 ConnectionQuality = LedQuality.Bad;
-                await new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = "连接失败",
-                    Content = _s7.LastError ?? "未知错误"
-                }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "连接失败",
+                        Content = _s7.LastError ?? "未知错误",
+                        CloseButtonText = "确定",
+                    });
             }
         }
         catch (Exception ex)
@@ -229,11 +236,13 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
             ShowStatusBar = true;
             StatusText = $"连接异常: {ex.Message}";
             ConnectionQuality = LedQuality.Bad;
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "连接异常",
-                Content = ex.Message
-            }.ShowDialogAsync();
+            await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "连接异常",
+                    Content = ex.Message,
+                    CloseButtonText = "确定",
+                });
         }
     }
 
@@ -251,7 +260,13 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     {
         if (!_s7.IsConnected)
         {
-            await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "请先连接 PLC" }.ShowDialogAsync();
+            await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "提示",
+                    Content = "请先连接 PLC",
+                    CloseButtonText = "确定",
+                });
             return;
         }
 

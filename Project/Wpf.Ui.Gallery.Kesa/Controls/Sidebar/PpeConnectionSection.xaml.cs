@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Services.Plc;
 using Wpf.Ui.Gallery.ViewModels.Plc;
 
@@ -12,9 +13,10 @@ public partial class PpeConnectionSection : UserControl
 {
     public PpeConnectionSectionViewModel ViewModel { get; }
 
-    public PpeConnectionSection(S7Service s7, AppConfigService config, PollingScheduler scheduler)
+    public PpeConnectionSection(S7Service s7, AppConfigService config, PollingScheduler scheduler,
+        IContentDialogService contentDialog)
     {
-        ViewModel = new PpeConnectionSectionViewModel(s7, scheduler, config);
+        ViewModel = new PpeConnectionSectionViewModel(s7, scheduler, config, contentDialog);
         DataContext = ViewModel;
         InitializeComponent();
     }
@@ -31,7 +33,7 @@ public partial class PpeConnectionSection : UserControl
         var source = e.OriginalSource as DependencyObject;
         while (source != null)
         {
-            if (source is ButtonBase or TextBox or ComboBox or ToggleButton
+            if (source is ButtonBase or System.Windows.Controls.TextBox or ComboBox or ToggleButton
                 or ListBoxItem or ScrollBar or Wpf.Ui.Controls.TextBox)
                 return;
 

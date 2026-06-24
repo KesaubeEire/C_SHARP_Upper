@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Wpf.Ui.Controls;
+using Wpf.Ui.Extensions;
 using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
 
@@ -194,7 +195,14 @@ public partial class AreaPanel : UserControl
         if (_s7 == null || IsReadOnly || !_writeMode) return;
         if (!_s7.IsConnected)
         {
-            await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+            var dialog = App.GetRequiredService<IContentDialogService>();
+            await dialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "提示",
+                    Content = "PLC 未连接",
+                    CloseButtonText = "确定",
+                });
             return;
         }
         var bit = e.Bit;
@@ -203,7 +211,14 @@ public partial class AreaPanel : UserControl
         if (!_s7.WriteByte(_areaCode, bit.Parent.ByteAddress, bit.Parent.ToByte()))
         {
             bit.Toggle(); // 写入失败还原
-            await new Wpf.Ui.Controls.MessageBox { Title = "PLC 写入错误", Content = _s7.LastError ?? "未知错误" }.ShowDialogAsync();
+            var dialog = App.GetRequiredService<IContentDialogService>();
+            await dialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "PLC 写入错误",
+                    Content = _s7.LastError ?? "未知错误",
+                    CloseButtonText = "确定",
+                });
         }
     }
 

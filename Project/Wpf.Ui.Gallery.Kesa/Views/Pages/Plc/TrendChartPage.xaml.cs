@@ -10,7 +10,10 @@ using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.WPF;
 using SkiaSharp;
+using Wpf.Ui.Controls;
+using Wpf.Ui.Extensions;
 using Wpf.Ui.Gallery.Models.Plc;
+using TextBlock = System.Windows.Controls.TextBlock;
 using Wpf.Ui.Gallery.Services.Plc;
 
 namespace Wpf.Ui.Gallery.Views.Pages.Plc;
@@ -20,6 +23,7 @@ public partial class TrendChartPage : Page
 {
     private readonly S7Service _s7;
     private readonly AppConfigService _config;
+    private readonly IContentDialogService _contentDialog;
 
     // 通道定义
     private sealed class ChannelDef
@@ -76,10 +80,11 @@ public partial class TrendChartPage : Page
     private static readonly SKColor AxisColorLight = SKColor.Parse("#999999");
     private static readonly SKColor GridColorLight = SKColor.Parse("#CCCCCC");
 
-    public TrendChartPage(S7Service s7, AppConfigService config)
+    public TrendChartPage(S7Service s7, AppConfigService config, IContentDialogService contentDialog)
     {
         _s7 = s7;
         _config = config;
+        _contentDialog = contentDialog;
         InitializeComponent();
         InitTimeRangeCombo();
         InitChart();
@@ -472,7 +477,13 @@ public partial class TrendChartPage : Page
         if (sender is FrameworkElement fe && fe.Tag is string tag)
         {
             if (!_s7.IsConnected)
-                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "提示",
+                        Content = "PLC 未连接",
+                        CloseButtonText = "确定",
+                    });
             else
                 WriteMotorBit(tag, true);
         }
@@ -483,7 +494,13 @@ public partial class TrendChartPage : Page
         if (sender is FrameworkElement fe && fe.Tag is string tag)
         {
             if (!_s7.IsConnected)
-                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "提示",
+                        Content = "PLC 未连接",
+                        CloseButtonText = "确定",
+                    });
             else
                 WriteMotorBit(tag, false);
         }
@@ -495,7 +512,13 @@ public partial class TrendChartPage : Page
         {
             fe.ReleaseMouseCapture();
             if (!_s7.IsConnected)
-                await new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "PLC 未连接" }.ShowDialogAsync();
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "提示",
+                        Content = "PLC 未连接",
+                        CloseButtonText = "确定",
+                    });
             else
                 WriteMotorBit(tag, false);
         }
