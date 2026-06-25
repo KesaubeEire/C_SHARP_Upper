@@ -14,8 +14,8 @@
             Height="230"
             InitialRotation="-225"
             MaxAngle="270"
-            MaxValue="200"
             MinValue="0"
+            MaxValue="200"
             Background="Transparent">
             <lvc:PieChart.Series>
                 <lvc:SeriesCollection>

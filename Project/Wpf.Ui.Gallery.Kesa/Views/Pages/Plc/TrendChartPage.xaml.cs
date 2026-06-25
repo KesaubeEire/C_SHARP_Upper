@@ -12,6 +12,7 @@ using LiveChartsCore.SkiaSharpView.WPF;
 using SkiaSharp;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Extensions;
+using Wpf.Ui.Gallery.Controls.Plc;
 using Wpf.Ui.Gallery.Models.Plc;
 using TextBlock = System.Windows.Controls.TextBlock;
 using Wpf.Ui.Gallery.Services.Plc;
@@ -40,6 +41,23 @@ public partial class TrendChartPage : Page
         new() { Key = "db6_38", Label = "滑台位置", Unit = "mm",    DbNumber = 6,  ByteOffset = 38, Color = SKColor.Parse("#66BB6A"), Min = -200,  Max = 100 },
         new() { Key = "db7_38", Label = "圆盘角度", Unit = "°",  DbNumber = 7,  ByteOffset = 38, Color = SKColor.Parse("#FFA726"), Min = 0,  Max = 360  },
     ];
+
+    /// <summary>
+    /// 仪表数据源配置 —— 对应 PLC DB 地址
+    /// </summary>
+    private sealed class GaugeDef
+    {
+        public ServoGauge Gauge = null!;
+        public string Key = "", Label = "";
+        public int DbNumber, ByteOffset;
+    }
+
+    /// <summary>
+    /// 速度仪表数据源：
+    /// - 圆盘速度 → DB7.DBD42 (REAL)  量程 0~360
+    /// - 步进速度 → DB6.DBD42 (REAL)  量程 0~100
+    /// </summary>
+    private readonly List<GaugeDef> _gaugeDefs = [];
 
     // 时间范围选项
     private static readonly (string Label, TimeSpan Duration)[] TimeRanges =
@@ -83,7 +101,37 @@ public partial class TrendChartPage : Page
         InitTimeRangeCombo();
         InitChart();
         InitLegend();
+        InitGauges();
         StartMonitors();
+        StartGaugeMonitors();
+    }
+
+    // ===================== 速度仪表初始化 =====================
+
+    /// <summary>
+    /// 初始化两个速度仪表的数据源。
+    /// 数据地址（PLC DB 配置）：
+    /// - 圆盘速度 → DB7.DBD42 (REAL)  量程 0~360
+    /// - 步进速度 → DB6.DBD42 (REAL)  量程 0~100
+    /// </summary>
+    private void InitGauges()
+    {
+        _gaugeDefs.Add(new GaugeDef
+        {
+            Gauge = gaugeDiscSpeed,
+            Key = "gauge_disc",
+            Label = "圆盘速度",
+            DbNumber = 7,
+            ByteOffset = 42,        // DB7.DBD42 — 圆盘速度 REAL
+        });
+        _gaugeDefs.Add(new GaugeDef
+        {
+            Gauge = gaugeStepSpeed,
+            Key = "gauge_step",
+            Label = "步进速度",
+            DbNumber = 6,
+            ByteOffset = 42,        // DB6.DBD42 — 步进速度 REAL
+        });
     }
 
     // ===================== 初始化 =====================
@@ -252,6 +300,51 @@ public partial class TrendChartPage : Page
             monitor.Start();
             _monitors.Add(monitor);
         }
+    }
+
+    // ===================== 速度仪表监控 =====================
+
+    private readonly List<VariableMonitor> _gaugeMonitors = [];
+
+    private void StartGaugeMonitors()
+    {
+        foreach (var g in _gaugeDefs)
+        {
+            var monitor = new VariableMonitor(_s7)
+            {
+                Key = g.Key,
+                Label = g.Label,
+                DbNumber = g.DbNumber,
+                Offset = g.ByteOffset,
+                DataType = "REAL",
+                IntervalMs = 200,
+            };
+            monitor.SampleGenerated += OnGaugeSample;
+            monitor.Start();
+            _gaugeMonitors.Add(monitor);
+        }
+    }
+
+    private void StopGaugeMonitors()
+    {
+        foreach (var m in _gaugeMonitors)
+        {
+            m.SampleGenerated -= OnGaugeSample;
+            m.Stop();
+        }
+        _gaugeMonitors.Clear();
+    }
+
+    private void OnGaugeSample(string key, double val, DateTime ts)
+    {
+        if (_isMock)
+            return;
+
+        var def = _gaugeDefs.FirstOrDefault(g => g.Key == key);
+        if (def == null)
+            return;
+
+        Dispatcher.Invoke(() => def.Gauge.UpdateValue(Math.Abs(val)));
     }
 
     private void StopMonitors()
@@ -514,5 +607,6 @@ public partial class TrendChartPage : Page
     {
         _mock?.Stop();
         StopMonitors();
+        StopGaugeMonitors();
     }
 }

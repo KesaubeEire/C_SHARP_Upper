@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:plc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="趋势图"
     controls:PageControlDocumentation.Show="False"
@@ -107,17 +108,19 @@
                     FontWeight="SemiBold"
                     Text="设备控制" />
 
-                <Grid MinWidth="400" HorizontalAlignment="Center">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <!--  左侧：3×3 按钮  -->
+                    <Grid MinWidth="400" VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
                     <ui:Button
                         Grid.Row="0"
@@ -230,6 +233,57 @@
                         PreviewMouseLeftButtonUp="OnMotorPressUp"
                         Tag="7.0.5" />
                 </Grid>
+
+                    <!--  右侧：速度仪表  -->
+                    <!--
+                        圆盘速度 → DB7.DBD42 (REAL)  量程 0~360
+                        步进速度 → DB6.DBD42 (REAL)  量程 0~100
+                    -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,4"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Text="⭕ 圆盘速度"
+                                TextAlignment="Center" />
+                            <plc:ServoGauge
+                                x:Name="gaugeDiscSpeed"
+                                MinValue="0"
+                                MaxValue="360"
+                                GreenMax="180"
+                                YellowMax="300"
+                                RedMax="360"
+                                UnitLabel="°/s"
+                                NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                UnitBrush="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Margin="24,0,0,0">
+                            <TextBlock
+                                Margin="0,0,0,4"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Text="↗ 步进速度"
+                                TextAlignment="Center" />
+                            <plc:ServoGauge
+                                x:Name="gaugeStepSpeed"
+                                MinValue="0"
+                                MaxValue="100"
+                                GreenMax="50"
+                                YellowMax="80"
+                                RedMax="100"
+                                UnitLabel="mm/s"
+                                NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                UnitBrush="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
 
             </StackPanel>
         </Border>
