@@ -74,12 +74,6 @@ public partial class TrendChartPage : Page
     private bool _isMock;
     private TimeSpan _selectedDuration = TimeRanges[4].Duration; // 默认 30min
 
-    // 主题色
-    private static readonly SKColor AxisColor = SKColor.Parse("#888888");
-    private static readonly SKColor GridColor = SKColor.Parse("#333333");
-    private static readonly SKColor AxisColorLight = SKColor.Parse("#999999");
-    private static readonly SKColor GridColorLight = SKColor.Parse("#CCCCCC");
-
     public TrendChartPage(S7Service s7, AppConfigService config, IContentDialogService contentDialog)
     {
         _s7 = s7;
@@ -139,8 +133,6 @@ public partial class TrendChartPage : Page
                 Name = "时间",
                 NameTextSize = 12,
                 TextSize = 11,
-                LabelsPaint = new SolidColorPaint(AxisColor),
-                SeparatorsPaint = new SolidColorPaint(GridColor) { StrokeThickness = 0.5f },
             },
         ];
 
@@ -154,45 +146,12 @@ public partial class TrendChartPage : Page
                 TextSize = 11,
                 MinLimit = 0,
                 MaxLimit = 100,
-                LabelsPaint = new SolidColorPaint(AxisColor),
-                SeparatorsPaint = new SolidColorPaint(GridColor) { StrokeThickness = 0.5f },
                 ShowSeparatorLines = true,
                 Labeler = v => $"{v:F0}%",
             },
         ];
 
-        // Tooltip
-        trendChart.TooltipPosition = TooltipPosition.Top;
-        var tooltipBg = new SolidColorPaint(new SKColor(30, 30, 30, 230));
-        trendChart.TooltipBackgroundPaint = tooltipBg;
-
-        // 适应主题变化
-        UpdateThemeColors();
-    }
-
-    /// <summary>根据当前主题更新图表颜色</summary>
-    private void UpdateThemeColors()
-    {
-        bool isDark = IsDarkTheme();
-        var axis = isDark ? AxisColor : AxisColorLight;
-        var grid = isDark ? GridColor : GridColorLight;
-
-        if (trendChart.XAxes?.FirstOrDefault() is DateTimeAxis dtAxis)
-        {
-            dtAxis.LabelsPaint = new SolidColorPaint(axis);
-            dtAxis.SeparatorsPaint = new SolidColorPaint(grid) { StrokeThickness = 0.5f };
-        }
-        if (trendChart.YAxes?.FirstOrDefault() is Axis yAxis)
-        {
-            yAxis.LabelsPaint = new SolidColorPaint(axis);
-            yAxis.SeparatorsPaint = new SolidColorPaint(grid) { StrokeThickness = 0.5f };
-        }
-    }
-
-    private static bool IsDarkTheme()
-    {
-        var res = Application.Current.TryFindResource("ApplicationBackgroundBrush");
-        return res is not SolidColorBrush bg || (bg.Color.R < 128 && bg.Color.G < 128 && bg.Color.B < 128);
+        // Tooltip handled by CartesianChartKesaTrend DP
     }
 
     // ===================== 图例 =====================
