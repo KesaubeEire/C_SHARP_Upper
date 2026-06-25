@@ -110,8 +110,8 @@
                     Text="设备控制" />
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <!--  左侧：3×3 按钮  -->
-                    <Grid MinWidth="400" VerticalAlignment="Center">
+                    <!--  左侧：3×5 按钮（每行原有3个 + 使能/复位）  -->
+                    <Grid MinWidth="600" VerticalAlignment="Center">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -121,12 +121,14 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
                     <ui:Button
                         Grid.Row="0"
                         Grid.Column="0"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Success"
@@ -138,7 +140,7 @@
                     <ui:Button
                         Grid.Row="0"
                         Grid.Column="1"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
@@ -150,7 +152,7 @@
                     <ui:Button
                         Grid.Row="0"
                         Grid.Column="2"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Primary"
@@ -163,7 +165,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="0"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Success"
@@ -175,7 +177,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="1"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
@@ -187,7 +189,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="2"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Primary"
@@ -200,7 +202,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="0"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Success"
@@ -212,7 +214,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="1"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
@@ -224,7 +226,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="2"
-                        Width="160"
+                        Width="120"
                         Height="40"
                         Margin="4"
                         Appearance="Primary"
@@ -233,6 +235,58 @@
                         PreviewMouseLeftButtonDown="OnMotorPressDown"
                         PreviewMouseLeftButtonUp="OnMotorPressUp"
                         Tag="7.0.5" />
+
+                    <!--  滑台使能/复位（第一行右侧）  -->
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="3"
+                        Width="120"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="🔧 滑台使能"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.0.0" />
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="4"
+                        Width="120"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="↩ 滑台复位"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.0.1" />
+
+                    <!--  圆盘使能/复位（第二行右侧）  -->
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="3"
+                        Width="120"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="🔧 圆盘使能"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.0" />
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="4"
+                        Width="120"
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="↩ 圆盘复位"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.1" />
                 </Grid>
 
                     <!--  右侧：速度仪表  -->
