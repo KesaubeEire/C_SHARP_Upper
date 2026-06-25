@@ -160,11 +160,50 @@ public class AlarmService
             "KesaPlc",
             "rules.json");
 
+    private static string DefaultRulesPath =>
+        Path.Combine(
+            AppContext.BaseDirectory,
+            "default-rules.json");
+
     public AlarmService(PollingScheduler scheduler)
     {
         _scheduler = scheduler;
         LoadFromFile();
         LoadRules();
+        // 从 JSON 加载的 DB 规则 → 同步创建对应的 DbPollItem
+        SyncDbPollItemsForRules();
+    }
+
+    /// <summary>
+    /// 为所有 DB{N}:{O} 格式的规则自动创建 DbPollItem，确保轮询能读到这些变量。
+    /// UI 添加规则时通过 SyncDbPollItem 同步，此处处理从 default-rules.json 或文件加载的规则。
+    /// </summary>
+    private void SyncDbPollItemsForRules()
+    {
+        var items = _scheduler.Config.DbItems;
+        foreach (var rule in _rules)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(
+                rule.VariableKey, @"^DB(\d+):(\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!match.Success) continue;
+
+            int dbNumber = int.Parse(match.Groups[1].ValueSpan);
+            int offset = int.Parse(match.Groups[2].ValueSpan);
+
+            // 已存在则跳过
+            if (items.Any(i => i.DbNumber == dbNumber && i.Offset == offset))
+                continue;
+
+            items.Add(new DbPollItem
+            {
+                DbNumber = dbNumber,
+                Offset = offset,
+                DataType = rule.DataType,
+                Label = rule.Description,
+                Enabled = rule.IsEnabled,
+            });
+        }
     }
 
     /// <summary>所有历史报警 (最新在前)。</summary>
@@ -236,6 +275,9 @@ public class AlarmService
 
     public void Subscribe()
     {
+        // 确保所有 DB 规则有对应的 DbPollItem（默认规则加载时已同步，
+        // 但防御性再同步一次，覆盖运行时修改的场景）
+        SyncDbPollItemsForRules();
         _scheduler.DataUpdated += OnDataUpdated;
     }
 
@@ -484,22 +526,54 @@ public class AlarmService
         }
     }
 
-    /// <summary>从 JSON 文件加载规则。</summary>
+    /// <summary>
+    /// 从 JSON 文件加载规则。
+    /// 优先加载 %APPDATA% 中用户编辑过的规则（非空时）；
+    /// 若为空文件或不存在，则从应用自带的 default-rules.json 复制一份作为初始规则。
+    /// </summary>
     public void LoadRules()
     {
         try
         {
-            if (!File.Exists(RulesPath)) return;
-            var json = File.ReadAllText(RulesPath, Encoding.UTF8);
-            var data = JsonSerializer.Deserialize<List<AlarmRule>>(json, JsonOptions);
-            if (data == null) return;
-
-            _rules.Clear();
-            Rules.Clear();
-            foreach (var rule in data)
+            // 尝试从 %APPDATA% 读取用户规则
+            if (File.Exists(RulesPath))
             {
-                _rules.Add(rule);
-                Rules.Add(rule);
+                var json = File.ReadAllText(RulesPath, Encoding.UTF8);
+                var data = JsonSerializer.Deserialize<List<AlarmRule>>(json, JsonOptions);
+                if (data != null && data.Count > 0)
+                {
+                    _rules.Clear();
+                    Rules.Clear();
+                    foreach (var rule in data)
+                    {
+                        _rules.Add(rule);
+                        Rules.Add(rule);
+                    }
+                    return; // 用户有规则 → 加载完成
+                }
+                // 文件存在但为空 → 继续往下走，从默认复制
+            }
+
+            // %APPDATA% 无有效规则 → 从应用自带默认规则复制
+            if (File.Exists(DefaultRulesPath))
+            {
+                var dir = Path.GetDirectoryName(RulesPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+                File.Copy(DefaultRulesPath, RulesPath, overwrite: true);
+
+                var json = File.ReadAllText(RulesPath, Encoding.UTF8);
+                var data = JsonSerializer.Deserialize<List<AlarmRule>>(json, JsonOptions);
+                if (data != null)
+                {
+                    _rules.Clear();
+                    Rules.Clear();
+                    foreach (var rule in data)
+                    {
+                        _rules.Add(rule);
+                        Rules.Add(rule);
+                    }
+                }
             }
         }
         catch (Exception ex)

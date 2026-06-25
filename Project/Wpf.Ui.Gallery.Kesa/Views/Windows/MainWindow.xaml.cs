@@ -5,6 +5,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Media;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Controls.Sidebar;
@@ -84,7 +85,7 @@ public partial class MainWindow : IWindow
 
             // 检查点击是否发生在 PpeConnectionSection 内部
             var insidePlcSection = false;
-            var dep = e.OriginalSource as DependencyObject;
+            DependencyObject? dep = e.OriginalSource as DependencyObject;
             while (dep != null)
             {
                 if (dep.Equals(plcSection))
@@ -92,7 +93,13 @@ public partial class MainWindow : IWindow
                     insidePlcSection = true;
                     break;
                 }
-                dep = VisualTreeHelper.GetParent(dep);
+                dep = dep switch
+                {
+                    Visual => VisualTreeHelper.GetParent(dep),
+                    ContentElement ce => ContentOperations.GetParent(ce)
+                                         ?? LogicalTreeHelper.GetParent(dep),
+                    _ => LogicalTreeHelper.GetParent(dep),
+                };
             }
 
             if (!insidePlcSection)
@@ -107,7 +114,13 @@ public partial class MainWindow : IWindow
                     or ScrollBar or Wpf.Ui.Controls.TextBox)
                     return;
 
-                dep = VisualTreeHelper.GetParent(dep);
+                dep = dep switch
+                {
+                    Visual => VisualTreeHelper.GetParent(dep),
+                    ContentElement ce => ContentOperations.GetParent(ce)
+                                         ?? LogicalTreeHelper.GetParent(dep),
+                    _ => LogicalTreeHelper.GetParent(dep),
+                };
             }
 
             // 非交互区域 → 拦截，NavigationViewItem 不会收到事件

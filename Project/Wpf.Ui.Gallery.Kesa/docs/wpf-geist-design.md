@@ -215,7 +215,10 @@ public static Brush GetResourceBrush(string key, Color fallback)
 | 📡 | 信号/通信 | `SymbolRegular.Wifi424` |
 | 📄 | 文档/空状态 | `SymbolRegular.Document24` |
 
-> 注意：WPF UI 的 `SymbolIcon` 通过 `ui:SymbolIcon` 标记扩展使用，Visual Studio 不提供智能感知。
+> ⚠️ **重要：XAML 中不要加 `SymbolRegular.` 前缀！**
+> 标准 `Enum.Parse` 无法解析 `SymbolRegular.Play24`（短类型名前缀），XAML 中只需写 `Play24`。
+> C# 代码中才需要完整写法：`SymbolRegular.Play24`。
+>
 > 完整列表见 [Fluent System Icons](https://github.com/microsoft/fluentui-system-icons)。
 > 可选后缀：`24`（默认）、`20`、`16`、`32`、`48`。
 
@@ -225,14 +228,14 @@ public static Brush GetResourceBrush(string key, Color fallback)
 <!-- ✅ 正确：Button + SymbolIcon -->
 <ui:Button Appearance="Primary" Content="连接">
     <ui:Button.Icon>
-        <ui:SymbolIcon Symbol="SymbolRegular.PlugDisconnected24" />
+        <ui:SymbolIcon Symbol="PlugDisconnected24" />
     </ui:Button.Icon>
 </ui:Button>
 
 <!-- ✅ 正确：只有图标没有文字 -->
 <ui:Button Appearance="Secondary" ToolTip="删除">
     <ui:Button.Icon>
-        <ui:SymbolIcon Symbol="SymbolRegular.Dismiss24" />
+        <ui:SymbolIcon Symbol="Dismiss24" />
     </ui:Button.Icon>
 </ui:Button>
 

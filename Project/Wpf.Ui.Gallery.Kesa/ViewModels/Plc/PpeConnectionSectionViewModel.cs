@@ -28,6 +28,11 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         // 构造函数：直接从配置恢复字段（不走属性 setter，避免触发 Save）
         LoadAdapters();
         RestoreConnectionParams();
+
+        // 始终监听轮询状态事件（无论从哪启动/停止）
+        _scheduler.DataUpdated += OnPollDataUpdated;
+        _scheduler.PollingStarted += OnPollingStarted;
+        _scheduler.PollingStopped += OnPollingStopped;
     }
 
     // ===== Observable Properties =====
@@ -297,39 +302,41 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
             interval = 500;
 
         _scheduler.Config.FastInterval = interval;
+        _scheduler.Config.DbIp = IpAddress.Trim();
+        _scheduler.Config.DbRack = int.TryParse(Rack, out int rack) ? rack : 0;
+        _scheduler.Config.DbSlot = int.TryParse(Slot, out int slot) ? slot : 1;
         _scheduler.Config.Fast.PollIAddr = _config.ManualIAddress;
         _scheduler.Config.Fast.PollQAddr = _config.ManualQAddress;
         _scheduler.Config.Fast.PollMAddr = _config.ManualMAddress;
 
-        _scheduler.DataUpdated += OnPollDataUpdated;
         _scheduler.Start(_s7);
-        IsPolling = _scheduler.IsConnected;
-
-        if (IsPolling)
-        {
-            PollStatusText = "轮询运行中";
-            PollQuality = LedQuality.Good;
-        }
-        else
-        {
-            PollStatusText = "轮询启动失败";
-            PollQuality = LedQuality.Bad;
-        }
+        // 状态更新由 OnPollingStarted 事件处理
     }
 
     [RelayCommand]
     private void StopPolling()
     {
-        _scheduler.DataUpdated -= OnPollDataUpdated;
         _scheduler.Stop();
-        IsPolling = false;
-        PollStatusText = "已停止";
-        PollQuality = LedQuality.Disabled;
+        // 状态更新由 OnPollingStopped 事件处理
     }
 
     private void OnPollDataUpdated(HashSet<string> _)
     {
         UpdateLatency(_scheduler.LatencyMs);
+    }
+
+    private void OnPollingStarted()
+    {
+        IsPolling = _scheduler.IsRunning;
+        PollStatusText = _scheduler.IsRunning ? "轮询运行中" : "轮询启动失败";
+        PollQuality = _scheduler.IsRunning ? LedQuality.Good : LedQuality.Bad;
+    }
+
+    private void OnPollingStopped()
+    {
+        IsPolling = false;
+        PollStatusText = "已停止";
+        PollQuality = LedQuality.Disabled;
     }
 
     public void UpdateLatency(long ms)

@@ -1,0 +1,28 @@
+[
+  {
+    "VariableKey": "DB6:38",
+    "DataType": "REAL",
+    "Description": "滑台位置过低报警",
+    "Severity": 1,
+    "ConditionType": 2,
+    "Threshold": -200.0,
+    "Deadband": 4.0,
+    "OnDelayMs": 1000,
+    "OffDelayMs": 0,
+    "Area": "滑台",
+    "IsEnabled": true
+  },
+  {
+    "VariableKey": "DB6:38",
+    "DataType": "REAL",
+    "Description": "滑台位置过高报警",
+    "Severity": 2,
+    "ConditionType": 0,
+    "Threshold": 30.0,
+    "Deadband": 1.0,
+    "OnDelayMs": 1000,
+    "OffDelayMs": 0,
+    "Area": "滑台",
+    "IsEnabled": true
+  }
+]

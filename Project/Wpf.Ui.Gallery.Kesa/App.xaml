@@ -36,6 +36,7 @@
             <helpers:InverseBoolConverter x:Key="InverseBoolConverter" />
             <helpers:BoolToQualityConverter x:Key="BoolToQualityConverter" />
             <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+            <helpers:NullToBoolConverter x:Key="NullToBoolConverter" />
 
         </ResourceDictionary>
     </Application.Resources>

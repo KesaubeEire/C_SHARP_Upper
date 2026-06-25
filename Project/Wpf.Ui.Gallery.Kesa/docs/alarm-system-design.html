@@ -97,6 +97,7 @@
     <li><strong>追责可溯</strong> — 谁在什么时候确认/搁置了报警，留痕</li>
     <li><strong>顺手导出</strong> — 一键导出 CSV，方便对接第三方分析工具</li>
     <li><strong>不死数据</strong> — 重启程序不丢历史报警，自动持久化</li>
+    <li><strong>规则即文件</strong> — 默认规则以应用自带 JSON 文件发布，不硬编码在代码中</li>
   </ul>
 </div>
 
@@ -289,9 +290,18 @@
 
 <h3>持久化方案</h3>
 <div class="card">
-  <p><strong>存储路径：</strong><code>%APPDATA%\KesaPlc\alarms.json</code></p>
+  <p><strong>报警历史存储路径：</strong><code>%APPDATA%\KesaPlc\alarms.json</code></p>
+  <p><strong>规则存储路径：</strong><code>%APPDATA%\KesaPlc\rules.json</code></p>
+  <p><strong>默认规则文件：</strong><code>{EXE 目录}\default-rules.json</code>（应用自带，只读）</p>
   <p><strong>格式：</strong>JSON 数组，UTF-8 编码</p>
-  <p><strong>策略：</strong></p>
+  <p><strong>规则加载策略：</strong></p>
+  <ul>
+    <li>优先加载 <code>%APPDATA%\KesaPlc\rules.json</code>（用户编辑后的规则）</li>
+    <li>若该文件不存在或为空，从应用自带的 <code>default-rules.json</code> 复制一份</li>
+    <li>用户通过 UI 编辑规则后保存到 <code>%APPDATA%</code>，不会覆盖默认文件</li>
+    <li>想重置为默认规则 → 删除 <code>%APPDATA%\KesaPlc\rules.json</code> 重启应用</li>
+  </ul>
+  <p><strong>报警历史策略：</strong></p>
   <ul>
     <li>每次新报警产生时 <strong>追加保存</strong>（性能优化：防抖 2 秒写一次）</li>
     <li>最大保留 <strong>10000 条</strong>历史报警，超出时删除最早的</li>
@@ -421,6 +431,12 @@
   <tr><td><code>Services/Plc/AlarmService.cs</code></td><td><span class="tag tag-blue">增强</span></td><td>AlarmRule 新增 DataType 属性</td></tr>
   <tr><td><code>ViewModels/Pages/Plc/AlarmViewModel.cs</code></td><td><span class="tag tag-blue">增强</span></td><td>EditDataType + SyncDbPollItem 自动同步</td></tr>
   <tr><td><code>Views/Pages/Plc/AlarmPage.xaml</code></td><td><span class="tag tag-blue">增强</span></td><td>规则列表 DataType 列 + 编辑表单 DataType 下拉</td></tr>
+      <tr><td style="border-top:2px solid var(--border)" colspan="3"><strong>v1.1 — 规则文件化 + DB 轮询修复 + Geist 设计规范</strong></td></tr>
+      <tr><td><code>default-rules.json</code></td><td><span class="tag tag-green">新建</span></td><td>应用自带默认报警规则（DB6:38 滑台位置低限/高限）</td></tr>
+      <tr><td><code>Services/Plc/AlarmService.cs</code></td><td><span class="tag tag-blue">增强</span></td><td>LoadRules 空文件回退默认 + SyncDbPollItemsForRules 自动同步 DbPollItem</td></tr>
+      <tr><td><code>ViewModels/Plc/PpeConnectionSectionViewModel.cs</code></td><td><span class="tag tag-red">修复</span></td><td>StartPolling 补传 DbIp/DbRack/DbSlot，DB 轮询才能连接</td></tr>
+      <tr><td><code>Views/Pages/Plc/AlarmPage.xaml</code></td><td><span class="tag tag-purple">重构</span></td><td>Geist 设计规范：FontTypography / SymbolIcon / DynamicResource / 4px 间距</td></tr>
+      <tr><td><code>Kesa_PLC_TEST.csproj</code></td><td><span class="tag tag-blue">增强</span></td><td>添加 default-rules.json 到输出目录</td></tr></td></tr>
 </table>
 
 <hr style="border-color:var(--border);margin:48px 0 24px;">

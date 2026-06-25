@@ -614,7 +614,90 @@ alarmService.AddRule(new AlarmRule
 ├── alarms.json       ← 报警历史（最多 10000 条）
 └── rules.json        ← 报警规则（UI + 代码共用）</pre>
 
-<h2 id="faq">十一、常见问题</h2>
+<h2 id="session2">十二、Session 2 — 2026-06-25：规则文件化 + DB 轮询修复 + Geist 设计规范</h2>
+
+<p>本次 Session 主要解决报警不触发的根因，并将规则改为文件化发布，同时应用 Geist 设计规范改造 UI。</p>
+
+<h3>改动汇总</h3>
+
+<table>
+  <tr><th>文件</th><th>操作</th><th>核心内容</th></tr>
+  <tr>
+    <td class="file-path">default-rules.json</td>
+    <td><span class="tag tag-green">新建</span></td>
+    <td>应用自带默认规则（DB6:38 滑台位置低限 -200、高限 30）</td>
+  </tr>
+  <tr>
+    <td class="file-path">Services/Plc/AlarmService.cs</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td>LoadRules 空文件回退默认 + SyncDbPollItemsForRules 自动创建 DbPollItem</td>
+  </tr>
+  <tr>
+    <td class="file-path">ViewModels/Plc/PpeConnectionSectionViewModel.cs</td>
+    <td><span class="tag tag-red">修复</span></td>
+    <td>StartPolling 补传 DbIp/DbRack/DbSlot 到 PollingScheduler</td>
+  </tr>
+  <tr>
+    <td class="file-path">Views/Pages/Plc/AlarmPage.xaml</td>
+    <td><span class="tag tag-purple">重构</span></td>
+    <td>Geist 规范：FontTypography / SymbolIcon / DynamicResource / 4px 间距</td>
+  </tr>
+  <tr>
+    <td class="file-path">Kesa_PLC_TEST.csproj</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td>添加 default-rules.json 到输出目录</td>
+  </tr>
+  <tr>
+    <td class="file-path">docs/alarm-system-design.html</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td>更新持久化方案、文件变更清单</td>
+  </tr>
+  <tr>
+    <td class="file-path">docs/alarm-system-changelog.html</td>
+    <td><span class="tag tag-blue">增强</span></td>
+    <td>本 Session 记录</td>
+  </tr>
+</table>
+
+<h3>修复的 Bug</h3>
+
+<table>
+  <tr><th>Bug</th><th>根因</th><th>修复方式</th></tr>
+  <tr>
+    <td>报警不触发</td>
+    <td><code>PpeConnectionSectionViewModel.StartPolling()</code> 未设置 <code>Config.DbIp</code>，DB 客户端连接空 IP 失败，整个 DB 轮询被跳过</td>
+    <td>在 StartPolling 中补传 <code>DbIp</code>、<code>DbRack</code>、<code>DbSlot</code></td>
+  </tr>
+  <tr>
+    <td>默认规则不生效</td>
+    <td><code>LoadRules()</code> 从 JSON 加载规则后未创建 <code>DbPollItem</code>，调度器不知道要轮询 DB6</td>
+    <td>新增 <code>SyncDbPollItemsForRules()</code>，自动为 DB{N}:{O} 格式规则创建轮询项</td>
+  </tr>
+  <tr>
+    <td>%APPDATA% 空文件阻止默认规则</td>
+    <td>旧版代码可能留下空 rules.json，新版判断文件存在就跳过默认</td>
+    <td>LoadRules 现在检查 <code>data.Count > 0</code>，空文件也回退到默认</td>
+  </tr>
+</table>
+
+<h3>设计规范变更</h3>
+
+<table>
+  <tr><th>维度</th><th>原来</th><th>现在 (Geist)</th></tr>
+  <tr><td>按钮图标</td><td>emoji（▶ ■ 📥 ⚙）</td><td>WPF UI SymbolIcon（Play24 / Stop24 / Settings24 等）</td></tr>
+  <tr><td>字体大小</td><td><code>FontSize="22"</code> <code>FontSize="10"</code> 等</td><td><code>FontTypography="Title"</code> <code>FontTypography="Caption"</code></td></tr>
+  <tr><td>颜色</td><td>硬编码 <code>#FFD32F2F</code></td><td><code>{DynamicResource SystemFillColorCriticalBrush}</code></td></tr>
+  <tr><td>间距</td><td>8px 段间距</td><td>4px 网格（16px 段间距）</td></tr>
+  <tr><td>按钮状态色</td><td>启动/停止颜色不变</td><td>启动=绿色 Success，停止=红色 Danger</td></tr>
+</table>
+
+<h3>存储路径</h3>
+<pre>%APPDATA%\KesaPlc├── alarms.json       ← 报警历史（最多 10000 条）
+└── rules.json        ← 用户编辑的报警规则
+{EXE 目录}├── Kesa_PLC_TEST.exe
+└── default-rules.json ← 应用自带默认规则（只读，首次运行复制到 %APPDATA%）</pre>
+
+
 
 <div class="card">
 <h4>Q: 为什么点「启动监控」后没有报警产生？</h4>
