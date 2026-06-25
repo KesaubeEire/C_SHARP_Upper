@@ -4,7 +4,6 @@
 // All Rights Reserved.
 
 using Wpf.Ui.Gallery.Services.Contracts;
-using Wpf.Ui.Gallery.Views.Pages;
 using Wpf.Ui.Gallery.Views.Windows;
 
 namespace Wpf.Ui.Gallery.Services;
@@ -64,6 +63,6 @@ public class ApplicationHostService : IHostedService
             return;
         }
 
-        _ = mainWindow.NavigationView.Navigate(typeof(DashboardPage));
+        _ = mainWindow.NavigationView.Navigate(typeof(Wpf.Ui.Gallery.Views.Pages.Plc.IoMonitorPage));
     }
 }
