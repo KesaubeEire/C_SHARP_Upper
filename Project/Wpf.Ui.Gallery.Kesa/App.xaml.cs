@@ -54,6 +54,7 @@ public partial class App
                 // PLC Services
                 _ = services.AddSingleton<PpeConnectionSectionViewModel>();
                 _ = services.AddSingleton<S7Service>();
+                _ = services.AddSingleton<PollingStore>();
                 _ = services.AddSingleton<PollingScheduler>();
                 _ = services.AddSingleton<AppConfigService>(_ => AppConfigService.Load());
                 _ = services.AddSingleton<AlarmService>();

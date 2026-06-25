@@ -2,12 +2,14 @@ using System.Collections.Concurrent;
 using System.Timers;
 using Sharp7;
 using Timer = System.Timers.Timer;
+using Wpf.Ui.Gallery.Controls.Plc;
 using Wpf.Ui.Gallery.Models.Plc;
 
 namespace Wpf.Ui.Gallery.Services.Plc;
 
 public class PollingScheduler : IDisposable
 {
+    private readonly PollingStore _store;
     private Timer? _timer;
     private volatile bool _busy;
     private S7Service? _s7;
@@ -17,22 +19,22 @@ public class PollingScheduler : IDisposable
     private readonly ConcurrentDictionary<string, byte> _lastValues = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, double> _typedValues = new(StringComparer.OrdinalIgnoreCase);
 
+    public PollingScheduler(PollingStore store)
+    {
+        _store = store;
+    }
+
     public PollingConfig Config { get; } = new();
-    public bool IsRunning => _timer?.Enabled ?? false;
-    public bool IsConnected { get; private set; }
-    public string? LastError { get; private set; }
-    public long LatencyMs { get; private set; }
+    public bool IsRunning => _store.IsRunning;
+    public long LatencyMs => _store.LatencyMs;
     public ConcurrentDictionary<string, byte> LastValues => _lastValues;
 
     public event Action<HashSet<string>>? DataUpdated;
-    public event Action? PollingStarted;
-    public event Action? PollingStopped;
 
     public void Start(S7Service s7, int port = 102)
     {
         Stop();
         _s7 = s7;
-        IsConnected = s7.IsConnected;
 
         if (Config.DbItems.Any(x => x.Enabled))
         {
@@ -40,7 +42,6 @@ public class PollingScheduler : IDisposable
             int ret = _dbClient.ConnectTo(Config.DbIp, Config.DbRack, Config.DbSlot);
             if (ret != 0)
             {
-                LastError = "连接失败: " + ret;
                 _dbClient = null;
             }
         }
@@ -50,7 +51,9 @@ public class PollingScheduler : IDisposable
         _timer.AutoReset = false;
         _timer.Start();
 
-        PollingStarted?.Invoke();
+        _store.IsRunning = true;
+        _store.StatusText = "轮询运行中";
+        _store.Quality = LedQuality.Good;
     }
 
     public void Stop()
@@ -62,7 +65,9 @@ public class PollingScheduler : IDisposable
         _dbClient = null;
         _busy = false;
 
-        PollingStopped?.Invoke();
+        _store.IsRunning = false;
+        _store.StatusText = "已停止";
+        _store.Quality = LedQuality.Disabled;
     }
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
@@ -123,7 +128,7 @@ public class PollingScheduler : IDisposable
         finally
         {
             sw.Stop();
-            LatencyMs = sw.ElapsedMilliseconds;
+            _store.LatencyMs = sw.ElapsedMilliseconds;
             _busy = false;
             if (_timer != null)
             {

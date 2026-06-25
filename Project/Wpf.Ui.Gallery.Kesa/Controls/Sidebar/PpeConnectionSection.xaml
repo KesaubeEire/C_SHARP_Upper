@@ -197,7 +197,7 @@
                         HorizontalAlignment="Stretch"
                         Appearance="Secondary"
                         Command="{Binding StopPollingCommand}"
-                        IsEnabled="{Binding IsPolling}">
+                        IsEnabled="{Binding Store.IsRunning}">
                         <ui:Button.Icon>
                             <ui:SymbolIcon Symbol="Stop24" />
                         </ui:Button.Icon>
@@ -216,10 +216,10 @@
                             Height="10"
                             Margin="0,0,8,0"
                             VerticalAlignment="Center"
-                            Quality="{Binding PollQuality}" />
+                            Quality="{Binding Store.Quality}" />
                         <ui:TextBlock
                             FontTypography="Caption"
-                            Text="{Binding PollStatusText}" />
+                            Text="{Binding Store.StatusText}" />
                     </StackPanel>
                 </Border>
             </StackPanel>

@@ -17,22 +17,27 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     private readonly PollingScheduler _scheduler;
     private readonly IContentDialogService _contentDialog;
 
-    public PpeConnectionSectionViewModel(S7Service s7, PollingScheduler scheduler, AppConfigService config,
-        IContentDialogService contentDialog)
+    public PollingStore Store { get; }
+
+    public PpeConnectionSectionViewModel(S7Service s7, PollingScheduler scheduler, PollingStore store,
+        AppConfigService config, IContentDialogService contentDialog)
     {
         _s7 = s7;
         _scheduler = scheduler;
         _config = config;
         _contentDialog = contentDialog;
+        Store = store;
 
         // 构造函数：直接从配置恢复字段（不走属性 setter，避免触发 Save）
         LoadAdapters();
         RestoreConnectionParams();
 
-        // 始终监听轮询状态事件（无论从哪启动/停止）
-        _scheduler.DataUpdated += OnPollDataUpdated;
-        _scheduler.PollingStarted += OnPollingStarted;
-        _scheduler.PollingStopped += OnPollingStopped;
+        // 延迟显示同步到 ViewModel 属性（供 LatencyColor 计算）
+        Store.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PollingStore.LatencyMs))
+                LatencyText = $"{Store.LatencyMs} ms";
+        };
     }
 
     // ===== Observable Properties =====
@@ -44,20 +49,11 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     private LedQuality _connectionQuality = LedQuality.Disabled;
 
     [ObservableProperty]
-    private string _pollStatusText = "就绪";
-
-    [ObservableProperty]
-    private LedQuality _pollQuality = LedQuality.Disabled;
-
-    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LatencyColor))]
     private string _latencyText = "--";
 
     [ObservableProperty]
     private bool _isConnected;
-
-    [ObservableProperty]
-    private bool _isPolling;
 
     [ObservableProperty]
     private bool _showStatusBar;
@@ -310,37 +306,11 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         _scheduler.Config.Fast.PollMAddr = _config.ManualMAddress;
 
         _scheduler.Start(_s7);
-        // 状态更新由 OnPollingStarted 事件处理
     }
 
     [RelayCommand]
     private void StopPolling()
     {
         _scheduler.Stop();
-        // 状态更新由 OnPollingStopped 事件处理
-    }
-
-    private void OnPollDataUpdated(HashSet<string> _)
-    {
-        UpdateLatency(_scheduler.LatencyMs);
-    }
-
-    private void OnPollingStarted()
-    {
-        IsPolling = _scheduler.IsRunning;
-        PollStatusText = _scheduler.IsRunning ? "轮询运行中" : "轮询启动失败";
-        PollQuality = _scheduler.IsRunning ? LedQuality.Good : LedQuality.Bad;
-    }
-
-    private void OnPollingStopped()
-    {
-        IsPolling = false;
-        PollStatusText = "已停止";
-        PollQuality = LedQuality.Disabled;
-    }
-
-    public void UpdateLatency(long ms)
-    {
-        LatencyText = $"{ms} ms";
     }
 }

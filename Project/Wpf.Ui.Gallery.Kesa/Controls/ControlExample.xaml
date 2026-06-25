@@ -3,7 +3,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:Wpf.Ui.Gallery.Controls"
     xmlns:helpers="clr-namespace:Wpf.Ui.Gallery.Helpers"
-    xmlns:syntax="http://schemas.lepo.co/wpfui/2022/xaml/syntax"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
     <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
@@ -62,12 +61,15 @@
                                         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                         Text="XAML" />
 
-                                    <syntax:CodeBlock
+                                    <Border
                                         Padding="0"
                                         Background="Transparent"
                                         BorderBrush="Transparent"
-                                        BorderThickness="0"
-                                        Content="{TemplateBinding XamlCode}" />
+                                        BorderThickness="0">
+                                        <ui:TextBlock
+                                            FontFamily="Consolas"
+                                            Text="{TemplateBinding XamlCode}" />
+                                    </Border>
                                 </StackPanel>
 
                                 <Border
@@ -83,12 +85,15 @@
                                         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                         Text="C#" />
 
-                                    <syntax:CodeBlock
+                                    <Border
                                         Padding="0"
                                         Background="Transparent"
                                         BorderBrush="Transparent"
-                                        BorderThickness="0"
-                                        Content="{TemplateBinding CsharpCode}" />
+                                        BorderThickness="0">
+                                        <ui:TextBlock
+                                            FontFamily="Consolas"
+                                            Text="{TemplateBinding CsharpCode}" />
+                                    </Border>
                                 </StackPanel>
                             </StackPanel>
                         </ui:CardExpander>

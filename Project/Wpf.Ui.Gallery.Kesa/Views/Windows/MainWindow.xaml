@@ -133,7 +133,7 @@
                         FontSize="12"
                         Height="26"
                         Icon="{ui:SymbolIcon Stop24}"
-                        IsEnabled="{Binding PlcViewModel.IsPolling}"
+                        IsEnabled="{Binding PlcViewModel.Store.IsRunning}"
                         ToolTip="停止轮询"
                         ToolTipService.ShowOnDisabled="True" />
 
@@ -156,7 +156,7 @@
                         Height="10"
                         Margin="6,2,0,0"
                         VerticalAlignment="Center"
-                        Quality="{Binding PlcViewModel.PollQuality}" />
+                        Quality="{Binding PlcViewModel.Store.Quality}" />
 
                     <!-- 与主题按钮之间的分隔 -->
                     <Rectangle

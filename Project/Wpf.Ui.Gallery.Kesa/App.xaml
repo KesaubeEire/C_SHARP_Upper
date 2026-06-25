@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:helpers="clr-namespace:Wpf.Ui.Gallery.Helpers"
     xmlns:local="clr-namespace:Wpf.Ui.Gallery"
-    xmlns:syntax="http://schemas.lepo.co/wpfui/2022/xaml/syntax"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     DispatcherUnhandledException="OnDispatcherUnhandledException"
     Exit="OnExit"
@@ -17,8 +16,6 @@
                 <ui:ControlsDictionary />
 
                 <ResourceDictionary Source="Controls/TitleBarStyles.xaml" />
-
-                <syntax:SyntaxHighlightDictionary />
 
                 <ResourceDictionary Source="Controls/GalleryNavigationPresenter.xaml" />
                 <ResourceDictionary Source="Controls/ControlExample.xaml" />
