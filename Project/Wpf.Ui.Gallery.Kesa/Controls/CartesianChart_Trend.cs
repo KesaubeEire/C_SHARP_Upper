@@ -24,6 +24,8 @@ public class CartesianChartKesaTrend : CartesianChartKesa
                 ApplyAxisLabelBrush(AxisLabelBrush);
             if (TooltipBgBrush is not null)
                 ApplyTooltipBgBrush(TooltipBgBrush);
+            if (TooltipTextBrush is not null)
+                ApplyTooltipTextBrush(TooltipTextBrush);
         };
     }
 
@@ -53,7 +55,14 @@ public class CartesianChartKesaTrend : CartesianChartKesa
 
     private void ApplyTooltipBgBrush(Brush brush)
     {
-        TooltipBackgroundPaint = new SolidColorPaint(BrushToSkColor(brush));
+        var skColor = BrushToSkColor(brush);
+        // 加轻微透明度，浅色模式悬浮效果更柔和
+        TooltipBackgroundPaint = new SolidColorPaint(skColor.WithAlpha(240));
+    }
+
+    private void ApplyTooltipTextBrush(Brush brush)
+    {
+        TooltipTextPaint = new SolidColorPaint(BrushToSkColor(brush));
     }
 
     public static readonly DependencyProperty AxisLabelBrushProperty =
@@ -84,6 +93,16 @@ public class CartesianChartKesaTrend : CartesianChartKesa
     {
         get => (Brush)GetValue(TooltipBgBrushProperty);
         set => SetValue(TooltipBgBrushProperty, value);
+    }
+
+    public static readonly DependencyProperty TooltipTextBrushProperty =
+        DependencyProperty.Register(nameof(TooltipTextBrush), typeof(Brush), typeof(CartesianChartKesaTrend),
+            new PropertyMetadata(new SolidColorBrush(Colors.Black), OnTooltipTextBrushChanged));
+
+    public Brush TooltipTextBrush
+    {
+        get => (Brush)GetValue(TooltipTextBrushProperty);
+        set => SetValue(TooltipTextBrushProperty, value);
     }
 
     private static SKColor BrushToSkColor(Brush brush)
@@ -131,6 +150,14 @@ public class CartesianChartKesaTrend : CartesianChartKesa
         if (d is CartesianChartKesaTrend c && e.NewValue is Brush b)
         {
             c.TooltipBackgroundPaint = new SolidColorPaint(BrushToSkColor(b));
+        }
+    }
+
+    private static void OnTooltipTextBrushChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is CartesianChartKesaTrend c && e.NewValue is Brush b)
+        {
+            c.TooltipTextPaint = new SolidColorPaint(BrushToSkColor(b));
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
+using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
@@ -155,7 +156,7 @@ public partial class TrendChartPage : Page
             double geoSize = trendChart.GeometrySize;
             double fillOpacity = trendChart.FillOpacity;
 
-            _series.Add(new LineSeries<NormPoint>
+            var series = new LineSeries<NormPoint>
             {
                 Values = buf,
                 Name = $"{ch.Label} ({ch.Unit})",
@@ -167,7 +168,11 @@ public partial class TrendChartPage : Page
                 LineSmoothness = (float)smoothness,
                 GeometryStroke = geoSize > 0 ? new SolidColorPaint(ch.Color) : null,
                 GeometryFill = geoSize > 0 ? new SolidColorPaint(SKColors.White) : null,
-            });
+            };
+            // 悬浮提示显示：实际值 (百分比)
+            if (series is ICartesianSeries cs)
+                cs.YToolTipLabelFormatter = point => $"{(point.Context.DataSource as NormPoint)?.RawValue ?? point.Coordinate.PrimaryValue:F2} {ch.Unit} ({point.Coordinate.PrimaryValue:F0}%)";
+            _series.Add(series);
         }
 
         trendChart.Series = _series;
@@ -192,7 +197,7 @@ public partial class TrendChartPage : Page
                 Name = "百分比",
                 NameTextSize = 12,
                 TextSize = 11,
-                MinLimit = 0,
+                MinLimit = -5,
                 MaxLimit = 100,
                 ShowSeparatorLines = true,
                 Labeler = v => $"{v:F0}%",

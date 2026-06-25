@@ -78,7 +78,8 @@
                     ZoomMode="X"
                     AxisLabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
                     AxisGridBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    TooltipBgBrush="{DynamicResource CardBackground}" />
+                    TooltipBgBrush="{DynamicResource CardBackground}"
+                    TooltipTextBrush="{DynamicResource TextFillColorPrimaryBrush}" />
                 <!--  图例 + 实时值  -->
                 <Border
                     x:Name="legendBar"
