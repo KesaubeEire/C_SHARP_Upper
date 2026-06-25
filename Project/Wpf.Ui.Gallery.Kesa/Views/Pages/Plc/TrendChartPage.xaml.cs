@@ -182,15 +182,15 @@ public partial class TrendChartPage : Page
             });
 
             // 标签 + 实时值
-            stack.Children.Add(new TextBlock
+            var labelTb = new TextBlock
             {
                 Text = $"{ch.Label}: ",
                 FontSize = 13,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = Application.Current.TryFindResource("TextFillColorPrimaryBrush") as Brush
-                             ?? new SolidColorBrush(Colors.White),
                 VerticalAlignment = VerticalAlignment.Center,
-            });
+            };
+            labelTb.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorPrimaryBrush");
+            stack.Children.Add(labelTb);
 
             var valTb = new TextBlock
             {
@@ -204,15 +204,15 @@ public partial class TrendChartPage : Page
             stack.Children.Add(valTb);
 
             // 单位
-            stack.Children.Add(new TextBlock
+            var unitTb = new TextBlock
             {
                 Text = $" {ch.Unit}",
                 FontSize = 12,
-                Foreground = Application.Current.TryFindResource("TextFillColorSecondaryBrush") as Brush
-                             ?? new SolidColorBrush(Colors.Gray),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(2, 0, 0, 0),
-            });
+            };
+            unitTb.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorSecondaryBrush");
+            stack.Children.Add(unitTb);
 
             _legendItems.Add(border);
             legendPanel.Children.Add(border);

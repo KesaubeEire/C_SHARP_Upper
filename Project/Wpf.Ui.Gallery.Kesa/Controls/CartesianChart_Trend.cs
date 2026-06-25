@@ -12,6 +12,50 @@ namespace Wpf.Ui.Gallery.Controls;
 
 public class CartesianChartKesaTrend : CartesianChartKesa
 {
+    public CartesianChartKesaTrend()
+    {
+        Loaded += (_, _) =>
+        {
+            // XAxes/YAxes 在构造函数阶段可能还未初始化，DP 回调设置画笔会丢失。
+            // 控件加载完成后再应用一次，确保画笔生效。
+            if (AxisGridBrush is not null)
+                ApplyAxisGridBrush(AxisGridBrush);
+            if (AxisLabelBrush is not null)
+                ApplyAxisLabelBrush(AxisLabelBrush);
+            if (TooltipBgBrush is not null)
+                ApplyTooltipBgBrush(TooltipBgBrush);
+        };
+    }
+
+    private void ApplyAxisGridBrush(Brush brush)
+    {
+        var paint = new SolidColorPaint(BrushToSkColor(brush)) { StrokeThickness = 0.5f };
+        if (XAxes?.FirstOrDefault() is { } ax)
+            ax.SeparatorsPaint = paint;
+        if (YAxes?.FirstOrDefault() is { } ay)
+            ay.SeparatorsPaint = paint;
+    }
+
+    private void ApplyAxisLabelBrush(Brush brush)
+    {
+        var paint = new SolidColorPaint(BrushToSkColor(brush));
+        if (XAxes?.FirstOrDefault() is Axis ax)
+        {
+            ax.LabelsPaint = paint;
+            ax.NamePaint = paint;
+        }
+        if (YAxes?.FirstOrDefault() is Axis ay)
+        {
+            ay.LabelsPaint = paint;
+            ay.NamePaint = paint;
+        }
+    }
+
+    private void ApplyTooltipBgBrush(Brush brush)
+    {
+        TooltipBackgroundPaint = new SolidColorPaint(BrushToSkColor(brush));
+    }
+
     public static readonly DependencyProperty AxisLabelBrushProperty =
         DependencyProperty.Register(nameof(AxisLabelBrush), typeof(Brush), typeof(CartesianChartKesaTrend),
             new PropertyMetadata(new SolidColorBrush(Colors.Gray), OnAxisLabelBrushChanged));
@@ -57,10 +101,16 @@ public class CartesianChartKesaTrend : CartesianChartKesa
         if (d is CartesianChartKesaTrend c && e.NewValue is Brush b)
         {
             var paint = new SolidColorPaint(BrushToSkColor(b));
-            if (c.XAxes?.FirstOrDefault() is { } ax)
+            if (c.XAxes?.FirstOrDefault() is Axis ax)
+            {
                 ax.LabelsPaint = paint;
-            if (c.YAxes?.FirstOrDefault() is { } ay)
+                ax.NamePaint = paint;
+            }
+            if (c.YAxes?.FirstOrDefault() is Axis ay)
+            {
                 ay.LabelsPaint = paint;
+                ay.NamePaint = paint;
+            }
         }
     }
 

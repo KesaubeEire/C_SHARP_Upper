@@ -68,6 +68,7 @@
                     Grid.Row="0"
                     Margin="8"
                     AnimationsSpeed="00:00:00.050"
+                    Background="Transparent"
                     FillOpacity="0"
                     GeometrySize="0"
                     LineSmoothness="0.2"
@@ -75,7 +76,7 @@
                     TooltipPosition="Top"
                     ZoomMode="X"
                     AxisLabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    AxisGridBrush="{DynamicResource ControlElevationBorderBrush}"
+                    AxisGridBrush="{DynamicResource TextFillColorSecondaryBrush}"
                     TooltipBgBrush="{DynamicResource CardBackground}" />
                 <!--  图例 + 实时值  -->
                 <Border
