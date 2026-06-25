@@ -130,7 +130,7 @@ public partial class App
     private static void OverrideCardBackground(ApplicationTheme theme)
     {
         if (theme == ApplicationTheme.Light)
-            Current.Resources["CardBackground"] = new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2));
+            Current.Resources["CardBackground"] = new SolidColorBrush(Color.FromRgb(0xFA, 0xFA, 0xFA));
         else
             Current.Resources.Remove("CardBackground");
     }
