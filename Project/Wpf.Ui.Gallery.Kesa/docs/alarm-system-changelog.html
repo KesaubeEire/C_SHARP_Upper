@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -56,7 +56,7 @@
 <div class="container">
 
 <h1>工控报警记录系统 <small>改动记录 &amp; 使用教程</small></h1>
-<div class="subtitle">Session: 2026-06-25 · 基于 ISA 18.2 / EEMUA 191 标准改造</div>
+<div class="subtitle">Sessions: 2026-06-25 ~ 2026-06-26 · 基于 ISA 18.2 / EEMUA 191 标准改造</div>
 
 <div class="toc">
 <strong>目录</strong>
@@ -697,6 +697,89 @@ alarmService.AddRule(new AlarmRule
 {EXE 目录}├── Kesa_PLC_TEST.exe
 └── default-rules.json ← 应用自带默认规则（只读，首次运行复制到 %APPDATA%）</pre>
 
+	<h2 id="session3">十三、Session 3 — 2026-06-26：PollingStore 响应式重构 + Wpf.Ui NuGet 迁移</h2>
+
+	<p>本次 Session 将 <code>PollingScheduler</code> 的状态管理从事件广播改为全局响应式 Store，
+	同时将 Wpf.Ui 的本地 ProjectReference 替换为 NuGet 包引用。</p>
+
+	<h3>改动汇总</h3>
+
+	<table>
+	  <tr><th>文件</th><th>操作</th><th>核心内容</th></tr>
+	  <tr>
+	    <td class="file-path">Services/Plc/PollingStore.cs</td>
+	    <td><span class="tag tag-green">新建</span></td>
+	    <td>ObservableObject，4 个 [ObservableProperty]：IsRunning / LatencyMs / StatusText / Quality</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">Services/Plc/PollingScheduler.cs</td>
+	    <td><span class="tag tag-purple">重构</span></td>
+	    <td>注入 PollingStore，删除 IsConnected/LastError/PollingStarted/PollingStopped</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">ViewModels/Plc/PpeConnectionSectionViewModel.cs</td>
+	    <td><span class="tag tag-purple">重构</span></td>
+	    <td>删除 3 个重复属性（IsPolling/PollStatusText/PollQuality）+ 3 个事件处理器</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">Controls/Sidebar/PpeConnectionSection.xaml</td>
+	    <td><span class="tag tag-purple">重构</span></td>
+	    <td>绑定从本地属性改为 Store.IsRunning / Store.Quality / Store.StatusText</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">Views/Windows/MainWindow.xaml</td>
+	    <td><span class="tag tag-purple">重构</span></td>
+	    <td>绑定从 PlcViewModel.IsPolling/PollQuality 改为 Store.IsRunning/Store.Quality</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">App.xaml.cs</td>
+	    <td><span class="tag tag-blue">增强</span></td>
+	    <td>注册 PollingStore 单例</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">Kesa_PLC_TEST.csproj</td>
+	    <td><span class="tag tag-purple">重构</span></td>
+	    <td>5 个 ProjectReference → 3 个 NuGet 包（WPF-UI / DependencyInjection / Tray 4.3.0）</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">App.xaml</td>
+	    <td><span class="tag tag-purple">重构</span></td>
+	    <td>删除 SyntaxHighlight 命名空间 + SyntaxHighlightDictionary</td>
+	  </tr>
+	  <tr>
+	    <td class="file-path">Controls/ControlExample.xaml</td>
+	    <td><span class="tag tag-purple">重构</span></td>
+	    <td>SyntaxHighlight CodeBlock → 普通 TextBlock（NuGet 版不含此子包）</td>
+	  </tr>
+	</table>
+
+	<h3>架构变化</h3>
+	<pre>重构前:
+	  PollingScheduler —[事件]→ PpeConnectionSectionViewModel
+	                          → 每个消费者手动订阅 + 同步状态
+
+	重构后:
+	  PollingScheduler → 写入 → PollingStore (ObservableObject)
+	                          → 任何 XAML {Binding Store.*} 自动响应
+	                          → 新增消费者零 C# 代码</pre>
+
+	<h3>依赖管理变化</h3>
+	<p>Wpf.Ui 从本地源码编译改为 NuGet 包引用：</p>
+	<ul>
+	  <li>移除 5 个 <code>ProjectReference</code>（指向 <code>../wpfui/src/...</code>）</li>
+	  <li>添加 3 个 <code>PackageReference</code>：<code>WPF-UI</code>、<code>WPF-UI.DependencyInjection</code>、<code>WPF-UI.Tray</code> 各 4.3.0</li>
+	  <li><code>WPF-UI.SyntaxHighlight</code> 和 <code>WPF-UI.ToastNotifications</code> 子包未发布到 NuGet，已移除且项目中无业务依赖</li>
+	  <li>本地 <code>Project/wpfui/</code> 源码目录已重新克隆（git depth 1），仅供查阅参考</li>
+	</ul>
+
+	<div class="card">
+	<h4>☕ FAQ 补充</h4>
+	<p><strong>Q: SyntaxHighlight 没了，源码展示怎么办？</strong></p>
+	<p><strong>A:</strong> ControlExample 中的 XAML/C# 代码块改用普通 <code>Border + ui:TextBlock FontFamily="Consolas"</code> 展示纯文本。失去语法高亮，但保留了完整的示例源码内容，对功能演示无影响。</p>
+	<p><strong>Q: 为什么不用本地的 ProjectReference 了？</strong></p>
+	<p><strong>A:</strong> 本地 wpfui 源码被删除（原因不明），影响了构建。切换到 NuGet 正式版后，项目不再依赖本地源码目录，可独立构建。本地 <code>Project/wpfui/</code> 已 git clone 以备查阅。</p>
+	</div>
+
 
 
 <div class="card">
@@ -737,9 +820,11 @@ alarmService.AddRule(new AlarmRule
 <hr style="border-color:var(--border);margin:48px 0 24px;">
 <p style="text-align:center;color:var(--text-secondary);font-size:.9em">
   基于 ISA 18.2 / EEMUA 191 标准 · WPF UI + CommunityToolkit.Mvvm + .NET 10.0<br>
-  生成日期: 2026-06-25
+  生成日期: 2026-06-26
 </p>
 
 </div>
 </body>
 </html>
+
+

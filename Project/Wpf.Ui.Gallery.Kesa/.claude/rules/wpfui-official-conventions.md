@@ -1,7 +1,26 @@
 # WPF UI 库官方规范摘要
 
 > 来源：[WPF UI 官方文档](https://wpfui.lepo.co/documentation/getting-started.html)
-> 最后同步：2026-06-24
+> 最后同步：2026-06-26（NuGet 包引用模式）
+
+## 依赖管理（2026-06-26 更新）
+
+Wpf.Ui 通过 **NuGet 包引用** 引入，不再依赖本地源码编译：
+
+```xml
+<ItemGroup>
+  <PackageReference Include="WPF-UI" Version="4.3.0" />
+  <PackageReference Include="WPF-UI.DependencyInjection" Version="4.3.0" />
+  <PackageReference Include="WPF-UI.Tray" Version="4.3.0" />
+</ItemGroup>
+```
+
+### 注意事项
+
+- `WPF-UI.SyntaxHighlight` 和 `WPF-UI.ToastNotifications` **不发布到 NuGet**
+- 这些子包的功能已被移除或替换为原生控件实现
+- 本地 `Project/wpfui/` 源码目录以 git clone (depth 1) 形式保留，仅供查阅，**不参与构建**
+- 框架目标 `net10.0-windows`，与 WPF-UI 4.3.0 兼容
 
 ## App.xaml — 字典配置
 
