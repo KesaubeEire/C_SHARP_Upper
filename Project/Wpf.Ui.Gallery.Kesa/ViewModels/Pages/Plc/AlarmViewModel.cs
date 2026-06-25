@@ -3,6 +3,8 @@ using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using Wpf.Ui.Controls;
+using Wpf.Ui.Extensions;
 using Wpf.Ui.Gallery.Models.Plc;
 using Wpf.Ui.Gallery.Services.Plc;
 
@@ -36,6 +38,9 @@ public partial class AlarmViewModel : ViewModel
 {
     private readonly AlarmService _alarmService;
     private readonly PollingScheduler _scheduler;
+    private readonly IContentDialogService _contentDialog;
+    private readonly S7Service _s7;
+    private readonly AppConfigService _config;
 
     // ========== 集合 ==========
 
@@ -208,10 +213,18 @@ public partial class AlarmViewModel : ViewModel
     [ObservableProperty]
     private ObservableCollection<string> _areaOptions = [];
 
-    public AlarmViewModel(AlarmService alarmService, PollingScheduler scheduler)
+    public AlarmViewModel(
+        AlarmService alarmService,
+        PollingScheduler scheduler,
+        IContentDialogService contentDialog,
+        S7Service s7,
+        AppConfigService config)
     {
         _alarmService = alarmService;
         _scheduler = scheduler;
+        _contentDialog = contentDialog;
+        _s7 = s7;
+        _config = config;
 
         Alarms = _alarmService.Alarms;
         ActiveAlarms = _alarmService.ActiveAlarms;
@@ -243,12 +256,64 @@ public partial class AlarmViewModel : ViewModel
     // ========== 订阅控制 ==========
 
     [RelayCommand]
-    private void Subscribe()
+    private async Task Subscribe()
     {
         if (IsSubscribed) return;
+
+        // 1. 检查 PLC 连接
+        if (!_s7.IsConnected)
+        {
+            await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "无法启动监控",
+                    Content = "当前未连接 PLC。\n请先在「PLC 连接」面板中连接 PLC。",
+                    CloseButtonText = "确定",
+                });
+            return;
+        }
+
+        // 2. 检查轮询是否已启动
+        if (!_scheduler.IsRunning)
+        {
+            var result = await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "启动轮询",
+                    Content = "当前尚未启动轮询，是否开始轮询？",
+                    PrimaryButtonText = "确认",
+                    CloseButtonText = "取消",
+                });
+
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            // 用户确认 → 启动轮询
+            StartPollingInternal();
+        }
+
+        // 3. 订阅报警
         _alarmService.Subscribe();
         IsSubscribed = true;
         StatusText = "报警监控已启动";
+    }
+
+    /// <summary>
+    /// 直接启动 PollingScheduler（不经过 PLC 面板）。
+    /// 使用已保存的配置参数（IP、机架、槽号、I/Q/M 地址等）。
+    /// </summary>
+    private void StartPollingInternal()
+    {
+        _scheduler.Config.FastInterval = _config.PollInterval;
+        _scheduler.Config.DbIp = _config.IP;
+        _scheduler.Config.DbRack = _config.Rack;
+        _scheduler.Config.DbSlot = _config.Slot;
+        _scheduler.Config.Fast.PollIAddr = _config.ManualIAddress;
+        _scheduler.Config.Fast.PollQAddr = _config.ManualQAddress;
+        _scheduler.Config.Fast.PollMAddr = _config.ManualMAddress;
+
+        _scheduler.Start(_s7);
+        StatusText = _scheduler.IsRunning ? "轮询已启动" : "轮询启动失败";
     }
 
     [RelayCommand]

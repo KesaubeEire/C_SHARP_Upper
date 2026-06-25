@@ -25,6 +25,8 @@ public class PollingScheduler : IDisposable
     public ConcurrentDictionary<string, byte> LastValues => _lastValues;
 
     public event Action<HashSet<string>>? DataUpdated;
+    public event Action? PollingStarted;
+    public event Action? PollingStopped;
 
     public void Start(S7Service s7, int port = 102)
     {
@@ -47,6 +49,8 @@ public class PollingScheduler : IDisposable
         _timer.Elapsed += OnTimerElapsed;
         _timer.AutoReset = false;
         _timer.Start();
+
+        PollingStarted?.Invoke();
     }
 
     public void Stop()
@@ -57,6 +61,8 @@ public class PollingScheduler : IDisposable
         _dbClient?.Disconnect();
         _dbClient = null;
         _busy = false;
+
+        PollingStopped?.Invoke();
     }
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
