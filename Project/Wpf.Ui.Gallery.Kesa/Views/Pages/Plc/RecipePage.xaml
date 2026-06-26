@@ -24,7 +24,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ============================================================ -->
-        <!-- Left Panel: Recipe List -->
+        <!-- Left Panel: Recipe List + Version History -->
         <!-- ============================================================ -->
         <Border
             Grid.Column="0"
@@ -40,6 +40,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
@@ -120,6 +121,7 @@
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -153,8 +155,31 @@
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                         Text="{Binding Version, StringFormat=v{0}}" />
 
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+                                        <ui:TextBlock
+                                            FontTypography="Caption"
+                                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                            Text="{Binding ProductCode}" />
+                                        <ui:TextBlock
+                                            Margin="8,0,0,0"
+                                            FontTypography="Caption"
+                                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                            Text="{Binding Author}" />
+                                        <Border
+                                            Margin="6,0,0,0"
+                                            Padding="4,1"
+                                            VerticalAlignment="Center"
+                                            CornerRadius="3"
+                                            Visibility="{Binding Status, Converter={StaticResource NullToVisibilityConverter}}">
+                                            <ui:TextBlock
+                                                FontTypography="Caption"
+                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                Text="{Binding Status}" />
+                                        </Border>
+                                    </StackPanel>
+
                                     <ui:TextBlock
-                                        Grid.Row="1"
+                                        Grid.Row="2"
                                         Grid.Column="0"
                                         Grid.ColumnSpan="2"
                                         FontTypography="Caption"
@@ -207,6 +232,112 @@
                                 <ui:SymbolIcon Symbol="ArrowSync24" />
                             </ui:Button.Icon>
                         </ui:Button>
+                    </Grid>
+                </Border>
+
+                <!-- ===== Version History Section ===== -->
+                <Border
+                    Grid.Row="6"
+                    Padding="0"
+                    BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,8,8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Toggle button -->
+                        <ui:Button
+                            Grid.Row="0"
+                            Appearance="Transparent"
+                            Command="{Binding ShowVersionHistoryCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="16,8"
+                            IsEnabled="{Binding HasRecipeSelected}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon
+                                    Grid.Column="0"
+                                    Symbol="History24" />
+                                <ui:TextBlock
+                                    Grid.Column="1"
+                                    Margin="8,0,0,0"
+                                    FontTypography="Body"
+                                    Text="版本历史" />
+                                <ui:SymbolIcon
+                                    Grid.Column="2"
+                                    Symbol="ChevronDown24"
+                                    Visibility="{Binding IsVersionHistoryVisible, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            </Grid>
+                        </ui:Button>
+
+                        <!-- Version list (collapsible) -->
+                        <Border
+                            Grid.Row="1"
+                            Padding="8,0,8,8"
+                            Visibility="{Binding IsVersionHistoryVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                            MaxHeight="200">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <ListBox
+                                    Grid.Row="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    ItemsSource="{Binding VersionHistoryItems}"
+                                    SelectedItem="{Binding SelectedVersion, Mode=TwoWay}"
+                                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="plc:RecipeVersionSnapshot">
+                                            <Grid Margin="8,4,8,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border
+                                                    Grid.Column="0"
+                                                    Margin="0,0,8,0"
+                                                    Padding="4,1"
+                                                    Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                                                    CornerRadius="3">
+                                                    <ui:TextBlock
+                                                        FontTypography="Caption"
+                                                        Text="{Binding Version, StringFormat=v{0}}" />
+                                                </Border>
+                                                <ui:TextBlock
+                                                    Grid.Column="1"
+                                                    FontTypography="Caption"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding SnapshotAt, StringFormat={}{0:MM-dd HH:mm:ss}}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <ui:Button
+                                    Grid.Row="1"
+                                    Margin="0,4,0,0"
+                                    Appearance="Primary"
+                                    Command="{Binding RestoreVersionCommand}"
+                                    CommandParameter="{Binding SelectedVersion}"
+                                    IsEnabled="{Binding SelectedVersion, Converter={StaticResource NullToBoolConverter}}"
+                                    HorizontalAlignment="Stretch">
+                                    <ui:Button.Icon>
+                                        <ui:SymbolIcon Symbol="ArrowReset24" />
+                                    </ui:Button.Icon>
+                                    恢复此版本
+                                </ui:Button>
+                            </Grid>
+                        </Border>
                     </Grid>
                 </Border>
             </Grid>
@@ -295,12 +426,12 @@
                     BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                     BorderThickness="0,0,0,1">
                     <StackPanel>
-                        <!-- Name + Category row -->
+                        <!-- Row 1: Name + ProductCode -->
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="2*" />
                                 <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0">
@@ -317,26 +448,68 @@
                                 <ui:TextBlock
                                     FontTypography="Caption"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="分类标签" />
+                                    Text="产品代码" />
                                 <ui:TextBox
-                                    Text="{Binding CurrentRecipeCategory, UpdateSourceTrigger=PropertyChanged}"
-                                    PlaceholderText="例如：温度配方" />
+                                    Text="{Binding CurrentProductCode, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="例如：PC-001" />
                             </StackPanel>
                         </Grid>
 
-                        <!-- Description + DB config row -->
-                        <Grid>
+                        <!-- Row 2: Author + Status + DB -->
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="140" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="100" />
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0">
                                 <ui:TextBlock
                                     FontTypography="Caption"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="描述 / 标签（逗号分隔）" />
+                                    Text="操作人" />
+                                <ui:TextBox
+                                    Text="{Binding CurrentAuthor, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="操作人/工程师" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <ui:TextBlock
+                                    FontTypography="Caption"
+                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                    Text="配方状态" />
+                                <ComboBox
+                                    ItemsSource="{Binding StatusOptions}"
+                                    SelectedItem="{Binding CurrentStatus}" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4">
+                                <ui:TextBlock
+                                    FontTypography="Caption"
+                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                    Text="默认 DB" />
+                                <ui:NumberBox
+                                    Minimum="1"
+                                    Maximum="999"
+                                    Value="{Binding DefaultDbNumber}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Row 3: Description + Tags -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <ui:TextBlock
+                                    FontTypography="Caption"
+                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                    Text="描述" />
                                 <ui:TextBox
                                     Text="{Binding CurrentRecipeDescription, UpdateSourceTrigger=PropertyChanged}"
                                     PlaceholderText="配方说明（可选）" />
@@ -346,11 +519,10 @@
                                 <ui:TextBlock
                                     FontTypography="Caption"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="默认 DB 号" />
-                                <ui:NumberBox
-                                    Minimum="1"
-                                    Maximum="999"
-                                    Value="{Binding DefaultDbNumber}" />
+                                    Text="分类 / 标签（逗号分隔）" />
+                                <ui:TextBox
+                                    Text="{Binding CurrentRecipeTags, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="温度, 加热, 标准" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -364,59 +536,88 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <!-- Parameters header + toolbar -->
+                    <!-- Group tabs bar (horizontal ListBox) -->
                     <Border
                         Grid.Row="0"
-                        Padding="16,8"
+                        Padding="16,6,16,4"
                         BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                         BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <ui:TextBlock
+                            <ListBox
                                 Grid.Column="0"
-                                VerticalAlignment="Center"
-                                FontTypography="BodyStrong"
-                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                Text="参数列表" />
-                            <ui:TextBlock
-                                Grid.Column="1"
-                                Margin="8,0,0,0"
-                                VerticalAlignment="Center"
-                                FontTypography="Caption"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="{Binding CurrentParameters.Count, StringFormat={}{0} 个参数}" />
+                                ItemsSource="{Binding RecipeGroups}"
+                                SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel IsItemsHost="True" Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="plc:RecipeGroup">
+                                        <Border
+                                            Padding="8,4,8,4"
+                                            Margin="0,0,4,2">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <ui:TextBlock
+                                                    Grid.Column="0"
+                                                    FontTypography="Body"
+                                                    Text="{Binding Name}" />
+                                                <Border
+                                                    Grid.Column="1"
+                                                    Margin="4,0,0,0"
+                                                    Padding="3,0"
+                                                    Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                                                    CornerRadius="3">
+                                                    <ui:TextBlock
+                                                        FontTypography="Caption"
+                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                        Text="{Binding ParameterCount}" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
 
-                            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                <ui:Button
-                                    Margin="0,0,8,0"
-                                    Appearance="Success"
-                                    Command="{Binding DownloadToPlcCommand}"
-                                    ToolTip="下载到 PLC">
-                                    <ui:Button.Icon>
-                                        <ui:SymbolIcon Symbol="ArrowUpload24" />
-                                    </ui:Button.Icon>
-                                    写入 PLC
-                                </ui:Button>
-                                <ui:Button
-                                    Margin="0,0,8,0"
-                                    Appearance="Primary"
-                                    Command="{Binding UploadFromPlcCommand}"
-                                    ToolTip="从 PLC 上传">
-                                    <ui:Button.Icon>
-                                        <ui:SymbolIcon Symbol="ArrowDownload24" />
-                                    </ui:Button.Icon>
-                                    读取 PLC
-                                </ui:Button>
-                            </StackPanel>
+                            <ui:Button
+                                Grid.Column="1"
+                                Margin="4,0"
+                                Appearance="Secondary"
+                                Command="{Binding AddGroupCommand}"
+                                ToolTip="添加参数组">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="TabGroup24" />
+                                </ui:Button.Icon>
+                            </ui:Button>
+                            <ui:Button
+                                Grid.Column="2"
+                                Margin="4,0,0,0"
+                                Appearance="Secondary"
+                                Command="{Binding RemoveGroupCommand}"
+                                IsEnabled="{Binding HasGroupSelected}"
+                                ToolTip="删除参数组">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="Dismiss24" />
+                                </ui:Button.Icon>
+                            </ui:Button>
                         </Grid>
                     </Border>
 
-                    <!-- Filter & group bar -->
+                    <!-- Parameter toolbar -->
                     <Border
                         Grid.Row="1"
                         Padding="16,6"
@@ -426,8 +627,8 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="8" />
-                                <ColumnDefinition Width="160" />
-                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
@@ -443,11 +644,29 @@
                                 </ui:TextBox.Icon>
                             </ui:TextBox>
 
-                            <ComboBox
+                            <!-- PLC Buttons -->
+                            <ui:Button
                                 Grid.Column="2"
-                                ItemsSource="{Binding ParameterGroups}"
-                                SelectedItem="{Binding SelectedParameterGroup}" />
+                                Margin="4,0"
+                                Appearance="Success"
+                                Command="{Binding DownloadToPlcCommand}"
+                                ToolTip="下载到 PLC">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="ArrowUpload24" />
+                                </ui:Button.Icon>
+                            </ui:Button>
+                            <ui:Button
+                                Grid.Column="3"
+                                Margin="4,0"
+                                Appearance="Primary"
+                                Command="{Binding UploadFromPlcCommand}"
+                                ToolTip="从 PLC 上传">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="ArrowDownload24" />
+                                </ui:Button.Icon>
+                            </ui:Button>
 
+                            <!-- Parameter CRUD -->
                             <ui:Button
                                 Grid.Column="4"
                                 Margin="4,0"
@@ -456,7 +675,6 @@
                                 <ui:Button.Icon>
                                     <ui:SymbolIcon Symbol="Add24" />
                                 </ui:Button.Icon>
-                                添加
                             </ui:Button>
                             <ui:Button
                                 Grid.Column="5"
@@ -467,8 +685,9 @@
                                 <ui:Button.Icon>
                                     <ui:SymbolIcon Symbol="Subtract24" />
                                 </ui:Button.Icon>
-                                删除
                             </ui:Button>
+
+                            <!-- CSV -->
                             <ui:Button
                                 Grid.Column="6"
                                 Margin="4,0"
@@ -503,7 +722,7 @@
                         CanUserReorderColumns="False"
                         HeadersVisibility="Column"
                         IsReadOnly="False"
-                        ItemsSource="{Binding FilteredParameters}"
+                        ItemsSource="{Binding CurrentGroupParameters}"
                         SelectionUnit="FullRow"
                         RowHeaderWidth="0"
                         SelectedItem="{Binding SelectedParameter, Mode=TwoWay}">
@@ -518,21 +737,6 @@
                                 Header="#"
                                 IsReadOnly="True"
                                 Binding="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGridRow}, Path=Header}" />
-
-                            <!-- Group indicator column (colored bar) -->
-                            <DataGridTemplateColumn Width="4" IsReadOnly="True">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border
-                                            Width="4"
-                                            Height="20"
-                                            Margin="0"
-                                            VerticalAlignment="Center"
-                                            CornerRadius="2"
-                                            Background="{DynamicResource SystemFillColorAttentionBrush}" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
 
                             <DataGridTextColumn
                                 Width="120"
@@ -560,12 +764,8 @@
                                 Binding="{Binding Offset, UpdateSourceTrigger=PropertyChanged}" />
                             <DataGridTextColumn
                                 Width="90"
-                                Header="分组"
-                                Binding="{Binding Group, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn
-                                Width="70"
-                                Header="PLC 类型"
-                                Binding="{Binding PlcDataType, UpdateSourceTrigger=PropertyChanged}" />
+                                Header="数据类型"
+                                Binding="{Binding DataType, UpdateSourceTrigger=PropertyChanged}" />
                             <DataGridTextColumn
                                 Width="50"
                                 Header="DB"

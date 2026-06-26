@@ -8,6 +8,7 @@ namespace Wpf.Ui.Gallery.Services.Plc;
 public class RecipeService
 {
     private readonly string _recipesDir;
+    private readonly string _versionsDir;
     private readonly S7Service _s7;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
@@ -19,7 +20,9 @@ public class RecipeService
     {
         _s7 = s7;
         _recipesDir = Path.Combine(AppContext.BaseDirectory, "recipes");
+        _versionsDir = Path.Combine(AppContext.BaseDirectory, "recipes", "_versions");
         Directory.CreateDirectory(_recipesDir);
+        Directory.CreateDirectory(_versionsDir);
     }
 
     // ===================== Recipe CRUD =====================
@@ -30,6 +33,7 @@ public class RecipeService
             return [];
 
         return Directory.EnumerateFiles(_recipesDir, "*.json")
+            .Where(f => !f.Contains("_versions")) // skip version directories
             .Select(f =>
             {
                 try
@@ -42,6 +46,9 @@ public class RecipeService
                         Id = root.TryGetProperty("Id", out var id) ? id.GetString() ?? "" : "",
                         Name = root.TryGetProperty("Name", out var n) ? n.GetString() ?? Path.GetFileNameWithoutExtension(f) : Path.GetFileNameWithoutExtension(f),
                         Description = root.TryGetProperty("Description", out var d) ? d.GetString() ?? "" : "",
+                        ProductCode = root.TryGetProperty("ProductCode", out var pc) ? pc.GetString() ?? "" : "",
+                        Author = root.TryGetProperty("Author", out var au) ? au.GetString() ?? "" : "",
+                        Status = root.TryGetProperty("Status", out var st) && Enum.TryParse<RecipeStatus>(st.GetString(), out var s) ? s : RecipeStatus.Draft,
                         Version = root.TryGetProperty("Version", out var ver) ? ver.GetInt32() : 1,
                         Category = root.TryGetProperty("Category", out var cat) ? cat.GetString() ?? "" : "",
                         Tags = root.TryGetProperty("Tags", out var tags)
@@ -49,7 +56,7 @@ public class RecipeService
                             : [],
                         CreatedAt = root.TryGetProperty("CreatedAt", out var ca) && ca.TryGetDateTime(out var cdt) ? cdt : File.GetCreationTime(f),
                         ModifiedAt = root.TryGetProperty("ModifiedAt", out var ma) && ma.TryGetDateTime(out var mdt) ? mdt : File.GetLastWriteTime(f),
-                        ParameterCount = root.TryGetProperty("Parameters", out var paramsEl) ? paramsEl.GetArrayLength() : 0,
+                        ParameterCount = CountParameters(root),
                     };
                 }
                 catch
@@ -60,6 +67,26 @@ public class RecipeService
             .OfType<RecipeMeta>()
             .OrderByDescending(r => r.ModifiedAt)
             .ToList();
+    }
+
+    /// <summary>Count total parameters across all groups (or flat Parameters array for old format).</summary>
+    private static int CountParameters(JsonElement root)
+    {
+        if (root.TryGetProperty("Groups", out var groups) && groups.ValueKind == JsonValueKind.Array)
+        {
+            int count = 0;
+            foreach (var g in groups.EnumerateArray())
+            {
+                if (g.TryGetProperty("Parameters", out var ps) && ps.ValueKind == JsonValueKind.Array)
+                    count += ps.GetArrayLength();
+            }
+            return count;
+        }
+
+        if (root.TryGetProperty("Parameters", out var flat) && flat.ValueKind == JsonValueKind.Array)
+            return flat.GetArrayLength();
+
+        return 0;
     }
 
     public RecipeRecord? LoadRecipe(string id)
@@ -81,6 +108,9 @@ public class RecipeService
         var path = GetFilePath(recipe.Id);
         var json = JsonSerializer.Serialize(recipe, _jsonOptions);
         File.WriteAllText(path, json);
+
+        // Create version snapshot
+        SaveVersionSnapshot(recipe);
     }
 
     public bool DeleteRecipe(string id)
@@ -88,6 +118,12 @@ public class RecipeService
         var path = GetFilePath(id);
         if (!File.Exists(path)) return false;
         File.Delete(path);
+
+        // Remove version history
+        var versionDir = GetVersionDir(id);
+        if (Directory.Exists(versionDir))
+            Directory.Delete(versionDir, recursive: true);
+
         return true;
     }
 
@@ -100,28 +136,128 @@ public class RecipeService
         {
             Name = newName,
             Description = source.Description,
+            ProductCode = source.ProductCode,
+            Author = source.Author,
+            Status = source.Status,
             Category = source.Category,
             Tags = [.. source.Tags],
             DefaultDbNumber = source.DefaultDbNumber,
             DefaultArea = source.DefaultArea,
-            Parameters = source.Parameters.Select(p => new RecipeParameter
+            Groups = source.Groups.Select(g => new RecipeGroup
             {
-                Name = p.Name,
-                Value = p.Value,
-                Unit = p.Unit,
-                Address = p.Address,
-                Scale = p.Scale,
-                Offset = p.Offset,
-                MinValue = p.MinValue,
-                MaxValue = p.MaxValue,
-                Group = p.Group,
-                PlcDataType = p.PlcDataType,
-                DbNumber = p.DbNumber,
+                Name = g.Name,
+                Description = g.Description,
+                Parameters = new System.Collections.ObjectModel.ObservableCollection<RecipeParameter>(
+                    g.Parameters.Select(p => DeepCopyParameter(p)).ToList()),
             }).ToList(),
         };
 
         SaveRecipe(copy);
         return copy;
+    }
+
+    private static RecipeParameter DeepCopyParameter(RecipeParameter p) => new()
+    {
+        Name = p.Name,
+        Value = p.Value,
+        Unit = p.Unit,
+        Address = p.Address,
+        Scale = p.Scale,
+        Offset = p.Offset,
+        MinValue = p.MinValue,
+        MaxValue = p.MaxValue,
+        Group = p.Group,
+        DataType = p.DataType,
+        DbNumber = p.DbNumber,
+    };
+
+    // ===================== Version History =====================
+
+    /// <summary>Get all version snapshots for a recipe, sorted descending.</summary>
+    public List<RecipeVersionSnapshot> GetVersionHistory(string recipeId)
+    {
+        var versionDir = GetVersionDir(recipeId);
+        if (!Directory.Exists(versionDir))
+            return [];
+
+        return Directory.EnumerateFiles(versionDir, "*.json")
+            .Select(f =>
+            {
+                try
+                {
+                    using var stream = File.OpenRead(f);
+                    using var doc = JsonDocument.Parse(stream);
+                    var root = doc.RootElement;
+                    return new RecipeVersionSnapshot
+                    {
+                        RecipeId = recipeId,
+                        Version = root.TryGetProperty("Version", out var v) ? v.GetInt32() : 0,
+                        SnapshotAt = root.TryGetProperty("ModifiedAt", out var m) && m.TryGetDateTime(out var dt) ? dt : File.GetCreationTime(f),
+                        FilePath = f,
+                    };
+                }
+                catch { return null; }
+            })
+            .OfType<RecipeVersionSnapshot>()
+            .OrderByDescending(s => s.Version)
+            .ToList();
+    }
+
+    /// <summary>Load a specific version snapshot.</summary>
+    public RecipeRecord? LoadRecipeVersion(string recipeId, int version)
+    {
+        var path = GetVersionFilePath(recipeId, version);
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<RecipeRecord>(json);
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Restore a previous version as the current recipe (creates a new version).</summary>
+    public RecipeRecord? RestoreVersion(string recipeId, int version)
+    {
+        var snapshot = LoadRecipeVersion(recipeId, version);
+        if (snapshot is null) return null;
+
+        // Preserve the existing Id and timestamps
+        var current = LoadRecipe(recipeId);
+        var restored = new RecipeRecord
+        {
+            Id = recipeId,
+            Name = snapshot.Name,
+            Description = snapshot.Description,
+            ProductCode = snapshot.ProductCode,
+            Author = snapshot.Author,
+            Status = snapshot.Status,
+            Category = snapshot.Category,
+            Tags = [.. snapshot.Tags],
+            DefaultDbNumber = snapshot.DefaultDbNumber,
+            DefaultArea = snapshot.DefaultArea,
+            CreatedAt = current?.CreatedAt ?? DateTime.Now,
+            Groups = snapshot.Groups.Select(g => new RecipeGroup
+            {
+                Name = g.Name,
+                Description = g.Description,
+                Parameters = new System.Collections.ObjectModel.ObservableCollection<RecipeParameter>(
+                    g.Parameters.Select(p => DeepCopyParameter(p)).ToList()),
+            }).ToList(),
+        };
+
+        SaveRecipe(restored);
+        return restored;
+    }
+
+    /// <summary>Save a version snapshot of the recipe.</summary>
+    private void SaveVersionSnapshot(RecipeRecord recipe)
+    {
+        var versionDir = GetVersionDir(recipe.Id);
+        Directory.CreateDirectory(versionDir);
+        var path = GetVersionFilePath(recipe.Id, recipe.Version);
+        var json = JsonSerializer.Serialize(recipe, _jsonOptions);
+        File.WriteAllText(path, json);
     }
 
     // ===================== PLC Download / Upload =====================
@@ -132,13 +268,13 @@ public class RecipeService
         if (!_s7.IsConnected) return -1;
 
         int success = 0;
-        foreach (var param in recipe.Parameters)
+        foreach (var param in GetAllParameters(recipe))
         {
             double rawValue = param.RawValue;
             int db = param.DbNumber > 0 ? param.DbNumber : (defaultDb > 0 ? defaultDb : recipe.DefaultDbNumber);
             if (db <= 0) db = 1;
 
-            var data = EncodeForPlc(rawValue, param.PlcDataType);
+            var data = EncodeForPlc(rawValue, param.DataType);
             if (data == null) continue;
 
             if (_s7.WriteBytesRaw(S7Service.AreaDB, param.Address, data, db))
@@ -153,16 +289,16 @@ public class RecipeService
         if (!_s7.IsConnected) return -1;
 
         int success = 0;
-        foreach (var param in recipe.Parameters)
+        foreach (var param in GetAllParameters(recipe))
         {
             int db = param.DbNumber > 0 ? param.DbNumber : (defaultDb > 0 ? defaultDb : recipe.DefaultDbNumber);
             if (db <= 0) db = 1;
 
-            int byteSize = GetDataTypeSize(param.PlcDataType);
+            int byteSize = GetDataTypeSize(param.DataType);
             var raw = _s7.ReadBytesRaw(S7Service.AreaDB, param.Address, byteSize, db);
             if (raw == null) continue;
 
-            double pVal = DecodeFromPlc(raw, param.PlcDataType);
+            double pVal = DecodeFromPlc(raw, param.DataType);
             param.Value = pVal * param.Scale + param.Offset;
             success++;
         }
@@ -175,13 +311,13 @@ public class RecipeService
     {
         var sb = new StringBuilder();
         sb.AppendLine("Name,Value,Unit,Address,Scale,Offset,Group,PlcDataType,DbNumber,MinValue,MaxValue");
-        foreach (var p in recipe.Parameters)
+        foreach (var param in GetAllParameters(recipe))
         {
             sb.AppendLine(
-                $"{EscapeCsv(p.Name)},{p.Value.ToString(CultureInfo.InvariantCulture)},{EscapeCsv(p.Unit)},{p.Address}," +
-                $"{p.Scale.ToString(CultureInfo.InvariantCulture)},{p.Offset.ToString(CultureInfo.InvariantCulture)}," +
-                $"{EscapeCsv(p.Group)},{p.PlcDataType},{p.DbNumber}," +
-                $"{p.MinValue.ToString(CultureInfo.InvariantCulture)},{p.MaxValue.ToString(CultureInfo.InvariantCulture)}");
+                $"{EscapeCsv(param.Name)},{param.Value.ToString(CultureInfo.InvariantCulture)},{EscapeCsv(param.Unit)},{param.Address}," +
+                $"{param.Scale.ToString(CultureInfo.InvariantCulture)},{param.Offset.ToString(CultureInfo.InvariantCulture)}," +
+                $"{EscapeCsv(param.Group)},{RecipeParameter.DataTypeToName(param.DataType)},{param.DbNumber}," +
+                $"{param.MinValue.ToString(CultureInfo.InvariantCulture)},{param.MaxValue.ToString(CultureInfo.InvariantCulture)}");
         }
         return sb.ToString();
     }
@@ -208,7 +344,7 @@ public class RecipeService
                     Scale = cols.Length > 4 && double.TryParse(cols[4], NumberStyles.Float, CultureInfo.InvariantCulture, out var s) ? s : 1.0,
                     Offset = cols.Length > 5 && double.TryParse(cols[5], NumberStyles.Float, CultureInfo.InvariantCulture, out var o) ? o : 0,
                     Group = cols.Length > 6 ? cols[6] : "",
-                    PlcDataType = cols.Length > 7 ? cols[7] : "REAL",
+                    DataType = cols.Length > 7 ? RecipeParameter.ParseDataType(cols[7]) : PlcDataType.Real,
                     DbNumber = cols.Length > 8 && int.TryParse(cols[8], out var db) ? db : 0,
                     MinValue = cols.Length > 9 && double.TryParse(cols[9], NumberStyles.Float, CultureInfo.InvariantCulture, out var min) ? min : double.MinValue,
                     MaxValue = cols.Length > 10 && double.TryParse(cols[10], NumberStyles.Float, CultureInfo.InvariantCulture, out var max) ? max : double.MaxValue,
@@ -223,6 +359,17 @@ public class RecipeService
     // ===================== Helpers =====================
 
     private string GetFilePath(string id) => Path.Combine(_recipesDir, $"{id}.json");
+    private string GetVersionDir(string id) => Path.Combine(_versionsDir, id);
+    private string GetVersionFilePath(string id, int version) => Path.Combine(_versionsDir, id, $"v{version}.json");
+
+    /// <summary>Flatten all parameters from all groups into a single enumerable.</summary>
+    private static IEnumerable<RecipeParameter> GetAllParameters(RecipeRecord recipe)
+    {
+        if (recipe.Groups.Count > 0)
+            return recipe.Groups.SelectMany(g => g.Parameters);
+
+        return [];
+    }
 
     private static string EscapeCsv(string s) =>
         s.Contains(',') || s.Contains('"') || s.Contains('\n')
@@ -265,42 +412,48 @@ public class RecipeService
         return [.. result];
     }
 
-    private static byte[]? EncodeForPlc(double value, string dataType)
+    // ===================== PLC Encoding =====================
+
+    private static byte[]? EncodeForPlc(double value, PlcDataType dataType)
     {
-        return dataType.ToUpperInvariant() switch
+        return dataType switch
         {
-            "BYTE" or "USINT" => [(byte)Math.Clamp(value, 0, 255)],
-            "SINT" => [(byte)(sbyte)Math.Clamp(value, sbyte.MinValue, sbyte.MaxValue)],
-            "INT" => FromInt16BE((short)Math.Clamp(value, short.MinValue, short.MaxValue)),
-            "UINT" or "WORD" => FromUInt16BE((ushort)Math.Clamp(value, 0, ushort.MaxValue)),
-            "DINT" => FromInt32BE((int)Math.Clamp(value, int.MinValue, int.MaxValue)),
-            "UDINT" or "DWORD" => FromUInt32BE((uint)Math.Clamp(value, 0, uint.MaxValue)),
-            "REAL" => FromFloatBE((float)value),
-            _ => null
+            PlcDataType.Byte or PlcDataType.USInt => [(byte)Math.Clamp(value, 0, 255)],
+            PlcDataType.SInt => [(byte)(sbyte)Math.Clamp(value, sbyte.MinValue, sbyte.MaxValue)],
+            PlcDataType.Int => FromInt16BE((short)Math.Clamp(value, short.MinValue, short.MaxValue)),
+            PlcDataType.UInt or PlcDataType.Word => FromUInt16BE((ushort)Math.Clamp(value, 0, ushort.MaxValue)),
+            PlcDataType.DInt => FromInt32BE((int)Math.Clamp(value, int.MinValue, int.MaxValue)),
+            PlcDataType.UDInt or PlcDataType.DWord => FromUInt32BE((uint)Math.Clamp(value, 0, uint.MaxValue)),
+            PlcDataType.Real => FromFloatBE((float)value),
+            PlcDataType.Bool => [(byte)(value != 0 ? 1 : 0)],
+            _ => null,
         };
     }
 
-    private static double DecodeFromPlc(byte[] data, string dataType)
+    private static double DecodeFromPlc(byte[] data, PlcDataType dataType)
     {
-        return dataType.ToUpperInvariant() switch
+        if (data.Length == 0) return 0;
+
+        return dataType switch
         {
-            "BYTE" or "USINT" => data[0],
-            "SINT" => (sbyte)data[0],
-            "INT" => ToInt16BE(data),
-            "UINT" or "WORD" => ToUInt16BE(data),
-            "DINT" => ToInt32BE(data),
-            "UDINT" or "DWORD" => ToUInt32BE(data),
-            "REAL" => ToFloatBE(data),
-            _ => 0
+            PlcDataType.Byte or PlcDataType.USInt => data[0],
+            PlcDataType.SInt => (sbyte)data[0],
+            PlcDataType.Int => ToInt16BE(data),
+            PlcDataType.UInt or PlcDataType.Word => ToUInt16BE(data),
+            PlcDataType.DInt => ToInt32BE(data),
+            PlcDataType.UDInt or PlcDataType.DWord => ToUInt32BE(data),
+            PlcDataType.Real => ToFloatBE(data),
+            PlcDataType.Bool => data[0] != 0 ? 1 : 0,
+            _ => 0,
         };
     }
 
-    private static int GetDataTypeSize(string dataType) => dataType.ToUpperInvariant() switch
+    private static int GetDataTypeSize(PlcDataType dataType) => dataType switch
     {
-        "BYTE" or "USINT" or "SINT" => 1,
-        "INT" or "UINT" or "WORD" => 2,
-        "DINT" or "UDINT" or "DWORD" or "REAL" => 4,
-        _ => 4
+        PlcDataType.Byte or PlcDataType.USInt or PlcDataType.SInt or PlcDataType.Bool => 1,
+        PlcDataType.Int or PlcDataType.UInt or PlcDataType.Word => 2,
+        PlcDataType.DInt or PlcDataType.UDInt or PlcDataType.DWord or PlcDataType.Real => 4,
+        _ => 4,
     };
 
     private static byte[] FromInt16BE(short val) => [(byte)(val >> 8), (byte)val];
@@ -329,6 +482,9 @@ public class RecipeMeta
     public string Id { get; init; } = "";
     public string Name { get; init; } = "";
     public string Description { get; init; } = "";
+    public string ProductCode { get; init; } = "";
+    public string Author { get; init; } = "";
+    public RecipeStatus Status { get; init; } = RecipeStatus.Draft;
     public int Version { get; init; }
     public string Category { get; init; } = "";
     public List<string> Tags { get; init; } = [];

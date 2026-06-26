@@ -7,7 +7,7 @@ using Wpf.Ui.Gallery.Services.Plc;
 
 namespace Wpf.Ui.Gallery.ViewModels.Pages.Plc;
 
-public partial class RecipeViewModel : ObservableObject
+public partial class RecipeViewModel : ViewModel
 {
     private readonly RecipeService _recipeService;
     private readonly S7Service _s7;
@@ -33,13 +33,7 @@ public partial class RecipeViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<string> _categoryOptions = ["全部"];
 
-    // ===================== Current recipe =====================
-
-    [ObservableProperty]
-    private ObservableCollection<RecipeParameter> _currentParameters = [];
-
-    [ObservableProperty]
-    private ObservableCollection<RecipeParameter> _filteredParameters = [];
+    // ===================== Current recipe metadata =====================
 
     [ObservableProperty]
     private string _currentRecipeName = "";
@@ -54,21 +48,68 @@ public partial class RecipeViewModel : ObservableObject
     private string _currentRecipeTags = "";
 
     [ObservableProperty]
+    private string _currentProductCode = "";
+
+    [ObservableProperty]
+    private string _currentAuthor = "";
+
+    [ObservableProperty]
+    private RecipeStatus _currentStatus = RecipeStatus.Draft;
+
+    public ObservableCollection<RecipeStatus> StatusOptions { get; } =
+        [RecipeStatus.Draft, RecipeStatus.Active, RecipeStatus.Archived];
+
+    [ObservableProperty]
     private int _currentVersion;
 
     [ObservableProperty]
     private bool _hasRecipeSelected;
 
-    // ===================== Parameter groups =====================
+    [ObservableProperty]
+    private int _defaultDbNumber = 1;
 
+    // ===================== Parameter groups (tab bar) =====================
+
+    [ObservableProperty]
+    private ObservableCollection<RecipeGroup> _recipeGroups = [];
+
+    [ObservableProperty]
+    private RecipeGroup? _selectedGroup;
+
+    [ObservableProperty]
+    private ObservableCollection<RecipeParameter> _currentGroupParameters = [];
+
+    [ObservableProperty]
+    private bool _hasGroups;
+
+    [ObservableProperty]
+    private bool _hasGroupSelected;
+
+    [ObservableProperty]
+    private string _parameterSearchText = "";
+
+    // Keep for backward compat
     [ObservableProperty]
     private ObservableCollection<string> _parameterGroups = [];
 
     [ObservableProperty]
     private string _selectedParameterGroup = "全部";
 
+    // ===================== Selection =====================
+
     [ObservableProperty]
-    private string _parameterSearchText = "";
+    private RecipeParameter? _selectedParameter;
+
+    // ===================== Version history =====================
+
+    [ObservableProperty]
+    private ObservableCollection<RecipeVersionSnapshot> _versionHistoryItems = [];
+
+    [ObservableProperty]
+    private bool _isVersionHistoryVisible;
+
+    [ObservableProperty]
+    private RecipeVersionSnapshot? _selectedVersion;
 
     // ===================== PLC status =====================
 
@@ -81,23 +122,18 @@ public partial class RecipeViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPlcConnected;
 
-    [ObservableProperty]
-    private int _defaultDbNumber = 1;
-
-    // ===================== Selection =====================
-
-    [ObservableProperty]
-    private RecipeParameter? _selectedParameter;
-
     public RecipeViewModel(RecipeService recipeService, S7Service s7)
     {
         _recipeService = recipeService;
         _s7 = s7;
+    }
+
+    public override void OnNavigatedTo()
+    {
+        base.OnNavigatedTo();
         RefreshRecipeList();
         RefreshPlcStatus();
     }
-
-    // ===================== PLC status refresh =====================
 
     public void RefreshPlcStatus()
     {
@@ -126,6 +162,7 @@ public partial class RecipeViewModel : ObservableObject
             filtered = filtered.Where(r =>
                 r.Name.ToLowerInvariant().Contains(search) ||
                 r.Description.ToLowerInvariant().Contains(search) ||
+                r.ProductCode.ToLowerInvariant().Contains(search) ||
                 r.Tags.Any(t => t.ToLowerInvariant().Contains(search)));
         }
 
@@ -135,12 +172,29 @@ public partial class RecipeViewModel : ObservableObject
         FilteredRecipes = new ObservableCollection<RecipeMeta>(filtered);
     }
 
-    partial void OnParameterSearchTextChanged(string value) => ApplyParameterFilter();
-    partial void OnSelectedParameterGroupChanged(string value) => ApplyParameterFilter();
+    // ===================== Group selection =====================
 
-    private void ApplyParameterFilter()
+    partial void OnSelectedGroupChanged(RecipeGroup? value)
     {
-        var filtered = CurrentParameters.AsEnumerable();
+        HasGroupSelected = value is not null;
+
+        if (value is not null)
+            ApplyGroupParameterFilter();
+        else
+            CurrentGroupParameters = [];
+    }
+
+    partial void OnParameterSearchTextChanged(string value) => ApplyGroupParameterFilter();
+
+    private void ApplyGroupParameterFilter()
+    {
+        if (SelectedGroup is null)
+        {
+            CurrentGroupParameters = [];
+            return;
+        }
+
+        var filtered = SelectedGroup.Parameters.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(ParameterSearchText))
         {
@@ -150,10 +204,7 @@ public partial class RecipeViewModel : ObservableObject
                 p.Group.ToLowerInvariant().Contains(search));
         }
 
-        if (SelectedParameterGroup != "全部")
-            filtered = filtered.Where(p => p.Group == SelectedParameterGroup);
-
-        FilteredParameters = new ObservableCollection<RecipeParameter>(filtered);
+        CurrentGroupParameters = new ObservableCollection<RecipeParameter>(filtered);
     }
 
     // ===================== Recipe CRUD =====================
@@ -169,11 +220,16 @@ public partial class RecipeViewModel : ObservableObject
         CurrentRecipeDescription = "";
         CurrentRecipeCategory = "";
         CurrentRecipeTags = "";
+        CurrentProductCode = "";
+        CurrentAuthor = "";
+        CurrentStatus = RecipeStatus.Draft;
         CurrentVersion = 1;
-        CurrentParameters = [];
-        FilteredParameters = [];
-        ParameterGroups = ["全部"];
-        SelectedParameterGroup = "全部";
+        DefaultDbNumber = 1;
+
+        var defaultGroup = new RecipeGroup { Name = "参数组1" };
+        RecipeGroups = [defaultGroup];
+        HasGroups = true;
+        SelectedGroup = defaultGroup;
         HasRecipeSelected = true;
         StatusText = "新建配方";
     }
@@ -182,16 +238,23 @@ public partial class RecipeViewModel : ObservableObject
     private void SaveRecipe()
     {
         if (_currentRecipe == null)
-        {
             _currentRecipe = new RecipeRecord();
-        }
 
         _currentRecipe.Name = CurrentRecipeName;
         _currentRecipe.Description = CurrentRecipeDescription;
         _currentRecipe.Category = CurrentRecipeCategory;
+        _currentRecipe.ProductCode = CurrentProductCode;
+        _currentRecipe.Author = CurrentAuthor;
+        _currentRecipe.Status = CurrentStatus;
         _currentRecipe.Tags = [.. CurrentRecipeTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
         _currentRecipe.DefaultDbNumber = DefaultDbNumber;
-        _currentRecipe.Parameters = [.. CurrentParameters];
+
+        _currentRecipe.Groups = RecipeGroups.Select(g => new RecipeGroup
+        {
+            Name = g.Name,
+            Description = g.Description,
+            Parameters = new ObservableCollection<RecipeParameter>([.. g.Parameters]),
+        }).ToList();
 
         _recipeService.SaveRecipe(_currentRecipe);
 
@@ -217,15 +280,28 @@ public partial class RecipeViewModel : ObservableObject
         CurrentRecipeDescription = recipe.Description;
         CurrentRecipeCategory = recipe.Category;
         CurrentRecipeTags = string.Join(", ", recipe.Tags);
+        CurrentProductCode = recipe.ProductCode;
+        CurrentAuthor = recipe.Author;
+        CurrentStatus = recipe.Status;
         CurrentVersion = recipe.Version;
         DefaultDbNumber = recipe.DefaultDbNumber;
-        CurrentParameters = new ObservableCollection<RecipeParameter>(recipe.Parameters);
         HasRecipeSelected = true;
         StatusText = $"已加载「{recipe.Name}」";
 
-        // Build group list
-        RefreshParameterGroups();
-        SelectedParameterGroup = "全部";
+        if (recipe.Groups.Count > 0)
+        {
+            RecipeGroups = new ObservableCollection<RecipeGroup>(recipe.Groups);
+            HasGroups = true;
+            SelectedGroup = RecipeGroups[0];
+        }
+        else
+        {
+            var defaultGroup = new RecipeGroup { Name = "参数组1" };
+            RecipeGroups = [defaultGroup];
+            HasGroups = true;
+            SelectedGroup = defaultGroup;
+        }
+
         ParameterSearchText = "";
     }
 
@@ -237,21 +313,28 @@ public partial class RecipeViewModel : ObservableObject
         _recipeService.DeleteRecipe(meta.Id);
 
         if (_currentRecipe?.Id == meta.Id)
-        {
-            _currentRecipe = null;
-            CurrentRecipeName = "";
-            CurrentRecipeDescription = "";
-            CurrentRecipeCategory = "";
-            CurrentRecipeTags = "";
-            CurrentVersion = 0;
-            CurrentParameters = [];
-            FilteredParameters = [];
-            HasRecipeSelected = false;
-            ParameterGroups = ["全部"];
-        }
+            ClearCurrentRecipe();
 
         StatusText = $"配方「{meta.Name}」已删除";
         RefreshRecipeList();
+    }
+
+    private void ClearCurrentRecipe()
+    {
+        _currentRecipe = null;
+        CurrentRecipeName = "";
+        CurrentRecipeDescription = "";
+        CurrentRecipeCategory = "";
+        CurrentRecipeTags = "";
+        CurrentProductCode = "";
+        CurrentAuthor = "";
+        CurrentStatus = RecipeStatus.Draft;
+        CurrentVersion = 0;
+        RecipeGroups = [];
+        CurrentGroupParameters = [];
+        HasGroups = false;
+        HasRecipeSelected = false;
+        SelectedGroup = null;
     }
 
     [RelayCommand]
@@ -267,38 +350,91 @@ public partial class RecipeViewModel : ObservableObject
         }
     }
 
+    // ===================== Group management =====================
+
+    [RelayCommand]
+    private void AddGroup()
+    {
+        var newGroup = new RecipeGroup
+        {
+            Name = $"组{RecipeGroups.Count + 1}",
+        };
+        RecipeGroups.Add(newGroup);
+        HasGroups = true;
+        SelectedGroup = newGroup;
+        StatusText = $"新增参数组「{newGroup.Name}」";
+    }
+
+    [RelayCommand]
+    private void RemoveGroup()
+    {
+        if (SelectedGroup is null) return;
+
+        var groupName = SelectedGroup.Name;
+        int index = RecipeGroups.IndexOf(SelectedGroup);
+        RecipeGroups.Remove(SelectedGroup);
+        HasGroups = RecipeGroups.Count > 0;
+
+        if (RecipeGroups.Count > 0)
+        {
+            int newIndex = Math.Min(index, RecipeGroups.Count - 1);
+            SelectedGroup = RecipeGroups[newIndex];
+        }
+        else
+        {
+            SelectedGroup = null;
+            CurrentGroupParameters = [];
+        }
+
+        StatusText = $"已移除参数组「{groupName}」";
+    }
+
     // ===================== Parameter management =====================
 
     [RelayCommand]
     private void AddParameter()
     {
+        var currentGroup = SelectedGroup;
+        if (currentGroup is null)
+        {
+            if (RecipeGroups.Count == 0)
+            {
+                currentGroup = new RecipeGroup { Name = "参数组1" };
+                RecipeGroups.Add(currentGroup);
+                HasGroups = true;
+            }
+            else
+            {
+                currentGroup = RecipeGroups[0];
+            }
+            SelectedGroup = currentGroup;
+        }
+
         var param = new RecipeParameter
         {
-            Name = $"参数{CurrentParameters.Count + 1}",
-            Address = (ushort)(CurrentParameters.Count * 2),
+            Name = $"参数{currentGroup.Parameters.Count + 1}",
+            Address = (ushort)(currentGroup.Parameters.Count * 2),
             Value = 0,
-            PlcDataType = "REAL",
+            DataType = PlcDataType.Real,
         };
-        CurrentParameters.Add(param);
-
-        // Update groups
-        RefreshParameterGroups();
-        StatusText = $"新增参数 (共 {CurrentParameters.Count} 个)";
+        currentGroup.Parameters.Add(param);
+        ApplyGroupParameterFilter();
+        StatusText = $"新增参数 (共 {currentGroup.Parameters.Count} 个)";
     }
 
     [RelayCommand]
     private void RemoveParameter(RecipeParameter? parameter)
     {
-        if (parameter == null) return;
-        CurrentParameters.Remove(parameter);
-        RefreshParameterGroups();
-        StatusText = $"已移除参数 (共 {CurrentParameters.Count} 个)";
+        if (parameter == null || SelectedGroup is null) return;
+        SelectedGroup.Parameters.Remove(parameter);
+        ApplyGroupParameterFilter();
+        StatusText = $"已移除参数 (共 {SelectedGroup.Parameters.Count} 个)";
     }
 
     [RelayCommand]
     private void DuplicateParameter(RecipeParameter? parameter)
     {
-        if (parameter == null) return;
+        if (parameter == null || SelectedGroup is null) return;
         var copy = new RecipeParameter
         {
             Name = $"{parameter.Name} (副本)",
@@ -307,25 +443,41 @@ public partial class RecipeViewModel : ObservableObject
             Address = (ushort)(parameter.Address + 2),
             Scale = parameter.Scale,
             Offset = parameter.Offset,
+            MinValue = parameter.MinValue,
+            MaxValue = parameter.MaxValue,
             Group = parameter.Group,
-            PlcDataType = parameter.PlcDataType,
+            DataType = parameter.DataType,
             DbNumber = parameter.DbNumber,
         };
-        CurrentParameters.Add(copy);
-        RefreshParameterGroups();
+        SelectedGroup.Parameters.Add(copy);
+        ApplyGroupParameterFilter();
         StatusText = $"已复制参数「{parameter.Name}」";
     }
 
-    private void RefreshParameterGroups()
+    // ===================== Version History =====================
+
+    [RelayCommand]
+    private void ShowVersionHistory()
     {
-        var groups = CurrentParameters
-            .Select(p => string.IsNullOrWhiteSpace(p.Group) ? "未分组" : p.Group)
-            .Distinct()
-            .OrderBy(g => g)
-            .ToList();
-        groups.Insert(0, "全部");
-        ParameterGroups = new ObservableCollection<string>(groups);
-        ApplyParameterFilter();
+        if (_currentRecipe?.Id is not { } id) return;
+
+        var history = _recipeService.GetVersionHistory(id);
+        VersionHistoryItems = new ObservableCollection<RecipeVersionSnapshot>(history);
+        IsVersionHistoryVisible = !IsVersionHistoryVisible;
+    }
+
+    [RelayCommand]
+    private void RestoreVersion(RecipeVersionSnapshot? snapshot)
+    {
+        if (snapshot is null || _currentRecipe is null) return;
+
+        var restored = _recipeService.RestoreVersion(_currentRecipe.Id, snapshot.Version);
+        if (restored != null)
+        {
+            StatusText = $"已恢复至 v{snapshot.Version}「{restored.Name}」";
+            LoadRecipe(new RecipeMeta { Id = _currentRecipe.Id, Name = restored.Name });
+            IsVersionHistoryVisible = false;
+        }
     }
 
     // ===================== PLC Operations =====================
@@ -346,8 +498,9 @@ public partial class RecipeViewModel : ObservableObject
 
         StatusText = "正在下载到 PLC...";
         int count = _recipeService.DownloadToPlc(_currentRecipe);
+        int total = _currentRecipe.Groups.Sum(g => g.Parameters.Count);
         StatusText = count >= 0
-            ? $"已下载 {count}/{_currentRecipe.Parameters.Count} 个参数到 PLC"
+            ? $"已下载 {count}/{total} 个参数到 PLC"
             : "下载失败";
     }
 
@@ -369,10 +522,18 @@ public partial class RecipeViewModel : ObservableObject
         int count = _recipeService.UploadFromPlc(_currentRecipe);
         if (count >= 0)
         {
-            StatusText = $"已从 PLC 上传 {count}/{_currentRecipe.Parameters.Count} 个参数";
-            // Refresh display
-            CurrentParameters = new ObservableCollection<RecipeParameter>(_currentRecipe.Parameters);
-            ApplyParameterFilter();
+            int total = _currentRecipe.Groups.Sum(g => g.Parameters.Count);
+            StatusText = $"已从 PLC 上传 {count}/{total} 个参数";
+
+            if (SelectedGroup is not null)
+            {
+                var idx = RecipeGroups.IndexOf(SelectedGroup);
+                if (idx >= 0)
+                {
+                    SelectedGroup = RecipeGroups[idx];
+                    ApplyGroupParameterFilter();
+                }
+            }
         }
         else
         {
@@ -418,11 +579,27 @@ public partial class RecipeViewModel : ObservableObject
             return;
         }
 
-        foreach (var param in imported)
-            CurrentParameters.Add(param);
+        var targetGroup = SelectedGroup;
+        if (targetGroup is null)
+        {
+            if (RecipeGroups.Count == 0)
+            {
+                targetGroup = new RecipeGroup { Name = "导入参数" };
+                RecipeGroups.Add(targetGroup);
+                HasGroups = true;
+            }
+            else
+            {
+                targetGroup = RecipeGroups[0];
+            }
+            SelectedGroup = targetGroup;
+        }
 
-        RefreshParameterGroups();
-        StatusText = $"已导入 {imported.Count} 个参数";
+        foreach (var param in imported)
+            targetGroup.Parameters.Add(param);
+
+        ApplyGroupParameterFilter();
+        StatusText = $"已导入 {imported.Count} 个参数到「{targetGroup.Name}」";
     }
 
     // ===================== Refresh =====================
@@ -434,7 +611,6 @@ public partial class RecipeViewModel : ObservableObject
         Recipes = new ObservableCollection<RecipeMeta>(all);
         ApplyRecipeFilter();
 
-        // Refresh categories
         var cats = all
             .Select(r => r.Category)
             .Where(c => !string.IsNullOrWhiteSpace(c))
@@ -447,6 +623,14 @@ public partial class RecipeViewModel : ObservableObject
     [RelayCommand]
     private void ApplyParameterGroup()
     {
-        ApplyParameterFilter();
+        ApplyGroupParameterFilter();
+    }
+
+    [RelayCommand]
+    private void ReloadCurrentRecipe()
+    {
+        if (_currentRecipe?.Id is not { } id) return;
+        LoadRecipe(new RecipeMeta { Id = id, Name = _currentRecipe.Name });
+        StatusText = $"已重新加载「{_currentRecipe.Name}」";
     }
 }
