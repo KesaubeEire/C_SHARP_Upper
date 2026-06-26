@@ -245,6 +245,7 @@ public partial class AlarmViewModel : ViewModel
         ActiveCount = _alarmService.ActiveAlarmCount;
         RefreshStatistics();
         SelectedSeverityOption = SeverityOptions.FirstOrDefault();
+        StatusText = "就绪 — 点击「启动监控」开始接收报警";
 
         // 同步规则集合
         Rules = _alarmService.Rules;
@@ -289,13 +290,28 @@ public partial class AlarmViewModel : ViewModel
                 return;
 
             // 用户确认 → 启动轮询
-            StartPollingInternal();
+            try
+            {
+                StartPollingInternal();
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"✗ 轮询启动失败: {ex.Message}";
+                return;
+            }
         }
 
         // 3. 订阅报警
-        _alarmService.Subscribe();
-        IsSubscribed = true;
-        StatusText = "报警监控已启动";
+        try
+        {
+            _alarmService.Subscribe();
+            IsSubscribed = true;
+            StatusText = "报警监控已启动";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"✗ 订阅失败: {ex.Message}";
+        }
     }
 
     /// <summary>
@@ -382,37 +398,44 @@ public partial class AlarmViewModel : ViewModel
             return;
         }
 
-        var rule = new AlarmRule
+        try
         {
-            VariableKey = EditVariableKey.Trim(),
-            DataType = EditDataType,
-            Description = EditDescription.Trim(),
-            Severity = EditSeverity,
-            ConditionType = EditConditionType,
-            Threshold = EditThreshold,
-            Deadband = EditDeadband,
-            OnDelayMs = EditOnDelayMs,
-            OffDelayMs = EditOffDelayMs,
-            Area = EditArea.Trim(),
-            IsEnabled = EditIsEnabled,
-        };
+            var rule = new AlarmRule
+            {
+                VariableKey = EditVariableKey.Trim(),
+                DataType = EditDataType,
+                Description = EditDescription.Trim(),
+                Severity = EditSeverity,
+                ConditionType = EditConditionType,
+                Threshold = EditThreshold,
+                Deadband = EditDeadband,
+                OnDelayMs = EditOnDelayMs,
+                OffDelayMs = EditOffDelayMs,
+                Area = EditArea.Trim(),
+                IsEnabled = EditIsEnabled,
+            };
 
-        if (_ruleBeingEdited != null)
-        {
-            _alarmService.UpdateRule(_ruleBeingEdited, rule);
-            StatusText = $"规则已更新: {rule.Description}";
+            if (_ruleBeingEdited != null)
+            {
+                _alarmService.UpdateRule(_ruleBeingEdited, rule);
+                StatusText = $"规则已更新: {rule.Description}";
+            }
+            else
+            {
+                _alarmService.AddRule(rule);
+                StatusText = $"规则已添加: {rule.Description}";
+            }
+
+            // 若 VariableKey 是 DB{N}:{O} 格式，自动同步 DbPollItem
+            SyncDbPollItem(rule);
+
+            IsEditingRule = false;
+            _ruleBeingEdited = null;
         }
-        else
+        catch (Exception ex)
         {
-            _alarmService.AddRule(rule);
-            StatusText = $"规则已添加: {rule.Description}";
+            StatusText = $"✗ 保存规则失败: {ex.Message}";
         }
-
-        // 若 VariableKey 是 DB{N}:{O} 格式，自动同步 DbPollItem
-        SyncDbPollItem(rule);
-
-        IsEditingRule = false;
-        _ruleBeingEdited = null;
     }
 
     [RelayCommand]
@@ -470,17 +493,27 @@ public partial class AlarmViewModel : ViewModel
 
     // ========== 确认 ==========
 
+    // 工具栏 flyout 开关
+    [ObservableProperty]
+    private bool _isAckAllFlyoutOpen;
+
+    [ObservableProperty]
+    private bool _isShelveAllFlyoutOpen;
+
     [RelayCommand]
     private void AcknowledgeAlarm(AlarmItem? alarm)
     {
         if (alarm == null) return;
-        _alarmService.AcknowledgeAlarm(alarm);
+        try { _alarmService.AcknowledgeAlarm(alarm); }
+        catch (Exception ex) { StatusText = $"✗ 确认失败: {ex.Message}"; }
     }
 
     [RelayCommand]
     private void AcknowledgeAll()
     {
-        _alarmService.AcknowledgeAll();
+        try { _alarmService.AcknowledgeAll(); }
+        catch (Exception ex) { StatusText = $"✗ 全部确认失败: {ex.Message}"; }
+        IsAckAllFlyoutOpen = false;
     }
 
     // ========== 搁置 ==========
@@ -489,29 +522,32 @@ public partial class AlarmViewModel : ViewModel
     private void ShelveAlarm(AlarmItem? alarm)
     {
         if (alarm == null || alarm.IsShelved) return;
-        // 默认搁置 30 分钟
-        _alarmService.ShelveAlarm(alarm, TimeSpan.FromMinutes(30));
+        try { _alarmService.ShelveAlarm(alarm, TimeSpan.FromMinutes(30)); }
+        catch (Exception ex) { StatusText = $"✗ 搁置失败: {ex.Message}"; }
     }
 
     [RelayCommand]
     private void ShelveAlarm1H(AlarmItem? alarm)
     {
         if (alarm == null || alarm.IsShelved) return;
-        _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(1));
+        try { _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(1)); }
+        catch (Exception ex) { StatusText = $"✗ 搁置失败: {ex.Message}"; }
     }
 
     [RelayCommand]
     private void ShelveAlarm8H(AlarmItem? alarm)
     {
         if (alarm == null || alarm.IsShelved) return;
-        _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(8));
+        try { _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(8)); }
+        catch (Exception ex) { StatusText = $"✗ 搁置失败: {ex.Message}"; }
     }
 
     [RelayCommand]
     private void ShelveAlarm24H(AlarmItem? alarm)
     {
         if (alarm == null || alarm.IsShelved) return;
-        _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(24));
+        try { _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(24)); }
+        catch (Exception ex) { StatusText = $"✗ 搁置失败: {ex.Message}"; }
     }
 
     [RelayCommand]
@@ -524,21 +560,40 @@ public partial class AlarmViewModel : ViewModel
     [RelayCommand]
     private void ShelveAll()
     {
-        foreach (var alarm in ActiveAlarms.Where(a => !a.IsShelved).ToList())
+        try
         {
-            _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(1));
+            foreach (var alarm in ActiveAlarms.Where(a => !a.IsShelved).ToList())
+                _alarmService.ShelveAlarm(alarm, TimeSpan.FromHours(1));
+            StatusText = $"已搁置 {ActiveAlarms.Count(a => a.IsShelved)} 条报警";
         }
+        catch (Exception ex) { StatusText = $"✗ 批量搁置失败: {ex.Message}"; }
+        IsShelveAllFlyoutOpen = false;
     }
 
     // ========== 清除 ==========
 
     [RelayCommand]
-    private void ClearAll()
+    private async Task ClearAll()
     {
-        _alarmService.ClearAll();
-        FilteredAlarms = Alarms;
-        RefreshStatistics();
-        StatusText = "报警历史已清除";
+        var result = await _contentDialog.ShowSimpleDialogAsync(
+            new SimpleContentDialogCreateOptions
+            {
+                Title = "清除历史",
+                Content = "确定清除所有报警历史记录？此操作不可恢复。",
+                PrimaryButtonText = "清除",
+                CloseButtonText = "取消",
+            });
+
+        if (result != ContentDialogResult.Primary) return;
+
+        try
+        {
+            _alarmService.ClearAll();
+            FilteredAlarms = Alarms;
+            RefreshStatistics();
+            StatusText = "报警历史已清除";
+        }
+        catch (Exception ex) { StatusText = $"✗ 清除失败: {ex.Message}"; }
     }
 
     // ========== 导出 ==========
@@ -546,20 +601,24 @@ public partial class AlarmViewModel : ViewModel
     [RelayCommand]
     private void ExportCsv()
     {
-        var dialog = new SaveFileDialog
+        try
         {
-            Title = "导出报警记录",
-            Filter = "CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
-            FileName = $"报警记录_{DateTime.Now:yyyy-MM-dd_HHmmss}.csv",
-            DefaultExt = ".csv",
-            AddExtension = true,
-        };
+            var dialog = new SaveFileDialog
+            {
+                Title = "导出报警记录",
+                Filter = "CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                FileName = $"报警记录_{DateTime.Now:yyyy-MM-dd_HHmmss}.csv",
+                DefaultExt = ".csv",
+                AddExtension = true,
+            };
 
-        if (dialog.ShowDialog() == true)
-        {
-            _alarmService.ExportToCsv(dialog.FileName, FilteredAlarms);
-            StatusText = $"已导出 {FilteredAlarms.Count} 条报警到 {dialog.FileName}";
+            if (dialog.ShowDialog() == true)
+            {
+                _alarmService.ExportToCsv(dialog.FileName, FilteredAlarms);
+                StatusText = $"已导出 {FilteredAlarms.Count} 条报警到 {dialog.FileName}";
+            }
         }
+        catch (Exception ex) { StatusText = $"✗ 导出失败: {ex.Message}"; }
     }
 
     // ========== 备注 ==========
@@ -615,6 +674,8 @@ public partial class AlarmViewModel : ViewModel
         if (FilterDateTo.HasValue)
             query = query.Where(a => a.Timestamp <= FilterDateTo.Value.AddDays(1));
 
+        // 筛选时关闭所有 flyout，避免残留弹出
+        ResetAllFlyouts();
         FilteredAlarms = new ObservableCollection<AlarmItem>(ApplySort(query));
         RefreshStatistics();
     }
@@ -632,8 +693,21 @@ public partial class AlarmViewModel : ViewModel
         SortColumn = "Timestamp";
         SortDirection = SortDirection.Descending;
         UpdateSortGlyphs();
+        ResetAllFlyouts();
         FilteredAlarms = new ObservableCollection<AlarmItem>(ApplySort(Alarms));
         RefreshStatistics();
+    }
+
+    /// <summary>关闭所有 flyout（过滤/切换报警时清理残留）。</summary>
+    private void ResetAllFlyouts()
+    {
+        IsAckAllFlyoutOpen = false;
+        IsShelveAllFlyoutOpen = false;
+        foreach (var alarm in Alarms)
+        {
+            alarm.IsConfirmFlyoutOpen = false;
+            alarm.IsShelveFlyoutOpen = false;
+        }
     }
 
     // ========== 排序 ==========

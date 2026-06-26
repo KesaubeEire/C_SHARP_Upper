@@ -104,7 +104,7 @@
                             FontTypography="BodyStrong"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="报警详情" />
-                        <Button
+                        <ui:Button
                             Grid.Column="1"
                             Width="28"
                             Height="28"
@@ -115,7 +115,7 @@
                             Cursor="Hand"
                             ToolTip="关闭">
                             <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" />
-                        </Button>
+                        </ui:Button>
                     </Grid>
                 </Border>
 
@@ -181,10 +181,10 @@
                         <Rectangle Height="1" Margin="0,4" Fill="{DynamicResource ControlElevationBorderBrush}" />
                         <TextBlock Margin="0,4,0,4" FontWeight="Bold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="搁置操作" />
                         <WrapPanel>
-                            <Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm1HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="1 小时" FontSize="12" />
-                            <Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm8HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="8 小时" FontSize="12" />
-                            <Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm24HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="24 小时" FontSize="12" />
-                            <Button Height="34" Margin="0,0,0,4" Command="{Binding UnshelveAlarmCommand}" CommandParameter="{Binding SelectedAlarm}" Content="取消搁置" FontSize="12" />
+                            <ui:Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm1HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="1 小时" FontSize="12" />
+                            <ui:Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm8HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="8 小时" FontSize="12" />
+                            <ui:Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm24HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="24 小时" FontSize="12" />
+                            <ui:Button Height="34" Margin="0,0,0,4" Command="{Binding UnshelveAlarmCommand}" CommandParameter="{Binding SelectedAlarm}" Content="取消搁置" FontSize="12" />
                         </WrapPanel>
                     </StackPanel>
                 </ScrollViewer>

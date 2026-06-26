@@ -115,6 +115,16 @@ public partial class AlarmItem : ObservableObject
     [ObservableProperty]
     private string? _comment;
 
+    // ========== Flyout 开关 (UI 状态) ==========
+
+    /// <summary>确认浮层是否打开。</summary>
+    [ObservableProperty]
+    private bool _isConfirmFlyoutOpen;
+
+    /// <summary>搁置浮层是否打开。</summary>
+    [ObservableProperty]
+    private bool _isShelveFlyoutOpen;
+
     // ========== 计算属性 ==========
 
     /// <summary>短时间格式 (HH:mm:ss)。</summary>

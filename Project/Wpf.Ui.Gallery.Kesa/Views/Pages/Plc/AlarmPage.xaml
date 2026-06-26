@@ -469,16 +469,33 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="100" />
                                     <ColumnDefinition Width="120" />
                                     <ColumnDefinition Width="100" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="120" />
                                     <ColumnDefinition Width="100" />
-                                    <ColumnDefinition Width="100" />
                                 </Grid.ColumnDefinitions>
 
                                 <Button
                                     Grid.Column="0"
+                                    HorizontalAlignment="Left"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding SortByStatusCommand}"
+                                    Cursor="Hand">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                        <Run Text=">状态" />
+                                        <Run Text="{Binding StatusSortGlyph}" />
+                                    </ui:TextBlock>
+                                </Button>
+
+                                <Button
+                                    Grid.Column="1"
                                     HorizontalAlignment="Left"
                                     Padding="2"
                                     Background="Transparent"
@@ -495,7 +512,7 @@
                                 </Button>
 
                                 <Button
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     HorizontalAlignment="Left"
                                     Padding="0"
                                     Background="Transparent"
@@ -512,7 +529,7 @@
                                 </Button>
 
                                 <Button
-                                    Grid.Column="2"
+                                    Grid.Column="3"
                                     HorizontalAlignment="Left"
                                     Padding="0"
                                     Background="Transparent"
@@ -529,7 +546,7 @@
                                 </Button>
 
                                 <ui:TextBlock
-                                    Grid.Column="3"
+                                    Grid.Column="4"
                                     VerticalAlignment="Center"
                                     FontTypography="Caption"
                                     FontWeight="Bold"
@@ -537,7 +554,7 @@
                                     Text="描述" />
 
                                 <Button
-                                    Grid.Column="4"
+                                    Grid.Column="5"
                                     HorizontalAlignment="Left"
                                     Padding="0"
                                     Background="Transparent"
@@ -550,23 +567,6 @@
                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                         <Run Text=">区域" />
                                         <Run Text="{Binding AreaSortGlyph}" />
-                                    </ui:TextBlock>
-                                </Button>
-
-                                <Button
-                                    Grid.Column="5"
-                                    HorizontalAlignment="Left"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Command="{Binding SortByStatusCommand}"
-                                    Cursor="Hand">
-                                    <ui:TextBlock
-                                        FontTypography="Caption"
-                                        FontWeight="Bold"
-                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                        <Run Text=">状态" />
-                                        <Run Text="{Binding StatusSortGlyph}" />
                                     </ui:TextBlock>
                                 </Button>
 
@@ -625,17 +625,28 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="100" />
+                                                <ColumnDefinition Width="100" />
                                                 <ColumnDefinition Width="120" />
                                                 <ColumnDefinition Width="100" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="120" />
                                                 <ColumnDefinition Width="100" />
-                                                <ColumnDefinition Width="100" />
                                             </Grid.ColumnDefinitions>
+
+                                            <!-- 状态标签 -->
+                                            <Border
+                                                Grid.Column="0"
+                                                VerticalAlignment="Center"
+                                                Style="{StaticResource StatusBadgeStyle}">
+                                                <TextBlock
+                                                    FontWeight="Medium"
+                                                    Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                                    Text="{Binding StatusText}" />
+                                            </Border>
 
                                             <!-- 时间 -->
                                             <TextBlock
-                                                Grid.Column="0"
+                                                Grid.Column="1"
                                                 VerticalAlignment="Center"
 
                                                 FontFamily="Consolas"
@@ -643,7 +654,7 @@
 
                                             <!-- 严重度标签 -->
                                             <Border
-                                                Grid.Column="1"
+                                                Grid.Column="2"
                                                 Width="88"
                                                 Height="24"
                                                 VerticalAlignment="Center"
@@ -660,7 +671,7 @@
 
                                             <!-- 变量名 -->
                                             <TextBlock
-                                                Grid.Column="2"
+                                                Grid.Column="3"
                                                 VerticalAlignment="Center"
 
                                                 FontWeight="Medium"
@@ -669,7 +680,7 @@
 
                                             <!-- 描述 -->
                                             <TextBlock
-                                                Grid.Column="3"
+                                                Grid.Column="4"
                                                 VerticalAlignment="Center"
 
                                                 Text="{Binding Description}"
@@ -677,43 +688,73 @@
 
                                             <!-- 区域 -->
                                             <TextBlock
-                                                Grid.Column="4"
+                                                Grid.Column="5"
                                                 VerticalAlignment="Center"
 
                                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                 Text="{Binding Area}"
                                                 TextTrimming="CharacterEllipsis" />
 
-                                            <!-- 状态标签 -->
-                                            <Border
-                                                Grid.Column="5"
-                                                VerticalAlignment="Center"
-                                                Style="{StaticResource StatusBadgeStyle}">
-                                                <TextBlock
-                                                    FontWeight="Medium"
-                                                    Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
-                                                    Text="{Binding StatusText}" />
-                                            </Border>
-
                                             <!-- 操作按钮 -->
                                             <StackPanel Grid.Column="6" Orientation="Horizontal">
-                                                <Button
+                                                <ui:Button
                                                     Width="40"
                                                     Height="22"
                                                     Padding="2"
                                                     Margin="0,0,4,0"
-                                                    Command="{Binding DataContext.AcknowledgeAlarmCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                    CommandParameter="{Binding}"
+                                                    Click="OnOpenConfirmFlyout"
                                                     Content="确认"
                                                     IsEnabled="{Binding IsAcknowledged, Converter={StaticResource InverseBoolConverter}}" />
-                                                <Button
+                                                <ui:Flyout
+                                                    IsOpen="{Binding IsConfirmFlyoutOpen}"
+                                                    Placement="Bottom">
+                                                    <StackPanel>
+                                                        <TextBlock
+                                                            Margin="0,0,0,6"
+                                                            FontWeight="SemiBold"
+                                                            Text="确认此报警？" />
+                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                            <ui:Button
+                                                                Margin="0,0,6,0"
+                                                                Click="OnCloseConfirmFlyout"
+                                                                Content="取消" />
+                                                            <ui:Button
+                                                                Appearance="Primary"
+                                                                Command="{Binding DataContext.AcknowledgeAlarmCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="确定" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </ui:Flyout>
+
+                                                <ui:Button
                                                     Width="40"
                                                     Height="22"
                                                     Padding="2"
-                                                    Command="{Binding DataContext.ShelveAlarmCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                    CommandParameter="{Binding}"
+                                                    Click="OnOpenShelveFlyout"
                                                     Content="搁置"
                                                     IsEnabled="{Binding IsShelved, Converter={StaticResource InverseBoolConverter}}" />
+                                                <ui:Flyout
+                                                    IsOpen="{Binding IsShelveFlyoutOpen}"
+                                                    Placement="Bottom">
+                                                    <StackPanel>
+                                                        <TextBlock
+                                                            Margin="0,0,0,6"
+                                                            FontWeight="SemiBold"
+                                                            Text="搁置 30 分钟？" />
+                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                            <ui:Button
+                                                                Margin="0,0,6,0"
+                                                                Click="OnCloseShelveFlyout"
+                                                                Content="取消" />
+                                                            <ui:Button
+                                                                Appearance="Primary"
+                                                                Command="{Binding DataContext.ShelveAlarmCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="确定" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </ui:Flyout>
                                             </StackPanel>
                                         </Grid>
                                     </Border>

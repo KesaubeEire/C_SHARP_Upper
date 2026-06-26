@@ -59,23 +59,66 @@
                     Fill="{DynamicResource ControlElevationBorderBrush}" />
 
                 <ui:Button
+                    x:Name="btnAckAll"
                     Margin="0,0,4,0"
                     Appearance="Success"
-                    Command="{Binding AcknowledgeAllCommand}"
+                    Click="OnOpenAckAllFlyout"
                     Content="全部确认">
                     <ui:Button.Icon>
                         <ui:SymbolIcon Symbol="CheckmarkCircle24" />
                     </ui:Button.Icon>
                 </ui:Button>
+                <ui:Flyout
+                    IsOpen="{Binding IsAckAllFlyoutOpen}"
+                    Placement="Bottom">
+                    <StackPanel>
+                        <TextBlock
+                            Margin="0,0,0,6"
+                            FontWeight="SemiBold"
+                            Text="确认全部报警？" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ui:Button
+                                Margin="0,0,6,0"
+                                Click="OnCloseAckAllFlyout"
+                                Content="取消" />
+                            <ui:Button
+                                Appearance="Primary"
+                                Command="{Binding AcknowledgeAllCommand}"
+                                Content="确定" />
+                        </StackPanel>
+                    </StackPanel>
+                </ui:Flyout>
+
                 <ui:Button
+                    x:Name="btnShelveAll"
                     Margin="4,0,4,0"
                     Appearance="Secondary"
-                    Command="{Binding ShelveAllCommand}"
+                    Click="OnOpenShelveAllFlyout"
                     Content="全部搁置">
                     <ui:Button.Icon>
                         <ui:SymbolIcon Symbol="EyeOff24" />
                     </ui:Button.Icon>
                 </ui:Button>
+                <ui:Flyout
+                    IsOpen="{Binding IsShelveAllFlyoutOpen}"
+                    Placement="Bottom">
+                    <StackPanel>
+                        <TextBlock
+                            Margin="0,0,0,6"
+                            FontWeight="SemiBold"
+                            Text="搁置全部未确认报警（1 小时）？" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ui:Button
+                                Margin="0,0,6,0"
+                                Click="OnCloseShelveAllFlyout"
+                                Content="取消" />
+                            <ui:Button
+                                Appearance="Primary"
+                                Command="{Binding ShelveAllCommand}"
+                                Content="确定" />
+                        </StackPanel>
+                    </StackPanel>
+                </ui:Flyout>
 
                 <Rectangle
                     Width="1"

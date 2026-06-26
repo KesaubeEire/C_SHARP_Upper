@@ -120,7 +120,7 @@
             BorderBrush="{DynamicResource ControlElevationBorderBrush}"
             BorderThickness="1"
             CornerRadius="8">
-            <Grid>
+            <Grid Grid.IsSharedSizeScope="True">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -138,11 +138,11 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="70" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="DataProcessCol" />
                             <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="60" />
-                            <ColumnDefinition Width="140" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="ValueCol" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="CommentCol" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock
                             Grid.Column="0"
@@ -207,11 +207,11 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="70" />
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="200" />
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="DataProcessCol" />
                                                 <ColumnDefinition Width="100" />
                                                 <ColumnDefinition Width="60" />
-                                                <ColumnDefinition Width="140" />
-                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="ValueCol" />
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="CommentCol" />
                                             </Grid.ColumnDefinitions>
 
                                             <!--  偏移量  -->
@@ -261,6 +261,7 @@
                                                 <!--  数值编辑  -->
                                                 <StackPanel Orientation="Horizontal" Visibility="{Binding EditVis}">
                                                     <TextBox
+                                                        MinWidth="70"
                                                         Width="Auto"
                                                         Margin="0,0,6,0"
                                                         VerticalAlignment="Center"
@@ -293,6 +294,7 @@
                                                 Grid.Column="5"
                                                 Height="28"
                                                 Padding="8,3"
+                                                MinWidth="60"
                                                 VerticalAlignment="Center"
                                                 Background="{DynamicResource TextBoxBackground}"
                                                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"
@@ -300,8 +302,8 @@
                                                 CornerRadius="4">
                                                 <ui:TextBlock
                                                     VerticalAlignment="Center"
-                                                    FontTypography="BodyStrong"
-                                                    Foreground="{DynamicResource SystemFillColorAttentionBrush}"
+                                                    FontTypography="Body" 
+                                                    FontWeight="SemiBold"
                                                     Text="{Binding Value}"
                                                     TextTrimming="CharacterEllipsis" />
                                             </Border>
