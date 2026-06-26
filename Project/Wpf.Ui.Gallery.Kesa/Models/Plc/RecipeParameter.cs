@@ -2,41 +2,44 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Wpf.Ui.Gallery.Models.Plc;
 
-/// <summary>
-/// Represents a single parameter within a recipe.
-/// Maps to a PLC register address with scaling support.
-/// </summary>
 public partial class RecipeParameter : ObservableObject
 {
-    /// <summary>Parameter name, e.g. "温度", "压力".</summary>
     [ObservableProperty]
     private string _name = "";
 
-    /// <summary>The parameter value in engineering units.</summary>
     [ObservableProperty]
     private double _value;
 
-    /// <summary>Engineering unit, e.g. "°C", "MPa".</summary>
     [ObservableProperty]
     private string _unit = "";
 
-    /// <summary>PLC register address (Modbus or DB offset).</summary>
     [ObservableProperty]
     private ushort _address;
 
-    /// <summary>Scaling factor: actual_value = raw * Scale + Offset.</summary>
     [ObservableProperty]
     private double _scale = 1.0;
 
-    /// <summary>Offset: actual_value = raw * Scale + Offset.</summary>
     [ObservableProperty]
     private double _offset;
 
-    /// <summary>Minimum allowed value for validation.</summary>
     [ObservableProperty]
     private double _minValue = double.MinValue;
 
-    /// <summary>Maximum allowed value for validation.</summary>
     [ObservableProperty]
     private double _maxValue = double.MaxValue;
+
+    /// <summary>Parameter group/category, e.g. "温度", "压力", "速度"</summary>
+    [ObservableProperty]
+    private string _group = "";
+
+    /// <summary>PLC data type for write-back: REAL, INT, DINT, WORD, BYTE</summary>
+    [ObservableProperty]
+    private string _plcDataType = "REAL";
+
+    /// <summary>DB number for PLC write-back (0 = use default)</summary>
+    [ObservableProperty]
+    private int _dbNumber;
+
+    /// <summary>The raw PLC value before scaling (computed from raw * Scale + Offset)</summary>
+    public double RawValue => (Value - Offset) / (Scale != 0 ? Scale : 1);
 }
