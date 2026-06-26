@@ -605,6 +605,38 @@ public partial class TrendChartPage : Page
         _s7.WriteByte(S7Service.AreaDB, byteOff, newVal, dbNum);
     }
 
+    /// <summary>使能按钮：点按取反 — 读当前位 → 取反 → 写回</summary>
+    private async void OnEnableToggleClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: string tag }) return;
+
+        if (!_s7.IsConnected)
+        {
+            await _contentDialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "提示",
+                    Content = "PLC 未连接",
+                    CloseButtonText = "确定",
+                });
+            return;
+        }
+
+        var parts = tag.Split('.');
+        if (parts.Length != 3
+            || !int.TryParse(parts[0], out int dbNum) || dbNum <= 0
+            || !int.TryParse(parts[1], out int byteOff)
+            || !int.TryParse(parts[2], out int bitOff) || bitOff < 0 || bitOff > 7)
+            return;
+
+        byte? current = _s7.ReadByte(S7Service.AreaDB, byteOff, dbNum);
+        if (!current.HasValue) return;
+
+        // 取反指定位
+        byte newVal = (byte)(current.Value ^ (1 << bitOff));
+        _s7.WriteByte(S7Service.AreaDB, byteOff, newVal, dbNum);
+    }
+
 
     // ===================== 生命周期 =====================
 

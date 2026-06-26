@@ -266,15 +266,13 @@
                                 PreviewMouseLeftButtonUp="OnMotorPressUp"
                                 Tag="7.0.5" />
 
-                            <!-- 滑台使能/复位 -->
+                            <!-- 滑台使能（点按取反） -->
                             <ui:Button
                                 Grid.Row="1" Grid.Column="3"
                                 Width="120" Height="40" Margin="4"
                                 Appearance="Success"
                                 Content="滑台使能"
-                                MouseLeave="OnMotorPressLeave"
-                                PreviewMouseLeftButtonDown="OnMotorPressDown"
-                                PreviewMouseLeftButtonUp="OnMotorPressUp"
+                                Click="OnEnableToggleClick"
                                 Tag="6.0.0" />
                             <ui:Button
                                 Grid.Row="1" Grid.Column="4"
@@ -286,15 +284,13 @@
                                 PreviewMouseLeftButtonUp="OnMotorPressUp"
                                 Tag="6.0.1" />
 
-                            <!-- 圆盘使能/复位 -->
+                            <!-- 圆盘使能（点按取反） -->
                             <ui:Button
                                 Grid.Row="2" Grid.Column="3"
                                 Width="120" Height="40" Margin="4"
                                 Appearance="Success"
                                 Content="圆盘使能"
-                                MouseLeave="OnMotorPressLeave"
-                                PreviewMouseLeftButtonDown="OnMotorPressDown"
-                                PreviewMouseLeftButtonUp="OnMotorPressUp"
+                                Click="OnEnableToggleClick"
                                 Tag="7.0.0" />
                             <ui:Button
                                 Grid.Row="2" Grid.Column="4"
