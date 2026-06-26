@@ -28,8 +28,6 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock
                     Grid.Column="0"
@@ -41,12 +39,6 @@
                     Grid.Column="2"
                     SelectedIndex="4"
                     SelectionChanged="OnTimeRangeChanged" />
-                <ui:Button
-                    x:Name="btnMock"
-                    Grid.Column="4"
-                    Appearance="Secondary"
-                    Click="OnToggleMock"
-                    Content="▶ 模拟数据" />
             </Grid>
         </Border>
 

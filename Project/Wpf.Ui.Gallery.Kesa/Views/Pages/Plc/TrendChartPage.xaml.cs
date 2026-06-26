@@ -87,10 +87,8 @@ public partial class TrendChartPage : Page
     private readonly Dictionary<string, double> _currentValues = [];
     private readonly List<Border> _legendItems = [];
 
-    // 监控 & Mock
+    // 监控
     private readonly List<VariableMonitor> _monitors = [];
-    private MockTrendService? _mock;
-    private bool _isMock;
     private TimeSpan _selectedDuration = TimeRanges[4].Duration; // 默认 30min
 
     public TrendChartPage(S7Service s7, AppConfigService config, IContentDialogService contentDialog)
@@ -342,9 +340,6 @@ public partial class TrendChartPage : Page
 
     private void OnGaugeSample(string key, double val, DateTime ts)
     {
-        if (_isMock)
-            return;
-
         var def = _gaugeDefs.FirstOrDefault(g => g.Key == key);
         if (def == null)
             return;
@@ -364,9 +359,6 @@ public partial class TrendChartPage : Page
 
     private void OnSample(string key, double val, DateTime ts)
     {
-        if (_isMock)
-            return; // mock 模式时不接收真实数据
-
         var ch = Channels.FirstOrDefault(c => c.Key == key);
         if (ch == null)
             return;
@@ -403,110 +395,6 @@ public partial class TrendChartPage : Page
             dtAxis.MinLimit = start.Ticks;
             dtAxis.MaxLimit = now.Ticks;
         }
-    }
-
-    // ===================== Mock =====================
-
-    private void OnToggleMock(object sender, RoutedEventArgs e)
-    {
-        if (_mock != null && _mock.IsRunning)
-        {
-            _mock.Stop();
-            _mock = null;
-            _isMock = false;
-            btnMock.Content = "▶ 模拟数据";
-            btnMock.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
-
-            // 清除 mock 数据，重新接收真实数据
-            ClearAllBuffers();
-            return;
-        }
-
-        // 启动 mock — 清真实数据，使用假通道
-        _isMock = true;
-        StopMonitors();
-        ClearAllBuffers();
-
-        // 注册假通道（归一化到 0~100，量程 0~100 即原值直接当百分比）
-        var mockKeys = new[] { "mock_temp", "mock_press", "mock_flow" };
-        var mockColors = new[] { SKColor.Parse("#E91E63"), SKColor.Parse("#9C27B0"), SKColor.Parse("#00BCD4") };
-        var mockLabels = new[] { "温度模拟", "压力模拟", "流量模拟" };
-        var mockChs = mockKeys.Select((k, i) => new ChannelDef { Key = k, Label = mockLabels[i], Unit = "", DbNumber = 0, ByteOffset = 0, Color = mockColors[i], Min = 0, Max = 100 }).ToArray();
-
-        for (int i = 0; i < 3; i++)
-        {
-            var buf = new ObservableCollection<NormPoint>();
-            _buffers[mockKeys[i]] = buf;
-            _currentValues[mockKeys[i]] = 0;
-            if (_series[i] is LineSeries<NormPoint> ls)
-            {
-                ls.Name = mockLabels[i];
-                ls.Values = buf;
-                ls.Stroke = new SolidColorPaint(mockColors[i]) { StrokeThickness = (float)trendChart.LineStrokeThickness };
-                ls.Fill = trendChart.FillOpacity > 0
-                    ? new SolidColorPaint(mockColors[i].WithAlpha((byte)(trendChart.FillOpacity * 255)))
-                    : null;
-                ls.GeometrySize = (float)trendChart.GeometrySize;
-                ls.LineSmoothness = (float)trendChart.LineSmoothness;
-                ls.GeometryStroke = trendChart.GeometrySize > 0 ? new SolidColorPaint(mockColors[i]) : null;
-                ls.GeometryFill = trendChart.GeometrySize > 0 ? new SolidColorPaint(SKColors.White) : null;
-            }
-
-            // 更新图例
-            UpdateLegendMock(i, mockLabels[i], mockColors[i]);
-        }
-
-        _mock = new MockTrendService();
-        long mockTick = 0;
-        _mock.DataGenerated += (key, val, ts) =>
-        {
-            mockTick++;
-            double t = mockTick;
-            // 3 条 mock 线 — 生成原始值后用 mockChs 归一化
-            FeedMock(mockKeys[0], 50 + Math.Sin(t * 0.03) * 20 + Random.Shared.NextDouble() * 2, mockChs[0]);
-            FeedMock(mockKeys[1], 30 + Math.Sin(t * 0.05) * 10 + Math.Sin(t * 0.20) * 3, mockChs[1]);
-            FeedMock(mockKeys[2], 70 + Math.Sin(t * 0.04) * 14 + Random.Shared.NextDouble() * 4, mockChs[2]);
-        };
-        _mock.Start();
-        btnMock.Content = "■ 停止模拟";
-        btnMock.Appearance = Wpf.Ui.Controls.ControlAppearance.Danger;
-    }
-
-    private void UpdateLegendMock(int idx, string label, SKColor color)
-    {
-        if (idx >= _legendItems.Count)
-            return;
-        var border = _legendItems[idx];
-        if (border.Child is StackPanel stack && stack.Children.Count >= 3)
-        {
-            if (stack.Children[0] is Ellipse el)
-                el.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(
-                    color.Alpha, color.Red, color.Green, color.Blue));
-            if (stack.Children[1] is TextBlock tb)
-                tb.Text = $"{label}: ";
-        }
-    }
-
-    private void FeedMock(string key, double rawVal, ChannelDef ch)
-    {
-        double range = ch.Max - ch.Min;
-        double normVal = range > 0 ? Math.Clamp((rawVal - ch.Min) / range * 100, 0, 100) : rawVal;
-
-        Dispatcher.Invoke(() =>
-        {
-            if (!_buffers.TryGetValue(key, out var buf))
-                return;
-            buf.Add(new NormPoint(DateTime.Now, normVal, rawVal));
-            _currentValues[key] = rawVal;
-            TrimBuffer(buf);
-            SlideAxis();
-        });
-    }
-
-    private void ClearAllBuffers()
-    {
-        foreach (var buf in _buffers.Values)
-            buf.Clear();
     }
 
     // ===================== 时间范围切换 =====================
@@ -642,7 +530,6 @@ public partial class TrendChartPage : Page
 
     public void Stop()
     {
-        _mock?.Stop();
         StopMonitors();
         StopGaugeMonitors();
     }

@@ -9,7 +9,6 @@
     xmlns:plcc="clr-namespace:Wpf.Ui.Gallery.Controls.Plc"
     xmlns:services="clr-namespace:Wpf.Ui.Gallery.Services.Plc"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    xmlns:vm="clr-namespace:Wpf.Ui.Gallery.ViewModels.Pages.Plc"
     Title="报警管理"
     controls:PageControlDocumentation.Show="False"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -42,296 +41,35 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="CornerRadius" Value="3" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemFillColorSuccessBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding StatusText}" Value="未确认">
                     <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}" />
-                    <Setter Property="BorderThickness" Value="0" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding StatusText}" Value="已确认">
                     <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBrush}" />
-                    <Setter Property="BorderThickness" Value="0" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding StatusText}" Value="已恢复">
+                    <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding StatusText}" Value="已搁置">
                     <Setter Property="Background" Value="{DynamicResource SystemFillColorAttentionBrush}" />
-                    <Setter Property="BorderThickness" Value="0" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
 
-        <!-- 统计卡样式 -->
-        <Style x:Key="StatCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="12,8" />
-            <Setter Property="MinWidth" Value="90" />
-        </Style>
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,24">
 
-            <!-- ============================================================ -->
             <!-- 工具栏 -->
-            <!-- ============================================================ -->
-            <controls:ControlExample Margin="0" HeaderText="报警控制">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+            <plcc:AlarmToolbar />
 
-                    <WrapPanel Grid.Column="0">
-                        <ui:Button
-                            Margin="0,0,8,0"
-                            Command="{Binding SubscribeCommand}"
-                            Content="启动监控"
-                            IsEnabled="{Binding IsSubscribed, Converter={StaticResource InverseBoolConverter}}">
-                            <ui:Button.Icon>
-                                <ui:SymbolIcon Symbol="Play24" />
-                            </ui:Button.Icon>
-                            <ui:Button.Style>
-                                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                    <Setter Property="Appearance" Value="Success" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsSubscribed}" Value="True">
-                                            <Setter Property="Appearance" Value="Secondary" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ui:Button.Style>
-                        </ui:Button>
-                        <ui:Button
-                            Margin="0,0,8,0"
-                            Command="{Binding UnsubscribeCommand}"
-                            Content="停止监控"
-                            IsEnabled="{Binding IsSubscribed}">
-                            <ui:Button.Icon>
-                                <ui:SymbolIcon Symbol="Stop24" />
-                            </ui:Button.Icon>
-                            <ui:Button.Style>
-                                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                    <Setter Property="Appearance" Value="Secondary" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsSubscribed}" Value="True">
-                                            <Setter Property="Appearance" Value="Danger" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ui:Button.Style>
-                        </ui:Button>
-
-                        <Rectangle
-                            Width="1"
-                            Margin="8,2,12,2"
-                            Fill="{DynamicResource ControlElevationBorderBrush}" />
-
-                        <ui:Button
-                            Margin="0,0,4,0"
-                            Appearance="Success"
-                            Command="{Binding AcknowledgeAllCommand}"
-                            Content="全部确认">
-                            <ui:Button.Icon>
-                                <ui:SymbolIcon Symbol="CheckmarkCircle24" />
-                            </ui:Button.Icon>
-                        </ui:Button>
-                        <ui:Button
-                            Margin="4,0,4,0"
-                            Appearance="Secondary"
-                            Command="{Binding ShelveAllCommand}"
-                            Content="全部搁置">
-                            <ui:Button.Icon>
-                                <ui:SymbolIcon Symbol="EyeOff24" />
-                            </ui:Button.Icon>
-                        </ui:Button>
-
-                        <Rectangle
-                            Width="1"
-                            Margin="8,2,12,2"
-                            Fill="{DynamicResource ControlElevationBorderBrush}" />
-
-                        <ui:Button
-                            Margin="0,0,4,0"
-                            Appearance="Secondary"
-                            Command="{Binding ExportCsvCommand}"
-                            Content="导出 CSV">
-                            <ui:Button.Icon>
-                                <ui:SymbolIcon Symbol="ArrowDownload24" />
-                            </ui:Button.Icon>
-                        </ui:Button>
-                        <ui:Button
-                            Margin="4,0,0,0"
-                            Appearance="Danger"
-                            Command="{Binding ClearAllCommand}"
-                            Content="清除历史">
-                            <ui:Button.Icon>
-                                <ui:SymbolIcon Symbol="Delete24" />
-                            </ui:Button.Icon>
-                        </ui:Button>
-
-                        <Rectangle
-                            Width="1"
-                            Margin="8,2,4,2"
-                            Fill="{DynamicResource ControlElevationBorderBrush}" />
-
-                        <ui:Button
-                            Margin="4,0,0,0"
-                            Appearance="Info"
-                            Command="{Binding ToggleRuleManagerCommand}"
-                            Content="规则管理">
-                            <ui:Button.Icon>
-                                <ui:SymbolIcon Symbol="Settings24" />
-                            </ui:Button.Icon>
-                        </ui:Button>
-                    </WrapPanel>
-                </Grid>
-            </controls:ControlExample>
-
-            <!-- ============================================================ -->
             <!-- 统计条 -->
-            <!-- ============================================================ -->
-            <Border
-                Margin="0,16,0,0"
-                Padding="16,12"
-                Background="{DynamicResource CardBackgroundBrush}"
-                BorderBrush="{DynamicResource CardBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- 活动报警 -->
-                    <Border Grid.Column="0" Style="{StaticResource StatCardStyle}" BorderBrush="{DynamicResource SystemFillColorCriticalBrush}">
-                        <StackPanel>
-                            <ui:TextBlock
-                                FontTypography="Caption"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="活动报警" />
-                            <ui:TextBlock
-                                FontTypography="Title"
-                                Foreground="{DynamicResource SystemFillColorCriticalBrush}"
-                                Text="{Binding ActiveCount}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Rectangle
-                        Grid.Column="1"
-                        Width="1"
-                        Margin="12,4"
-                        Fill="{DynamicResource ControlElevationBorderBrush}" />
-
-                    <!-- 未确认 -->
-                    <Border Grid.Column="2" Style="{StaticResource StatCardStyle}" BorderBrush="{DynamicResource SystemFillColorCautionBrush}">
-                        <StackPanel>
-                            <ui:TextBlock
-                                FontTypography="Caption"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="未确认" />
-                            <ui:TextBlock
-                                FontTypography="Title"
-                                Foreground="{DynamicResource SystemFillColorCautionBrush}"
-                                Text="{Binding UnacknowledgedCount}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Rectangle
-                        Grid.Column="3"
-                        Width="1"
-                        Margin="12,4"
-                        Fill="{DynamicResource ControlElevationBorderBrush}" />
-
-                    <!-- 今日 -->
-                    <Border Grid.Column="4" Style="{StaticResource StatCardStyle}">
-                        <StackPanel>
-                            <ui:TextBlock
-                                FontTypography="Caption"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="今日报警" />
-                            <ui:TextBlock
-                                FontTypography="Title"
-                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                Text="{Binding TodayCount}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Rectangle
-                        Grid.Column="5"
-                        Width="1"
-                        Margin="12,4"
-                        Fill="{DynamicResource ControlElevationBorderBrush}" />
-
-                    <!-- 搁置 + 紧急/严重 -->
-                    <Border Grid.Column="6" Style="{StaticResource StatCardStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <StackPanel Margin="0,0,20,0">
-                                <ui:TextBlock
-                                    FontTypography="Caption"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="搁置" />
-                                <ui:TextBlock
-                                    FontTypography="Title"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Text="{Binding ShelvedCount}" />
-                            </StackPanel>
-                            <StackPanel Margin="0,0,20,0">
-                                <ui:TextBlock
-                                    FontTypography="Caption"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="本时" />
-                                <ui:TextBlock
-                                    FontTypography="Title"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Text="{Binding ThisHourCount}" />
-                            </StackPanel>
-                            <StackPanel Margin="0,0,20,0">
-                                <ui:TextBlock
-                                    FontTypography="Caption"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="紧急" />
-                                <ui:TextBlock
-                                    FontTypography="Title"
-                                    Foreground="{DynamicResource SystemFillColorCriticalBrush}"
-                                    Text="{Binding EmergencyCount}" />
-                            </StackPanel>
-                            <StackPanel>
-                                <ui:TextBlock
-                                    FontTypography="Caption"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="严重" />
-                                <ui:TextBlock
-                                    FontTypography="Title"
-                                    Foreground="{DynamicResource SystemFillColorCriticalBrush}"
-                                    Text="{Binding CriticalCount}" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- 刷新按钮 -->
-                    <ui:Button
-                        Grid.Column="7"
-                        Margin="8,0,0,0"
-                        HorizontalAlignment="Right"
-                        Appearance="Secondary"
-                        Command="{Binding RefreshStatisticsCommand}"
-                        Content="刷新统计">
-                        <ui:Button.Icon>
-                            <ui:SymbolIcon Symbol="ArrowSync24" />
-                        </ui:Button.Icon>
-                    </ui:Button>
-                </Grid>
-            </Border>
+            <plcc:AlarmStatCards />
 
             <!-- ============================================================ -->
             <!-- 规则管理面板 — Vercel 风格 -->
@@ -702,70 +440,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- ============================================================ -->
             <!-- 过滤栏 -->
-            <!-- ============================================================ -->
-            <Border
-                Margin="0,16,0,0"
-                Padding="16,8"
-                Background="{DynamicResource CardBackgroundBrush}"
-                BorderBrush="{DynamicResource CardBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-                <WrapPanel>
-                    <ui:TextBox
-                        Width="200"
-                        Margin="0,0,8,0"
-                        PlaceholderText="搜索变量/描述/区域..."
-                        Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <ComboBox
-                        Width="130"
-                        Margin="0,0,8,0"
-                        ItemsSource="{Binding SeverityOptions}"
-                        SelectedItem="{Binding SelectedSeverityOption}" />
-
-                    <ComboBox
-                        Width="110"
-                        Margin="0,0,8,0"
-                        ItemsSource="{Binding AreaOptions}"
-                        Text="{Binding FilterArea, UpdateSourceTrigger=PropertyChanged}"
-                        IsEditable="True" />
-
-                    <DatePicker
-                        Width="120"
-                        Margin="0,0,4,0"
-                        SelectedDate="{Binding FilterDateFrom}" />
-                    <TextBlock
-                        Margin="0,0,4,0"
-                        VerticalAlignment="Center"
-                        
-                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                        Text="~" />
-                    <DatePicker
-                        Width="120"
-                        Margin="0,0,8,0"
-                        SelectedDate="{Binding FilterDateTo}" />
-
-                    <CheckBox
-                        Margin="0,0,8,0"
-                        VerticalAlignment="Center"
-                        Content="显示搁置"
-                        IsChecked="{Binding ShowShelved}" />
-
-                    <ui:Button
-                        Margin="0,0,4,0"
-                        Appearance="Primary"
-                        Command="{Binding ApplyFilterCommand}"
-                        Content="筛选"
-                         />
-                    <ui:Button
-                        Appearance="Secondary"
-                        Command="{Binding ResetFilterCommand}"
-                        Content="重置"
-                         />
-                </WrapPanel>
-            </Border>
+            <plcc:AlarmFilterBar />
 
             <!-- ============================================================ -->
             <!-- 报警列表 + 右侧滑入详情面板 -->
@@ -1044,260 +720,21 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+
                     </Grid>
                 </Border>
-
-                <!-- 覆盖层：选中报警时显示，右侧滑入详情面板 -->
-                <Grid
-                    x:Name="DetailOverlay"
-                    Visibility="{Binding SelectedAlarm, Converter={StaticResource NullToVisibilityConverter}}">
-                    <Grid.Style>
-                        <Style TargetType="Grid">
-                            <Setter Property="IsHitTestVisible" Value="False" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SelectedAlarm, Converter={StaticResource NullToBoolConverter}}" Value="True">
-                                    <Setter Property="IsHitTestVisible" Value="True" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-
-                    <!-- 半透明遮罩 -->
-                    <Border
-                        x:Name="DetailBackdrop"
-                        Background="#20000000"
-                        MouseDown="OnDetailBackdropMouseDown" />
-
-                    <!-- 详情面板 -->
-                    <Border
-                        x:Name="DetailPanel"
-                        Width="320"
-                        Margin="0,0,0,0"
-                        HorizontalAlignment="Right"
-                        Padding="0"
-                        Background="{DynamicResource CardBackgroundBrush}"
-                        BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1,0,0,0"
-                        CornerRadius="8,0,0,8">
-                        <Border.RenderTransform>
-                            <TranslateTransform X="320" />
-                        </Border.RenderTransform>
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Opacity" Value="0" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SelectedAlarm, Converter={StaticResource NullToBoolConverter}}" Value="True">
-                                        <DataTrigger.EnterActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation
-                                                        Storyboard.TargetProperty="Opacity"
-                                                        To="1" Duration="0:0:0.2" />
-                                                    <DoubleAnimation
-                                                        Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.X)"
-                                                        To="0" Duration="0:0:0.25"
-                                                        DecelerationRatio="0.25" />
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </DataTrigger.EnterActions>
-                                        <DataTrigger.ExitActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation
-                                                        Storyboard.TargetProperty="Opacity"
-                                                        To="0" Duration="0:0:0.15" />
-                                                    <DoubleAnimation
-                                                        Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.X)"
-                                                        To="320" Duration="0:0:0.15"
-                                                        AccelerationRatio="0.25" />
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </DataTrigger.ExitActions>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-
-                        <Border.Resources>
-                            <Style TargetType="ui:TextBlock" x:Key="DetailLabel">
-                                <Setter Property="FontTypography" Value="Caption" />
-                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-                                <Setter Property="Margin" Value="0,8,0,2" />
-                            </Style>
-                            <Style TargetType="ui:TextBlock" x:Key="DetailValue">
-                                <Setter Property="FontTypography" Value="Body" />
-                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                                <Setter Property="FontWeight" Value="Medium" />
-                            </Style>
-                        </Border.Resources>
-
-                        <Grid Background="{DynamicResource ControlFillColorInputActiveBrush}"
-                            >
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-
-                            <!-- 面板头部：标题 + 关闭按钮 -->
-                            <Border
-                                Grid.Row="0"
-                                Padding="16,12"
-                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                                BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <ui:TextBlock
-                                        Grid.Column="0"
-                                        VerticalAlignment="Center"
-                                        FontTypography="BodyStrong"
-                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                        Text="报警详情" />
-                                    <Button
-                                        Grid.Column="1"
-                                        Width="28"
-                                        Height="28"
-                                        Padding="0"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Click="OnCloseDetailClick"
-                                        Cursor="Hand"
-                                        ToolTip="关闭">
-                                        <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-
-                            <!-- 内容 -->
-                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16,8">
-                                <StackPanel>
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="描述" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.Description}" TextWrapping="Wrap" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="变量" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.VariableName}" FontFamily="Consolas" />
-
-                                    <Grid Margin="0,8,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0">
-                                            <ui:TextBlock Style="{StaticResource DetailLabel}" Text="当前值" />
-                                            <ui:TextBlock
-                                                FontTypography="Subtitle"
-                                                Foreground="{DynamicResource SystemFillColorCriticalBrush}"
-                                                Text="{Binding SelectedAlarm.CurrentValue, StringFormat=F2}" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1">
-                                            <ui:TextBlock Style="{StaticResource DetailLabel}" Text="阈值" />
-                                            <ui:TextBlock
-                                                FontTypography="Subtitle"
-                                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                                Text="{Binding SelectedAlarm.Threshold, StringFormat={}{0:F2}}" />
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="报警类型" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.AlarmType}" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="严重度" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.Severity}" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="区域" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.Area}" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="产生时间" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.DateTimeText}" FontFamily="Consolas" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="状态" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.StatusText}" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="死区" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.Deadband, StringFormat=F2}" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="确认人" />
-                                    <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.AcknowledgedBy, TargetNullValue=—}" />
-
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="确认时间" />
-                                    <ui:TextBlock
-                                        FontTypography="Caption"
-                                        FontFamily="Consolas"
-                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                        Text="{Binding SelectedAlarm.AcknowledgedAt, TargetNullValue=—}" />
-
-                                    <!-- 备注编辑 -->
-                                    <ui:TextBlock Style="{StaticResource DetailLabel}" Text="操作员备注" />
-                                    <TextBox
-                                        Margin="0,2,0,4"
-                                        AcceptsReturn="True"
-                                        MaxLines="3"
-                                        Text="{Binding SelectedAlarm.Comment, UpdateSourceTrigger=PropertyChanged}"
-                                        TextWrapping="Wrap" />
-                                    <ui:Button
-                                        Margin="0,0,0,8"
-                                        Appearance="Primary"
-                                        Command="{Binding SaveCommentCommand}"
-                                        Content="保存备注" />
-
-                                    <!-- 搁置操作 -->
-                                    <Rectangle
-                                        Height="1"
-                                        Margin="0,4"
-                                        Fill="{DynamicResource ControlElevationBorderBrush}" />
-                                    <TextBlock
-                                        Margin="0,4,0,4"
-
-                                        FontWeight="Bold"
-                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                        Text="搁置操作" />
-                                    <WrapPanel>
-                                        <Button
-                                            Height="34"
-                                            Margin="0,0,4,4"
-                                            Command="{Binding ShelveAlarm1HCommand}"
-                                            CommandParameter="{Binding SelectedAlarm}"
-                                            Content="1 小时"
-                                            FontSize="12" />
-                                        <Button
-                                            Height="34"
-                                            Margin="0,0,4,4"
-                                            Command="{Binding ShelveAlarm8HCommand}"
-                                            CommandParameter="{Binding SelectedAlarm}"
-                                            Content="8 小时"
-                                            FontSize="12" />
-                                        <Button
-                                            Height="34"
-                                            Margin="0,0,4,4"
-                                            Command="{Binding ShelveAlarm24HCommand}"
-                                            CommandParameter="{Binding SelectedAlarm}"
-                                            Content="24 小时"
-                                            FontSize="12" />
-                                        <Button
-                                            Height="34"
-                                            Margin="0,0,0,4"
-                                            Command="{Binding UnshelveAlarmCommand}"
-                                            CommandParameter="{Binding SelectedAlarm}"
-                                            Content="取消"
-                                            FontSize="12" />
-                                    </WrapPanel>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </Grid>
-                    </Border>
-                </Grid>
             </Grid>
 
             <!-- 状态条 -->
             <plcc:StatusStrip
-                Grid.Row="3"
                 Margin="0,8,0,0"
                 ConnectionQuality="Info"
                 ConnectionText="{Binding StatusText}"
                 PollingText="-" />
         </StackPanel>
     </ScrollViewer>
+
+    <!-- 覆盖层 -->
+    <plcc:AlarmDetailPanel />
+</Grid>
 </Page>

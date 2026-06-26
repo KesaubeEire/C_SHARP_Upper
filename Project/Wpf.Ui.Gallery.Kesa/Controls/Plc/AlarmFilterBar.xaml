@@ -1,0 +1,64 @@
+<UserControl
+    x:Class="Wpf.Ui.Gallery.Controls.Plc.AlarmFilterBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <Border
+        Margin="0,16,0,0"
+        Padding="16,8"
+        Background="{DynamicResource CardBackgroundBrush}"
+        BorderBrush="{DynamicResource CardBorderBrush}"
+        BorderThickness="1"
+        CornerRadius="8">
+        <WrapPanel>
+            <ui:TextBox
+                Width="200"
+                Margin="0,0,8,0"
+                PlaceholderText="搜索变量/描述/区域..."
+                Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+
+            <ComboBox
+                Width="130"
+                Margin="0,0,8,0"
+                ItemsSource="{Binding SeverityOptions}"
+                SelectedItem="{Binding SelectedSeverityOption}" />
+
+            <ComboBox
+                Width="110"
+                Margin="0,0,8,0"
+                ItemsSource="{Binding AreaOptions}"
+                Text="{Binding FilterArea, UpdateSourceTrigger=PropertyChanged}"
+                IsEditable="True" />
+
+            <DatePicker
+                Width="120"
+                Margin="0,0,4,0"
+                SelectedDate="{Binding FilterDateFrom}" />
+            <TextBlock
+                Margin="0,0,4,0"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="~" />
+            <DatePicker
+                Width="120"
+                Margin="0,0,8,0"
+                SelectedDate="{Binding FilterDateTo}" />
+
+            <CheckBox
+                Margin="0,0,8,0"
+                VerticalAlignment="Center"
+                Content="显示搁置"
+                IsChecked="{Binding ShowShelved}" />
+
+            <ui:Button
+                Margin="0,0,4,0"
+                Appearance="Primary"
+                Command="{Binding ApplyFilterCommand}"
+                Content="筛选" />
+            <ui:Button
+                Appearance="Secondary"
+                Command="{Binding ResetFilterCommand}"
+                Content="重置" />
+        </WrapPanel>
+    </Border>
+</UserControl>
