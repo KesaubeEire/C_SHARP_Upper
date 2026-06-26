@@ -21,6 +21,9 @@
                 <ResourceDictionary Source="Controls/ControlExample.xaml" />
                 <ResourceDictionary Source="Controls/TypographyControl.xaml" />
                 <ResourceDictionary Source="Controls/PageControlDocumentation.xaml" />
+
+                <!-- Override built-in NavigationViewItem template for 3+ level nesting support -->
+                <ResourceDictionary Source="Controls/NavigationViewMultiLevel.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />

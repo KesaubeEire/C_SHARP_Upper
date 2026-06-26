@@ -46,6 +46,7 @@
             IsFooterSeparatorVisible="False"
             IsPaneToggleVisible="True"
             IsTopSeparatorVisible="False"
+            ItemTemplate="{StaticResource LeftCompactNavigationViewItemTemplate}"
             MenuItemsSource="{Binding ViewModel.MenuItems, Mode=OneWay}"
             OpenPaneLength="310"
             PaneClosed="NavigationView_OnPaneClosed"
