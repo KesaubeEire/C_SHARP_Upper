@@ -3,6 +3,7 @@
 ## XAML
 
 - 控件用 `x:Name` 仅用于：presenter 绑定（SnackbarPresenter）、控件自身事件挂载、Storyboard 动画引用。数据驱动请走 Binding + ViewModel
+- **禁止设置 `Height`**（或 `MinHeight`/`MaxHeight`），除非有明确的布局约束需求（如图标按钮需固定尺寸、列表项需对齐）。不设 `Height` 让内容自然撑开，避免文字缩进、`Padding`、`Margin` 变化时出现截断或视觉错位
 - 样式使用 Wpf.Ui 提供的主题资源，不额外定义全局样式
 - 资源键使用 PascalCase（如 `AccentBlue`, `TextPrimary`）
 - Converter 集中在 `Helpers/` 下定义
