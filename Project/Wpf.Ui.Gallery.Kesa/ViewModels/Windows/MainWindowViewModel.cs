@@ -58,43 +58,19 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                 {
                     MenuItemsSource = new object[]
                     {
-                        new NavigationViewItem()
-                        {
-                            Content = "Buttons",
-                            Icon = new SymbolIcon { Symbol = SymbolRegular.Cursor24 },
-                            MenuItemsSource = new object[]
-                            {
-                                new NavigationViewItem(nameof(Wpf.Ui.Controls.Button), typeof(ButtonPage)),
-                                new NavigationViewItem(nameof(DropDownButton), typeof(DropDownButtonPage)),
-                                new NavigationViewItem(nameof(HyperlinkButton), typeof(HyperlinkButtonPage)),
-                                new NavigationViewItem(nameof(SplitButton), typeof(SplitButtonPage)),
-                                new NavigationViewItem(nameof(ToggleButton), typeof(ToggleButtonPage)),
-                            },
-                        },
-                        new NavigationViewItem()
-                        {
-                            Content = "Selection",
-                            Icon = new SymbolIcon { Symbol = SymbolRegular.CheckmarkCircle24 },
-                            MenuItemsSource = new object[]
-                            {
-                                new NavigationViewItem(nameof(CheckBox), typeof(CheckBoxPage)),
-                                new NavigationViewItem(nameof(ComboBox), typeof(ComboBoxPage)),
-                                new NavigationViewItem(nameof(RadioButton), typeof(RadioButtonPage)),
-                                new NavigationViewItem(nameof(ToggleSwitch), typeof(ToggleSwitchPage)),
-                            },
-                        },
-                        new NavigationViewItem()
-                        {
-                            Content = "Rating",
-                            Icon = new SymbolIcon { Symbol = SymbolRegular.Star24 },
-                            MenuItemsSource = new object[]
-                            {
-                                new NavigationViewItem(nameof(RatingControl), typeof(RatingPage)),
-                                new NavigationViewItem(nameof(ThumbRate), typeof(ThumbRatePage)),
-                            },
-                        },
                         new NavigationViewItem(nameof(Anchor), typeof(AnchorPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.Button), typeof(ButtonPage)),
+                        new NavigationViewItem(nameof(CheckBox), typeof(CheckBoxPage)),
+                        new NavigationViewItem(nameof(ComboBox), typeof(ComboBoxPage)),
+                        new NavigationViewItem(nameof(DropDownButton), typeof(DropDownButtonPage)),
+                        new NavigationViewItem(nameof(HyperlinkButton), typeof(HyperlinkButtonPage)),
+                        new NavigationViewItem(nameof(RadioButton), typeof(RadioButtonPage)),
+                        new NavigationViewItem(nameof(RatingControl), typeof(RatingPage)),
                         new NavigationViewItem(nameof(Slider), typeof(SliderPage)),
+                        new NavigationViewItem(nameof(SplitButton), typeof(SplitButtonPage)),
+                        new NavigationViewItem(nameof(ThumbRate), typeof(ThumbRatePage)),
+                        new NavigationViewItem(nameof(ToggleButton), typeof(ToggleButtonPage)),
+                        new NavigationViewItem(nameof(ToggleSwitch), typeof(ToggleSwitchPage)),
                     },
                 },
                 new NavigationViewItem
@@ -166,6 +142,7 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                         new NavigationViewItem("Menu", typeof(MenuPage)),
                         new NavigationViewItem("Multilevel navigation", typeof(MultilevelNavigationPage)),
                         new NavigationViewItem("TabControl", typeof(TabControlPage)),
+                        new NavigationViewItem("TabView", typeof(TabViewPage)),
                     },
                 },
                 new NavigationViewItem(
@@ -187,25 +164,13 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                 {
                     MenuItemsSource = new object[]
                     {
-                        new NavigationViewItem("Input", SymbolRegular.Edit24, typeof(TextPage))
-                        {
-                            MenuItemsSource = new object[]
-                            {
-                                new NavigationViewItem(nameof(AutoSuggestBox), typeof(AutoSuggestBoxPage)),
-                                new NavigationViewItem(nameof(NumberBox), typeof(NumberBoxPage)),
-                                new NavigationViewItem(nameof(Wpf.Ui.Controls.PasswordBox), typeof(PasswordBoxPage)),
-                                new NavigationViewItem(nameof(Wpf.Ui.Controls.RichTextBox), typeof(RichTextBoxPage)),
-                            },
-                        },
-                        new NavigationViewItem("Display", SymbolRegular.ScanText24, typeof(TextPage))
-                        {
-                            MenuItemsSource = new object[]
-                            {
-                                new NavigationViewItem(nameof(Label), typeof(LabelPage)),
-                                new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBlock), typeof(TextBlockPage)),
-                                new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBox), typeof(TextBoxPage)),
-                            },
-                        },
+                        new NavigationViewItem(nameof(AutoSuggestBox), typeof(AutoSuggestBoxPage)),
+                        new NavigationViewItem(nameof(Label), typeof(LabelPage)),
+                        new NavigationViewItem(nameof(NumberBox), typeof(NumberBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.PasswordBox), typeof(PasswordBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.RichTextBox), typeof(RichTextBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBlock), typeof(TextBlockPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBox), typeof(TextBoxPage)),
                     },
                 },
                 new NavigationViewItem("System", SymbolRegular.Desktop24, typeof(OpSystemPage))

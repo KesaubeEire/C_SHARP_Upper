@@ -4,10 +4,12 @@
 // All Rights Reserved.
 
 using Wpf.Ui.Controls;
+using Wpf.Ui.Gallery.ControlsLookup;
 using Wpf.Ui.Gallery.ViewModels.Pages.DialogsAndFlyouts;
 
 namespace Wpf.Ui.Gallery.Views.Pages.DialogsAndFlyouts;
 
+[GalleryPage("Snackbar notification.", SymbolRegular.Chat24)]
 public partial class SnackbarPage : INavigableView<SnackbarViewModel>
 {
     public SnackbarViewModel ViewModel { get; }
