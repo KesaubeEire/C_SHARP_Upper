@@ -3,6 +3,7 @@ using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using Wpf.Ui;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Extensions;
 using Wpf.Ui.Gallery.Models.Plc;
@@ -41,6 +42,18 @@ public partial class AlarmViewModel : ViewModel
     private readonly IContentDialogService _contentDialog;
     private readonly S7Service _s7;
     private readonly AppConfigService _config;
+    private readonly ISnackbarService _snackbarService;
+
+    /// <summary>当前展示中的报警级别（用于 Snackbar 优先级比较）。</summary>
+    private int _currentSnackbarRank = -1;
+
+    private static int GetSeverityRank(AlarmSeverity severity) => severity switch
+    {
+        AlarmSeverity.Emergency => 3,
+        AlarmSeverity.Critical => 2,
+        AlarmSeverity.Warning => 1,
+        _ => 0,
+    };
 
     // ========== 集合 ==========
 
@@ -218,13 +231,15 @@ public partial class AlarmViewModel : ViewModel
         PollingScheduler scheduler,
         IContentDialogService contentDialog,
         S7Service s7,
-        AppConfigService config)
+        AppConfigService config,
+        ISnackbarService snackbarService)
     {
         _alarmService = alarmService;
         _scheduler = scheduler;
         _contentDialog = contentDialog;
         _s7 = s7;
         _config = config;
+        _snackbarService = snackbarService;
 
         Alarms = _alarmService.Alarms;
         ActiveAlarms = _alarmService.ActiveAlarms;
@@ -621,6 +636,50 @@ public partial class AlarmViewModel : ViewModel
         catch (Exception ex) { StatusText = $"✗ 导出失败: {ex.Message}"; }
     }
 
+    [RelayCommand]
+    private void ExportRules()
+    {
+        try
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = "导出规则",
+                Filter = "CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                FileName = $"报警规则_{DateTime.Now:yyyy-MM-dd_HHmmss}.csv",
+                DefaultExt = ".csv",
+                AddExtension = true,
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                _alarmService.ExportRulesCsv(dialog.FileName);
+                StatusText = $"已导出 {_alarmService.Rules.Count} 条规则";
+            }
+        }
+        catch (Exception ex) { StatusText = $"✗ 导出规则失败: {ex.Message}"; }
+    }
+
+    [RelayCommand]
+    private void ImportRules()
+    {
+        try
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "导入规则",
+                Filter = "CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                DefaultExt = ".csv",
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                _alarmService.ImportRulesCsv(dialog.FileName);
+                StatusText = $"已导入规则（共 {_alarmService.Rules.Count} 条）";
+            }
+        }
+        catch (Exception ex) { StatusText = $"✗ 导入规则失败: {ex.Message}"; }
+    }
+
     // ========== 备注 ==========
 
     [RelayCommand]
@@ -831,9 +890,50 @@ public partial class AlarmViewModel : ViewModel
 
     private void OnAlarmRaised(AlarmItem alarm)
     {
-        RefreshStatistics();
-        StatusText = $"⚠ 新报警: {alarm.Description}";
-        _ = RefreshAreasAsync();
+        // 事件可能从后台线程触发，所有 UI 操作（含 SymbolIcon 创建）必须派发到主线程
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            RefreshStatistics();
+            StatusText = $"⚠ 新报警: {alarm.Description}";
+            _ = RefreshAreasAsync();
+
+            // 优先级：低级不覆盖高级，同级可替换（最新的优先）
+            var rank = GetSeverityRank(alarm.Severity);
+            if (_currentSnackbarRank > rank)
+                return;
+
+            _currentSnackbarRank = rank;
+
+            var appearance = alarm.Severity switch
+            {
+                AlarmSeverity.Emergency or AlarmSeverity.Critical => ControlAppearance.Danger,
+                AlarmSeverity.Warning => ControlAppearance.Caution,
+                _ => ControlAppearance.Info,
+            };
+
+            var icon = alarm.Severity switch
+            {
+                AlarmSeverity.Emergency or AlarmSeverity.Critical => new SymbolIcon(SymbolRegular.Alert24),
+                AlarmSeverity.Warning => new SymbolIcon(SymbolRegular.Warning24),
+                _ => new SymbolIcon(SymbolRegular.Info24),
+            };
+
+            _snackbarService.Show(
+                $"⚠ {alarm.Severity} 报警 — {alarm.VariableName}",
+                alarm.Description,
+                appearance,
+                icon,
+                TimeSpan.FromSeconds(6));
+
+            // Snackbar 消失后重置优先级，让后续低级报警也能显示
+            _ = ResetSnackbarRankAsync();
+        });
+    }
+
+    private async Task ResetSnackbarRankAsync()
+    {
+        await Task.Delay(7000);
+        _currentSnackbarRank = -1;
     }
 
     private void OnAlarmCleared(AlarmItem alarm)

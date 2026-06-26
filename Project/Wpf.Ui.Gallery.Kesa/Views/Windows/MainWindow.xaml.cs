@@ -13,6 +13,7 @@ using Wpf.Ui.Gallery.Services.Contracts;
 using Wpf.Ui.Gallery.ViewModels.Plc;
 using Wpf.Ui.Gallery.ViewModels.Windows;
 using Wpf.Ui.Gallery.Views.Pages;
+using Wpf.Ui.Gallery.Views.Pages.Plc;
 
 namespace Wpf.Ui.Gallery.Views.Windows;
 
@@ -128,6 +129,14 @@ public partial class MainWindow : IWindow
         };
 
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
+
+        // Snackbar 点击 → 导航到报警页面（Presenter 上捕获鼠标点击）
+        SnackbarPresenter.PreviewMouseDown += (_, _) =>
+        {
+            if (SnackbarPresenter.Content is not null && SnackbarPresenter.IsVisible)
+                navigationService.Navigate(typeof(AlarmPage));
+        };
+
         navigationService.SetNavigationControl(NavigationView);
         contentDialogService.SetDialogHost(RootContentDialog);
 

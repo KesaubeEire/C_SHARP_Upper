@@ -617,6 +617,111 @@ public class AlarmService
         File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
     }
 
+    // ========== 规则 CSV 导入/导出 ==========
+
+    /// <summary>导出规则到 CSV 文件（UTF-8 with BOM）。</summary>
+    public void ExportRulesCsv(string filePath)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("VariableKey,DataType,Description,Severity,ConditionType,Threshold,Deadband,OnDelayMs,OffDelayMs,Area,IsEnabled");
+
+        foreach (var rule in _rules)
+        {
+            sb.AppendLine(
+                $"\"{EscapeCsv(rule.VariableKey)}\"," +
+                $"\"{rule.DataType}\"," +
+                $"\"{EscapeCsv(rule.Description)}\"," +
+                $"\"{rule.Severity}\"," +
+                $"\"{rule.ConditionType}\"," +
+                $"{rule.Threshold}," +
+                $"{rule.Deadband}," +
+                $"{rule.OnDelayMs}," +
+                $"{rule.OffDelayMs}," +
+                $"\"{EscapeCsv(rule.Area)}\"," +
+                $"{rule.IsEnabled}");
+        }
+
+        File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+    }
+
+    /// <summary>从 CSV 文件导入规则（UTF-8 with BOM，兼容 GBK）。</summary>
+    public void ImportRulesCsv(string filePath)
+    {
+        var lines = File.ReadAllLines(filePath, Encoding.UTF8);
+        if (lines.Length < 2) return;
+
+        // 跳过表头
+        foreach (var line in lines.Skip(1))
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            var fields = ParseCsvLine(line);
+            if (fields.Count < 11) continue;
+
+            try
+            {
+                var rule = new AlarmRule
+                {
+                    VariableKey = fields[0],
+                    DataType = fields[1],
+                    Description = fields[2],
+                    Severity = Enum.TryParse<AlarmSeverity>(fields[3], out var sev) ? sev : AlarmSeverity.Warning,
+                    ConditionType = Enum.TryParse<AlarmConditionType>(fields[4], out var cond) ? cond : AlarmConditionType.High,
+                    Threshold = double.TryParse(fields[5], out var th) ? th : 0,
+                    Deadband = double.TryParse(fields[6], out var db) ? db : 0,
+                    OnDelayMs = int.TryParse(fields[7], out var onD) ? onD : 0,
+                    OffDelayMs = int.TryParse(fields[8], out var offD) ? offD : 0,
+                    Area = fields[9],
+                    IsEnabled = bool.TryParse(fields[10], out var en) && en,
+                };
+                AddRule(rule);
+            }
+            catch
+            {
+                // 跳过格式错误的行
+            }
+        }
+    }
+
+    /// <summary>解析一行 CSV，正确处理引号内的逗号。</summary>
+    private static List<string> ParseCsvLine(string line)
+    {
+        var fields = new List<string>();
+        var current = new StringBuilder();
+        bool inQuotes = false;
+        int i = 0;
+
+        while (i < line.Length)
+        {
+            char c = line[i];
+            if (c == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    current.Append('"');
+                    i += 2;
+                    continue;
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (c == ',' && !inQuotes)
+            {
+                fields.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
+            }
+            i++;
+        }
+        fields.Add(current.ToString());
+        return fields;
+    }
+
     private static string EscapeCsv(string? value)
     {
         if (string.IsNullOrEmpty(value)) return string.Empty;

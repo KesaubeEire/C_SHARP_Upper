@@ -83,10 +83,12 @@
                 CornerRadius="8"
                 Visibility="{Binding IsRuleManagerVisible, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel>
-                    <!-- 头部：标题 + 添加按钮 -->
+                    <!-- 头部：标题 + 导入/导出/添加 -->
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock
@@ -97,6 +99,26 @@
                             Text="规则管理" />
                         <ui:Button
                             Grid.Column="1"
+                            Margin="0,0,4,0"
+                            Appearance="Secondary"
+                            Command="{Binding ExportRulesCommand}"
+                            Content="导出 CSV">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <ui:Button
+                            Grid.Column="2"
+                            Margin="0,0,4,0"
+                            Appearance="Secondary"
+                            Command="{Binding ImportRulesCommand}"
+                            Content="导入 CSV">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="ArrowUpload24" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <ui:Button
+                            Grid.Column="3"
                             Appearance="Primary"
                             Command="{Binding AddNewRuleCommand}"
                             Content="添加规则">
