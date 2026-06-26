@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -637,7 +638,7 @@ public partial class RecipeViewModel : ViewModel
 
     /// <summary>
     /// Read CSV file with encoding auto-detection.
-    /// UTF-8 BOM → UTF-8; otherwise → system ANSI (handles Excel-saved files).
+    /// UTF-8 BOM → UTF-8; otherwise → system ANSI via Win32 API (handles Excel-saved GBK files).
     /// </summary>
     private static string ReadCsvWithAutoDetect(string path)
     {
@@ -647,7 +648,25 @@ public partial class RecipeViewModel : ViewModel
         if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
             return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
 
-        // No BOM — try system default ANSI (GBK on Chinese Windows, handles Excel save)
-        return Encoding.Default.GetString(bytes);
+        // No BOM — decode as system ANSI (GBK on Chinese Windows) via Win32 API
+        return DecodeAnsi(bytes);
     }
+
+    /// <summary>Decode bytes using system ANSI code page via Win32 MultiByteToWideChar.</summary>
+    private static string DecodeAnsi(byte[] bytes)
+    {
+        if (bytes.Length == 0) return "";
+        int len = MultiByteToWideChar(CP_ACP, 0, bytes, bytes.Length, null, 0);
+        if (len <= 0) return Encoding.UTF8.GetString(bytes); // fallback
+        char[] chars = new char[len];
+        _ = MultiByteToWideChar(CP_ACP, 0, bytes, bytes.Length, chars, len);
+        return new string(chars);
+    }
+
+    private const uint CP_ACP = 0; // system default ANSI code page
+
+    [DllImport("kernel32.dll")]
+    private static extern int MultiByteToWideChar(uint codePage, uint dwFlags,
+        byte[] lpMultiByteStr, int cbMultiByte,
+        char[]? lpWideCharStr, int cchWideChar);
 }

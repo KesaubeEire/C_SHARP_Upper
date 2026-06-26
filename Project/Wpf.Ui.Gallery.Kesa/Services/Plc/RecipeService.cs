@@ -331,11 +331,14 @@ public class RecipeService
         var lines = csvText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (lines.Length < 2) return result;
 
+        // Detect delimiter from header line: tab → TSV, comma → CSV
+        char delimiter = lines[0].Contains('\t') ? '\t' : ',';
+
         for (int i = 1; i < lines.Length; i++)
         {
             try
             {
-                var cols = ParseCsvLine(lines[i]);
+                var cols = ParseCsvLine(lines[i], delimiter);
                 if (cols.Length < 6) continue;
 
                 var param = new RecipeParameter
@@ -379,8 +382,12 @@ public class RecipeService
             ? $"\"{s.Replace("\"", "\"\"")}\""
             : s;
 
-    private static string[] ParseCsvLine(string line)
+    private static string[] ParseCsvLine(string line, char delimiter = ',')
     {
+        // Tab-delimited: no quotes, simple split
+        if (delimiter == '\t')
+            return line.Split('\t');
+
         var result = new List<string>();
         bool inQuotes = false;
         var current = new StringBuilder();
@@ -400,7 +407,7 @@ public class RecipeService
                     inQuotes = !inQuotes;
                 }
             }
-            else if (c == ',' && !inQuotes)
+            else if (c == delimiter && !inQuotes)
             {
                 result.Add(current.ToString());
                 current.Clear();
