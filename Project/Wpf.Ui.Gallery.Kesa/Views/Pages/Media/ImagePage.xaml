@@ -31,7 +31,7 @@
             <Image
                 Height="200"
                 HorizontalAlignment="Left"
-                Source="pack://application:,,,/Assets/pexels-johannes-plenio-1103970.jpg" />
+                Source="pack://application:,,,/Assets/octonaut.jpg" />
         </controls:ControlExample>
 
         <controls:ControlExample
@@ -44,7 +44,7 @@
                 BorderBrush="#33000000"
                 BorderThickness="2"
                 CornerRadius="4"
-                Source="pack://application:,,,/Assets/pexels-johannes-plenio-1103970.jpg" />
+                Source="pack://application:,,,/Assets/octonaut.jpg" />
         </controls:ControlExample>
     </StackPanel>
 </Page>
