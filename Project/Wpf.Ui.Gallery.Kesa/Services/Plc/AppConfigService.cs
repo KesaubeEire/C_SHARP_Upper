@@ -29,7 +29,7 @@ public class AppConfigService
     /// <summary>System.Text.Json 反序列化专用无参构造函数</summary>
     public AppConfigService()
     {
-        _filePath = Path.Combine(AppContext.BaseDirectory, "kesa_config.json");
+        _filePath = Path.Combine(AppDataDir, "kesa_config.json");
     }
 
     public AppConfigService(string filePath)
@@ -37,9 +37,14 @@ public class AppConfigService
         _filePath = filePath;
     }
 
+    private static string AppDataDir =>
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Kesa_PLC_TEST");
+
     public static AppConfigService Load(string? filePath = null)
     {
-        var path = filePath ?? Path.Combine(AppContext.BaseDirectory, "kesa_config.json");
+        var path = filePath ?? Path.Combine(AppDataDir, "kesa_config.json");
         try
         {
             if (File.Exists(path))

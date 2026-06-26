@@ -151,18 +151,19 @@ public class AlarmService
     private static string StoragePath =>
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "KesaPlc",
+            "Kesa_PLC_TEST",
             "alarms.json");
 
     private static string RulesPath =>
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "KesaPlc",
+            "Kesa_PLC_TEST",
             "rules.json");
 
     private static string DefaultRulesPath =>
         Path.Combine(
-            AppContext.BaseDirectory,
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Kesa_PLC_TEST",
             "default-rules.json");
 
     public AlarmService(PollingScheduler scheduler)

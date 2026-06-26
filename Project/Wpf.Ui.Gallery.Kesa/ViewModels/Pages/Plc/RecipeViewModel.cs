@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -557,7 +558,7 @@ public partial class RecipeViewModel : ViewModel
         if (dialog.ShowDialog() != true) return;
 
         var csv = _recipeService.ExportToCsv(_currentRecipe);
-        File.WriteAllText(dialog.FileName, csv);
+        File.WriteAllText(dialog.FileName, csv, Encoding.UTF8);
         StatusText = $"已导出到 {dialog.FileName}";
     }
 
@@ -571,7 +572,7 @@ public partial class RecipeViewModel : ViewModel
         };
         if (dialog.ShowDialog() != true) return;
 
-        var csv = File.ReadAllText(dialog.FileName);
+        var csv = ReadCsvWithAutoDetect(dialog.FileName);
         var imported = _recipeService.ImportFromCsv(csv);
         if (imported.Count == 0)
         {
@@ -632,5 +633,21 @@ public partial class RecipeViewModel : ViewModel
         if (_currentRecipe?.Id is not { } id) return;
         LoadRecipe(new RecipeMeta { Id = id, Name = _currentRecipe.Name });
         StatusText = $"已重新加载「{_currentRecipe.Name}」";
+    }
+
+    /// <summary>
+    /// Read CSV file with encoding auto-detection.
+    /// UTF-8 BOM → UTF-8; otherwise → system ANSI (handles Excel-saved files).
+    /// </summary>
+    private static string ReadCsvWithAutoDetect(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+
+        // Check for UTF-8 BOM
+        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+
+        // No BOM — try system default ANSI (GBK on Chinese Windows, handles Excel save)
+        return Encoding.Default.GetString(bytes);
     }
 }

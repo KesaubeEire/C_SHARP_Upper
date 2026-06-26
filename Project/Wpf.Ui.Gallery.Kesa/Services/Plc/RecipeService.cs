@@ -19,8 +19,11 @@ public class RecipeService
     public RecipeService(S7Service s7)
     {
         _s7 = s7;
-        _recipesDir = Path.Combine(AppContext.BaseDirectory, "recipes");
-        _versionsDir = Path.Combine(AppContext.BaseDirectory, "recipes", "_versions");
+        var baseDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Kesa_PLC_TEST");
+        _recipesDir = Path.Combine(baseDir, "recipes");
+        _versionsDir = Path.Combine(baseDir, "recipes", "_versions");
         Directory.CreateDirectory(_recipesDir);
         Directory.CreateDirectory(_versionsDir);
     }
