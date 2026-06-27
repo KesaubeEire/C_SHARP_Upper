@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.Json;
+using System.Windows;
 using Wpf.Ui.Gallery.Models.Plc;
 
 namespace Wpf.Ui.Gallery.Services.Plc;
@@ -134,6 +135,7 @@ public class AlarmService
 {
     private readonly PollingScheduler _scheduler;
     private readonly List<AlarmRule> _rules = [];
+    private readonly System.Windows.Threading.Dispatcher _dispatcher;
     private int _totalAlarmCount;
     private int _activeAlarmCount;
     private int _todayCount;
@@ -169,6 +171,7 @@ public class AlarmService
     public AlarmService(PollingScheduler scheduler)
     {
         _scheduler = scheduler;
+        _dispatcher = Application.Current.Dispatcher;
         LoadFromFile();
         LoadRules();
         // 从 JSON 加载的 DB 规则 → 同步创建对应的 DbPollItem
@@ -365,14 +368,17 @@ public class AlarmService
         alarm.ShelvedBy = shelvedBy;
         alarm.ShelvedUntil = duration.HasValue ? DateTime.Now.Add(duration.Value) : null;
 
-        if (alarm.IsActive && !ShelvedAlarms.Contains(alarm))
-            ShelvedAlarms.Insert(0, alarm);
+        Dispatch(() =>
+        {
+            if (alarm.IsActive && !ShelvedAlarms.Contains(alarm))
+                ShelvedAlarms.Insert(0, alarm);
 
-        if (alarm.IsActive && ActiveAlarms.Contains(alarm))
-            ActiveAlarms.Remove(alarm);
+            if (alarm.IsActive && ActiveAlarms.Contains(alarm))
+                ActiveAlarms.Remove(alarm);
 
-        AlarmShelved?.Invoke(alarm);
-        ActiveAlarmCount = ActiveAlarms.Count;
+            AlarmShelved?.Invoke(alarm);
+            ActiveAlarmCount = ActiveAlarms.Count;
+        });
         DebouncedSave();
     }
 
@@ -385,13 +391,16 @@ public class AlarmService
         alarm.IsShelved = false;
         alarm.ShelvedUntil = null;
 
-        ShelvedAlarms.Remove(alarm);
+        Dispatch(() =>
+        {
+            ShelvedAlarms.Remove(alarm);
 
-        if (alarm.IsActive && !ActiveAlarms.Contains(alarm))
-            ActiveAlarms.Insert(0, alarm);
+            if (alarm.IsActive && !ActiveAlarms.Contains(alarm))
+                ActiveAlarms.Insert(0, alarm);
 
-        AlarmUnshelved?.Invoke(alarm);
-        ActiveAlarmCount = ActiveAlarms.Count;
+            AlarmUnshelved?.Invoke(alarm);
+            ActiveAlarmCount = ActiveAlarms.Count;
+        });
         DebouncedSave();
     }
 
@@ -795,37 +804,54 @@ public class AlarmService
                 rule.ConditionStartTime = null;
                 rule.NormalStartTime = null;
 
-                foreach (var active in ActiveAlarms
-                             .Where(a => a.VariableName == rule.VariableKey && a.IsActive)
-                             .ToList())
+                Dispatch(() =>
                 {
-                    active.IsActive = false;
-                    ActiveAlarms.Remove(active);
+                    foreach (var active in ActiveAlarms
+                                 .Where(a => a.VariableName == rule.VariableKey && a.IsActive)
+                                 .ToList())
+                    {
+                        active.IsActive = false;
+                        ActiveAlarms.Remove(active);
 
-                    // 如果已搁置，也从搁置列表移除
-                    if (active.IsShelved)
-                        ShelvedAlarms.Remove(active);
+                        // 如果已搁置，也从搁置列表移除
+                        if (active.IsShelved)
+                            ShelvedAlarms.Remove(active);
 
-                    AlarmCleared?.Invoke(active);
-                }
+                        AlarmCleared?.Invoke(active);
+                    }
 
-                RecalculateCounts();
+                    RecalculateCounts();
+                });
                 DebouncedSave();
             }
         }
     }
 
+    /// <summary>
+    /// 将操作调度到 UI 线程执行（如果当前不在 UI 线程）。
+    /// </summary>
+    private void Dispatch(Action action)
+    {
+        if (_dispatcher.CheckAccess())
+            action();
+        else
+            _dispatcher.InvokeAsync(action);
+    }
+
     private void AddAlarm(AlarmItem alarm)
     {
-        Alarms.Insert(0, alarm);
-        if (alarm.IsActive)
-            ActiveAlarms.Insert(0, alarm);
+        Dispatch(() =>
+        {
+            Alarms.Insert(0, alarm);
+            if (alarm.IsActive)
+                ActiveAlarms.Insert(0, alarm);
 
-        RecalculateCounts();
+            RecalculateCounts();
 
-        // 裁剪内存历史
-        while (Alarms.Count > MaxHistory)
-            Alarms.RemoveAt(Alarms.Count - 1);
+            // 裁剪内存历史
+            while (Alarms.Count > MaxHistory)
+                Alarms.RemoveAt(Alarms.Count - 1);
+        });
     }
 
     private void RecalculateCounts()
