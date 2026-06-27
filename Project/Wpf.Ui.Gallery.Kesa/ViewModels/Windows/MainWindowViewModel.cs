@@ -5,9 +5,11 @@
 
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Localization;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Gallery.Resources;
+using Wpf.Ui.Gallery.Services.Plc;
 using Wpf.Ui.Gallery.Views.Pages;
 using Wpf.Ui.Gallery.Views.Pages.BasicInput;
 using Wpf.Ui.Gallery.Views.Pages.Collections;
@@ -25,15 +27,59 @@ using Wpf.Ui.Gallery.Views.Pages.Plc;
 
 namespace Wpf.Ui.Gallery.ViewModels.Windows;
 
-public partial class MainWindowViewModel(IStringLocalizer<Translations> localizer) : ViewModel
+public partial class MainWindowViewModel(
+    IStringLocalizer<Translations> localizer,
+    AppConfigService config
+) : ViewModel
 {
     [ObservableProperty]
     private string _applicationTitle = localizer["Kesa_PCL"];
 
-    [ObservableProperty]
-    private ObservableCollection<object> _menuItems =
-    [
-        new NavigationViewItem
+    private ObservableCollection<object> _menuItems = [];
+
+    public ObservableCollection<object> MenuItems => _menuItems;
+
+    /// <summary>根据当前的 ShowGallery 配置重建左侧菜单。</summary>
+    public void RebuildMenuItems()
+    {
+        var items = new ObservableCollection<object>();
+
+        // Gallery 节点 - 由配置控制显示
+        if (config.ShowGallery)
+        {
+            items.Add(BuildGalleryNode());
+            items.Add(new NavigationViewItemSeparator());
+        }
+
+        // PLC 连接
+        items.Add(new NavigationViewItem()
+        {
+            Content = "PLC 连接",
+            Icon = new SymbolIcon { Symbol = SymbolRegular.PlugDisconnected24 },
+        });
+
+        // PLC 监视模块
+        items.Add(new NavigationViewItem("PLC 监视模块", SymbolRegular.Desktop24, typeof(IoMonitorPage))
+        {
+            MenuItemsSource = new object[]
+            {
+                new NavigationViewItem("I/Q/M 监控", SymbolRegular.List24, typeof(IoMonitorPage)),
+                new NavigationViewItem("趋势图", SymbolRegular.ChartMultiple24, typeof(TrendChartPage)),
+                new NavigationViewItem("仪表盘", SymbolRegular.Gauge24, typeof(GaugeDashboardPage)),
+                new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
+                new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
+                new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
+                new NavigationViewItem("配方管理", SymbolRegular.DocumentData24, typeof(RecipePage)),
+            },
+        });
+
+        _menuItems = items;
+        OnPropertyChanged(nameof(MenuItems));
+    }
+
+    private static NavigationViewItem BuildGalleryNode()
+    {
+        return new NavigationViewItem
         {
             Content = "Gallery",
             Icon = new SymbolIcon { Symbol = SymbolRegular.Apps24 },
@@ -183,28 +229,8 @@ public partial class MainWindowViewModel(IStringLocalizer<Translations> localize
                 },
                 new NavigationViewItem("Windows", SymbolRegular.WindowApps24, typeof(WindowsPage)),
             },
-        },
-        new NavigationViewItemSeparator(),
-        new NavigationViewItem()
-        {
-            Content = "PLC 连接",
-            Icon = new SymbolIcon { Symbol = SymbolRegular.PlugDisconnected24 },
-            // MenuItemsSource 由代码后置注入面板控件
-        },
-        new NavigationViewItem("PLC 监视模块", SymbolRegular.Desktop24, typeof(IoMonitorPage))
-        {
-            MenuItemsSource = new object[]
-            {
-                new NavigationViewItem("I/Q/M 监控", SymbolRegular.List24, typeof(IoMonitorPage)),
-                new NavigationViewItem("趋势图", SymbolRegular.ChartMultiple24, typeof(TrendChartPage)),
-                new NavigationViewItem("仪表盘", SymbolRegular.Gauge24, typeof(GaugeDashboardPage)),
-                new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
-                new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
-                new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
-                new NavigationViewItem("配方管理", SymbolRegular.DocumentData24, typeof(RecipePage)),
-            },
-        },
-    ];
+        };
+    }
 
     [ObservableProperty]
     private ObservableCollection<object> _footerMenuItems =

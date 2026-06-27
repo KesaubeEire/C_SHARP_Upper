@@ -23,6 +23,7 @@ public class AppConfigService
     public double WindowWidth { get; set; } = 1060;
     public double WindowHeight { get; set; } = 820;
     public string WindowState { get; set; } = "Normal";
+    public bool ShowGallery { get; set; } = false;
     public List<ImportedDbInfo> ImportedDbs { get; set; } = [];
     public List<ImportedUdtInfo> ImportedUdts { get; set; } = [];
 

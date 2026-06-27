@@ -21,6 +21,31 @@
             Margin="0,0,0,8"
             FontTypography="BodyStrong"
             Text="Appearance &amp; behavior" />
+
+        <!-- Gallery 显示开关 -->
+        <ui:CardControl
+            Margin="0,0,0,12"
+            Icon="{ui:SymbolIcon Apps24}">
+            <ui:CardControl.Header>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ui:TextBlock
+                        Grid.Row="0"
+                        FontTypography="Body"
+                        Text="Show Gallery" />
+                    <ui:TextBlock
+                        Grid.Row="1"
+                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="在左侧菜单中显示 WPF UI Gallery 示例页面" />
+                </Grid>
+            </ui:CardControl.Header>
+            <ui:ToggleSwitch
+                IsChecked="{Binding ViewModel.ShowGallery, Mode=TwoWay}" />
+        </ui:CardControl>
+
         <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Color24}">
             <ui:CardControl.Header>
                 <Grid>

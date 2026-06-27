@@ -3,13 +3,18 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
+using CommunityToolkit.Mvvm.Messaging;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Extensions;
+using Wpf.Ui.Gallery.Services.Plc;
 
 namespace Wpf.Ui.Gallery.ViewModels.Pages;
 
-public sealed partial class SettingsViewModel(INavigationService navigationService) : ViewModel
+public sealed partial class SettingsViewModel(
+    INavigationService navigationService,
+    AppConfigService config
+) : ViewModel
 {
     private bool _isInitialized = false;
 
@@ -22,6 +27,16 @@ public sealed partial class SettingsViewModel(INavigationService navigationServi
     [ObservableProperty]
     private NavigationViewPaneDisplayMode _currentApplicationNavigationStyle =
         NavigationViewPaneDisplayMode.Left;
+
+    [ObservableProperty]
+    private bool _showGallery;
+
+    partial void OnShowGalleryChanged(bool value)
+    {
+        config.ShowGallery = value;
+        config.Save();
+        WeakReferenceMessenger.Default.Send(new GalleryVisibilityChangedMessage(value));
+    }
 
     public override void OnNavigatedTo()
     {
@@ -48,6 +63,7 @@ public sealed partial class SettingsViewModel(INavigationService navigationServi
     {
         CurrentApplicationTheme = ApplicationThemeManager.GetAppTheme();
         AppVersion = $"{GetAssemblyVersion()}";
+        ShowGallery = config.ShowGallery;
 
         ApplicationThemeManager.Changed += OnThemeChanged;
 

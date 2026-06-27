@@ -64,6 +64,9 @@ public partial class MainWindow : IWindow
             config.Save();
         };
 
+        // 首次构建左侧菜单
+        ViewModel.RebuildMenuItems();
+
         // 创建 PLC 连接综合面板并注入到 "PLC 连接" 的 MenuItems 中
         var plcSection = serviceProvider.GetRequiredService<PpeConnectionSection>();
         foreach (var item in ViewModel.MenuItems)
@@ -74,6 +77,21 @@ public partial class MainWindow : IWindow
                 break;
             }
         }
+
+        // 监听 Gallery 显示开关变化，重建左侧菜单
+        WeakReferenceMessenger.Default.Register<GalleryVisibilityChangedMessage>(this, (_, _) =>
+        {
+            ViewModel.RebuildMenuItems();
+            // 重新注入 PLC 连接面板
+            foreach (var item in ViewModel.MenuItems)
+            {
+                if (item is NavigationViewItem navItem && navItem.Content is string s && s == "PLC 连接")
+                {
+                    navItem.MenuItemsSource = new object[] { plcSection };
+                    break;
+                }
+            }
+        });
 
         // ═══ PLC 面板内点击拦截 ═══
         // 在 NavigationView 层级拦截 PreviewMouseLeftButtonDown（隧道），
@@ -144,17 +162,22 @@ public partial class MainWindow : IWindow
         // NavigationView 完全加载后强制将 Gallery 设为收起
         NavigationView.Loaded += (_, _) =>
         {
-            foreach (var item in ViewModel.MenuItems)
-            {
-                if (item is NavigationViewItem navItem && navItem.Content is string s && s == "Gallery")
-                {
-                    navItem.SetCurrentValue(NavigationViewItem.IsExpandedProperty, false);
-                    break;
-                }
-            }
+            CollapseGallery();
         };
 
         SetupTrayMenuEvents();
+    }
+
+    private void CollapseGallery()
+    {
+        foreach (var item in ViewModel.MenuItems)
+        {
+            if (item is NavigationViewItem navItem && navItem.Content is string s && s == "Gallery")
+            {
+                navItem.SetCurrentValue(NavigationViewItem.IsExpandedProperty, false);
+                break;
+            }
+        }
     }
 
     public MainWindowViewModel ViewModel { get; }
