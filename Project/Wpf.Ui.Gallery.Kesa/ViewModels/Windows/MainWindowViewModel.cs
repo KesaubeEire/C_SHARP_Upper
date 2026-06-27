@@ -235,7 +235,7 @@ public partial class MainWindowViewModel(
     [ObservableProperty]
     private ObservableCollection<object> _footerMenuItems =
     [
-        new NavigationViewItem("Settings", SymbolRegular.Settings24, typeof(SettingsPage)),
+        new NavigationViewItem("设置", SymbolRegular.Settings24, typeof(SettingsPage)),
     ];
 
     [ObservableProperty]
@@ -243,20 +243,20 @@ public partial class MainWindowViewModel(
     [
         new Wpf.Ui.Controls.MenuItem()
         {
-            Header = "Home",
+            Header = "主页",
             Tag = "tray_home",
             Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
         },
         new Wpf.Ui.Controls.MenuItem()
         {
-            Header = "Settings",
+            Header = "设置",
             Tag = "tray_settings",
             Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
         },
         new Separator(),
         new Wpf.Ui.Controls.MenuItem()
         {
-            Header = "Close",
+            Header = "关闭",
             Tag = "tray_close",
             Icon = new SymbolIcon { Symbol = SymbolRegular.Dismiss24 },
         },

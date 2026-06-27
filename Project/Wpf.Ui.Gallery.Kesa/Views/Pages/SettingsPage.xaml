@@ -8,7 +8,7 @@
     xmlns:local="clr-namespace:Wpf.Ui.Gallery.Views.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Title="Settings Page"
+    Title="设置"
     controls:PageControlDocumentation.Show="False"
     d:DataContext="{d:DesignInstance local:SettingsPage,
                                      IsDesignTimeCreatable=False}"
@@ -20,7 +20,7 @@
         <ui:TextBlock
             Margin="0,0,0,8"
             FontTypography="BodyStrong"
-            Text="Appearance &amp; behavior" />
+            Text="外观与行为" />
 
         <!-- Gallery 显示开关 -->
         <ui:CardControl
@@ -35,7 +35,7 @@
                     <ui:TextBlock
                         Grid.Row="0"
                         FontTypography="Body"
-                        Text="Show Gallery" />
+                        Text="显示 Gallery" />
                     <ui:TextBlock
                         Grid.Row="1"
                         Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
@@ -56,20 +56,20 @@
                     <ui:TextBlock
                         Grid.Row="0"
                         FontTypography="Body"
-                        Text="App theme" />
+                        Text="应用主题" />
                     <ui:TextBlock
                         Grid.Row="1"
                         Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Select which app theme to display" />
+                        Text="选择应用的整体配色" />
                 </Grid>
             </ui:CardControl.Header>
             <ComboBox
                 Grid.Column="1"
                 MinWidth="200"
                 SelectedIndex="{Binding ViewModel.CurrentApplicationTheme, Converter={StaticResource ThemeToIndexConverter}, Mode=TwoWay}">
-                <ComboBoxItem Content="Light" />
-                <ComboBoxItem Content="Dark" />
-                <ComboBoxItem Content="High Contrast" />
+                <ComboBoxItem Content="浅色" />
+                <ComboBoxItem Content="深色" />
+                <ComboBoxItem Content="高对比度" />
             </ComboBox>
         </ui:CardControl>
 
