@@ -12,21 +12,43 @@ namespace Wpf.Ui.Gallery.Controls;
 
 public class CartesianChartKesaTrend : CartesianChartKesa
 {
+    private bool _firstLayoutApplied;
+
     public CartesianChartKesaTrend()
     {
         Loaded += (_, _) =>
         {
             // XAxes/YAxes 在构造函数阶段可能还未初始化，DP 回调设置画笔会丢失。
             // 控件加载完成后再应用一次，确保画笔生效。
-            if (AxisGridBrush is not null)
-                ApplyAxisGridBrush(AxisGridBrush);
-            if (AxisLabelBrush is not null)
-                ApplyAxisLabelBrush(AxisLabelBrush);
-            if (TooltipBgBrush is not null)
-                ApplyTooltipBgBrush(TooltipBgBrush);
-            if (TooltipTextBrush is not null)
-                ApplyTooltipTextBrush(TooltipTextBrush);
+            ApplyAllBrushes();
+
+            // 第一帧布局完成后重新应用，解决深色模式下 DynamicResource 解析时序问题：
+            // 某些 LiveCharts 内部初始化会在布局阶段重置 TooltipTextPaint，
+            // 导致首次 Loaded 中设置的值被覆盖。
+            LayoutUpdated += OnFirstLayoutUpdate;
         };
+    }
+
+    private void OnFirstLayoutUpdate(object? sender, EventArgs e)
+    {
+        if (_firstLayoutApplied)
+            return;
+        _firstLayoutApplied = true;
+        LayoutUpdated -= OnFirstLayoutUpdate;
+
+        ApplyAllBrushes();
+    }
+
+    private void ApplyAllBrushes()
+    {
+        if (AxisGridBrush is not null)
+            ApplyAxisGridBrush(AxisGridBrush);
+        if (AxisLabelBrush is not null)
+            ApplyAxisLabelBrush(AxisLabelBrush);
+        if (TooltipBgBrush is not null)
+            ApplyTooltipBgBrush(TooltipBgBrush);
+        if (TooltipTextBrush is not null)
+            ApplyTooltipTextBrush(TooltipTextBrush);
     }
 
     private void ApplyAxisGridBrush(Brush brush)
