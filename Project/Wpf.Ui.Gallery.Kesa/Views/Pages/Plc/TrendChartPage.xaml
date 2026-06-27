@@ -23,7 +23,7 @@
             BorderBrush="{DynamicResource ControlElevationBorderBrush}"
             BorderThickness="1"
             CornerRadius="8">
-            <Grid>
+            <Grid HorizontalAlignment="Right">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="8" />
@@ -103,28 +103,28 @@
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <!--  左侧：3×5 按钮（每行原有3个 + 使能/复位）  -->
-                    <Grid MinWidth="600" VerticalAlignment="Center">
+                    <Grid MinWidth="60" VerticalAlignment="Center">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                     <ui:Button
                         Grid.Row="0"
                         Grid.Column="0"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Success"
-                        Content="⚙ 传送带正转"
+                        Content="⚙ 传送正转"
                         MouseLeave="OnMotorPressLeave"
                         PreviewMouseLeftButtonDown="OnMotorPressDown"
                         PreviewMouseLeftButtonUp="OnMotorPressUp"
@@ -132,11 +132,11 @@
                     <ui:Button
                         Grid.Row="0"
                         Grid.Column="1"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
-                        Content="⏸ 传送带暂停"
+                        Content="⏸ 传送暂停"
                         MouseLeave="OnMotorPressLeave"
                         PreviewMouseLeftButtonDown="OnMotorPressDown"
                         PreviewMouseLeftButtonUp="OnMotorPressUp"
@@ -144,11 +144,11 @@
                     <ui:Button
                         Grid.Row="0"
                         Grid.Column="2"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Primary"
-                        Content="🔄 传送带反转"
+                        Content="🔄 传送反转"
                         MouseLeave="OnMotorPressLeave"
                         PreviewMouseLeftButtonDown="OnMotorPressDown"
                         PreviewMouseLeftButtonUp="OnMotorPressUp"
@@ -157,7 +157,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="0"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Success"
@@ -169,7 +169,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="1"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
@@ -181,7 +181,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="2"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Primary"
@@ -194,7 +194,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="0"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Success"
@@ -206,7 +206,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="1"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
@@ -218,7 +218,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="2"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Primary"
@@ -232,7 +232,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="3"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Success"
@@ -242,7 +242,7 @@
                     <ui:Button
                         Grid.Row="1"
                         Grid.Column="4"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
@@ -256,7 +256,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="3"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Success"
@@ -266,7 +266,7 @@
                     <ui:Button
                         Grid.Row="2"
                         Grid.Column="4"
-                        Width="120"
+                        
                         Height="40"
                         Margin="4"
                         Appearance="Caution"
@@ -280,7 +280,7 @@
                     <!--  右侧：速度仪表  -->
                     <!--
                         圆盘速度 → DB7.DBD42 (REAL)  量程 0~360
-                        步进速度 → DB6.DBD42 (REAL)  量程 0~100
+                        步进速度 → DB6.DBD42 (REAL)  量程 0~120
                     -->
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
                         <StackPanel>
@@ -314,10 +314,10 @@
                             <plc:ServoGauge
                                 x:Name="gaugeStepSpeed"
                                 MinValue="0"
-                                MaxValue="100"
+                                MaxValue="120"
                                 GreenMax="50"
                                 YellowMax="80"
-                                RedMax="100"
+                                RedMax="120"
                                 UnitLabel="mm/s"
                                 NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
                                 LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
