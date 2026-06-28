@@ -24,10 +24,8 @@ const config: PLCConfig = {
     // ─── 在这里按实际 PLC 配置 DB 变量 ───
     // 格式: { name: '变量名', dbNumber: 1, offset: 0, type: 'bool', bit: 0 }
     //
-    // 例: 运行状态 / 故障报警 / 报警码 等
-    // { name: '运行状态',  dbNumber: 1, offset: 0, type: 'bool', bit: 0 },
-    // { name: '故障报警',  dbNumber: 1, offset: 0, type: 'bool', bit: 1 },
-    // { name: '报警码',    dbNumber: 1, offset: 2, type: 'word' },
+    // 滑台圆盘位置 (DB6.DBD38，REAL)
+    { name: 'DB6:38', dbNumber: 6, offset: 38, type: 'real' },
   ],
 }
 

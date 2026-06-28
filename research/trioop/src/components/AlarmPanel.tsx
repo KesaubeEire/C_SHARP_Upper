@@ -365,15 +365,24 @@ export default function AlarmPanel() {
           <table className="alarm-rule-table">
             <thead>
               <tr>
-                <th>变量</th><th>数据类型</th><th>级别</th><th>报警类型</th><th>阈值</th><th>区域</th><th>操作</th>
+                <th>启用</th><th>变量</th><th>数据类型</th><th>级别</th><th>报警类型</th><th>阈值</th><th>区域</th><th>操作</th>
               </tr>
             </thead>
             <tbody>
               {rules.map(r => (
                 <tr key={r.variableKey}>
-                  <td>
-                    <span className="alarm-rule-table__var">{r.variableKey}</span>
-                    {!r.isEnabled && <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--muted-foreground)' }}>(禁用)</span>}
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={r.isEnabled} onChange={async () => {
+                      try {
+                        await fetch(`/api/alarm/rules/${encodeURIComponent(r.variableKey)}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ ...r, isEnabled: !r.isEnabled }),
+                        })
+                        setStatusText(r.isEnabled ? '规则已禁用' : '规则已启用')
+                        loadRules()
+                      } catch {}
+                    }} />
                   </td>
                   <td><span className="alarm-rule-table__dt">{r.dataType}</span></td>
                   <td><span className={`severity-pill ${sevClass(r.severity)}`}>{SEV_NAMES[r.severity]}</span></td>
@@ -390,7 +399,7 @@ export default function AlarmPanel() {
                 </tr>
               ))}
               {rules.length === 0 && (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 20, color: 'var(--muted-foreground)' }}>暂无规则，点击「添加规则」创建</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 20, color: 'var(--muted-foreground)' }}>暂无规则，点击「添加规则」创建</td></tr>
               )}
             </tbody>
           </table>
@@ -608,15 +617,23 @@ export default function AlarmPanel() {
           <table className="alarm-rule-table">
             <thead>
               <tr>
-                <th>变量</th><th>数据类型</th><th>级别</th><th>报警类型</th><th>阈值</th><th>触发延时</th><th>恢复延时</th><th>区域</th><th>操作</th>
+                <th>启用</th><th>变量</th><th>数据类型</th><th>级别</th><th>报警类型</th><th>阈值</th><th>触发延时</th><th>恢复延时</th><th>区域</th><th>操作</th>
               </tr>
             </thead>
             <tbody>
               {rules.map(r => (
                 <tr key={r.variableKey}>
-                  <td>
-                    <span className="alarm-rule-table__var">{r.variableKey}</span>
-                    {!r.isEnabled && <span style={{ marginLeft: 4, fontSize: 10 }}>(禁用)</span>}
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={r.isEnabled} onChange={async () => {
+                      try {
+                        await fetch(`/api/alarm/rules/${encodeURIComponent(r.variableKey)}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ ...r, isEnabled: !r.isEnabled }),
+                        })
+                        loadRules()
+                      } catch {}
+                    }} />
                   </td>
                   <td><span className="alarm-rule-table__dt">{r.dataType}</span></td>
                   <td><span className={`severity-pill ${sevClass(r.severity)}`}>{SEV_NAMES[r.severity]}</span></td>
@@ -635,7 +652,7 @@ export default function AlarmPanel() {
                 </tr>
               ))}
               {rules.length === 0 && (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 20, color: 'var(--muted-foreground)' }}>暂无报警规则</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 20, color: 'var(--muted-foreground)' }}>暂无报警规则</td></tr>
               )}
             </tbody>
           </table>
