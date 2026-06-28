@@ -5,7 +5,8 @@
       "Bash(git *)",
       "Bash(dotnet run *)",
       "Bash(dotnet test *)",
-      "Bash(dotnet restore *)"
+      "Bash(dotnet restore *)",
+      "WebSearch"
     ]
   }
 }
