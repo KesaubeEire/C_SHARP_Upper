@@ -1101,7 +1101,7 @@ async function poll() {
 }
 
 // ─── 启动 ────────────────────────────────────────────────
-const PORT = isDev ? 3001 : 3000
+const PORT = parseInt(process.env.PORT || '') || (isDev ? 3001 : 3000)
 
 function start() {
   app.listen(PORT, () => {

@@ -203,6 +203,8 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   const fileRef = useRef<HTMLInputElement>(null)
   const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('lg')
   const [ghostCell, setGhostCell] = useState<{x: number; y: number} | null>(null)
+  const [rowGapHover, setRowGapHover] = useState<number | null>(null)   // 行间隙悬停的行号
+  const [rowGapMenu, setRowGapMenu] = useState<{row: number; top: number; left: number} | null>(null)  // 行间隙右键菜单
   const [insertMenu, setInsertMenu] = useState<{x: number; y: number; top: number; left: number} | null>(null)
   const [resizing, setResizing] = useState(false)
   const insertMenuRef = useRef<HTMLDivElement>(null)
@@ -274,28 +276,63 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     return oc ? null : { x: col, y: row }
   }, [data.layouts, currentBreakpoint, getGridMetrics])
 
+  // ─── 检测鼠标是否在行间隙区域 ────────────────────────────
+  const mouseToRowGap = useCallback((clientX: number, clientY: number): number | null => {
+    const container = containerRef.current?.parentElement
+    if (!container) return null
+    const rect = container.getBoundingClientRect()
+    const { cols, colWidth, cellHeight, margin } = getGridMetrics()
+    const my = clientY - rect.top
+    const mx = clientX - rect.left
+    if (mx < 0 || mx > rect.width || my < 0) return null
+    const row = Math.floor(my / (cellHeight + margin[1]))
+    const rowStart = row * (cellHeight + margin[1])
+    const rowWidgetEnd = rowStart + cellHeight  // 组件内容区底边
+    const rowGapEnd = rowStart + cellHeight + margin[1]  // gap 底边
+    // 鼠标落在 gap 区域内（组件底边到行底边之间）
+    if (my >= rowWidgetEnd && my < rowGapEnd) return row
+    return null
+  }, [getGridMetrics])
+
   // ─── RGL 容器事件 ────────────────────────────────────────
   const handleRglMouseMove = useCallback((e: React.MouseEvent) => {
-    if (resizing) return // 拖拽扩展大小时不显示 ghost
+    if (resizing) return
+    // 先检测行间隙悬停
+    const gapRow = mouseToRowGap(e.clientX, e.clientY)
+    if (gapRow !== null) {
+      setRowGapHover(gapRow)
+      setGhostCell(null)
+      return
+    }
+    setRowGapHover(null)
     if ((e.target as HTMLElement)?.closest?.('.vdb-widget')) { setGhostCell(null); return }
     const pos = mouseToGrid(e.clientX, e.clientY)
     setGhostCell(pos)
-  }, [mouseToGrid, resizing])
+  }, [mouseToGrid, mouseToRowGap, resizing])
 
-  const handleRglMouseLeave = useCallback(() => setGhostCell(null), [])
+  const handleRglMouseLeave = useCallback(() => { setGhostCell(null); setRowGapHover(null) }, [])
 
   const handleRglContextMenu = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement)?.closest?.('.vdb-widget')) return // 组件上的右键走现有逻辑
+    if ((e.target as HTMLElement)?.closest?.('.vdb-widget')) return
     e.preventDefault()
+    // 优先检测行间隙右键
+    const gapRow = mouseToRowGap(e.clientX, e.clientY)
+    if (gapRow !== null) {
+      setRowGapMenu({ row: gapRow, top: e.clientY, left: e.clientX })
+      setRowGapHover(null)
+      setInsertMenu(null)
+      return
+    }
     const pos = mouseToGrid(e.clientX, e.clientY)
     if (!pos) return
     setInsertMenu({ ...pos, top: e.clientY, left: e.clientX })
     setGhostCell(null)
-  }, [mouseToGrid])
+  }, [mouseToGrid, mouseToRowGap])
 
   const handleRglClick = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement)?.closest?.('.vdb-widget')) return
     setInsertMenu(null)
+    setRowGapMenu(null)
   }, [])
 
   // 点击外部 / Escape 关闭 insertMenu
@@ -309,6 +346,18 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     document.addEventListener('keydown', onKey)
     return () => { clearTimeout(t); document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
   }, [insertMenu])
+
+  // 点击外部 / Escape 关闭 rowGapMenu
+  useEffect(() => {
+    if (!rowGapMenu) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setRowGapMenu(null) }
+    const onDown = (e: MouseEvent) => {
+      if (insertMenuRef.current && !insertMenuRef.current.contains(e.target as Node)) setRowGapMenu(null)
+    }
+    const t = setTimeout(() => document.addEventListener('mousedown', onDown), 0)
+    document.addEventListener('keydown', onKey)
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [rowGapMenu])
 
   const addWidget = useCallback((type: WidgetType) => {
     const meta = WIDGET_META[type]; const id = `w${Date.now()}`
@@ -346,6 +395,40 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     setGhostCell(null); setInsertMenu(null)
     setFormTitle(meta.label); setFormType(type); setFormCfg({ ...cfg }); setEditing(id)
   }, [data.layouts, currentBreakpoint, setData])
+
+  // ─── 插入空行 ─────────────────────────────────────────────
+  const insertEmptyRow = useCallback((y: number) => {
+    setData(d => {
+      const bp = currentBreakpoint
+      const layout = (d.layouts[bp] ?? []).map((l: any) => ({ ...l }))
+      const newLayout = layout.map(l => {
+        if (l.y >= y) return { ...l, y: l.y + 1 }
+        return l
+      })
+      return { ...d, layouts: { ...d.layouts, [bp]: newLayout } }
+    })
+    setInsertMenu(null)
+  }, [currentBreakpoint, setData])
+
+  // ─── 删除空行 ─────────────────────────────────────────────
+  const deleteEmptyRow = useCallback((y: number) => {
+    setData(d => {
+      const bp = currentBreakpoint
+      const layout = (d.layouts[bp] ?? []).map((l: any) => ({ ...l }))
+      const newLayout = layout.map(l => {
+        if (l.y > y) return { ...l, y: l.y - 1 }
+        return l
+      })
+      return { ...d, layouts: { ...d.layouts, [bp]: newLayout } }
+    })
+    setInsertMenu(null)
+  }, [currentBreakpoint, setData])
+
+  // ─── 检查某行是否为空 ────────────────────────────────────
+  const isRowEmpty = useCallback((y: number): boolean => {
+    const layout = data.layouts[currentBreakpoint] ?? []
+    return !layout.some((l: any) => l.y <= y && l.y + l.h > y)
+  }, [data.layouts, currentBreakpoint])
 
   // 点击外部 / Escape → 关闭 palette dropdown
   useEffect(() => {
@@ -462,9 +545,31 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
               height: cellHeight,
             }} />
           })()}
+          {/* 行间隙指示线 */}
+          {rowGapHover !== null && (() => {
+            const { cellHeight, margin } = getGridMetrics()
+            const top = (rowGapHover + 1) * (cellHeight + margin[1]) - margin[1] / 2
+            return <div className="vdb-rowgap" style={{ top }} />
+          })()}
+          {/* 行间隙右键菜单 */}
+          {rowGapMenu && (
+            <div ref={insertMenuRef} className="vdb-ctx" style={{ position: 'fixed', zIndex: 99999, left: rowGapMenu.left, top: rowGapMenu.top }}>
+              <button className="vdb-ctx__item"
+                onClick={() => { insertEmptyRow(rowGapMenu.row + 1); setRowGapMenu(null) }}>
+                <span className="vdb-ctx__icon">📏</span>
+                在此行下方插入空行
+              </button>
+            </div>
+          )}
           {/* 右键插入菜单 */}
-          {insertMenu && (
+          {insertMenu && (() => {
+            const rowEmpty = (() => {
+              const layout = data.layouts[currentBreakpoint] ?? []
+              return !layout.some((l: any) => l.y <= insertMenu.y && l.y + l.h > insertMenu.y)
+            })()
+            return (
             <div ref={insertMenuRef} className="vdb-ctx" style={{ position: 'fixed', zIndex: 99999, left: insertMenu.left, top: insertMenu.top }}>
+              <div className="vdb-ctx__subtitle">添加组件</div>
               {Object.entries(WIDGET_META).map(([type, meta]) => (
                 <button key={type} className="vdb-ctx__item"
                   onClick={() => addWidgetAt(type as WidgetType, insertMenu.x, insertMenu.y)}>
@@ -472,8 +577,22 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                   {meta.label}
                 </button>
               ))}
+              <div className="vdb-ctx__sep" />
+              <button className="vdb-ctx__item"
+                onClick={() => insertEmptyRow(insertMenu.y)}>
+                <span className="vdb-ctx__icon">📏</span>
+                在此行插入空行
+              </button>
+              {rowEmpty && (
+                <button className="vdb-ctx__item vdb-ctx__item--danger"
+                  onClick={() => deleteEmptyRow(insertMenu.y)}>
+                  <span className="vdb-ctx__icon">🗑️</span>
+                  删除此空行
+                </button>
+              )}
             </div>
-          )}
+            )
+          })()}
           </div>
         </div>
       )}
