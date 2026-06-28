@@ -9,19 +9,13 @@ set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
 REM ─── 检测主线还是 worktree ────────────────────────────
+set "WORKTREE_TYPE=master"
 set "WORKTREE_NAME="
-for /f %%a in ('git rev-parse --show-toplevel 2^>nul') do set "REPO_ROOT=%%a"
-if defined REPO_ROOT (
-    if exist "%REPO_ROOT%\.git\." (
-        REM .git 是目录 → 主线
-        set "WORKTREE_TYPE=master"
-    ) else if exist "%REPO_ROOT%\.git" (
-        REM .git 是文件 → worktree
-        for /f %%a in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "WORKTREE_NAME=%%a"
-        set "WORKTREE_TYPE=worktree"
-    )
-) else (
-    REM 不在 git 仓库中
+for /f %%a in ('git rev-parse --git-dir 2^>nul') do set "GIT_DIR=%%a"
+echo "!GIT_DIR!" | findstr /i "worktrees" >nul 2>&1
+if !errorlevel! equ 0 (
+    set "WORKTREE_TYPE=worktree"
+    for /f %%a in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "WORKTREE_NAME=%%a"
 )
 echo "%ROOT%" | findstr /i "\.orca\\worktrees" >nul 2>&1
 if !errorlevel! equ 0 set "WORKTREE_TYPE=worktree"

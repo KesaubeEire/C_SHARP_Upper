@@ -10,18 +10,21 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Trioop PLC Monitor — 启动器" -ForegroundColor Cyan
 
 # ─── 检测主线还是 worktree ────────────────────────────
-$gitDir = Join-Path (git rev-parse --show-toplevel 2>$null) ".git"
-if (Test-Path $gitDir) {
-    if (Test-Path (Join-Path $gitDir "*")) {
-        # .git 是目录 → 主线
-        Write-Host "  工作区: 主线" -ForegroundColor Green
-    } else {
-        # .git 是文件 → worktree
-        $branch = git rev-parse --abbrev-ref HEAD 2>$null
+$gitDir = git rev-parse --git-dir 2>$null
+$worktreeType = "master"
+if ($gitDir -match 'worktrees') {
+    $worktreeType = "worktree"
+    $branch = git rev-parse --abbrev-ref HEAD 2>$null
+}
+if ($PWD.Path -match '\.orca\\worktrees') {
+    $worktreeType = "worktree"
+}
+if ($worktreeType -eq "worktree") {
+    if ($branch) {
         Write-Host "  工作区: Worktree [分支: $branch]" -ForegroundColor Yellow
+    } else {
+        Write-Host "  工作区: Worktree" -ForegroundColor Yellow
     }
-} elseif ($PWD.Path -match '\.orca\\worktrees') {
-    Write-Host "  工作区: Worktree (Orca)" -ForegroundColor Yellow
 } else {
     Write-Host "  工作区: 主线" -ForegroundColor Green
 }
