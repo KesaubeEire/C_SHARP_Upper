@@ -17,7 +17,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['react-leaflet', 'leaflet', 'react-grid-layout', 'mqtt'],
+      external: ['react-leaflet', 'leaflet', 'react-grid-layout', 'react-grid-layout/css/styles.css', 'mqtt', '@altara/core', '@altara/industrial'],
     },
   },
   server: {

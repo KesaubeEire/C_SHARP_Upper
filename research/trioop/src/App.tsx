@@ -223,7 +223,7 @@ export default function App() {
           <DiagnosticsPanel />
 
           {/* 配方管理 */}
-          <RecipePanel liveData={db} />
+          <RecipePanel />
 
           <DBImportPanel onImport={() => {}} liveData={db} />
           <DBBlockPanel blocks={blocks} data={dbBlocks} onAdd={addBlock} onRemove={removeBlock} />

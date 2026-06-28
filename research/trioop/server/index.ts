@@ -13,10 +13,16 @@ import * as plc from './plc.js'
 import * as opcua from './opcua.js'
 import { parseDBFile, parseUDTFile, parsedVarsToNodes7Tags } from './dbParser.js'
 import { trendBuffer } from './ringBuffer.js'
-import { checkAlarms, getRules, setRule, deleteRule, getActiveAlarms, getAlarmHistory, acknowledgeAlarm, acknowledgeAll } from './alarmEngine.js'
+import {
+  checkAlarms, getRules, addRule, removeRule, updateRule,
+  getActiveAlarms, getAlarmHistory, acknowledgeAlarm, acknowledgeAll,
+  shelveAlarm, unshelveAlarm, addComment, clearAll,
+  getStatistics, exportAlarmsCsv, exportRulesCsv, importRulesCsv,
+  getAlarms, getShelvedAlarms,
+} from './alarmEngine.js'
 import { writePoints, queryHistory, exportCSV, stopFlush } from './historyStore.js'
 import { recordPoll, recordError, getDiagnostics, resetDiagnostics } from './diagnostics.js'
-import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getRecipe } from './recipeManager.js'
+import { getAllRecipes, loadRecipe, saveRecipe as saveRecipeSvc, deleteRecipe as deleteRecipeSvc, copyRecipe, getVersionHistory, loadRecipeVersion, restoreVersion, exportToCsv, importFromCsv, readCsvFileWithAutoDetect } from './recipeManager.js'
 import { authenticate, validateToken, logout, getUsers, addUser, removeUser, changePassword, extractToken } from './auth.js'
 import { updateTagAddressByDB } from './plc.js'
 import { getMapping, setMapping, deleteMapping, setMappings } from './dbMapping.js'
@@ -638,16 +644,51 @@ app.get('/api/alarm/rules', (_req, res) => {
 })
 
 app.post('/api/alarm/rules', (req, res) => {
-  const { name, variableName, condition, threshold, message, enabled } = req.body
-  if (!name || !variableName || !condition || threshold === undefined) {
-    return res.status(400).json({ error: '请提供 name, variableName, condition, threshold' })
-  }
-  setRule({ name, variableName, condition, threshold, message: message || name, enabled: enabled ?? true })
+  const { variableKey, dataType, description, severity, conditionType, condition, threshold, deadband, onDelayMs, offDelayMs, area, isEnabled, name } = req.body
+  const key = variableKey || name
+  if (!key) return res.status(400).json({ error: '请提供 variableKey' })
+  addRule({
+    name: key,
+    variableKey: key,
+    dataType: dataType || 'BYTE',
+    description: description || '',
+    severity: severity ?? 0,
+    conditionType: conditionType ?? 0,
+    condition: condition || 'gt',
+    threshold: threshold ?? 0,
+    deadband: deadband ?? 0,
+    onDelayMs: onDelayMs ?? 0,
+    offDelayMs: offDelayMs ?? 0,
+    area: area || '',
+    isEnabled: isEnabled ?? true,
+  })
   res.json({ success: true, rules: getRules() })
 })
 
-app.delete('/api/alarm/rules/:name', (req, res) => {
-  deleteRule(req.params.name)
+app.put('/api/alarm/rules/:variableKey', (req, res) => {
+  const { variableKey, dataType, description, severity, conditionType, condition, threshold, deadband, onDelayMs, offDelayMs, area, isEnabled } = req.body
+  const key = variableKey || req.params.variableKey
+  if (!key) return res.status(400).json({ error: '请提供 variableKey' })
+  updateRule(req.params.variableKey, {
+    name: key,
+    variableKey: key,
+    dataType: dataType || 'BYTE',
+    description: description || '',
+    severity: severity ?? 0,
+    conditionType: conditionType ?? 0,
+    condition: condition || 'gt',
+    threshold: threshold ?? 0,
+    deadband: deadband ?? 0,
+    onDelayMs: onDelayMs ?? 0,
+    offDelayMs: offDelayMs ?? 0,
+    area: area || '',
+    isEnabled: isEnabled ?? true,
+  })
+  res.json({ success: true, rules: getRules() })
+})
+
+app.delete('/api/alarm/rules/:variableKey', (req, res) => {
+  removeRule(req.params.variableKey)
   res.json({ success: true, rules: getRules() })
 })
 
@@ -655,15 +696,72 @@ app.get('/api/alarm/active', (_req, res) => {
   res.json(getActiveAlarms())
 })
 
+app.get('/api/alarm/shelved', (_req, res) => {
+  res.json(getShelvedAlarms())
+})
+
 app.get('/api/alarm/history', (_req, res) => {
   res.json(getAlarmHistory())
 })
 
+app.get('/api/alarm/statistics', (_req, res) => {
+  res.json(getStatistics())
+})
+
+app.get('/api/alarm/export', (req, res) => {
+  const csv = exportAlarmsCsv()
+  res.setHeader('Content-Type', 'text/csv')
+  res.setHeader('Content-Disposition', `attachment; filename="alarms-${new Date().toISOString().slice(0, 10)}.csv"`)
+  res.send(csv)
+})
+
+app.get('/api/alarm/rules/export', (_req, res) => {
+  const csv = exportRulesCsv()
+  res.setHeader('Content-Type', 'text/csv')
+  res.setHeader('Content-Disposition', `attachment; filename="alarm-rules.csv"`)
+  res.send(csv)
+})
+
+app.post('/api/alarm/rules/import', (req, res) => {
+  const { csv } = req.body
+  if (!csv) return res.status(400).json({ error: '请提供 csv 内容' })
+  const count = importRulesCsv(csv)
+  res.json({ success: true, imported: count, rules: getRules() })
+})
+
 app.post('/api/alarm/ack', (req, res) => {
-  const { name } = req.body
-  if (name) acknowledgeAlarm(name)
-  else acknowledgeAll()
-  res.json({ success: true, active: getActiveAlarms() })
+  const { id, by } = req.body
+  if (id) acknowledgeAlarm(id, by)
+  else acknowledgeAll(by)
+  res.json({ success: true })
+})
+
+app.post('/api/alarm/ack/:id', (req, res) => {
+  const { by } = req.body
+  acknowledgeAlarm(req.params.id, by)
+  res.json({ success: true })
+})
+
+app.post('/api/alarm/shelve/:id', (req, res) => {
+  const { durationMs, by } = req.body
+  shelveAlarm(req.params.id, durationMs, by)
+  res.json({ success: true })
+})
+
+app.post('/api/alarm/unshelve/:id', (req, res) => {
+  unshelveAlarm(req.params.id)
+  res.json({ success: true })
+})
+
+app.post('/api/alarm/comment/:id', (req, res) => {
+  const { comment } = req.body
+  addComment(req.params.id, comment || '')
+  res.json({ success: true })
+})
+
+app.post('/api/alarm/clear', (_req, res) => {
+  clearAll()
+  res.json({ success: true })
 })
 
 // ─── API: 历史数据 ──────────────────────────────────────
@@ -700,67 +798,172 @@ app.post('/api/diagnostics/reset', (_req, res) => {
 
 // ─── API: 配方管理 ──────────────────────────────────────
 app.get('/api/recipe', (_req, res) => {
-  res.json(getRecipes())
+  res.json(getAllRecipes())
 })
 
-app.get('/api/recipe/:name', (req, res) => {
-  const recipe = getRecipe(req.params.name)
+app.get('/api/recipe/:id', (req, res) => {
+  const recipe = loadRecipe(req.params.id)
   if (!recipe) return res.status(404).json({ error: '配方不存在' })
   res.json(recipe)
 })
 
 app.post('/api/recipe', async (req, res) => {
-  const { name, values, description } = req.body
-  if (!name || !values) return res.status(400).json({ error: '请提供 name 和 values' })
-  try {
-    const recipe = await createRecipe(name, values, description)
-    res.json({ success: true, recipe })
-  } catch (err) {
-    res.status(400).json({ error: (err as Error).message })
+  const { id, name, description, productCode, author, status, category, tags, defaultDbNumber, groups } = req.body
+  if (!name) return res.status(400).json({ error: '请提供 name' })
+
+  const now = new Date().toISOString()
+  const recipe = {
+    id: id || `recipe_${Date.now()}`,
+    name,
+    description: description || '',
+    productCode: productCode || '',
+    author: author || '',
+    status: status ?? 0,
+    createdAt: now,
+    modifiedAt: now,
+    version: 0,
+    tags: Array.isArray(tags) ? tags : [],
+    category: category || '',
+    defaultDbNumber: defaultDbNumber ?? 1,
+    groups: Array.isArray(groups) ? groups.map((g: any) => ({
+      name: g.name || '参数组',
+      description: g.description || '',
+      parameterCount: g.parameters?.length ?? 0,
+      parameters: g.parameters?.map((p: any) => ({
+        name: p.name || '',
+        value: p.value ?? 0,
+        unit: p.unit || '',
+        address: p.address ?? 0,
+        scale: p.scale ?? 1.0,
+        offset: p.offset ?? 0,
+        minValue: p.minValue ?? -Infinity,
+        maxValue: p.maxValue ?? Infinity,
+        group: p.group || '',
+        plcDataType: p.plcDataType || 'REAL',
+        dbNumber: p.dbNumber ?? 0,
+      })) ?? [],
+    })) : [],
   }
+
+  saveRecipeSvc(recipe)
+  res.json({ success: true, recipe })
 })
 
-app.put('/api/recipe/:name', async (req, res) => {
-  const { values, description } = req.body
-  if (!values) return res.status(400).json({ error: '请提供 values' })
-  try {
-    const recipe = await updateRecipe(req.params.name, values, description)
-    res.json({ success: true, recipe })
-  } catch (err) {
-    res.status(404).json({ error: (err as Error).message })
+app.put('/api/recipe/:id', (req, res) => {
+  const existing = loadRecipe(req.params.id)
+  if (!existing) return res.status(404).json({ error: '配方不存在' })
+
+  const { name, description, productCode, author, status, category, tags, defaultDbNumber, groups } = req.body
+  if (name !== undefined) existing.name = name
+  if (description !== undefined) existing.description = description
+  if (productCode !== undefined) existing.productCode = productCode
+  if (author !== undefined) existing.author = author
+  if (status !== undefined) existing.status = status
+  if (category !== undefined) existing.category = category
+  if (tags !== undefined) existing.tags = Array.isArray(tags) ? tags : existing.tags
+  if (defaultDbNumber !== undefined) existing.defaultDbNumber = defaultDbNumber
+
+  if (groups !== undefined && Array.isArray(groups)) {
+    existing.groups = groups.map((g: any) => ({
+      name: g.name || '参数组',
+      description: g.description || '',
+      parameterCount: g.parameters?.length ?? 0,
+      parameters: g.parameters?.map((p: any) => ({
+        name: p.name || '',
+        value: p.value ?? 0,
+        unit: p.unit || '',
+        address: p.address ?? 0,
+        scale: p.scale ?? 1.0,
+        offset: p.offset ?? 0,
+        minValue: p.minValue ?? -Infinity,
+        maxValue: p.maxValue ?? Infinity,
+        group: p.group || '',
+        plcDataType: p.plcDataType || 'REAL',
+        dbNumber: p.dbNumber ?? 0,
+      })) ?? [],
+    }))
   }
+
+  saveRecipeSvc(existing)
+  res.json({ success: true, recipe: existing })
 })
 
-app.delete('/api/recipe/:name', async (req, res) => {
-  await deleteRecipe(req.params.name)
+app.delete('/api/recipe/:id', (req, res) => {
+  deleteRecipeSvc(req.params.id)
   res.json({ success: true })
 })
 
-app.post('/api/recipe/:name/apply', async (req, res) => {
-  const recipe = getRecipe(req.params.name)
+app.post('/api/recipe/:id/copy', (req, res) => {
+  const { name } = req.body
+  const newName = name || `副本-${req.params.id}`
+  const copy = copyRecipe(req.params.id, newName)
+  if (!copy) return res.status(404).json({ error: '源配方不存在' })
+  res.json({ success: true, recipe: copy })
+})
+
+app.get('/api/recipe/:id/versions', (req, res) => {
+  res.json(getVersionHistory(req.params.id))
+})
+
+app.get('/api/recipe/:id/versions/:version', (req, res) => {
+  const version = parseInt(req.params.version)
+  const recipe = loadRecipeVersion(req.params.id, version)
+  if (!recipe) return res.status(404).json({ error: '版本不存在' })
+  res.json(recipe)
+})
+
+app.post('/api/recipe/:id/restore/:version', (req, res) => {
+  const version = parseInt(req.params.version)
+  const restored = restoreVersion(req.params.id, version)
+  if (!restored) return res.status(404).json({ error: '版本不存在' })
+  res.json({ success: true, recipe: restored })
+})
+
+app.get('/api/recipe/:id/export-csv', (req, res) => {
+  const recipe = loadRecipe(req.params.id)
+  if (!recipe) return res.status(404).json({ error: '配方不存在' })
+  const csv = exportToCsv(recipe)
+  res.setHeader('Content-Type', 'text/csv')
+  const encodedName = encodeURIComponent(recipe.name).replace(/%20/g, ' ')
+  res.setHeader('Content-Disposition', `attachment; filename="${encodedName}.csv"; filename*=UTF-8''${encodeURIComponent(recipe.name)}.csv`)
+  res.send(csv)
+})
+
+app.post('/api/recipe/:id/import-csv', (req, res) => {
+  const { csv, targetGroup } = req.body
+  if (!csv) return res.status(400).json({ error: '请提供 csv 内容' })
+  const params = importFromCsv(csv, targetGroup)
+  res.json({ success: true, imported: params.length, parameters: params })
+})
+
+app.post('/api/recipe/:id/apply', async (req, res) => {
+  const recipe = loadRecipe(req.params.id)
   if (!recipe) return res.status(404).json({ error: '配方不存在' })
   const results: { name: string; success: boolean; error?: string }[] = []
-  for (const [varName, val] of Object.entries(recipe.values)) {
-    try {
-      if (runtimeMode === 'opcua') {
-        const mapping = opcuaVarMap.find(m => m.name === varName)
-        if (!mapping) { results.push({ name: varName, success: false, error: '未找到 OPC UA 映射' }); continue }
-        await opcua.writeNode(mapping.nodeId, val)
-      } else {
-        const varCfg = config.variables.find(v => v.name === varName)
-        if (!varCfg) { results.push({ name: varName, success: false, error: '未找到变量配置' }); continue }
-        await plc.writeVariable(varCfg, val)
+  // 遍历所有分组的参数
+  for (const group of recipe.groups) {
+    for (const param of group.parameters) {
+      try {
+        if (runtimeMode === 'opcua') {
+          const mapping = opcuaVarMap.find(m => m.name === param.name)
+          if (!mapping) { results.push({ name: param.name, success: false, error: '未找到 OPC UA 映射' }); continue }
+          await opcua.writeNode(mapping.nodeId, param.value)
+        } else {
+          const varCfg = config.variables.find(v => v.name === param.name)
+          if (!varCfg) { results.push({ name: param.name, success: false, error: '未找到变量配置' }); continue }
+          await plc.writeVariable(varCfg, param.value)
+        }
+        results.push({ name: param.name, success: true })
+      } catch (err) {
+        results.push({ name: param.name, success: false, error: (err as Error).message })
       }
-      results.push({ name: varName, success: true })
-    } catch (err) {
-      results.push({ name: varName, success: false, error: (err as Error).message })
     }
   }
   res.json({ success: results.every(r => r.success), results })
 })
 
-app.post('/api/recipe/:name/snapshot', async (req, res) => {
-  const { name, description } = req.body
+app.post('/api/recipe/snapshot', async (req, res) => {
+  const { name, description, defaultDbNumber } = req.body
   if (!name) return res.status(400).json({ error: '请提供配方名' })
   const values: Record<string, number> = {}
   if (runtimeMode === 'opcua') {
@@ -773,8 +976,23 @@ app.post('/api/recipe/:name/snapshot', async (req, res) => {
       values[n] = typeof (pt as any).value === 'number' ? (pt as any).value : ((pt as any).value ? 1 : 0)
     }
   }
-  try { const recipe = await createRecipe(name, values, description); res.json({ success: true, recipe }) }
-  catch (err) { res.status(400).json({ error: (err as Error).message }) }
+
+  const now = new Date().toISOString()
+  const params = Object.entries(values).map(([k, v], i) => ({
+    name: k, value: v, unit: '', address: i * 2, scale: 1.0, offset: 0,
+    minValue: -Infinity, maxValue: Infinity, group: '', plcDataType: 'REAL', dbNumber: 0,
+  }))
+  const recipe = {
+    id: `recipe_${Date.now()}`,
+    name,
+    description: description || '',
+    productCode: '', author: '', status: 0,
+    createdAt: now, modifiedAt: now, version: 0,
+    tags: [], category: '', defaultDbNumber: defaultDbNumber ?? 1,
+    groups: [{ name: '参数组1', description: '', parameterCount: params.length, parameters: params }],
+  }
+  saveRecipeSvc(recipe)
+  res.json({ success: true, recipe })
 })
 
 // ─── API: 用户认证 ──────────────────────────────────────
