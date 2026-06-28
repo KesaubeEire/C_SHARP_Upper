@@ -50,6 +50,17 @@ pnpm start        # 生产模式 (:3000)
 - 设置 PLC IP
 - 填写 DB 块变量（类型、偏移量、读写权限）
 
+## 多 worktree 协作
+
+后端端口根据 worktree 路径 hash 自动分配，互不冲突：
+
+1. 后端启动时从 `3000 + 路径偏移` 开始找空闲端口，写入 `.port.json`
+2. 前端 Vite 读 `.port.json` 获取后端地址
+3. 每个 worktree 路径不同 → hash 偏移不同 → 端口不同
+4. 启动脚本不杀其他 worktree 的进程，只清理自己的 `.port.json`
+
+手动分配端口：`pnpm tsx server/resolve-port.ts`
+
 ## PLC 前置条件
 
 1. TIA Portal 启用 PUT/GET 访问

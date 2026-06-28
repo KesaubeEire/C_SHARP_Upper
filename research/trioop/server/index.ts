@@ -1101,15 +1101,21 @@ async function poll() {
 }
 
 // ─── 启动 ────────────────────────────────────────────────
-const PORT = parseInt(process.env.PORT || '') || (isDev ? 3001 : 3000)
+import { resolveAndSavePort } from './port.js'
 
-function start() {
-  app.listen(PORT, () => {
+const PORT = parseInt(process.env.PORT || '') || 3000
+
+async function start() {
+  // 用 PORT 作为基线找空闲端口，写入 .port.json（开发者可随时调用 tsx server/resolve-port.ts 单独分配）
+  const apiPort = await resolveAndSavePort(PORT)
+
+  app.listen(apiPort, () => {
     console.log(`\n========================================`)
     console.log(`  Trioop PLC Monitor`)
     console.log(`  环境: ${isDev ? '开发' : '生产'}`)
-    console.log(`  API:  http://localhost:${PORT}/api/plc`)
-    console.log(`  推流: http://localhost:${PORT}/api/plc/stream`)
+    console.log(`  API:  http://localhost:${apiPort}/api/plc`)
+    console.log(`  推流: http://localhost:${apiPort}/api/plc/stream`)
+    console.log(`  Port: ${apiPort} (基线: ${PORT})`)
     console.log(`========================================\n`)
   })
 }
@@ -1125,4 +1131,4 @@ process.on('SIGINT', () => {
   process.exit(0)
 })
 
-start()
+start().catch(err => { console.error('启动失败:', err); process.exit(1) })

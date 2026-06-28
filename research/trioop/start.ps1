@@ -8,6 +8,23 @@ Set-Location $ROOT
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Trioop PLC Monitor — 启动器" -ForegroundColor Cyan
+
+# ─── 检测主线还是 worktree ────────────────────────────
+$gitDir = Join-Path (git rev-parse --show-toplevel 2>$null) ".git"
+if (Test-Path $gitDir) {
+    if (Test-Path (Join-Path $gitDir "*")) {
+        # .git 是目录 → 主线
+        Write-Host "  工作区: 主线" -ForegroundColor Green
+    } else {
+        # .git 是文件 → worktree
+        $branch = git rev-parse --abbrev-ref HEAD 2>$null
+        Write-Host "  工作区: Worktree [分支: $branch]" -ForegroundColor Yellow
+    }
+} elseif ($PWD.Path -match '\.orca\\worktrees') {
+    Write-Host "  工作区: Worktree (Orca)" -ForegroundColor Yellow
+} else {
+    Write-Host "  工作区: 主线" -ForegroundColor Green
+}
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -48,36 +65,24 @@ try {
 Write-Host ""
 
 # ─── 2. 设置 pnpm ──────────────────────────────────────
-$pnpmScript = "$env:APPDATA\npm\node_modules\pnpm\bin\pnpm.mjs"
-if (-not (Test-Path $pnpmScript)) {
+# 直接用系统 PATH 里的 pnpm
+try {
+    $null = Get-Command pnpm -ErrorAction Stop
+} catch {
     Write-Host "  ✗ 未找到 pnpm，请运行: npm install -g pnpm" -ForegroundColor Red
     Read-Host "按回车退出"
     exit 1
 }
 Write-Host "  Node: $nodeCmd" -ForegroundColor Gray
-Write-Host "  pnpm: $pnpmScript" -ForegroundColor Gray
+Write-Host "  pnpm: pnpm" -ForegroundColor Gray
 Write-Host ""
 
-# ─── 3. 清理旧进程端口 ──────────────────────────────────
-Write-Host "[2/4] 清理端口占用..." -ForegroundColor Yellow
-$ports = @(5173, 5174, 5175, 5176, 5177, 3001)
-$count = 0
-foreach ($port in $ports) {
-    $connections = netstat -ano | Select-String ":$port "
-    foreach ($conn in $connections) {
-        $parts = $conn -split '\s+'
-        if ($parts.Count -ge 5) {
-            $pid = $parts[-1]
-            if ($pid -match '^\d+$') {
-                try { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue; $count++ } catch {}
-            }
-        }
-    }
-}
-if ($count -gt 0) {
-    Start-Sleep -Milliseconds 500  # 等待端口释放
-}
-Write-Host "  ✓ 端口已清理 ($count 个进程)" -ForegroundColor Green
+# ─── 3. 清理端口文件 ──────────────────────────────────
+Write-Host "[2/4] 清理端口文件..." -ForegroundColor Yellow
+# 删除旧的端口文件，服务端启动时会根据路径 hash 重新分配
+$portFile = Join-Path $ROOT ".port.json"
+if (Test-Path $portFile) { Remove-Item $portFile -Force }
+Write-Host "  ✓ 端口文件已清理" -ForegroundColor Green
 Write-Host ""
 
 # ─── 4. 检查 better-sqlite3 是否需要重新编译 ────────────
@@ -95,30 +100,36 @@ if ($betterModule) {
         Write-Host "  ✓ better-sqlite3 模块正常" -ForegroundColor Green
     } else {
         Write-Host "  ~ better-sqlite3 需要重新编译..." -ForegroundColor Yellow
-        & $nodeCmd $pnpmScript rebuild better-sqlite3
+        & pnpm rebuild better-sqlite3
         if ($LASTEXITCODE -ne 0) {
             Write-Host "  ⚠ 重新编译失败，尝试安装依赖..." -ForegroundColor DarkYellow
-            & $nodeCmd $pnpmScript install
+            & pnpm install
         }
         Write-Host "  ✓ 编译完成" -ForegroundColor Green
     }
 } else {
     Write-Host "  ~ 未检测到原生模块，运行 pnpm install..." -ForegroundColor Yellow
-    & $nodeCmd $pnpmScript install
+    & pnpm install
 }
 Write-Host ""
+
+# 先分配端口（写入 .port.json）
+Write-Host "  ~ 预分配 API 端口..." -ForegroundColor Yellow
+& pnpm tsx server/resolve-port.ts
+$resolvedPort = (Get-Content $portFile -ErrorAction SilentlyContinue | ConvertFrom-Json).port
+if (-not $resolvedPort) { $resolvedPort = 3001 }
 
 # ─── 5. 启动开发服务器 ──────────────────────────────────
 Write-Host "[4/4] 启动开发服务器..." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  前端: http://localhost:5173" -ForegroundColor Cyan
-Write-Host "  API:  http://localhost:3001" -ForegroundColor Cyan
+Write-Host "  API:  http://localhost:$resolvedPort" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  按 Ctrl+C 停止所有服务" -ForegroundColor Gray
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-& $nodeCmd $pnpmScript dev
+& pnpm dev
 if (-not $?) {
     Write-Host "启动失败，按回车退出" -ForegroundColor Red
     Read-Host

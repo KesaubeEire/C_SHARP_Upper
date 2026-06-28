@@ -10,6 +10,7 @@ build/
 .env
 .env.local
 .env.*.local
+.port.json
 
 # IDE
 .vscode/settings.json
