@@ -208,6 +208,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   const [insertMenu, setInsertMenu] = useState<{x: number; y: number; top: number; left: number} | null>(null)
   const [resizing, setResizing] = useState(false)
   const insertMenuRef = useRef<HTMLDivElement>(null)
+  const rowGapMenuRef = useRef<HTMLDivElement>(null)
 
   // ─── 撤销 / 重做 ─────────────────────────────────────
   const historyRef = useRef<{ stack: any[]; idx: number }>({ stack: [], idx: -1 })
@@ -352,7 +353,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     if (!rowGapMenu) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setRowGapMenu(null) }
     const onDown = (e: MouseEvent) => {
-      if (insertMenuRef.current && !insertMenuRef.current.contains(e.target as Node)) setRowGapMenu(null)
+      if (rowGapMenuRef.current && !rowGapMenuRef.current.contains(e.target as Node)) setRowGapMenu(null)
     }
     const t = setTimeout(() => document.addEventListener('mousedown', onDown), 0)
     document.addEventListener('keydown', onKey)
@@ -407,7 +408,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
       })
       return { ...d, layouts: { ...d.layouts, [bp]: newLayout } }
     })
-    setInsertMenu(null)
+    setInsertMenu(null); setRowGapMenu(null)
   }, [currentBreakpoint, setData])
 
   // ─── 删除空行 ─────────────────────────────────────────────
@@ -421,7 +422,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
       })
       return { ...d, layouts: { ...d.layouts, [bp]: newLayout } }
     })
-    setInsertMenu(null)
+    setInsertMenu(null); setRowGapMenu(null)
   }, [currentBreakpoint, setData])
 
   // ─── 检查某行是否为空 ────────────────────────────────────
@@ -508,7 +509,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
             onLayoutChange={onLayoutChange}
             onBreakpointChange={(bp) => setCurrentBreakpoint(bp)}
             onResizeStart={() => setResizing(true)}
-            onResizeStop={() => setResizing(false)}
+            onResizeStop={() => { setResizing(false); setRowGapHover(null) }}
             draggableHandle=".vdb-widget__bar"
             isDraggable
             isResizable
@@ -553,7 +554,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
           })()}
           {/* 行间隙右键菜单 */}
           {rowGapMenu && (
-            <div ref={insertMenuRef} className="vdb-ctx" style={{ position: 'fixed', zIndex: 99999, left: rowGapMenu.left, top: rowGapMenu.top }}>
+            <div ref={rowGapMenuRef} className="vdb-ctx" style={{ position: 'fixed', zIndex: 99999, left: rowGapMenu.left, top: rowGapMenu.top }}>
               <button className="vdb-ctx__item"
                 onClick={() => { insertEmptyRow(rowGapMenu.row + 1); setRowGapMenu(null) }}>
                 <span className="vdb-ctx__icon">📏</span>

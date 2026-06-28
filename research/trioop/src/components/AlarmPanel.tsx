@@ -377,7 +377,20 @@ export default function AlarmPanel() {
                         await fetch(`/api/alarm/rules/${encodeURIComponent(r.variableKey)}`, {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ ...r, isEnabled: !r.isEnabled }),
+                          body: JSON.stringify({
+                            variableKey: r.variableKey,
+                            dataType: r.dataType,
+                            description: r.description,
+                            severity: r.severity,
+                            conditionType: r.conditionType,
+                            condition: r.condition,
+                            threshold: r.threshold,
+                            deadband: r.deadband,
+                            onDelayMs: r.onDelayMs,
+                            offDelayMs: r.offDelayMs,
+                            area: r.area,
+                            isEnabled: !r.isEnabled,
+                          }),
                         })
                         setStatusText(r.isEnabled ? '规则已禁用' : '规则已启用')
                         loadRules()
@@ -629,7 +642,13 @@ export default function AlarmPanel() {
                         await fetch(`/api/alarm/rules/${encodeURIComponent(r.variableKey)}`, {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ ...r, isEnabled: !r.isEnabled }),
+                          body: JSON.stringify({
+                            variableKey: r.variableKey, dataType: r.dataType, description: r.description,
+                            severity: r.severity, conditionType: r.conditionType, condition: r.condition,
+                            threshold: r.threshold, deadband: r.deadband,
+                            onDelayMs: r.onDelayMs, offDelayMs: r.offDelayMs,
+                            area: r.area, isEnabled: !r.isEnabled,
+                          }),
                         })
                         loadRules()
                       } catch {}
