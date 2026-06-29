@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import Tooltip from './Tooltip'
-import { Responsive } from 'react-grid-layout'
+import { Responsive, noCompactor } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import { AltaraGauge } from '../components/AltaraGauge'
 import { TrendRecorder } from '../components/AltaraTrendRecorder'
@@ -399,6 +399,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
 
   // ─── 插入空行 ─────────────────────────────────────────────
   const insertEmptyRow = useCallback((y: number) => {
+    layoutVersionRef.current++
     setData(d => {
       const bp = currentBreakpoint
       const layout = (d.layouts[bp] ?? []).map((l: any) => ({ ...l }))
@@ -413,6 +414,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
 
   // ─── 删除空行 ─────────────────────────────────────────────
   const deleteEmptyRow = useCallback((y: number) => {
+    layoutVersionRef.current++
     setData(d => {
       const bp = currentBreakpoint
       const layout = (d.layouts[bp] ?? []).map((l: any) => ({ ...l }))
@@ -442,6 +444,9 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     document.addEventListener('keydown', keyHandler)
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', keyHandler) }
   }, [showPalette])
+
+  // ─── 标记外部修改 layout（插入空行等），阻止 onLayoutChange 覆盖 ──
+  const layoutVersionRef = useRef(0)
 
   const onLayoutChange = useCallback((layout: any, allLayouts: any) => {
     setData(d => ({ ...d, layouts: allLayouts }))
@@ -500,7 +505,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
         <div className="db-empty" style={{ textAlign: 'center', padding: 40 }}>点击「+ 添加组件」开始构建仪表盘</div>
       ) : (
         <div className="vdb-rgl-wrapper" onMouseMove={handleRglMouseMove} onMouseLeave={handleRglMouseLeave} onContextMenu={handleRglContextMenu} onClick={handleRglClick}>
-          <div ref={containerRef} style={{ width: "100%" }}><Responsive width={containerWidth}
+          <div ref={containerRef} style={{ width: "100%" }}><Responsive key={layoutVersionRef.current} width={containerWidth}
             className="vdb-rgl"
             layouts={data.layouts}
             breakpoints={BREAKPOINTS}
@@ -514,6 +519,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
             isDraggable
             isResizable
             compactType={null}
+            compactor={noCompactor}
             preventCollision={false}
             margin={[10, 10]}
             containerPadding={[0, 0]}
