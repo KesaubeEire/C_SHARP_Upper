@@ -3107,6 +3107,21 @@ select:focus, .cplay-prop__select:focus {
   position: sticky;
   top: 0;
   background: var(--card);
+  user-select: none;
+}
+.recipe-param-table th .col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1;
+}
+.recipe-param-table th .col-resizer:hover,
+.recipe-param-table th .col-resizer--active {
+  background: var(--ring);
+  opacity: 0.6;
 }
 .recipe-param-table td {
   padding: 4px 8px;

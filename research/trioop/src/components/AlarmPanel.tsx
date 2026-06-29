@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import CollapsibleSection from './CollapsibleSection'
+import { confirm } from './ConfirmDialog'
 import type { AlarmItem, AlarmRule, AlarmStatistics } from '../../shared/types'
 
 enum AlarmSeverity { Info = 0, Warning = 1, Critical = 2, Emergency = 3 }
@@ -160,7 +161,7 @@ export default function AlarmPanel() {
   }
 
   const handleClearAll = async () => {
-    if (!confirm('确定清除所有报警历史？此操作不可恢复。')) return
+    if (!await confirm({ title: '清除报警历史', message: '确定清除所有报警历史？此操作不可恢复。', danger: true })) return
     try {
       await fetch('/api/alarm/clear', { method: 'POST' })
       setStatusText('报警历史已清除')

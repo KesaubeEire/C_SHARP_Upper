@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import type { RecipeMeta, RecipeRecord, RecipeGroup, RecipeParameter, RecipeVersionSnapshot } from '../../shared/types'
 import { RecipeStatus } from '../../shared/types'
+import { confirm } from './ConfirmDialog'
+import { useResizableColumns } from '../hooks/useResizableColumns'
 
 const STATUS_NAMES = ['草稿', '使用中', '已归档']
 
@@ -42,6 +44,20 @@ export default function RecipePanel() {
   const [groups, setGroups] = useState<RecipeGroup[]>([{ ...DEFAULT_GROUP, parameters: [] }])
   const [selectedGroupIdx, setSelectedGroupIdx] = useState(0)
   const [paramSearch, setParamSearch] = useState('')
+
+  // ─── 可拖拽列宽 ────────────────────────────────────────────
+  const COL_DEFS = [
+    { key: 'num', defaultWidth: 40 },
+    { key: 'name', defaultWidth: 120 },
+    { key: 'value', defaultWidth: 80 },
+    { key: 'unit', defaultWidth: 60 },
+    { key: 'address', defaultWidth: 70 },
+    { key: 'scale', defaultWidth: 70 },
+    { key: 'offset', defaultWidth: 70 },
+    { key: 'dataType', defaultWidth: 90 },
+    { key: 'db', defaultWidth: 50 },
+  ]
+  const { colStyle, colProps } = useResizableColumns(COL_DEFS)
 
   // ─── 版本历史 ──────────────────────────────────────────────
   const [versionHistory, setVersionHistory] = useState<RecipeVersionSnapshot[]>([])
@@ -167,7 +183,7 @@ export default function RecipePanel() {
   }
 
   const handleDelete = async (meta: RecipeMeta) => {
-    if (!confirm(`删除配方「${meta.name}」？`)) return
+    if (!await confirm({ title: '删除配方', message: `确定删除配方「${meta.name}」？此操作不可恢复。`, danger: true })) return
     try {
       await fetch(`/api/recipe/${meta.id}`, { method: 'DELETE' })
       if (currentId === meta.id) clearCurrent()
@@ -498,15 +514,15 @@ export default function RecipePanel() {
             <table className="recipe-param-table">
               <thead>
                 <tr>
-                  <th style={{ width: 40 }}>#</th>
-                  <th style={{ width: 120 }}>参数名</th>
-                  <th style={{ width: '100%' }}>值</th>
-                  <th style={{ width: 60 }}>单位</th>
-                  <th style={{ width: 70 }}>地址</th>
-                  <th style={{ width: 70 }}>缩放</th>
-                  <th style={{ width: 70 }}>偏移</th>
-                  <th style={{ width: 90 }}>数据类型</th>
-                  <th style={{ width: 50 }}>DB</th>
+                  <th style={colStyle('num')}>#<div className="col-resizer" onMouseDown={e => colProps('num').onMouseDown(e)} /></th>
+                  <th style={colStyle('name')}>参数名<div className="col-resizer" onMouseDown={e => colProps('name').onMouseDown(e)} /></th>
+                  <th style={colStyle('value')}>值<div className="col-resizer" onMouseDown={e => colProps('value').onMouseDown(e)} /></th>
+                  <th style={colStyle('unit')}>单位<div className="col-resizer" onMouseDown={e => colProps('unit').onMouseDown(e)} /></th>
+                  <th style={colStyle('address')}>地址<div className="col-resizer" onMouseDown={e => colProps('address').onMouseDown(e)} /></th>
+                  <th style={colStyle('scale')}>缩放<div className="col-resizer" onMouseDown={e => colProps('scale').onMouseDown(e)} /></th>
+                  <th style={colStyle('offset')}>偏移<div className="col-resizer" onMouseDown={e => colProps('offset').onMouseDown(e)} /></th>
+                  <th style={colStyle('dataType')}>数据类型<div className="col-resizer" onMouseDown={e => colProps('dataType').onMouseDown(e)} /></th>
+                  <th style={colStyle('db')}>DB<div className="col-resizer" onMouseDown={e => colProps('db').onMouseDown(e)} /></th>
                 </tr>
               </thead>
               <tbody>

@@ -921,8 +921,9 @@ app.put('/api/recipe/:id', (req, res) => {
 })
 
 app.delete('/api/recipe/:id', (req, res) => {
-  deleteRecipeSvc(req.params.id)
+  const ok = deleteRecipeSvc(req.params.id)
   logEvent('recipe.delete', `删除配方: ${req.params.id}`, currentUser(req))
+  res.json({ success: ok })
 })
 
 app.post('/api/recipe/:id/copy', (req, res) => {

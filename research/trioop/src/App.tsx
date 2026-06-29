@@ -14,6 +14,7 @@ import EventLogPanel from './components/EventLogPanel'
 import AlarmPanel from './components/AlarmPanel'
 import CollapsibleSection from './components/CollapsibleSection'
 import RecipePanel from './components/RecipePanel'
+import { ConfirmDialog } from './components/ConfirmDialog'
 // @altara 组件已全部本地化，不再直接引用第三方包
 import type { PLCConfig } from '../shared/types'
 
@@ -180,6 +181,7 @@ export default function App() {
           <DBImportPanel onImport={() => {}} liveData={db} />
         </main>
       </div>
+      <ConfirmDialog />
     </div>
   )
 }
