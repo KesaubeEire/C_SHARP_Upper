@@ -31,4 +31,7 @@ npm-debug.log*
 *.bak
 data/history/
 
+# Dynamic port allocation (per machine / per worktree)
+.port.json
+
 # altara UI component library
