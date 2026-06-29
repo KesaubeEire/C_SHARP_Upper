@@ -214,7 +214,10 @@ export function exportToCsv(recipe: RecipeRecord): string {
       escCsv(p.name), String(p.value), escCsv(p.unit), String(p.address),
       String(p.scale), String(p.offset),
       escCsv(p.group), escCsv(p.plcDataType), String(p.dbNumber),
-      String(p.minValue), String(p.maxValue),
+      // JSON.stringify 会丢失 Infinity，从 JSON 加载后 minValue/maxValue 变为 null
+      // 此处将 null 转回 -Infinity/Infinity 字符串
+      String(p.minValue === null ? -Infinity : p.minValue),
+      String(p.maxValue === null ? Infinity : p.maxValue),
     ].join(','))
   }
   return lines.join('\n')
@@ -243,8 +246,8 @@ export function importFromCsv(csvText: string, targetGroup?: string): RecipePara
         group: cols.length > 6 ? cols[6] : (targetGroup ?? ''),
         plcDataType: cols.length > 7 ? cols[7] : 'REAL',
         dbNumber: cols.length > 8 ? parseInt(cols[8]) || 0 : 0,
-        minValue: cols.length > 9 ? parseFloat(cols[9]) || -Infinity : -Infinity,
-        maxValue: cols.length > 10 ? parseFloat(cols[10]) || Infinity : Infinity,
+        minValue: cols.length > 9 ? parseCSVNumber(cols[9], -Infinity) : -Infinity,
+        maxValue: cols.length > 10 ? parseCSVNumber(cols[10], Infinity) : Infinity,
       }
       result.push(param)
     } catch { /* skip malformed */ }
@@ -307,4 +310,14 @@ function parseCsvLine(line: string, delimiter: string): string[] {
   }
   result.push(current)
   return result
+}
+
+/** 解析 CSV 中的数值字段，支持 -Infinity / Infinity 字符串 */
+function parseCSVNumber(s: string, fallback: number): number {
+  const trimmed = s.trim()
+  if (trimmed === '-Infinity' || trimmed === '-∞') return -Infinity
+  if (trimmed === 'Infinity' || trimmed === '∞') return Infinity
+  if (trimmed === 'null' || trimmed === 'NaN' || trimmed === '') return fallback
+  const n = parseFloat(trimmed)
+  return isNaN(n) ? fallback : n
 }
