@@ -46,20 +46,19 @@ exit /b 1
 echo.
 
 REM ─── 2. 找 pnpm ────────────────────────────────────────
-set "PNPM_SCRIPT=%APPDATA%\npm\node_modules\pnpm\bin\pnpm.mjs"
-if not exist "%PNPM_SCRIPT%" (
-    set "PNPM_SCRIPT=%APPDATA%\npm\node_modules\pnpm\bin\pnpm.cjs"
-)
-if not exist "%PNPM_SCRIPT%" (
+REM 直接用系统 PATH 里的 pnpm（不用 --version，避免触发 pnpm 网络验证）
+where pnpm >nul 2>&1
+if !errorlevel! neq 0 (
     echo   [FAIL] pnpm not found. Run: npm install -g pnpm
     pause
     exit /b 1
 )
+set "PNPM_CMD=pnpm"
 REM 把 nvs Node 目录加到 PATH 最前面，确保子进程也用正确版本
 for %%i in ("!NODE_CMD!") do set "NODE_DIR=%%~dpi"
 set "PATH=!NODE_DIR!;!PATH!"
 echo   Node:  !NODE_CMD!
-echo   pnpm:  !PNPM_SCRIPT!
+echo   pnpm:  pnpm (!PNPM_CMD!)
 echo.
 
 REM ─── 3. 清理端口 ───────────────────────────────────────
