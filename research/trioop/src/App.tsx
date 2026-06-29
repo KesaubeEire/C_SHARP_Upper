@@ -11,6 +11,8 @@ import Dashboard from './components/Dashboard'
 import VisualDashboard from './components/VisualDashboard'
 import ComponentPlayground from './components/ComponentPlayground'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
+import EventLogPanel from './components/EventLogPanel'
+import AlarmPanel from './components/AlarmPanel'
 import CollapsibleSection from './components/CollapsibleSection'
 import RecipePanel from './components/RecipePanel'
 // @altara 组件已全部本地化，不再直接引用第三方包
@@ -61,9 +63,14 @@ export default function App() {
   useEffect(() => {
     if (connected && !wasConnectedRef.current) {
       wasConnectedRef.current = true
-      reregisterAllDBs().then(({ success, fail }) => {
-        if (success > 0) console.log(`自动注册 ${success} 个 DB${fail > 0 ? `, ${fail} 个失败` : ''}`)
-      })
+      // 先确认 PLC 确实连上了（connected 只是 SSE 通了，不表示 PLC 已连接）
+      fetch('/api/plc/status').then(r => r.json()).then(status => {
+        if (status.connected) {
+          reregisterAllDBs().then(({ success, fail }) => {
+            if (success > 0) console.log(`自动注册 ${success} 个 DB${fail > 0 ? `, ${fail} 个失败` : ''}`)
+          })
+        }
+      }).catch(() => {})
     }
     if (!connected) wasConnectedRef.current = false
   }, [connected])
@@ -172,6 +179,9 @@ export default function App() {
             <IOGrid label="" data={io.m} prefix="M" bytes={ioBytes.m} onToggle={(addr, bit, val) => handleIoToggle('m', addr, bit, val)} />
           </CollapsibleSection>
 
+          {/* 报警面板 */}
+          <AlarmPanel />
+
           {/* 可视化仪表盘 */}
           <VisualDashboard liveData={db} />
 
@@ -182,6 +192,11 @@ export default function App() {
             </button>
           </div>
           {showAltara && <ComponentPlayground />}
+
+          {/* 操作事件日志 */}
+          <CollapsibleSection title="📝 操作日志" storageKey="event-log" keepMounted>
+            <EventLogPanel />
+          </CollapsibleSection>
 
           {/* 系统诊断 */}
           <DiagnosticsPanel />

@@ -24,6 +24,17 @@ import { writePoints, queryHistory, exportCSV, stopFlush } from './historyStore.
 import { recordPoll, recordError, getDiagnostics, resetDiagnostics } from './diagnostics.js'
 import { getAllRecipes, loadRecipe, saveRecipe as saveRecipeSvc, deleteRecipe as deleteRecipeSvc, copyRecipe, getVersionHistory, loadRecipeVersion, restoreVersion, exportToCsv, importFromCsv, readCsvFileWithAutoDetect } from './recipeManager.js'
 import { authenticate, validateToken, logout, getUsers, addUser, removeUser, changePassword, extractToken } from './auth.js'
+import { logEvent, getEvents, getEventCount, getEventStats } from './eventLog.js'
+
+/** 从请求中提取当前用户名，未登录则返回 'anonymous' */
+function currentUser(req: any): string {
+  try {
+    const token = extractToken(req)
+    if (!token) return 'anonymous'
+    const session = validateToken(token)
+    return session?.username || 'anonymous'
+  } catch { return 'anonymous' }
+}
 import { updateTagAddressByDB } from './plc.js'
 import { getMapping, setMapping, deleteMapping, setMappings } from './dbMapping.js'
 
@@ -105,6 +116,7 @@ app.post('/api/plc/connect', async (req, res) => {
     plcDataCache = {}
     pollingTimer = setInterval(poll, runtimePollInterval)
     poll()
+    logEvent('plc.connect', `已连接到 ${runtimePlcIp}（S7）`, currentUser(req))
     res.json({ success: true, message: `已连接到 ${runtimePlcIp}` })
   } catch (err) {
     res.status(502).json({ error: (err as Error).message })
@@ -112,7 +124,8 @@ app.post('/api/plc/connect', async (req, res) => {
 })
 
 // ─── API: 断开 PLC ───────────────────────────────────────
-app.post('/api/plc/disconnect', (_req, res) => {
+app.post('/api/plc/disconnect', (req, res) => {
+  logEvent('plc.disconnect', '断开 PLC 连接', currentUser(req))
   plc.disconnect()
   if (pollingTimer) {
     clearInterval(pollingTimer)
@@ -368,9 +381,11 @@ app.post('/api/plc/write', async (req, res) => {
       dbNumber: varCfg.dbNumber,
       offset: varCfg.offset,
     }
+    logEvent('plc.write', `写入 ${name} = ${value}`, currentUser(req), `DB${varCfg.dbNumber},${varCfg.offset}`)
     res.json({ success: true, name, value: Number(value) })
   } catch (err) {
     const msg = (err as Error).message
+    logEvent('plc.write', `写入 ${name} 失败: ${msg}`, currentUser(req))
     console.error(`[PLC] 写入 ${name} 失败:`, msg)
     res.status(502).json({ error: msg })
   }
@@ -796,6 +811,21 @@ app.post('/api/diagnostics/reset', (_req, res) => {
   res.json({ success: true })
 })
 
+// ─── API: 操作事件日志 ──────────────────────────────────
+app.get('/api/events', (req, res) => {
+  const limit = Number(req.query.limit) || 100
+  const offset = Number(req.query.offset) || 0
+  const type = req.query.type as any || undefined
+  res.json({
+    events: getEvents(limit, offset, type),
+    total: getEventCount(type),
+  })
+})
+
+app.get('/api/events/stats', (_req, res) => {
+  res.json(getEventStats())
+})
+
 // ─── API: 配方管理 ──────────────────────────────────────
 app.get('/api/recipe', (_req, res) => {
   res.json(getAllRecipes())
@@ -846,6 +876,7 @@ app.post('/api/recipe', async (req, res) => {
   }
 
   saveRecipeSvc(recipe)
+  logEvent('recipe.create', `创建配方: ${recipe.name}`, currentUser(req))
   res.json({ success: true, recipe })
 })
 
@@ -885,12 +916,13 @@ app.put('/api/recipe/:id', (req, res) => {
   }
 
   saveRecipeSvc(existing)
+  logEvent('recipe.update', `更新配方: ${existing.name}`, currentUser(req))
   res.json({ success: true, recipe: existing })
 })
 
 app.delete('/api/recipe/:id', (req, res) => {
   deleteRecipeSvc(req.params.id)
-  res.json({ success: true })
+  logEvent('recipe.delete', `删除配方: ${req.params.id}`, currentUser(req))
 })
 
 app.post('/api/recipe/:id/copy', (req, res) => {
@@ -959,6 +991,8 @@ app.post('/api/recipe/:id/apply', async (req, res) => {
       }
     }
   }
+  const successCount = results.filter(r => r.success).length
+  logEvent('recipe.apply', `下载配方 "${recipe.name}"：${successCount}/${results.length} 成功`, currentUser(req))
   res.json({ success: results.every(r => r.success), results })
 })
 
@@ -1001,6 +1035,7 @@ app.post('/api/auth/login', (req, res) => {
   if (!username || !password) return res.status(400).json({ error: '请提供用户名和密码' })
   const result = authenticate(username, password)
   if (!result) return res.status(401).json({ error: '用户名或密码错误' })
+  logEvent('auth.login', `用户登录: ${username}`, username)
   res.json({ success: true, ...result })
 })
 
