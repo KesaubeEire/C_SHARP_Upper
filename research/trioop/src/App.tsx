@@ -5,7 +5,6 @@ import { reregisterAllDBs } from './hooks/useDBMapping'
 import StatusBar from './components/StatusBar'
 import ConnectionPanel from './components/ConnectionPanel'
 import IOGrid from './components/IOGrid'
-import DBBlockPanel from './components/DBBlockPanel'
 import DBImportPanel from './components/DBImportPanel'
 import Dashboard from './components/Dashboard'
 import VisualDashboard from './components/VisualDashboard'
@@ -18,12 +17,6 @@ import RecipePanel from './components/RecipePanel'
 // @altara 组件已全部本地化，不再直接引用第三方包
 import type { PLCConfig } from '../shared/types'
 
-interface DBBlockConfig {
-  label: string
-  dbNumber: number
-  startOffset: number
-  byteCount: number
-}
 
 /** 将后端 {start,end}[] 范围展开为 flat 字节数组 */
 function rangesToBytes(ranges?: { start: number; end: number }[]): number[] {
@@ -36,10 +29,9 @@ function rangesToBytes(ranges?: { start: number; end: number }[]): number[] {
 }
 
 export default function App() {
-  const { db, io, setIo, dbBlocks, connected, lastDataTime, ioLatency } = usePLCData()
+  const { db, io, setIo, connected, lastDataTime, ioLatency } = usePLCData()
   const { write, states, dismissError } = usePLCWrite()
   const [config, setConfig] = useState<PLCConfig | null>(null)
-  const [blocks, setBlocks] = useState<DBBlockConfig[]>([])
   const [showAltara, setShowAltara] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   useEffect(() => {
@@ -55,7 +47,6 @@ export default function App() {
   // 启动时加载配置
   useEffect(() => {
     fetch('/api/plc/config').then(r => r.json()).then(setConfig).catch(() => {})
-    fetch('/api/plc/db-blocks').then(r => r.json()).then(setBlocks).catch(() => {})
   }, [])
 
   // ─── 断线重连 → 自动重新注册 DB ──────────────────────────
@@ -92,24 +83,6 @@ export default function App() {
       })
     } catch {}
   }, [setIo])
-
-  const addBlock = useCallback(async (block: DBBlockConfig) => {
-    try {
-      const res = await fetch('/api/plc/db-blocks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(block),
-      })
-      setBlocks(await res.json())
-    } catch {}
-  }, [])
-
-  const removeBlock = useCallback(async (label: string) => {
-    try {
-      const res = await fetch(`/api/plc/db-blocks/${encodeURIComponent(label)}`, { method: 'DELETE' })
-      setBlocks(await res.json())
-    } catch {}
-  }, [])
 
   // 键盘快捷键
   useEffect(() => {
@@ -205,7 +178,6 @@ export default function App() {
           <RecipePanel />
 
           <DBImportPanel onImport={() => {}} liveData={db} />
-          <DBBlockPanel blocks={blocks} data={dbBlocks} onAdd={addBlock} onRemove={removeBlock} />
         </main>
       </div>
     </div>

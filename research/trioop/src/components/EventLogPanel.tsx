@@ -102,26 +102,36 @@ export default function EventLogPanel() {
         </div>
       )}
 
-      <div style={{ maxHeight: 400, overflowY: 'auto', fontSize: 12, fontFamily: 'monospace' }}>
+      <style>{`
+        .elog-thead th { position: sticky; top: 0; z-index: 1; background: var(--background) !important; }
+        .elog-wrap table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .elog-wrap th, .elog-wrap td { padding: 4px 6px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .elog-wrap th { font-weight: 600; font-size: 11px; color: var(--text-muted); }
+        .elog-wrap td { font-size: 12px; }
+        .elog-col-time { width: 80px; }
+        .elog-col-type { width: 110px; }
+        .elog-col-user { width: 80px; }
+      `}</style>
+      <div className="elog-wrap" style={{ maxHeight: 400, overflowY: 'auto', fontSize: 12, fontFamily: 'monospace' }}>
         {events.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>暂无事件记录</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
+          <table>
+            <thead className="elog-thead">
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ ...thStyle, position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 1 }}>时间</th>
-                <th style={{ ...thStyle, position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 1 }}>类型</th>
-                <th style={{ ...thStyle, position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 1 }}>用户</th>
-                <th style={{ ...thStyle, position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 1 }}>描述</th>
+                <th className="elog-col-time">时间</th>
+                <th className="elog-col-type">类型</th>
+                <th className="elog-col-user">用户</th>
+                <th style={{ width: 'auto' }}>描述</th>
               </tr>
             </thead>
             <tbody>
               {events.map(e => (
                 <tr key={e.id} style={{ borderBottom: '1px solid var(--border)', opacity: e.type.startsWith('plc.write') && e.message.includes('失败') ? 0.6 : 1 }}>
-                  <td style={tdStyle}>{new Date(e.time).toLocaleTimeString()}</td>
-                  <td style={tdStyle}><span title={e.type}>{EVENT_TYPE_LABELS[e.type] || e.type}</span></td>
-                  <td style={tdStyle}>{e.user}</td>
-                  <td style={tdStyle}>
+                  <td className="elog-col-time">{new Date(e.time).toLocaleTimeString()}</td>
+                  <td className="elog-col-type"><span title={e.type}>{EVENT_TYPE_LABELS[e.type] || e.type}</span></td>
+                  <td className="elog-col-user">{e.user}</td>
+                  <td style={{ maxWidth: 300 }}>
                     {e.message}
                     {e.detail && <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>({e.detail})</span>}
                   </td>
@@ -135,19 +145,3 @@ export default function EventLogPanel() {
   )
 }
 
-const thStyle: React.CSSProperties = {
-  padding: '4px 6px',
-  textAlign: 'left',
-  fontWeight: 600,
-  fontSize: 11,
-  color: 'var(--text-muted)',
-  whiteSpace: 'nowrap',
-}
-
-const tdStyle: React.CSSProperties = {
-  padding: '3px 6px',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  maxWidth: 300,
-}
