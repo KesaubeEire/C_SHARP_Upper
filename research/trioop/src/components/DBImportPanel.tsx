@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import Tooltip from './Tooltip'
-import { useToast } from '../hooks/useToast'
+import { toast } from 'sonner'
 import { loadMapping, saveMapping, saveDBData, saveUDTContent, loadAllUDTContent, clearUDTCache, loadAllDBData, writePLC } from '../hooks/useDBMapping'
 
 interface ParsedVar {
@@ -25,7 +25,7 @@ interface DBImportPanelProps {
 }
 
 export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps) {
-  const toast = useToast()
+  // Sonner toast: toast.success / toast.error / toast.warning
   const [importedDBs, setImportedDBs] = useState<ImportedDB[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -115,7 +115,7 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
       const data = await res.json()
       if (data.success) {
         saveUDTContent(content)
-        toast(`已导入 ${data.count} 个 UDT: ${data.names.join(', ')}`, 'success')
+        toast.success(`已导入 ${data.count} 个 UDT: ${data.names.join(', ')}`)
         await loadUdts()
       } else {
         setError(data.error || 'UDT 导入失败')
@@ -200,9 +200,9 @@ export default function DBImportPanel({ onImport, liveData }: DBImportPanelProps
   /** 写值（fire & forget，不 await） */
   const writeVal = useCallback((dbName: string, _dbNumber: number, vname: string, value: number) => {
     writePLC(`${dbName}:${vname}`, value)
-      .then(() => toast(`${vname}=${value}`, 'success'))
-      .catch((err: Error) => toast(`写入 ${vname} 失败: ${err.message}`, 'error'))
-  }, [toast])
+      .then(() => toast.success(`${vname}=${value}`))
+      .catch((err: Error) => toast.error(`写入 ${vname} 失败: ${err.message}`))
+  }, [])
 
   const writeValue = async (dbName: string, _dbNumber: number, vname: string) => {
     const val = Number(editVal)

@@ -7,30 +7,8 @@ setlocal enabledelayedexpansion
 
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
-
-REM ─── 检测主线还是 worktree ────────────────────────────
-set "WORKTREE_TYPE=master"
-set "WORKTREE_NAME="
-for /f %%a in ('git rev-parse --git-dir 2^>nul') do set "GIT_DIR=%%a"
-echo "!GIT_DIR!" | findstr /i "worktrees" >nul 2>&1
-if !errorlevel! equ 0 (
-    set "WORKTREE_TYPE=worktree"
-    for /f %%a in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "WORKTREE_NAME=%%a"
-)
-echo "%ROOT%" | findstr /i "\.orca\\worktrees" >nul 2>&1
-if !errorlevel! equ 0 set "WORKTREE_TYPE=worktree"
-
 echo ========================================
 echo   Trioop PLC Monitor
-if /i "!WORKTREE_TYPE!"=="worktree" (
-    if defined WORKTREE_NAME (
-        echo   工作区: Worktree [分支: !WORKTREE_NAME!]
-    ) else (
-        echo   工作区: Worktree
-    )
-) else (
-    echo   工作区: 主线
-)
 echo ========================================
 echo.
 
@@ -68,8 +46,8 @@ exit /b 1
 echo.
 
 REM ─── 2. 找 pnpm ────────────────────────────────────────
-REM 直接用系统 PATH 里的 pnpm
-pnpm --version >nul 2>&1
+REM 直接用系统 PATH 里的 pnpm（不用 --version，避免触发 pnpm 网络验证）
+where pnpm >nul 2>&1
 if !errorlevel! neq 0 (
     echo   [FAIL] pnpm not found. Run: npm install -g pnpm
     pause
@@ -83,11 +61,14 @@ echo   Node:  !NODE_CMD!
 echo   pnpm:  pnpm (!PNPM_CMD!)
 echo.
 
-REM ─── 3. 清理端口文件 ───────────────────────────────────
-echo [2/4] Cleaning port file...
-REM 删除旧的端口文件，服务端启动时会根据路径 hash 重新分配
-if exist "%ROOT%.port.json" del "%ROOT%.port.json"
-echo   [OK] Port file cleaned
+REM ─── 3. 清理端口 ───────────────────────────────────────
+echo [2/4] Cleaning ports...
+for %%p in (5173 5174 5175 5176 5177 3001) do (
+    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%%p " 2^>nul') do (
+        taskkill /F /PID %%a >nul 2>&1
+    )
+)
+echo   [OK] Ports cleaned
 echo.
 
 REM ─── 4. 检查 better-sqlite3 ────────────────────────────
@@ -102,37 +83,21 @@ if defined BS (
     echo   [OK] Native modules found
 ) else (
     echo   [WARN] Native modules not found, running install...
-    !PNPM_CMD! install
+    "%NODE_CMD%" "%PNPM_SCRIPT%" install
 )
 echo.
 
 REM ─── 5. 启动 ───────────────────────────────────────────
 echo [4/4] Starting dev server...
-REM 删除旧端口文件，服务端启动时自动分配
-if exist "%ROOT%.port.json" del "%ROOT%.port.json"
-
-REM 先分配端口，写入 .port.json，再启动 dev
-echo   Reserving API port...
-!PNPM_CMD! tsx server/resolve-port.ts
-set "PORT_RESULT="
-if exist "%ROOT%.port.json" (
-    for /f "tokens=2 delims=:}" %%a in ('type "%ROOT%.port.json"') do set "PORT_RESULT=%%a"
-)
-if defined PORT_RESULT (
-    set "PORT_RESULT=!PORT_RESULT: =!"
-    set "PORT_RESULT=!PORT_RESULT:"=!"
-) else (
-    set "PORT_RESULT=3001"
-)
 echo.
 echo   Frontend: http://localhost:5173
-echo   API:      http://localhost:!PORT_RESULT!
+echo   API:      http://localhost:3001
 echo.
 echo   Press Ctrl+C to stop
 echo ========================================
 echo.
 
-!PNPM_CMD! dev
+"%NODE_CMD%" "%PNPM_SCRIPT%" dev
 if !errorlevel! neq 0 (
     echo.
     echo [FAIL] Server exited with code !errorlevel!

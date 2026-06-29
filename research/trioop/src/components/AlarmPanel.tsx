@@ -45,6 +45,7 @@ export default function AlarmPanel() {
   const [filterSeverity, setFilterSeverity] = useState<AlarmSeverity | 'all'>('all')
   const [filterArea, setFilterArea] = useState('')
   const [showShelved, setShowShelved] = useState(true)
+  const [showRecovered, setShowRecovered] = useState(false)
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
@@ -86,6 +87,7 @@ export default function AlarmPanel() {
   const filteredAlarms = alarms
     .filter(a => {
       if (!showShelved && a.isShelved) return false
+      if (!showRecovered && !a.isActive) return false
       if (filterSeverity !== 'all' && a.severity !== filterSeverity) return false
       if (filterArea && !a.area.toLowerCase().includes(filterArea.toLowerCase())) return false
       if (filterText) {
@@ -527,9 +529,13 @@ export default function AlarmPanel() {
             <input type="checkbox" checked={showShelved} onChange={e => setShowShelved(e.target.checked)} />
             显示搁置
           </label>
+          <label className="alarm-filterbar__label" style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="checkbox" checked={showRecovered} onChange={e => setShowRecovered(e.target.checked)} />
+            显示已恢复
+          </label>
         </div>
         <div className="alarm-filterbar__group" style={{ alignSelf: 'flex-end' }}>
-          <button className="btn btn--sm btn--secondary" onClick={() => { setFilterText(''); setFilterSeverity('all'); setFilterArea(''); setDateFrom(''); setDateTo(''); setShowShelved(true) }}>重置</button>
+          <button className="btn btn--sm btn--secondary" onClick={() => { setFilterText(''); setFilterSeverity('all'); setFilterArea(''); setDateFrom(''); setDateTo(''); setShowShelved(true); setShowRecovered(false) }}>重置</button>
         </div>
       </div>
 

@@ -96,6 +96,7 @@ export async function reregisterAllDBs(): Promise<{ success: number; fail: numbe
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dbNumber, dbName: db.dbName }),
         })
+        if (!r.ok) { fail++; continue }
         const data = await r.json()
         if (data.success) { success++ } else { fail++ }
       } catch { fail++ }

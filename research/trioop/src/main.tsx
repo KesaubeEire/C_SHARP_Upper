@@ -2,8 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './hooks/useAuth'
-import { ToastProvider } from './hooks/useToast'
 import { ThemeProvider, useTheme } from './hooks/useTheme'
+import { Toaster } from 'sonner'
 import { AltaraProvider } from './components/altara/core/AltaraProvider'
 import './App.css'
 import './components/altara/core/tokens/tokens.css'
@@ -18,9 +18,8 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <ThemeProvider>
         <AltaraThemeWrapper>
-          <ToastProvider>
           <App />
-        </ToastProvider>
+          <Toaster position="top-right" richColors closeButton />
         </AltaraThemeWrapper>
       </ThemeProvider>
     </AuthProvider>

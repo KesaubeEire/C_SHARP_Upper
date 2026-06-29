@@ -3,29 +3,20 @@ import { usePLCData } from './hooks/usePLCData'
 import { usePLCWrite } from './hooks/usePLCWrite'
 import { reregisterAllDBs } from './hooks/useDBMapping'
 import StatusBar from './components/StatusBar'
-import PLCGrid from './components/PLCGrid'
 import ConnectionPanel from './components/ConnectionPanel'
 import IOGrid from './components/IOGrid'
-import DBBlockPanel from './components/DBBlockPanel'
 import DBImportPanel from './components/DBImportPanel'
-import TrendChart from './components/TrendChart'
-import AlarmPanel from './components/AlarmPanel'
 import Dashboard from './components/Dashboard'
 import VisualDashboard from './components/VisualDashboard'
 import ComponentPlayground from './components/ComponentPlayground'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
+import EventLogPanel from './components/EventLogPanel'
+import AlarmPanel from './components/AlarmPanel'
 import CollapsibleSection from './components/CollapsibleSection'
 import RecipePanel from './components/RecipePanel'
-import AlarmAnnunciator from './components/AlarmAnnunciator'
 // @altara 组件已全部本地化，不再直接引用第三方包
 import type { PLCConfig } from '../shared/types'
 
-interface DBBlockConfig {
-  label: string
-  dbNumber: number
-  startOffset: number
-  byteCount: number
-}
 
 /** 将后端 {start,end}[] 范围展开为 flat 字节数组 */
 function rangesToBytes(ranges?: { start: number; end: number }[]): number[] {
@@ -38,10 +29,9 @@ function rangesToBytes(ranges?: { start: number; end: number }[]): number[] {
 }
 
 export default function App() {
-  const { db, io, setIo, dbBlocks, connected, lastDataTime, ioLatency } = usePLCData()
+  const { db, io, setIo, connected, lastDataTime, ioLatency } = usePLCData()
   const { write, states, dismissError } = usePLCWrite()
   const [config, setConfig] = useState<PLCConfig | null>(null)
-  const [blocks, setBlocks] = useState<DBBlockConfig[]>([])
   const [showAltara, setShowAltara] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   useEffect(() => {
@@ -57,7 +47,6 @@ export default function App() {
   // 启动时加载配置
   useEffect(() => {
     fetch('/api/plc/config').then(r => r.json()).then(setConfig).catch(() => {})
-    fetch('/api/plc/db-blocks').then(r => r.json()).then(setBlocks).catch(() => {})
   }, [])
 
   // ─── 断线重连 → 自动重新注册 DB ──────────────────────────
@@ -65,9 +54,14 @@ export default function App() {
   useEffect(() => {
     if (connected && !wasConnectedRef.current) {
       wasConnectedRef.current = true
-      reregisterAllDBs().then(({ success, fail }) => {
-        if (success > 0) console.log(`自动注册 ${success} 个 DB${fail > 0 ? `, ${fail} 个失败` : ''}`)
-      })
+      // 先确认 PLC 确实连上了（connected 只是 SSE 通了，不表示 PLC 已连接）
+      fetch('/api/plc/status').then(r => r.json()).then(status => {
+        if (status.connected) {
+          reregisterAllDBs().then(({ success, fail }) => {
+            if (success > 0) console.log(`自动注册 ${success} 个 DB${fail > 0 ? `, ${fail} 个失败` : ''}`)
+          })
+        }
+      }).catch(() => {})
     }
     if (!connected) wasConnectedRef.current = false
   }, [connected])
@@ -89,24 +83,6 @@ export default function App() {
       })
     } catch {}
   }, [setIo])
-
-  const addBlock = useCallback(async (block: DBBlockConfig) => {
-    try {
-      const res = await fetch('/api/plc/db-blocks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(block),
-      })
-      setBlocks(await res.json())
-    } catch {}
-  }, [])
-
-  const removeBlock = useCallback(async (label: string) => {
-    try {
-      const res = await fetch(`/api/plc/db-blocks/${encodeURIComponent(label)}`, { method: 'DELETE' })
-      setBlocks(await res.json())
-    } catch {}
-  }, [])
 
   // 键盘快捷键
   useEffect(() => {
@@ -163,17 +139,6 @@ export default function App() {
           {showAltara ? '关闭演示' : '组件演示'}
         </button>
         <main className="main">
-          {variables.length > 0 && (
-            <CollapsibleSection title="📊 状态变量" storageKey="status-vars">
-              <PLCGrid
-                variables={variables}
-                data={db}
-                writeStates={states}
-                onWrite={write}
-                onDismissError={dismissError}
-              />
-            </CollapsibleSection>
-          )}
 
           <CollapsibleSection title="🟡 输入点 (I 区)" storageKey="io-input" keepMounted>
             <IOGrid label="" data={io.i} prefix="I" bytes={ioBytes.i} />
@@ -187,26 +152,8 @@ export default function App() {
             <IOGrid label="" data={io.m} prefix="M" bytes={ioBytes.m} onToggle={(addr, bit, val) => handleIoToggle('m', addr, bit, val)} />
           </CollapsibleSection>
 
-          {/* 实时趋势 */}
-          <CollapsibleSection title="📈 实时趋势" storageKey="trend" keepMounted>
-            <TrendChart variables={variables.map(v => v.name)} liveData={db} timeRange={300} />
-          </CollapsibleSection>
-
           {/* 报警面板 */}
           <AlarmPanel />
-
-          {/* 报警面板（瓷砖式） */}
-          <AlarmAnnunciator
-            alarms={[
-              { id: 'fault', label: '设备故障', priority: 1 },
-              { id: 'overtemp', label: '超温', priority: 1 },
-              { id: 'overload', label: '过载', priority: 2 },
-              { id: 'lowflow', label: '流量低', priority: 2 },
-              { id: 'maintenance', label: '维护提醒', priority: 3 },
-            ]}
-            states={{}}
-            columns={5}
-          />
 
           {/* 可视化仪表盘 */}
           <VisualDashboard liveData={db} />
@@ -219,6 +166,11 @@ export default function App() {
           </div>
           {showAltara && <ComponentPlayground />}
 
+          {/* 操作事件日志 */}
+          <CollapsibleSection title="📝 操作日志" storageKey="event-log" keepMounted>
+            <EventLogPanel />
+          </CollapsibleSection>
+
           {/* 系统诊断 */}
           <DiagnosticsPanel />
 
@@ -226,7 +178,6 @@ export default function App() {
           <RecipePanel />
 
           <DBImportPanel onImport={() => {}} liveData={db} />
-          <DBBlockPanel blocks={blocks} data={dbBlocks} onAdd={addBlock} onRemove={removeBlock} />
         </main>
       </div>
     </div>
