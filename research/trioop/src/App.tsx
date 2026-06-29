@@ -3,20 +3,16 @@ import { usePLCData } from './hooks/usePLCData'
 import { usePLCWrite } from './hooks/usePLCWrite'
 import { reregisterAllDBs } from './hooks/useDBMapping'
 import StatusBar from './components/StatusBar'
-import PLCGrid from './components/PLCGrid'
 import ConnectionPanel from './components/ConnectionPanel'
 import IOGrid from './components/IOGrid'
 import DBBlockPanel from './components/DBBlockPanel'
 import DBImportPanel from './components/DBImportPanel'
-import TrendChart from './components/TrendChart'
-import AlarmPanel from './components/AlarmPanel'
 import Dashboard from './components/Dashboard'
 import VisualDashboard from './components/VisualDashboard'
 import ComponentPlayground from './components/ComponentPlayground'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import CollapsibleSection from './components/CollapsibleSection'
 import RecipePanel from './components/RecipePanel'
-import AlarmAnnunciator from './components/AlarmAnnunciator'
 // @altara 组件已全部本地化，不再直接引用第三方包
 import type { PLCConfig } from '../shared/types'
 
@@ -163,17 +159,6 @@ export default function App() {
           {showAltara ? '关闭演示' : '组件演示'}
         </button>
         <main className="main">
-          {variables.length > 0 && (
-            <CollapsibleSection title="📊 状态变量" storageKey="status-vars">
-              <PLCGrid
-                variables={variables}
-                data={db}
-                writeStates={states}
-                onWrite={write}
-                onDismissError={dismissError}
-              />
-            </CollapsibleSection>
-          )}
 
           <CollapsibleSection title="🟡 输入点 (I 区)" storageKey="io-input" keepMounted>
             <IOGrid label="" data={io.i} prefix="I" bytes={ioBytes.i} />
@@ -186,27 +171,6 @@ export default function App() {
           <CollapsibleSection title="🟣 M 区" storageKey="io-m" keepMounted>
             <IOGrid label="" data={io.m} prefix="M" bytes={ioBytes.m} onToggle={(addr, bit, val) => handleIoToggle('m', addr, bit, val)} />
           </CollapsibleSection>
-
-          {/* 实时趋势 */}
-          <CollapsibleSection title="📈 实时趋势" storageKey="trend" keepMounted>
-            <TrendChart variables={variables.map(v => v.name)} liveData={db} timeRange={300} />
-          </CollapsibleSection>
-
-          {/* 报警面板 */}
-          <AlarmPanel />
-
-          {/* 报警面板（瓷砖式） */}
-          <AlarmAnnunciator
-            alarms={[
-              { id: 'fault', label: '设备故障', priority: 1 },
-              { id: 'overtemp', label: '超温', priority: 1 },
-              { id: 'overload', label: '过载', priority: 2 },
-              { id: 'lowflow', label: '流量低', priority: 2 },
-              { id: 'maintenance', label: '维护提醒', priority: 3 },
-            ]}
-            states={{}}
-            columns={5}
-          />
 
           {/* 可视化仪表盘 */}
           <VisualDashboard liveData={db} />
