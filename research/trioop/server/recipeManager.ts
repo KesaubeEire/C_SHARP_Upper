@@ -293,6 +293,7 @@ function parseCsvLine(line: string, delimiter: string): string[] {
       if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
         current += '"'
         i += 2
+        continue
       } else {
         inQuotes = !inQuotes
       }
