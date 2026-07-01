@@ -86,7 +86,7 @@ export default function AlarmPanel() {
 
   // ─── 轮询 SSE/活动报警 ─────────────────────────────────────
   useEffect(() => {
-    const t = setInterval(() => { loadHistory(); loadStats() }, 3000)
+    const t = setInterval(() => { loadHistory(); loadStats() }, 1000)
     return () => clearInterval(t)
   }, [loadHistory, loadStats])
 

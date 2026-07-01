@@ -495,6 +495,9 @@ interface RawWriteJob {
 const rawQueue: RawWriteJob[] = []
 let rawBusy = false
 
+/** 正在飞行的写入操作数（writeRaw 不走队列，用计数器让轮询知道有写入在进行） */
+let _pendingWrites = 0
+
 async function processRawQueue() {
   if (rawBusy || rawQueue.length === 0) return
   rawBusy = true
@@ -523,9 +526,9 @@ async function processRawQueue() {
   }
 }
 
-/** 轮询调用此函数检查是否可以安全读（所有队列空闲时才能读） */
+/** 轮询调用此函数检查是否可以安全读（所有队列空闲 + 没有飞行写入时才能读） */
 export function isQueueIdle(): boolean {
-  return !rawBusy && rawQueue.length === 0 && !writeBusy && writeQueue.length === 0
+  return _pendingWrites === 0 && !rawBusy && rawQueue.length === 0 && !writeBusy && writeQueue.length === 0
 }
 
 /** 实际的读操作 */
@@ -551,10 +554,12 @@ async function doReadRaw(s7addr: string): Promise<number> {
 /** 实际的写操作（带 5s 超时，防止卡死队列） */
 async function doWriteRaw(s7addr: string, value: number): Promise<void> {
   if (!client || !_connected) throw new Error('PLC 未连接')
+  _pendingWrites++
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error(`写入 ${s7addr} 超时`)), 5000)
+    const timeout = setTimeout(() => { _pendingWrites--; reject(new Error(`写入 ${s7addr} 超时`)) }, 5000)
     client!.writeItems(s7addr, value, (err: any) => {
       clearTimeout(timeout)
+      _pendingWrites--
       if (err) reject(new Error(`写入 ${s7addr} 失败: ${err}`))
       else resolve()
     })
@@ -571,10 +576,9 @@ export function readRaw(s7addr: string): Promise<number> {
 }
 
 export function writeRaw(s7addr: string, value: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    rawQueue.push({ type: 'write', s7addr, value, resolve, reject })
-    processRawQueue()
-  })
+  // 直接写 PLC，不走队列（点动操作需要最快响应，不能被队列阻塞）
+  // 轮询通过 _pendingWrites 计数器检测飞行写入并自动跳过
+  return doWriteRaw(s7addr, value)
 }
 
 /** 实际执行批量读取（内部函数，不走队列） */

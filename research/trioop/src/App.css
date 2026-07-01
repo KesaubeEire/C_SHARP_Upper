@@ -1601,7 +1601,7 @@ body {
 
 .vdb-ghost-cell {
   position: absolute;
-  z-index: 5;
+  z-index: -1;
   background: rgba(33, 150, 243, 0.08);
   border: 2px dashed #2196f3;
   border-radius: 8px;
@@ -1612,7 +1612,7 @@ body {
 /* ─── VDB 行间隙指示线 ──────────────────────────── */
 .vdb-rowgap {
   position: absolute;
-  z-index: 5;
+  z-index: -1;
   left: 0;
   right: 0;
   height: 4px;

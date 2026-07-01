@@ -157,7 +157,7 @@ export default function App() {
           <AlarmPanel />
 
           {/* 可视化仪表盘 */}
-          <VisualDashboard liveData={db} />
+          <VisualDashboard liveData={db} ioData={io} />
 
           {/* 组件实验室 */}
           <div style={{ textAlign: 'right', marginBottom: 8 }}>

@@ -16,6 +16,7 @@ import { AlarmAnnunciatorPanel } from './altara/industrial/components/AlarmAnnun
 import { PIDTuningPanel } from './altara/industrial/components/PIDTuningPanel'
 import { ProcessFlowDiagram } from './altara/industrial/components/ProcessFlowDiagram'
 import { useContextMenu } from './VDBContextMenu'
+import type { IOData } from '../hooks/usePLCData'
 import { resolveVarName, loadMapping, loadAllDBData, writePLC, reregisterAllDBs } from '../hooks/useDBMapping'
 
 
@@ -35,14 +36,16 @@ const WIDGET_HELP: Record<WidgetType, string> = {
 
 • 变量名：选择已导入的 DB 块和变量
 • 单位：显示在数值右侧，如 ℃、MPa、rpm`,
-  lamp: `绑定一个 Bool 变量，显示状态灯。
+  lamp: `绑定一个 Bool 变量或 I/Q/M 点位，显示状态灯。
 
 • ON 时显示绿色，OFF 时显示灰色
+• 支持 DB 块变量（如 DB1:启动）和 I/Q/M 区（如 Q8.3）
 • 适合显示运行状态、报警信号`,
-  button: `绑定一个 Bool 变量，点击即可写入。
+  button: `绑定一个 Bool 变量或 Q/M 点位，点击即可写入。
 
 • 按1松0：按下鼠标写 1，松开写 0
 • 取反：点一次翻转当前值（0→1 或 1→0）
+• 支持 DB 块变量和 Q/M 区（如 Q8.6、M10.3）
 • 按钮文字：自定义按键显示名称`,
   gauge: `指针式仪表盘，适合显示实时数值。
 
@@ -124,7 +127,7 @@ const ROW_HEIGHT_KEY = 'trioop_vdb_rowh'
 interface FieldDef { key: string; label: string; type: 'number' | 'text' | 'select' | 'boolean'; default: any; options?: { label: string; value: any }[] }
 
 const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
-  value:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'unit', label:'单位', type:'text', default:'' }],
+  value:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'unit', label:'单位', type:'text', default:'' }, { key:'minValue', label:'下限', type:'number', default:-Infinity }, { key:'maxValue', label:'上限', type:'number', default:Infinity }, { key:'writable', label:'允许修改', type:'boolean', default:false }],
   lamp:       [{ key:'variableName', label:'变量名', type:'text', default:'' }],
   button:     [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'mode', label:'按钮模式', type:'select', default:'momentary', options:[{ label:'按1松0', value:'momentary' },{ label:'按0松1', value:'momentary_off' },{ label:'取反', value:'toggle' }] }, { key:'label', label:'按钮文字', type:'text', default:'运行' }],
   gauge:      [{ key:'variableName', label:'变量名', type:'text', default:'' }, { key:'min', label:'量程下限', type:'number', default:0 }, { key:'max', label:'量程上限', type:'number', default:100 }, { key:'unit', label:'单位', type:'text', default:'%' }, { key:'threshold1', label:'预警值', type:'number', default:80 }, { key:'threshold2', label:'危险值', type:'number', default:90 }, { key:'easingMs', label:'缓动时长(ms)', type:'number', default:500 }],
@@ -153,9 +156,30 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
   process:    [{ key:'mockMode', label:'🎲 演示模式', type:'boolean', default:true }],
 }
 
-function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Record<string, { value: number | boolean }>) {
-  const pt = liveData?.[cfg.variableName || '']
-  const liveVal = pt?.value; const liveNum = typeof liveVal === 'number' ? liveVal : (liveVal ? 1 : 0); const hasLive = liveVal !== undefined && liveVal !== null
+/** 解析 I/Q/M 区变量名（如 Q8.6 → { area: 'q', byte: 8, bit: 6 }） */
+function parseIOVar(name: string): { area: 'i' | 'q' | 'm'; byte: number; bit: number } | null {
+  const m = name?.match(/^([IQM])(\d+)\.(\d+)$/)
+  if (!m) return null
+  const area = m[1].toLowerCase() as 'i' | 'q' | 'm'
+  return { area, byte: parseInt(m[2]), bit: parseInt(m[3]) }
+}
+
+/** 从 ioData 中读取 I/Q/M 特定位的值 */
+function readIOBit(ioData: IOData | undefined, area: 'i' | 'q' | 'm', byte: number, bit: number): boolean | undefined {
+  const b = ioData?.[area]?.[byte]
+  if (b === undefined) return undefined
+  return (b & (1 << bit)) !== 0
+}
+
+function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Record<string, { value: number | boolean }>, ioData?: IOData) {
+  // 检查是否是 I/Q/M 区变量
+  const ioVar = parseIOVar(cfg.variableName || '')
+  const isIO = ioVar !== null
+  // DB 变量走 liveData
+  const pt = isIO ? undefined : liveData?.[cfg.variableName || '']
+  const liveVal = isIO ? (ioVar ? readIOBit(ioData, ioVar.area, ioVar.byte, ioVar.bit) : undefined) : pt?.value
+  const liveNum = typeof liveVal === 'number' ? liveVal : (liveVal ? 1 : 0)
+  const hasLive = liveVal !== undefined && liveVal !== null
   switch (type) {
     case 'gauge': { const ds = hasLive && cfg.variableName ? { subscribe: (cb: any) => { cb({ timestamp: Date.now(), value: liveNum }); return () => {} }, getHistory: () => [{ timestamp: Date.now(), value: liveNum }], status: 'connected' as const, destroy: () => {} } : undefined; return <AltaraGauge min={cfg.min ?? 0} max={cfg.max ?? 100} unit={cfg.unit} label="" size="md" dataSource={ds} mockMode={!ds} easingMs={cfg.easingMs ?? 500}
       thresholds={[{ value: cfg.threshold1 ?? 80, color: '#ff9800' }, { value: cfg.threshold2 ?? 90, color: '#ef5350' }].filter(t => t.value > (cfg.min ?? 0))} /> }
@@ -184,36 +208,121 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
     case 'eventlog': return <EventLog entries={[{ timestamp: Date.now()-5000, message:'系统启动', severity:'info' },{ timestamp: Date.now()-3000, message:'温度警告', severity:'warn' },{ timestamp: Date.now()-1000, message:'通信超时', severity:'error' }]} maxEntries={100} />
     case 'connectionbar': return <ConnectionBar url={cfg.title || 'PLC'} status={cfg.status === 'connected' ? 'connected' : 'disconnected'} />
     case 'process': return <ProcessFlowDiagram mockMode={cfg.mockMode !== false} />
-    case 'button': return <WidgetButton cfg={cfg} liveVal={liveVal} hasLive={hasLive} />
+    case 'button': return <WidgetButton cfg={cfg} liveVal={liveVal} liveNum={liveNum} hasLive={hasLive} ioVar={ioVar} />
     case 'lamp': return (<div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:12, height:'100%' }}><div style={{ width:32, height:32, borderRadius:'50%', background:hasLive&&liveVal?'#4caf50':'#333', boxShadow:hasLive&&liveVal?'0 0 16px #4caf50':'none', transition:'all 0.2s' }} /><span style={{ fontSize:18, fontWeight:600, color:hasLive&&liveVal?'#4caf50':'var(--text-muted)' }}>{hasLive?(liveVal?'ON':'OFF'):'--'}</span></div>)
+    case 'value': return <WidgetValue cfg={cfg} liveVal={liveVal} liveNum={liveNum} hasLive={hasLive} />
     default: return (<div style={{ textAlign:'center', padding:16 }}><div style={{ fontSize:28, fontWeight:600, fontFamily:'monospace' }}>{hasLive?(typeof liveVal==='number'?liveNum.toFixed(2):(liveVal?'ON':'OFF')):'--'}</div>{cfg.unit && <div style={{ fontSize:13, color:'var(--text-muted)' }}>{cfg.unit}</div>}</div>)
   }
 }
 
+/** 写入 Q/M 点位（通过 write-raw API） */
+async function writeIOArea(area: 'q' | 'm', byte: number, bit: number, value: number): Promise<void> {
+  const res = await fetch('/api/plc/write-raw', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ address: `${area.toUpperCase()}B${byte}`, bit, value }),
+  })
+  if (!res.ok) throw new Error(await res.text())
+}
+
 /** 仪表盘按钮组件 — 用 useRef 持久化按压状态，跨 SSE 重渲染也不丢失 */
-function WidgetButton({ cfg, liveVal, hasLive }: { cfg: Record<string, any>; liveVal: number | boolean | undefined; hasLive: boolean }) {
+function WidgetButton({ cfg, liveVal, liveNum, hasLive, ioVar }: {
+  cfg: Record<string, any>; liveVal: number | boolean | undefined; liveNum: number; hasLive: boolean;
+  ioVar: { area: 'i' | 'q' | 'm'; byte: number; bit: number } | null;
+}) {
   const pressedRef = useRef(false)
+  const writeVal = useCallback((val: number) => {
+    if (!cfg.variableName) return Promise.resolve()
+    if (ioVar && (ioVar.area === 'q' || ioVar.area === 'm')) {
+      return writeIOArea(ioVar.area, ioVar.byte, ioVar.bit, val)
+    }
+    return writePLC(cfg.variableName, val)
+  }, [cfg.variableName, ioVar])
+  const getVal = useCallback(() => {
+    return cfg.mode === 'toggle' ? (hasLive ? (liveVal ? 0 : 1) : 1) : (cfg.mode === 'momentary_off' ? 0 : 1)
+  }, [cfg.mode, hasLive, liveVal])
   const handleMouseDown = useCallback(() => {
     if (!cfg.variableName) return
     pressedRef.current = true
-    const val = cfg.mode === 'toggle' ? (hasLive ? (liveVal ? 0 : 1) : 1) : (cfg.mode === 'momentary_off' ? 0 : 1)
-    writePLC(cfg.variableName, val).catch(() => {})
-  }, [cfg.variableName, cfg.mode, hasLive, liveVal])
+    writeVal(getVal()).catch(() => {})
+  }, [cfg.variableName, writeVal, getVal])
   const handleMouseUp = useCallback(() => {
     if (!cfg.variableName || cfg.mode === 'toggle') return
     pressedRef.current = false
-    writePLC(cfg.variableName, cfg.mode === 'momentary_off' ? 1 : 0).catch(() => {})
-  }, [cfg.variableName, cfg.mode])
+    writeVal(cfg.mode === 'momentary_off' ? 1 : 0).catch(() => {})
+  }, [cfg.variableName, cfg.mode, writeVal])
   const handleMouseLeave = useCallback(() => {
     if (!cfg.variableName || cfg.mode === 'toggle' || !pressedRef.current) return
     pressedRef.current = false
-    writePLC(cfg.variableName, cfg.mode === 'momentary_off' ? 1 : 0).catch(() => {})
-  }, [cfg.variableName, cfg.mode])
+    writeVal(cfg.mode === 'momentary_off' ? 1 : 0).catch(() => {})
+  }, [cfg.variableName, cfg.mode, writeVal])
   return (<div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100%'}}><button className="btn btn--primary" style={{padding:'12px 32px',fontSize:16,fontWeight:600}}
     onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave}>{cfg.label||'按钮'}</button></div>)
 }
 
-export default function VisualDashboard({ liveData }: { liveData?: Record<string, { value: number | boolean }> }) {
+/** 数值组件 — 可点击编辑 + 阶跃按钮 */
+function WidgetValue({ cfg, liveVal, liveNum, hasLive }: { cfg: Record<string, any>; liveVal: number | boolean | undefined; liveNum: number; hasLive: boolean }) {
+  const [editing, setEditing] = useState(false)
+  const [editVal, setEditVal] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const writable = !!cfg.writable
+  const curVal = hasLive ? liveNum : 0
+  const minV = cfg.minValue ?? -Infinity
+  const maxV = cfg.maxValue ?? Infinity
+
+  useEffect(() => {
+    if (editing) {
+      setEditVal(String(hasLive ? liveNum.toFixed(1) : '0'))
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [editing])
+
+  const commitEdit = useCallback(() => {
+    const n = parseFloat(editVal)
+    if (!isNaN(n) && cfg.variableName) {
+      const clamped = Math.max(minV, Math.min(maxV, n))
+      if (clamped !== curVal) writePLC(cfg.variableName, clamped).catch(() => {})
+    }
+    setEditing(false)
+  }, [editVal, cfg.variableName, minV, maxV, curVal])
+
+  const stepBtn = useCallback((step: number) => {
+    const next = Math.max(minV, Math.min(maxV, curVal + step))
+    if (!cfg.variableName || next === curVal) return
+    writePLC(cfg.variableName, next).catch(() => {})
+  }, [cfg.variableName, minV, maxV, curVal])
+
+  return (<div style={{ textAlign:'center', padding:'12px 8px', height:'100%', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+    {editing ? (
+      <input ref={inputRef} type="number" step="any" className="modal-input"
+        style={{ width:'80%', margin:'0 auto', textAlign:'center', fontSize:20, fontFamily:'var(--vt-font-mono)' }}
+        value={editVal}
+        onChange={e => setEditVal(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
+        onBlur={commitEdit} />
+    ) : (
+      <div style={{ fontSize:28, fontWeight:600, fontFamily:'var(--vt-font-mono)', lineHeight:1.2, cursor: writable && hasLive ? 'pointer' : 'default' }}
+        onClick={() => { if (writable && hasLive) setEditing(true) }}
+        title={writable ? '点击编辑' : ''}>
+        {hasLive ? liveNum.toFixed(1) : '--'}
+      </div>
+    )}
+    {cfg.unit && <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom: writable ? 6 : 0 }}>{cfg.unit}</div>}
+    {writable && cfg.variableName && hasLive && !editing && (
+      <div style={{ display:'flex', gap:4, justifyContent:'center', marginTop:4 }}>
+        <button className="btn btn--sm" style={{ fontSize:10, padding:'2px 6px', minWidth:32 }} onClick={() => stepBtn(-10)} disabled={!isFinite(minV) || curVal - 10 < minV}>−10</button>
+        <button className="btn btn--sm" style={{ fontSize:10, padding:'2px 6px', minWidth:32 }} onClick={() => stepBtn(-1)} disabled={!isFinite(minV) || curVal - 1 < minV}>−1</button>
+        <button className="btn btn--sm btn--primary" style={{ fontSize:10, padding:'2px 6px', minWidth:32 }} onClick={() => stepBtn(1)} disabled={!isFinite(maxV) || curVal + 1 > maxV}>+1</button>
+        <button className="btn btn--sm btn--primary" style={{ fontSize:10, padding:'2px 6px', minWidth:32 }} onClick={() => stepBtn(10)} disabled={!isFinite(maxV) || curVal + 10 > maxV}>+10</button>
+      </div>
+    )}
+  </div>)
+}
+
+export default function VisualDashboard({ liveData, ioData }: {
+  liveData?: Record<string, { value: number | boolean }>
+  ioData?: IOData
+}) {
   const [data, setDataRaw] = useState(() => loadData())
   const [showPalette, setShowPalette] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
@@ -597,7 +706,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                     <button className="btn btn--destructive btn--sm" onClick={() => removeWidget(w.id)}>✕</button>
                   </div>
                 </div>
-                <div className="vdb-widget__body" onMouseDown={e => e.stopPropagation()}><ResizeWrapper>{renderWidget(w.type, w.config, liveData)}</ResizeWrapper></div>
+                <div className="vdb-widget__body" onMouseDown={e => e.stopPropagation()}><ResizeWrapper>{renderWidget(w.type, w.config, liveData, ioData)}</ResizeWrapper></div>
               </div>
             ))}
           </Responsive>
@@ -686,19 +795,28 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                 {formTitle && <button className="modal-clear-btn" onClick={() => setFormTitle('')} title="清空">✕</button>}
               </div>
 
-              {fields.some(f => f.key === 'variableName') && (
+              {fields.some(f => f.key === 'variableName') && (() => {
+                const parsed = parseVarName(formCfg.variableName || '')
+                // 按钮可写 Q/M 区，指示灯可读 I/Q/M 区
+                const ioAreas: ('I'|'Q'|'M')[] | undefined =
+                  formType === 'button' ? ['Q', 'M'] :
+                  formType === 'lamp' ? ['I', 'Q', 'M'] :
+                  undefined
+                return (
                 <VariablePicker
-                  dbName={(formCfg.variableName||'').split(':')[0]||''}
-                  varName={(formCfg.variableName||'').split(':').slice(1).join(':')}
+                  dbName={parsed.dbName}
+                  varName={parsed.varName}
                   importedDBs={importedDBs}
+                  ioAreas={ioAreas}
                   onChange={(dbName, varName) => {
                     setFormCfg(c => {
-                      // 判断 label 是否还是默认值（取 CONFIG_FIELDS 中 label 字段的 default）
+                      const isIO = dbName === 'I' || dbName === 'Q' || dbName === 'M'
+                      const fullName = isIO ? `${dbName}${varName}` : dbName ? `${dbName}:${varName}` : varName
                       const labelDefault = CONFIG_FIELDS[formType]?.find(f => f.key === 'label')?.default
                       const isLabelDefault = !c.label || c.label === labelDefault
                       return {
                         ...c,
-                        variableName: dbName ? `${dbName}:${varName}` : varName,
+                        variableName: fullName,
                         ...(varName ? { label: isLabelDefault ? varName : c.label } : {}),
                       }
                     })
@@ -710,7 +828,8 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
                     }
                   }}
                 />
-              )}
+                )
+              })()}
 
               {fields.some(f => f.key === 'min') && (
                 <div>
@@ -886,10 +1005,19 @@ function TrendChannelConfig({ formCfg, setFormCfg, importedDBs }: {
   )
 }
 
-/** 带搜索过滤的变量选择器：选 DB → 搜变量名 → 点击选中 */
-function VariablePicker({ dbName, varName, importedDBs, onChange }: {
+/** 解析变量名为 { dbName, varName }，支持 I/Q/M 格式（Q8.6 → {dbName:'Q', varName:'8.6'}）*/
+function parseVarName(v: string): { dbName: string; varName: string } {
+  const ioMatch = v.match(/^([IQM])(\d+\.\d+)$/)
+  if (ioMatch) return { dbName: ioMatch[1], varName: ioMatch[2] }
+  const parts = v.split(':')
+  return { dbName: parts[0] || '', varName: parts.slice(1).join(':') }
+}
+
+/** 带搜索过滤的变量选择器：选 DB → 搜变量名 → 点击选中。支持 I/Q/M 区 */
+function VariablePicker({ dbName, varName, importedDBs, onChange, ioAreas }: {
   dbName: string; varName: string; importedDBs: { dbNumber: number; dbName: string }[]
   onChange: (dbName: string, varName: string) => void
+  ioAreas?: ('I' | 'Q' | 'M')[]
 }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState(varName)
@@ -897,20 +1025,23 @@ function VariablePicker({ dbName, varName, importedDBs, onChange }: {
   const inputRef = useRef<HTMLInputElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
-  // 当前选中的 DB 下的所有变量
+  const isIOArea = dbName === 'I' || dbName === 'Q' || dbName === 'M'
+
+  // 当前选中的 DB 下的所有变量（I/Q/M 区没有预定义变量列表）
   const allVars = useMemo(() => {
-    if (!dbName) return []
+    if (!dbName || isIOArea) return []
     const dbs = loadAllDBData()
     const db = dbs.find(d => d.dbName === dbName)
     return db?.variables ?? []
-  }, [dbName])
+  }, [dbName, isIOArea])
 
-  // 按搜索词过滤
+  // 按搜索词过滤（I/Q/M 区直接显示输入内容）
   const filtered = useMemo(() => {
+    if (isIOArea) return []
     if (!search) return allVars
     const q = search.toLowerCase()
     return allVars.filter(v => v.name.toLowerCase().includes(q))
-  }, [allVars, search])
+  }, [allVars, search, isIOArea])
 
   // 点外部关闭
   useEffect(() => {
@@ -935,18 +1066,43 @@ function VariablePicker({ dbName, varName, importedDBs, onChange }: {
           onChange={e => { onChange(e.target.value, ''); setSearch(''); setOpen(false) }}>
           <option value="">--</option>
           {importedDBs.map(d => <option key={d.dbName} value={d.dbName}>{d.dbName}</option>)}
+          {ioAreas && ioAreas.length > 0 && (
+            <>
+              <option disabled style={{ fontSize: 10, color: 'var(--text-muted)' }}>──────────</option>
+              {ioAreas.map(a => <option key={a} value={a}>{a} 区</option>)}
+            </>
+          )}
         </select>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <input ref={inputRef} className="modal-input" style={{ width: '100%' }} placeholder={dbName ? '搜索变量名...' : '先选择 DB'}
+          <input ref={inputRef} className="modal-input" style={{ width: '100%' }}
+            placeholder={!dbName ? '先选择 DB 或 I/Q/M' : isIOArea ? '输入 字节.位，如 8.6' : '搜索变量名...'}
             value={dbName ? search : ''} disabled={!dbName}
             onFocus={openDropdown}
             onInput={openDropdown}
             onChange={e => { setSearch(e.target.value); openDropdown() }}
-            onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && filtered.length === 1) { onChange(dbName, filtered[0].name); setSearch(filtered[0].name); setOpen(false) } }} />
+            onKeyDown={e => {
+              if (e.key === 'Escape') setOpen(false)
+              if (e.key === 'Enter') {
+                if (isIOArea && /^\d+\.\d+$/.test(search.trim())) {
+                  onChange(dbName, search.trim())
+                  setOpen(false)
+                } else if (filtered.length === 1) {
+                  onChange(dbName, filtered[0].name)
+                  setSearch(filtered[0].name)
+                  setOpen(false)
+                }
+              }
+            }}
+            onBlur={() => {
+              // I/Q/M 区：输入有效格式后自动确认
+              if (isIOArea && /^\d+\.\d+$/.test(search.trim())) {
+                onChange(dbName, search.trim())
+              }
+            }} />
           {search && <button className="modal-clear-btn" onClick={() => { setSearch(''); onChange(dbName, ''); }} title="清空">✕</button>}
         </div>
       </div>
-      {open && dbName && (
+      {open && dbName && !isIOArea && (
         <div className="vdb-var-picker__dropdown" style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 99999 }}>
           {filtered.length === 0 ? (
             <div className="vdb-var-picker__empty">无匹配变量</div>

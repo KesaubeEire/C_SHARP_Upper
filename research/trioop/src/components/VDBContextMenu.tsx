@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 
 interface CtxItem {
   label: string; icon?: string; action: () => void; danger?: boolean; separator?: boolean
@@ -12,12 +12,13 @@ export function useContextMenu() {
   const [items, setItems] = useState<CtxItem[]>([])
   const menuRef = useRef<HTMLDivElement>(null)
   const idxRef = useRef(-1)
+  const posRef = useRef<{ x: number; y: number } | null>(null)
 
   const show = useCallback((e: React.MouseEvent, menuItems: CtxItem[]) => {
     e.preventDefault()
     e.stopPropagation()
-    // 关掉其他菜单
     if (closeGlobal) closeGlobal()
+    posRef.current = { x: e.clientX, y: e.clientY }
     setPos({ x: e.clientX, y: e.clientY })
     setItems(menuItems)
     idxRef.current = -1
@@ -72,6 +73,40 @@ export function useContextMenu() {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [pos, items, hide])
+
+  // 菜单渲染后自动校正位置：不超出视口，超出高度则滚动
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    const p = posRef.current
+    if (!el || !p) return
+    const rect = el.getBoundingClientRect()
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const gap = 8
+
+    let x = p.x
+    let y = p.y
+
+    // 水平：右溢出时靠左弹出
+    if (x + rect.width + gap > vw) x = vw - rect.width - gap
+    if (x < gap) x = gap
+
+    // 垂直：下溢出时向上弹出
+    if (y + rect.height + gap > vh) y = vh - rect.height - gap
+    if (y < gap) y = gap
+
+    // 高度超出视口：允许滚动
+    if (rect.height > vh - gap * 2) {
+      el.style.maxHeight = `${vh - gap * 2}px`
+      el.style.overflowY = 'auto'
+    } else {
+      el.style.maxHeight = ''
+      el.style.overflowY = ''
+    }
+
+    el.style.left = `${x}px`
+    el.style.top = `${y}px`
+  }, [pos])
 
   const menu = pos ? (
     <div className="vdb-ctx" ref={menuRef} style={{ left: pos.x, top: pos.y }} role="menu">
