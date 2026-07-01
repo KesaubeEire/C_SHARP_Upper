@@ -381,22 +381,32 @@ const server = net.createServer((sock) => {
   sock.on('close', () => { cotpConnected = false })
 })
 
-server.on('error', (err: any) => {
-  if (err.code === 'EACCES') {
-    console.error('')
-    console.error('╔══════════════════════════════════════════════════╗')
-    console.error('║  权限不足！102 端口需要管理员权限。             ║')
-    console.error('║                                               ║')
-    console.error('║  以管理员身份运行终端再执行:                    ║')
-    console.error('║    pnpm dev:vplc                              ║')
-    console.error('║                                               ║')
-    console.error('║  或修改 server/vplc-config.json 中的 port        ║')
-    console.error('║    pnpm dev:vplc                             ║')
-    console.error('╚══════════════════════════════════════════════════╝')
-    process.exit(1)
-  }
-  console.error('服务器错误:', err)
-})
+function startS7Server(port: number) {
+  server.listen(port, cfg.host)
+  server.on('error', (err: any) => {
+    if (err.code === 'EACCES') {
+      console.error('')
+      console.error('╔══════════════════════════════════════════════════╗')
+      console.error('║  权限不足！102 端口需要管理员权限。              ║')
+      console.error('║                                               ║')
+      console.error('║  修改 server/vplc-config.json 改用高位端口:     ║')
+      console.error('║    { "port": 1102 }                           ║')
+      console.error('╚══════════════════════════════════════════════════╝')
+      process.exit(1)
+    }
+    if (err.code === 'EADDRINUSE' && port < 65535) {
+      console.log(`[vPLC] S7 端口 ${port} 被占用，尝试 ${port + 1}...`)
+      startS7Server(port + 1)
+    } else {
+      console.error('[vPLC] S7 服务器启动失败:', err.message)
+      process.exit(1)
+    }
+  })
+}
+startS7Server(PORT)
+const s7PortRef = { current: PORT }
+server.on('listening', () => {
+  s7PortRef.current = server.address()?.port || PORT
 
 // ─── Web 仪表盘（HTTP 服务） ──────────────────────────────
 const WEB_PORT = PORT + 1  // S7端口+1
@@ -531,25 +541,45 @@ setInterval(refresh, 300)
 </body></html>`)
 })
 
-webServer.listen(WEB_PORT, cfg.host, () => {
-  console.log(`║    Web 仪表盘: http://localhost:${WEB_PORT}            ║`)
+function startWebServer(port: number) {
+  webServer.listen(port, cfg.host)
+  webServer.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE' && port < PORT + 100) {
+      startWebServer(port + 1)
+    } else {
+      console.error(`[vPLC] Web 服务器启动失败 (${port}): ${err.message}`)
+    }
+  })
+}
+startWebServer(WEB_PORT)
+const webPortRef = { current: WEB_PORT }
+webServer.on('listening', () => {
+  webPortRef.current = webServer.address()?.port || WEB_PORT
+  webReady = true
+  printFinalBanner()
 })
 
-server.listen(PORT, cfg.host, () => {
+// 等两个服务器都就绪后再打完整的启动横幅
+let s7Ready = false, webReady = false
+function printFinalBanner() {
+  if (!s7Ready || !webReady) return
   console.log('')
   console.log('╔══════════════════════════════════════════════╗')
   console.log('║    虚拟 S7-1200 PLC 已启动                   ║')
-  console.log(`║    S7:  127.0.0.1:${PORT}                       ║`)
-  console.log(`║    Web: http://localhost:${WEB_PORT}               ║`)
+  console.log(`║    S7:  127.0.0.1:${s7PortRef.current}                   ║`)
+  console.log(`║    Web: http://localhost:${webPortRef.current}           ║`)
   console.log('║                                              ║')
   console.log('║    上位机连接:                               ║')
   console.log('║      IP: 127.0.0.1  Rack:0  Slot:1          ║')
+  console.log('║      Port: ' + s7PortRef.current + '                        ║')
   console.log('║                                              ║')
   console.log('║    模拟区域:  DB1/DB6/DB7  I区 Q区 M区      ║')
   console.log('║    模拟值自动变化: 温度/压力/位置             ║')
   console.log('╚══════════════════════════════════════════════╝')
   console.log('')
-})
+}
+server.on('listening', () => { s7Ready = true; printFinalBanner() })
+webServer.on('listening', () => { webReady = true; printFinalBanner() })
 
 // 模拟定时器
 setInterval(simulate, 500)
