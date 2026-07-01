@@ -689,6 +689,7 @@ app.post('/api/alarm/rules', (req, res) => {
     area: area || '',
     isEnabled: isEnabled ?? true,
   })
+  logEvent('alarm.rule_add', `添加报警规则: ${key}`, currentUser(req))
   res.json({ success: true, rules: getRules() })
 })
 
@@ -711,11 +712,13 @@ app.put('/api/alarm/rules/:variableKey', (req, res) => {
     area: area || '',
     isEnabled: isEnabled ?? true,
   })
+  logEvent('alarm.rule_update', `更新报警规则: ${req.params.variableKey} → ${key}`, currentUser(req))
   res.json({ success: true, rules: getRules() })
 })
 
 app.delete('/api/alarm/rules/:variableKey', (req, res) => {
   removeRule(req.params.variableKey)
+  logEvent('alarm.rule_delete', `删除报警规则: ${req.params.variableKey}`, currentUser(req))
   res.json({ success: true, rules: getRules() })
 })
 
@@ -737,13 +740,15 @@ app.get('/api/alarm/statistics', (_req, res) => {
 
 app.get('/api/alarm/export', (req, res) => {
   const csv = exportAlarmsCsv()
+  logEvent('alarm.export', `导出报警 CSV`, currentUser(req))
   res.setHeader('Content-Type', 'text/csv')
   res.setHeader('Content-Disposition', `attachment; filename="alarms-${new Date().toISOString().slice(0, 10)}.csv"`)
   res.send(csv)
 })
 
-app.get('/api/alarm/rules/export', (_req, res) => {
+app.get('/api/alarm/rules/export', (req, res) => {
   const csv = exportRulesCsv()
+  logEvent('alarm.rules_export', `导出报警规则 CSV`, currentUser(req))
   res.setHeader('Content-Type', 'text/csv')
   res.setHeader('Content-Disposition', `attachment; filename="alarm-rules.csv"`)
   res.send(csv)
@@ -753,41 +758,49 @@ app.post('/api/alarm/rules/import', (req, res) => {
   const { csv } = req.body
   if (!csv) return res.status(400).json({ error: '请提供 csv 内容' })
   const count = importRulesCsv(csv)
+  logEvent('alarm.rules_import', `导入报警规则: ${count} 条`, currentUser(req))
   res.json({ success: true, imported: count, rules: getRules() })
 })
 
 app.post('/api/alarm/ack', (req, res) => {
   const { id, by } = req.body
-  if (id) acknowledgeAlarm(id, by)
-  else acknowledgeAll(by)
+  const user = by || currentUser(req)
+  if (id) { acknowledgeAlarm(id, user); logEvent('alarm.ack', `确认报警: ${id}`, user) }
+  else { const n = acknowledgeAll(user); logEvent('alarm.ack', `全部确认: ${n} 条`, user) }
   res.json({ success: true })
 })
 
 app.post('/api/alarm/ack/:id', (req, res) => {
-  const { by } = req.body
-  acknowledgeAlarm(req.params.id, by)
+  const user = req.body.by || currentUser(req)
+  acknowledgeAlarm(req.params.id, user)
+  logEvent('alarm.ack', `确认报警: ${req.params.id}`, user)
   res.json({ success: true })
 })
 
 app.post('/api/alarm/shelve/:id', (req, res) => {
   const { durationMs, by } = req.body
-  shelveAlarm(req.params.id, durationMs, by)
+  const user = by || currentUser(req)
+  shelveAlarm(req.params.id, durationMs, user)
+  logEvent('alarm.shelve', `搁置报警: ${req.params.id}${durationMs ? ` (${durationMs}ms)` : ' (永久)'}`, user)
   res.json({ success: true })
 })
 
 app.post('/api/alarm/unshelve/:id', (req, res) => {
   unshelveAlarm(req.params.id)
+  logEvent('alarm.unshelve', `取消搁置报警: ${req.params.id}`, currentUser(req))
   res.json({ success: true })
 })
 
 app.post('/api/alarm/comment/:id', (req, res) => {
   const { comment } = req.body
   addComment(req.params.id, comment || '')
+  logEvent('alarm.comment', `报警备注: ${req.params.id}`, currentUser(req), comment || '')
   res.json({ success: true })
 })
 
-app.post('/api/alarm/clear', (_req, res) => {
+app.post('/api/alarm/clear', (req, res) => {
   clearAll()
+  logEvent('alarm.clear', `清除报警历史`, currentUser(req))
   res.json({ success: true })
 })
 

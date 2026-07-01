@@ -11,6 +11,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import type { AlarmItem, AlarmRule, AlarmStatistics } from '../shared/types.js'
 import { AlarmSeverity, AlarmConditionType } from '../shared/types.js'
+import { logEvent } from './eventLog.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.resolve(__dirname, '..', 'data')
@@ -214,6 +215,7 @@ export function checkAlarms(data: Record<string, number | boolean>): AlarmItem[]
       }
       addAlarmInternal(alarm)
       events.push(alarm)
+      logEvent('alarm.trigger', `触发报警 [${rule.variableKey}] ${rule.description} (值=${val}, 阈值=${rule.threshold})`, 'system', rule.area)
     } else if (!isActive && rule.lastTriggered) {
       // 条件恢复 → 检查 OffDelay
       if (rule.offDelayMs > 0) {
@@ -235,6 +237,7 @@ export function checkAlarms(data: Record<string, number | boolean>): AlarmItem[]
             if (si >= 0) _shelvedAlarms.splice(si, 1)
           }
           events.push(active)
+          logEvent('alarm.recover', `报警恢复 [${rule.variableKey}] ${rule.description} (值=${val})`, 'system', rule.area)
         }
       }
       saveHistory()

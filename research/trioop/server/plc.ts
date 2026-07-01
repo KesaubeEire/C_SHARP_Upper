@@ -382,12 +382,7 @@ export async function writeVariable(varCfg: PLCVariable, value: number): Promise
     s7addr = `DB${varCfg.dbNumber},${t}${varCfg.offset}.1`
   }
 
-  return new Promise((resolve, reject) => {
-    client!.writeItems(s7addr, value, (err: any) => {
-      if (err) reject(new Error(`写入失败: ${err}`))
-      else resolve()
-    })
-  })
+  return writeRaw(s7addr, value)
 }
 
 // ─── I/O 写入队列（串行处理，防止并发冲突） ────────────────
@@ -576,8 +571,10 @@ export function readRaw(s7addr: string): Promise<number> {
 }
 
 export function writeRaw(s7addr: string, value: number): Promise<void> {
-  // 直接写 PLC，不走队列（队列要求 item 先 addItems，动态标签通不过）
-  return doWriteRaw(s7addr, value)
+  return new Promise((resolve, reject) => {
+    rawQueue.push({ type: 'write', s7addr, value, resolve, reject })
+    processRawQueue()
+  })
 }
 
 /** 实际执行批量读取（内部函数，不走队列） */

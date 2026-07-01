@@ -47,6 +47,12 @@ export default function AlarmPanel() {
   const [filterArea, setFilterArea] = useState('')
   const [showShelved, setShowShelved] = useState(true)
   const [showRecovered, setShowRecovered] = useState(false)
+
+  // 切换标签时自动调整「显示已恢复」默认值
+  useEffect(() => {
+    if (tab === 'active') setShowRecovered(false)
+    else if (tab === 'history') setShowRecovered(true)
+  }, [tab])
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
@@ -536,7 +542,7 @@ export default function AlarmPanel() {
           </label>
         </div>
         <div className="alarm-filterbar__group" style={{ alignSelf: 'flex-end' }}>
-          <button className="btn btn--sm btn--secondary" onClick={() => { setFilterText(''); setFilterSeverity('all'); setFilterArea(''); setDateFrom(''); setDateTo(''); setShowShelved(true); setShowRecovered(false) }}>重置</button>
+          <button className="btn btn--sm btn--secondary" onClick={() => { setFilterText(''); setFilterSeverity('all'); setFilterArea(''); setDateFrom(''); setDateTo(''); setShowShelved(true); setShowRecovered(tab === 'history') }}>重置</button>
         </div>
       </div>
 
