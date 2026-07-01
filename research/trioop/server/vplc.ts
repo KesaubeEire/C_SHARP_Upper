@@ -405,8 +405,6 @@ function startS7Server(port: number) {
 }
 startS7Server(PORT)
 const s7PortRef = { current: PORT }
-server.on('listening', () => {
-  s7PortRef.current = server.address()?.port || PORT
 
 // ─── Web 仪表盘（HTTP 服务） ──────────────────────────────
 const WEB_PORT = PORT + 1  // S7端口+1
@@ -578,7 +576,7 @@ function printFinalBanner() {
   console.log('╚══════════════════════════════════════════════╝')
   console.log('')
 }
-server.on('listening', () => { s7Ready = true; printFinalBanner() })
+server.on('listening', () => { s7PortRef.current = server.address()?.port || PORT; s7Ready = true; printFinalBanner() })
 webServer.on('listening', () => { webReady = true; printFinalBanner() })
 
 // 模拟定时器
