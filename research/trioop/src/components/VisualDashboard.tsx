@@ -184,12 +184,33 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
     case 'eventlog': return <EventLog entries={[{ timestamp: Date.now()-5000, message:'系统启动', severity:'info' },{ timestamp: Date.now()-3000, message:'温度警告', severity:'warn' },{ timestamp: Date.now()-1000, message:'通信超时', severity:'error' }]} maxEntries={100} />
     case 'connectionbar': return <ConnectionBar url={cfg.title || 'PLC'} status={cfg.status === 'connected' ? 'connected' : 'disconnected'} />
     case 'process': return <ProcessFlowDiagram mockMode={cfg.mockMode !== false} />
-    case 'button': return (<div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100%'}}><button className="btn btn--primary" style={{padding:'12px 32px',fontSize:16,fontWeight:600}}
-      onMouseDown={()=>{if(!cfg.variableName)return;writePLC(cfg.variableName,cfg.mode==='momentary_off'?0:1).catch(()=>{})}}
-      onMouseUp={()=>{if(!cfg.variableName||cfg.mode==='toggle')return;writePLC(cfg.variableName,cfg.mode==='momentary_off'?1:0).catch(()=>{})}}>{cfg.label||'按钮'}</button></div>)
+    case 'button': return <WidgetButton cfg={cfg} liveVal={liveVal} hasLive={hasLive} />
     case 'lamp': return (<div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:12, height:'100%' }}><div style={{ width:32, height:32, borderRadius:'50%', background:hasLive&&liveVal?'#4caf50':'#333', boxShadow:hasLive&&liveVal?'0 0 16px #4caf50':'none', transition:'all 0.2s' }} /><span style={{ fontSize:18, fontWeight:600, color:hasLive&&liveVal?'#4caf50':'var(--text-muted)' }}>{hasLive?(liveVal?'ON':'OFF'):'--'}</span></div>)
     default: return (<div style={{ textAlign:'center', padding:16 }}><div style={{ fontSize:28, fontWeight:600, fontFamily:'monospace' }}>{hasLive?(typeof liveVal==='number'?liveNum.toFixed(2):(liveVal?'ON':'OFF')):'--'}</div>{cfg.unit && <div style={{ fontSize:13, color:'var(--text-muted)' }}>{cfg.unit}</div>}</div>)
   }
+}
+
+/** 仪表盘按钮组件 — 用 useRef 持久化按压状态，跨 SSE 重渲染也不丢失 */
+function WidgetButton({ cfg, liveVal, hasLive }: { cfg: Record<string, any>; liveVal: number | boolean | undefined; hasLive: boolean }) {
+  const pressedRef = useRef(false)
+  const handleMouseDown = useCallback(() => {
+    if (!cfg.variableName) return
+    pressedRef.current = true
+    const val = cfg.mode === 'toggle' ? (hasLive ? (liveVal ? 0 : 1) : 1) : (cfg.mode === 'momentary_off' ? 0 : 1)
+    writePLC(cfg.variableName, val).catch(() => {})
+  }, [cfg.variableName, cfg.mode, hasLive, liveVal])
+  const handleMouseUp = useCallback(() => {
+    if (!cfg.variableName || cfg.mode === 'toggle') return
+    pressedRef.current = false
+    writePLC(cfg.variableName, cfg.mode === 'momentary_off' ? 1 : 0).catch(() => {})
+  }, [cfg.variableName, cfg.mode])
+  const handleMouseLeave = useCallback(() => {
+    if (!cfg.variableName || cfg.mode === 'toggle' || !pressedRef.current) return
+    pressedRef.current = false
+    writePLC(cfg.variableName, cfg.mode === 'momentary_off' ? 1 : 0).catch(() => {})
+  }, [cfg.variableName, cfg.mode])
+  return (<div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100%'}}><button className="btn btn--primary" style={{padding:'12px 32px',fontSize:16,fontWeight:600}}
+    onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave}>{cfg.label||'按钮'}</button></div>)
 }
 
 export default function VisualDashboard({ liveData }: { liveData?: Record<string, { value: number | boolean }> }) {
@@ -378,13 +399,17 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
     const layout = (data.layouts[bp] ?? []).map((l: any) => ({ ...l }))
     const newItem = { i: id, x, y, w: 1, h: 1 }
     const newLayout = [...layout, newItem]
-    // 碰撞检测：把和 (x,y,1x1) 重叠的组件向下推 1 格
-    for (let pass = 0; pass < 30; pass++) {
+    // 碰撞检测：每个格子最多一个组件 — 完整级联推挤
+    for (let pass = 0; pass < 50; pass++) {
       let moved = false
-      for (const item of newLayout) {
-        if (item.i === id) continue
-        if (item.x < x + 1 && item.x + item.w > x && item.y < y + 1 && item.y + item.h > y) {
-          item.y += 1; moved = true
+      for (let a = 0; a < newLayout.length; a++) {
+        for (let b = 0; b < newLayout.length; b++) {
+          if (a === b) continue
+          const A = newLayout[a], B = newLayout[b]
+          if (A.x < B.x + B.w && A.x + A.w > B.x && A.y < B.y + B.h && A.y + A.h > B.y) {
+            if (A.y >= B.y) { B.y = A.y + A.h; moved = true }
+            else { A.y = B.y + B.h; moved = true }
+          }
         }
       }
       if (!moved) break
@@ -448,9 +473,42 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
   // ─── 标记外部修改 layout（插入空行等），阻止 onLayoutChange 覆盖 ──
   const layoutVersionRef = useRef(0)
 
+  /** 最近一次有效的布局快照（用于拖拽重叠时回退） */
+  const prevValidLayoutRef = useRef<Record<string, any[]> | null>(null)
+  const revertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /** onDrag：拖拽开始时保存当前有效布局 */
+  const onDragStart = useCallback(() => {
+    prevValidLayoutRef.current = JSON.parse(JSON.stringify(data.layouts))
+  }, [data.layouts])
+
+  /** onLayoutChange：检测重叠，如果重叠则 schedule RGL 强制重挂载恢复原位 */
   const onLayoutChange = useCallback((layout: any, allLayouts: any) => {
-    setData(d => ({ ...d, layouts: allLayouts }))
-  }, [])
+    setData(d => {
+      const bp = currentBreakpoint
+      const items = (allLayouts[bp] || []) as any[]
+      for (let a = 0; a < items.length; a++) {
+        for (let b = a + 1; b < items.length; b++) {
+          const A = items[a], B = items[b]
+          if (A.x < B.x + B.w && A.x + A.w > B.x && A.y < B.y + B.h && A.y + A.h > B.y) {
+            // 有重叠 → 等 RGL 本次回调走完，再强制重挂载弹回原位
+            const fallback = prevValidLayoutRef.current
+            if (fallback) {
+              if (revertTimerRef.current) clearTimeout(revertTimerRef.current)
+              revertTimerRef.current = setTimeout(() => {
+                layoutVersionRef.current++
+                setDataRaw(prev => ({ ...prev, layouts: fallback }))
+              }, 0)
+            }
+            return d  // 本次渲染不接受变更，RGL 展示叠加状态但被迫回退到 setTimeout 触发的重挂载
+          }
+        }
+      }
+      // 无重叠 → 接受并缓存
+      prevValidLayoutRef.current = allLayouts
+      return { ...d, layouts: allLayouts }
+    })
+  }, [currentBreakpoint])
 
   const openEdit = useCallback((w: Widget) => { setFormTitle(w.title); setFormType(w.type); setFormCfg({ ...w.config }); setEditing(w.id) }, [])
   const saveWidget = useCallback(() => { setData(d => ({ ...d, widgets: d.widgets.map(w => w.id === editing ? { ...w, title: formTitle, config: { ...formCfg } } : w) })); setEditing(null) }, [formTitle, formCfg, editing])
@@ -512,6 +570,7 @@ export default function VisualDashboard({ liveData }: { liveData?: Record<string
             cols={COLS}
             rowHeight={rowH}
             onLayoutChange={onLayoutChange}
+            onDragStart={onDragStart}
             onBreakpointChange={(bp) => setCurrentBreakpoint(bp)}
             onResizeStart={() => setResizing(true)}
             onResizeStop={() => { setResizing(false); setRowGapHover(null) }}

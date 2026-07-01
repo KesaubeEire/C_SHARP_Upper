@@ -76,6 +76,22 @@ interface DBBlockConfig {
 let dbBlocks: DBBlockConfig[] = []
 let dbBlockCache: Record<string, number[] | null> = {}
 
+/** 暂停轮询（批量写入/读取时暂停，避免和 nodes7 内部操作冲突） */
+function pausePolling() {
+  if (pollingTimer) {
+    clearInterval(pollingTimer)
+    pollingTimer = null
+  }
+}
+
+/** 恢复轮询 */
+function resumePolling() {
+  if (!pollingTimer && plc.isConnected()) {
+    pollingTimer = setInterval(poll, runtimePollInterval)
+    poll()
+  }
+}
+
 // ─── OPC UA 相关 ──────────────────────────────────────────
 /** OPC UA 订阅的数据缓存（变量名 → { value }，供 SSE 推给前端） */
 let opcuaDataCache: Record<string, { value: any }> = {}
@@ -609,20 +625,16 @@ app.post('/api/plc/imported-db-write', async (req, res) => {
 
 // ─── API: 写入 I/O 点 ──────────────────────────────────
 app.post('/api/plc/write-io', async (req, res) => {
-  const { area, byte: byteAddr, bit, value, currentByte } = req.body
+  const { area, byte: byteAddr, bit, value } = req.body
   if (area !== 'q' && area !== 'm') return res.status(400).json({ error: '仅支持 Q/M 区写入' })
   if (byteAddr === undefined || bit === undefined || value === undefined) {
     return res.status(400).json({ error: '请提供 byte、bit 和 value' })
   }
 
   try {
-    // 前端传 currentByte 则直接算新值写整个字节，避免读-改-写冲突
-    if (typeof currentByte === 'number') {
-      const newByte = value ? (currentByte | (1 << bit)) : (currentByte & ~(1 << bit))
-      await plc.writeByte(area, Number(byteAddr), newByte)
-    } else {
-      await plc.writeIOBit(area, Number(byteAddr), Number(bit), !!value)
-    }
+    // 构造 S7 地址（如 QB8）→ modifyBit 会从 PLC 读当前字节 → 改位 → 写回
+    const s7addr = `${area.toUpperCase()}B${byteAddr}`
+    await plc.modifyBit(s7addr, Number(bit), !!value)
     res.json({ success: true })
   } catch (err) {
     const msg = (err as Error).message
@@ -973,28 +985,118 @@ app.post('/api/recipe/:id/apply', async (req, res) => {
   const recipe = loadRecipe(req.params.id)
   if (!recipe) return res.status(404).json({ error: '配方不存在' })
   const results: { name: string; success: boolean; error?: string }[] = []
-  // 遍历所有分组的参数
-  for (const group of recipe.groups) {
-    for (const param of group.parameters) {
-      try {
-        if (runtimeMode === 'opcua') {
+
+  if (runtimeMode === 'opcua') {
+    // OPC UA 模式：按变量名匹配映射表写入
+    for (const group of recipe.groups) {
+      for (const param of group.parameters) {
+        try {
           const mapping = opcuaVarMap.find(m => m.name === param.name)
           if (!mapping) { results.push({ name: param.name, success: false, error: '未找到 OPC UA 映射' }); continue }
           await opcua.writeNode(mapping.nodeId, param.value)
-        } else {
-          const varCfg = config.variables.find(v => v.name === param.name)
-          if (!varCfg) { results.push({ name: param.name, success: false, error: '未找到变量配置' }); continue }
-          await plc.writeVariable(varCfg, param.value)
+          results.push({ name: param.name, success: true })
+        } catch (err) {
+          results.push({ name: param.name, success: false, error: (err as Error).message })
         }
-        results.push({ name: param.name, success: true })
-      } catch (err) {
-        results.push({ name: param.name, success: false, error: (err as Error).message })
       }
     }
+  } else {
+    // S7 模式：按 recipe 参数里的 dbNumber + address + plcDataType 构造地址直接写入
+    pausePolling()
+    try {
+      const DATA_TYPE_MAP: Record<string, string> = {
+        REAL: 'R', INT: 'I', DINT: 'DI', UINT: 'I', UDINT: 'DI',
+        WORD: 'W', DWORD: 'DW', BYTE: 'B', USINT: 'B', SINT: 'B', BOOL: 'X',
+      }
+      for (const group of recipe.groups) {
+        for (const param of group.parameters) {
+          try {
+            const db = param.dbNumber > 0 ? param.dbNumber : (recipe.defaultDbNumber > 0 ? recipe.defaultDbNumber : 1)
+            const addrType = DATA_TYPE_MAP[param.plcDataType] || 'R'
+            const bitSuffix = addrType === 'X' ? '.0' : '.1'
+            const s7addr = `DB${db},${addrType}${param.address}${bitSuffix}`
+            await plc.writeRaw(s7addr, Number(param.value))
+            results.push({ name: param.name, success: true })
+          } catch (err) {
+            results.push({ name: param.name, success: false, error: (err as Error).message })
+          }
+        }
+      }
+    } finally { resumePolling() }
   }
   const successCount = results.filter(r => r.success).length
   logEvent('recipe.apply', `下载配方 "${recipe.name}"：${successCount}/${results.length} 成功`, currentUser(req))
-  res.json({ success: results.every(r => r.success), results })
+  res.json({ success: successCount === results.length, results })
+})
+
+app.post('/api/recipe/:id/upload', async (req, res) => {
+  const recipe = loadRecipe(req.params.id)
+  if (!recipe) return res.status(404).json({ error: '配方不存在' })
+  const updated: { name: string; value: number; success: boolean; error?: string }[] = []
+
+  if (runtimeMode === 'opcua') {
+    // OPC UA 模式：按变量名匹配映射表读取
+    for (const group of recipe.groups) {
+      for (const param of group.parameters) {
+        try {
+          const mapping = opcuaVarMap.find(m => m.name === param.name)
+          if (!mapping) { updated.push({ name: param.name, value: param.value, success: false, error: '未找到 OPC UA 映射' }); continue }
+          const data = await opcua.readNodes([mapping.nodeId])
+          const newVal = data[mapping.nodeId]
+          if (typeof newVal === 'number') {
+            param.value = newVal
+            updated.push({ name: param.name, value: newVal, success: true })
+          } else {
+            updated.push({ name: param.name, value: param.value, success: false, error: '读取返回非数值' })
+          }
+        } catch (err) {
+          updated.push({ name: param.name, value: param.value, success: false, error: (err as Error).message })
+        }
+      }
+    }
+  } else {
+    // S7 模式：批量构造地址，一次读取
+    const DATA_TYPE_MAP: Record<string, string> = {
+      REAL: 'R', INT: 'I', DINT: 'DI', UINT: 'I', UDINT: 'DI',
+      WORD: 'W', DWORD: 'DW', BYTE: 'B', USINT: 'B', SINT: 'B', BOOL: 'X',
+    }
+    const addrs: { tag: string; s7addr: string; param: any }[] = []
+    for (const group of recipe.groups) {
+      for (const param of group.parameters) {
+        const db = param.dbNumber > 0 ? param.dbNumber : (recipe.defaultDbNumber > 0 ? recipe.defaultDbNumber : 1)
+        const addrType = DATA_TYPE_MAP[param.plcDataType] || 'R'
+        const bitSuffix = addrType === 'X' ? '.0' : '.1'
+        const s7addr = `DB${db},${addrType}${param.address}${bitSuffix}`
+        const tag = `_up_${param.name.replace(/[^a-zA-Z0-9_]/g, '_')}`
+        addrs.push({ tag, s7addr, param })
+      }
+    }
+    try {
+      const values = await plc.readMultipleRaw(addrs.map(a => ({ tag: a.tag, s7addr: a.s7addr })))
+      for (const a of addrs) {
+        const v = values[a.tag]
+        if (v !== undefined) {
+          a.param.value = v
+          updated.push({ name: a.param.name, value: v, success: true })
+        } else {
+          updated.push({ name: a.param.name, value: a.param.value, success: false, error: '读取无返回值' })
+        }
+      }
+    } catch (err) {
+      for (const a of addrs) {
+        updated.push({ name: a.param.name, value: a.param.value, success: false, error: (err as Error).message })
+      }
+    }
+  }
+
+  // 上传成功后，把更新后的值保存到配方文件
+  if (updated.some(u => u.success)) {
+    saveRecipeSvc(recipe)
+  }
+
+  const successCount = updated.filter(u => u.success).length
+  logEvent('recipe.upload', `上传配方 "${recipe.name}"：${successCount}/${updated.length} 成功`, currentUser(req))
+  res.json({ success: successCount > 0, results: updated, recipe })
 })
 
 app.post('/api/recipe/snapshot', async (req, res) => {

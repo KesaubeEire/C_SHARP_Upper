@@ -345,6 +345,30 @@ export default function RecipePanel() {
     } catch {}
   }
 
+  const handleUpload = async () => {
+    if (!currentId) return
+    setStatusText('正在从 PLC 上传...')
+    try {
+      const res = await fetch(`/api/recipe/${currentId}/upload`, { method: 'POST' })
+      const data = await res.json()
+      if (data.recipe) {
+        // 用上传回来的更新值刷新当前编辑的组
+        const upGroup = data.recipe.groups?.[selectedGroupIdx]
+        if (upGroup) {
+          const updated = [...groups]
+          updated[selectedGroupIdx] = {
+            ...updated[selectedGroupIdx],
+            parameters: upGroup.parameters ?? updated[selectedGroupIdx].parameters,
+          }
+          setGroups(updated)
+        }
+      }
+      const ok = data.results?.filter((r: any) => r.success).length ?? 0
+      const fail = data.results?.filter((r: any) => !r.success).length ?? 0
+      setStatusText(`已上传 ${ok} 个参数${fail ? `，${fail} 个失败` : ''}`)
+    } catch { setStatusText('上传失败') }
+  }
+
   // ─── 渲染 ──────────────────────────────────────────────────
   return (
     <CollapsibleSection title="📋 配方管理" storageKey="recipe-manager">
@@ -502,7 +526,7 @@ export default function RecipePanel() {
               <input className="alarm-filterbar__input" style={{ width: '100%' }} placeholder="搜索参数..." value={paramSearch} onChange={e => setParamSearch(e.target.value)} />
             </div>
             <button className="btn btn--sm btn--success" onClick={handleApply} title="下载到 PLC" disabled={!currentId}>⬇ PLC</button>
-            <button className="btn btn--sm btn--primary" onClick={() => {}} title="从 PLC 上传">⬆ PLC</button>
+            <button className="btn btn--sm btn--primary" onClick={handleUpload} title="从 PLC 上传">⬆ PLC</button>
             <button className="btn btn--sm btn--secondary" onClick={handleAddParam} title="添加参数">+ 参数</button>
             <button className="btn btn--sm btn--secondary" onClick={handleRemoveParam} title="删除参数">− 参数</button>
             <button className="btn btn--sm btn--secondary" onClick={handleImportCsv} title="从 CSV 导入">📂 CSV</button>

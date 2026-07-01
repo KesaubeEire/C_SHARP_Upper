@@ -487,11 +487,12 @@ export function removeDBBlock(label: string) {
 // ─── 写入队列（串行处理，防止并发冲突） ──────────────────
 
 interface RawWriteJob {
-  type: 'read' | 'write' | 'rmw'
-  s7addr: string
+  type: 'read' | 'write' | 'rmw' | 'read_batch'
+  s7addr?: string
   value?: number
   bit?: number
   bitValue?: boolean
+  addrs?: { tag: string; s7addr: string }[]
   resolve: (val: any) => void
   reject: (err: Error) => void
 }
@@ -515,6 +516,9 @@ async function processRawQueue() {
       const newVal = job.bitValue ? (curr | (1 << job.bit!)) : (curr & ~(1 << job.bit!))
       await doWriteRaw(job.s7addr, newVal)
       job.resolve(undefined)
+    } else if (job.type === 'read_batch') {
+      const result = await doReadMultipleRaw(job.addrs!)
+      job.resolve(result)
     }
   } catch (err) {
     job.reject(err as Error)
@@ -524,9 +528,9 @@ async function processRawQueue() {
   }
 }
 
-/** 轮询调用此函数检查是否可以安全读（队列空闲时才能读） */
+/** 轮询调用此函数检查是否可以安全读（所有队列空闲时才能读） */
 export function isQueueIdle(): boolean {
-  return !rawBusy && rawQueue.length === 0
+  return !rawBusy && rawQueue.length === 0 && !writeBusy && writeQueue.length === 0
 }
 
 /** 实际的读操作 */
@@ -574,6 +578,43 @@ export function readRaw(s7addr: string): Promise<number> {
 export function writeRaw(s7addr: string, value: number): Promise<void> {
   // 直接写 PLC，不走队列（队列要求 item 先 addItems，动态标签通不过）
   return doWriteRaw(s7addr, value)
+}
+
+/** 实际执行批量读取（内部函数，不走队列） */
+async function doReadMultipleRaw(addrs: { tag: string; s7addr: string }[]): Promise<Record<string, number>> {
+  if (!client || !_connected) throw new Error('PLC 未连接')
+  if (addrs.length === 0) return {}
+  const c = client
+  const tags = addrs.map(a => a.tag)
+  return new Promise((resolve, reject) => {
+    const origCB = c.translationCB
+    c.setTranslationCB((t: string) => {
+      const found = addrs.find(a => a.tag === t)
+      return found ? found.s7addr : origCB(t)
+    })
+    c.addItems(tags)
+    const t60 = setTimeout(() => { c.removeItems(tags); c.setTranslationCB(origCB); reject(new Error('批量读取超时')) }, 6000)
+    c.readAllItems((err: any, values: Record<string, any>) => {
+      clearTimeout(t60)
+      c.removeItems(tags)
+      c.setTranslationCB(origCB)
+      if (err) { reject(new Error(`批量读取失败: ${err}`)); return }
+      const result: Record<string, number> = {}
+      for (const a of addrs) {
+        const v = values[a.tag]
+        if (v !== undefined && v !== null) result[a.tag] = Number(v)
+      }
+      resolve(result)
+    })
+  })
+}
+
+/** 批量读取多个 S7 地址（走 rawQueue，避免和轮询冲突） */
+export function readMultipleRaw(addrs: { tag: string; s7addr: string }[]): Promise<Record<string, number>> {
+  return new Promise((resolve, reject) => {
+    rawQueue.push({ type: 'read_batch', addrs, resolve, reject })
+    processRawQueue()
+  })
 }
 
 /** 读-改-写（读当前字节 → 改指定位 → 写回） */
