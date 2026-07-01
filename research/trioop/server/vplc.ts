@@ -9,8 +9,26 @@
  */
 
 import net from 'net'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-const PORT = parseInt(process.env.PORT || '') || 102
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+/** 读取配置文件，不存在则创建默认 */
+function loadConfig(): { port: number; host: string } {
+  const cfgPath = path.resolve(__dirname, 'vplc-config.json')
+  try {
+    return JSON.parse(fs.readFileSync(cfgPath, 'utf-8'))
+  } catch {
+    const defaults = { port: 1102, host: '0.0.0.0' }
+    fs.writeFileSync(cfgPath, JSON.stringify(defaults, null, 2), 'utf-8')
+    return defaults
+  }
+}
+
+const cfg = loadConfig()
+const PORT = cfg.port
 
 // ─── PLC 内存 ──────────────────────────────────────────────
 const memory = {
@@ -371,15 +389,15 @@ server.on('error', (err: any) => {
     console.error('║  以管理员身份运行终端再执行:                    ║')
     console.error('║    pnpm dev:vplc                              ║')
     console.error('║                                               ║')
-    console.error('║  或用备用端口:                                  ║')
-    console.error('║    PORT=1102 pnpm dev:vplc                    ║')
+    console.error('║  或修改 server/vplc-config.json 中的 port        ║')
+    console.error('║    pnpm dev:vplc                             ║')
     console.error('╚══════════════════════════════════════════════════╝')
     process.exit(1)
   }
   console.error('服务器错误:', err)
 })
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, cfg.host, () => {
   console.log('')
   console.log('╔══════════════════════════════════════════════╗')
   console.log('║    虚拟 S7-1200 PLC 已启动                   ║')
