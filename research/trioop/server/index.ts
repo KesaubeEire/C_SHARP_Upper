@@ -61,8 +61,6 @@ if (isDev) {
 // ─── 运行时连接参数 ───────────────────────────────────────
 let runtimePlcIp: string = config.plc.ip
 let runtimePlcPort: number = config.plc.port ?? 102
-let runtimePlcRack: number = config.plc.rack
-let runtimePlcSlot: number = config.plc.slot
 let runtimeLocalAddr: string | undefined
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let plcDataCache: Record<string, unknown> = {}
@@ -125,8 +123,6 @@ app.post('/api/plc/connect', async (req, res) => {
 
   runtimePlcIp = plcIp
   runtimePlcPort = Number(port) || 102
-  runtimePlcRack = config.plc.rack
-  runtimePlcSlot = config.plc.slot
   runtimeLocalAddr = localAddress || undefined
   runtimeConnType = CONN_TYPE_MAP[connType as string] ?? 3
   runtimePollInterval = Math.max(50, Math.min(10000, (pollInterval as number) || 1000))
@@ -632,78 +628,7 @@ app.post('/api/plc/imported-db-write', async (req, res) => {
   }
 })
 
-// ─── API: 写入 I/O 点（直接 TCP 发 S7 写请求到 vPLC，绕过 nodes7） ──
-import net from 'net'
-function s7WriteDirect(host: string, port: number, area: number, dbNum: number, byteAddr: number, data: Buffer, rack = 0, slot = 1): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const sock = new net.Socket()
-    let ccReceived = false
-    const tOut = setTimeout(() => { sock.destroy(); reject(new Error('S7 直写超时')) }, 3000)
-    sock.connect(port, host, () => {
-      // COTP CR — TSAP 根据 rack/slot 动态生成
-      const localTSAP = 0x0100
-      const remoteTSAP = (rack * 0x20) + slot
-      const cr = Buffer.alloc(22)
-      cr[0] = 0x03; cr[1] = 0x00; cr.writeUInt16BE(22, 2)
-      cr[4] = 0x11; cr[5] = 0xE0; cr[6] = 0x00; cr[7] = 0x00
-      cr[8] = 0x00; cr[9] = 0x01; cr[10] = 0x00
-      cr[11] = 0xC1; cr[12] = 0x02; cr.writeUInt16BE(localTSAP, 13)
-      cr[15] = 0xC2; cr[16] = 0x02; cr.writeUInt16BE(remoteTSAP, 17)
-      sock.write(cr)
-    })
-    sock.on('data', (chunk) => {
-      if (!ccReceived && chunk[5] === 0xD0) {
-        ccReceived = true
-        const s7WriteReq = buildS7WriteReq(area, dbNum, byteAddr, data)
-        sock.write(s7WriteReq)
-      } else if (ccReceived && chunk[5] === 0xF0 && chunk.length >= chunk.readUInt16BE(2)) {
-        clearTimeout(tOut)
-        sock.destroy()
-        const s7Off = chunk[7] === 0x80 ? 1 : 0
-        const dataLen = (chunk[15 + s7Off] << 8) | chunk[16 + s7Off]
-        if (dataLen > 0 && chunk[chunk.readUInt16BE(2) - dataLen] === 0xFF) resolve()
-        else reject(new Error('S7 写入返回非 0xFF'))
-      }
-    })
-    sock.on('error', (err) => { clearTimeout(tOut); reject(err) })
-    sock.on('close', () => { clearTimeout(tOut) })
-  })
-}
-
-function buildS7WriteReq(area: number, dbNum: number, byteAddr: number, data: Buffer): Buffer {
-  const payload = Buffer.alloc(35 + data.length)
-  let off = 0
-  // TPKT
-  payload[off++] = 0x03; payload[off++] = 0x00
-  const lenPos = off; off += 2  // fill later
-  // COTP DT
-  payload[off++] = 0x02; payload[off++] = 0xF0; payload[off++] = 0x80
-  // S7 Header (Job Request)
-  payload[off++] = 0x32; payload[off++] = 0x01  // ROSCTR=Job
-  payload[off++] = 0x00; payload[off++] = 0x00  // Reserved
-  payload[off++] = 0x00; payload[off++] = 0x01  // PDU Ref
-  const paramLenPos = off; off += 2
-  const dataLenPos = off; off += 2
-  // Parameter: Write (0x05)
-  payload[off++] = 0x05; payload[off++] = 0x01  // Func+ItemCount
-  // Item (12 bytes)
-  payload[off++] = 0x12; payload[off++] = 0x0A; payload[off++] = 0x10
-  payload[off++] = 0x04  // TransportSize=byte
-  payload[off++] = data.length >> 8; payload[off++] = data.length & 0xFF
-  payload[off++] = dbNum >> 8; payload[off++] = dbNum & 0xFF
-  payload[off++] = area
-  payload[off++] = 0x00  // padding for non-DB address
-  payload[off++] = byteAddr >> 8; payload[off++] = byteAddr & 0xFF  // addr at [10-11]
-  // Data section
-  data.copy(payload, off); off += data.length
-  // Write lengths
-  const paramLen = off - paramLenPos - 4 - data.length  // 参数体长度（不含 Data）
-  payload[paramLenPos] = paramLen >> 8; payload[paramLenPos + 1] = paramLen & 0xFF
-  payload[dataLenPos] = data.length >> 8; payload[dataLenPos + 1] = data.length & 0xFF
-  payload.writeUInt16BE(off, lenPos)
-  return payload.slice(0, off)  // 截取实际长度
-}
-
+// ─── API: 写入 I/O 点 ──────────────────────────────────
 app.post('/api/plc/write-io', async (req, res) => {
   const { area, byte: byteAddr, bit, value } = req.body
   if (area !== 'q' && area !== 'm') return res.status(400).json({ error: '仅支持 Q/M 区写入' })
@@ -712,12 +637,11 @@ app.post('/api/plc/write-io', async (req, res) => {
   }
 
   try {
-    // 从缓存拿当前字节，算好新值后直接 TCP 直写 vPLC
+    // 从缓存拿当前字节，算好新值后走 nodes7 writeByte（复用已有连接）
     const cache = area === 'q' ? ioDataCache.q : ioDataCache.m
     const currByte = cache[byteAddr] ?? 0
     const newByte = value ? (currByte | (1 << Number(bit))) : (currByte & ~(1 << Number(bit)))
-    const areaCode = area === 'q' ? 0x82 : 0x83
-    await s7WriteDirect(runtimePlcIp, runtimePlcPort, areaCode, 0, Number(byteAddr), Buffer.from([newByte]), runtimePlcRack, runtimePlcSlot)
+    await plc.writeByte(area, Number(byteAddr), newByte)
     // 更新缓存
     if (area === 'q') ioDataCache.q[byteAddr] = newByte
     else ioDataCache.m[byteAddr] = newByte
@@ -734,31 +658,12 @@ app.post("/api/plc/write-raw", async (req, res) => {
   const { address, value, bit } = req.body
   if (!address || value === undefined) return res.status(400).json({ error: "请提供 address 和 value" })
   try {
-    // I/Q/M 地址走 TCP 直写，避开 nodes7
-    const ioMatch = address.match(/^([IQM])B(\d+)$/)
-    if (ioMatch) {
-      const area = ioMatch[1].toLowerCase()
-      if (area !== 'q' && area !== 'm') return res.status(400).json({ error: '仅支持 Q/M 区写入' })
-      const byteAddr = parseInt(ioMatch[2])
-      // 读当前值 → 改位 → 写回
-      const cache = area === 'q' ? ioDataCache.q : ioDataCache.m
-      const currByte = cache[byteAddr] ?? 0
-      const newByte = bit !== undefined
-        ? (value ? (currByte | (1 << Number(bit))) : (currByte & ~(1 << Number(bit))))
-        : Number(value)
-      const areaCode = area === 'q' ? 0x82 : 0x83
-      await s7WriteDirect(runtimePlcIp, runtimePlcPort, areaCode, 0, byteAddr, Buffer.from([newByte]), runtimePlcRack, runtimePlcSlot)
-      cache[byteAddr] = newByte
-      res.json({ success: true })
+    if (bit !== undefined) {
+      await plc.modifyBit(address, bit, !!value)
     } else {
-      // DB 地址仍走 nodes7
-      if (bit !== undefined) {
-        await plc.modifyBit(address, bit, !!value)
-      } else {
-        await plc.writeRaw(address, Number(value))
-      }
-      res.json({ success: true })
+      await plc.writeRaw(address, Number(value))
     }
+    res.json({ success: true })
   } catch (err) { res.status(502).json({ error: (err as Error).message }) }
 })
 
