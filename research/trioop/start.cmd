@@ -59,14 +59,12 @@ echo   Node:  !NODE_CMD!
 echo   pnpm:  pnpm
 echo.
 
-REM --- 3. Clean ports ---
+REM --- 3. Clean ports (一次性 netstat 查所有端口，后台杀不阻塞) ---
 echo [2/4] Cleaning ports...
-for %%p in (5173 5174 5175 5176 5177 3001) do (
-    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%%p " 2^>nul') do (
-        taskkill /F /PID %%a >nul 2>&1
-    )
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5173 :5174 :5175 :5176 :5177 :3001 " 2^>nul') do (
+    start /b taskkill /F /PID %%a >nul 2>&1
 )
-echo   [OK] Ports cleaned
+echo   [OK] Ports cleaning submitted
 echo.
 
 REM --- 4. Check better-sqlite3 ---
