@@ -8,6 +8,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
     "dev:vplc": "tsx vplc/vplc.ts",
+    "dev:vplc-ui": "cd vplc/frontend && npm run dev",
     "build": "vite build",
     "start": "NODE_ENV=production tsx server/index.ts",
     "launch": "start.cmd"

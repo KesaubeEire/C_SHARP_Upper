@@ -1,0 +1,77 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0E0F10;color:#E8E6DF;padding:12px;font-size:13px}
+.app{max-width:960px;margin:0 auto}
+.app-title{font-size:16px;margin-bottom:4px;color:#9A9890}
+.app-subtitle{font-size:11px;color:#7A7872;margin-bottom:12px}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:12px;border-bottom:1px solid #2E3133}
+.tab{padding:6px 14px;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;font-size:12px;color:#7A7872;background:transparent}
+.tab.active{color:#E8E6DF;background:#181A1B;border-color:#2E3133}
+.tab:hover{color:#E8E6DF}
+
+/* IO Panel */
+.io-panel{background:#181A1B;border:1px solid #2E3133;border-radius:6px;padding:10px;margin-bottom:8px}
+.io-title{font-size:13px;font-weight:600;color:#E8E6DF;margin-bottom:8px}
+.io-table{display:flex;flex-direction:column;gap:2px;font-family:Consolas,monospace;font-size:12px}
+.io-row{display:flex;align-items:center;gap:6px;padding:3px 0}
+.io-header{color:#7A7872;font-size:11px;border-bottom:1px solid #2E3133;margin-bottom:2px;padding-bottom:4px}
+.io-addr{width:44px;color:#7A7872;flex-shrink:0}
+.io-bit{width:18px;height:18px;border-radius:3px;border:1px solid #2E3133;cursor:pointer;flex-shrink:0}
+.io-bit.on{background:#1D9E75;border-color:#1D9E75}
+.io-bit.off{background:transparent}
+.io-bit-label{width:18px;text-align:center;color:#5F5E5A;font-size:10px;flex-shrink:0}
+.io-hex{width:56px;text-align:right;color:#E8E6DF;flex-shrink:0}
+.io-rnd{width:40px;flex-shrink:0}
+
+/* Addr input */
+.addr-input{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.addr-label{color:#7A7872;font-size:12px;white-space:nowrap}
+.addr-field{flex:1;background:#1F2224;border:1px solid #2E3133;color:#E8E6DF;border-radius:3px;padding:4px 8px;font-size:12px;font-family:Consolas,monospace}
+
+/* Buttons */
+.btn{background:#2E3133;border:none;color:#E8E6DF;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;font-family:inherit}
+.btn:hover{filter:brightness(1.2)}
+.btn-primary{background:#378ADD}
+.btn-sm{padding:2px 8px;font-size:10px}
+.flex{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+
+/* Sections */
+.section-title{font-size:14px;margin:14px 0 8px;color:#378ADD;border-bottom:1px solid #2E3133;padding-bottom:4px}
+
+/* DB cards */
+.db-card{background:#181A1B;border:1px solid #2E3133;border-radius:5px;padding:8px;margin-bottom:6px}
+.db-card-title{font-size:12px;font-weight:600;color:#378ADD;margin-bottom:4px}
+.db-fields{font-size:11px;display:flex;flex-wrap:wrap;gap:4px}
+.db-field{display:inline-flex;gap:3px;margin-right:8px}
+.db-field-name{color:#7A7872}
+.db-field-val{color:#378ADD;font-family:monospace}
+
+/* DB Table */
+.db-table{width:100%;border-collapse:collapse;font-size:11px;font-family:Consolas,monospace;margin-top:6px}
+.db-table th,.db-table td{padding:4px 8px;text-align:left;border-bottom:1px solid #2E3133}
+.db-table th{color:#7A7872;font-size:10px}
+.db-table .hex{font-size:10px;color:#9A9890}
+
+/* File upload */
+.file-upload{border:1px dashed #2E3133;border-radius:5px;padding:16px;text-align:center;cursor:pointer;color:#7A7872;font-size:13px;margin-bottom:8px}
+.file-upload:hover{border-color:#378ADD;color:#378ADD}
+
+/* Trigger */
+.trigger-card{background:#181A1B;border:1px solid #2E3133;border-radius:5px;padding:8px;margin-bottom:4px}
+.trigger-form{background:#181A1B;border:1px solid #2E3133;border-radius:5px;padding:10px;margin-bottom:8px}
+.form-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.form-label{color:#7A7872;font-size:11px}
+.trigger-desc{font-size:10px;color:#5F5E5A;margin-top:2px}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:2px}
+.tag-on{background:#1D9E75;color:#fff}
+.tag-off{background:#5F5E5A;color:#fff}
+.tag-cond{background:#378ADD;color:#fff}
+.tag-action{background:#E24B4A;color:#fff}
+.del{color:#E24B4A;cursor:pointer;opacity:0.6;font-size:14px;margin-left:4px}
+.del:hover{opacity:1}
+.empty{color:#5F5E5A;text-align:center;padding:16px;font-size:12px}
+
+/* Toast */
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:6px 20px;border-radius:20px;font-size:12px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
