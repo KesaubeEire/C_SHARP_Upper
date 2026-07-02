@@ -490,19 +490,25 @@ export default function VisualDashboard({ liveData, ioData }: {
     return () => { clearTimeout(t); document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
   }, [rowGapMenu])
 
-  // 右键菜单边缘检测：Windows 风格 — 靠右/靠底时翻转
+  // 右键菜单边缘检测：Windows 风格 — 用 rAF 确保 CSS 动画已布局后再测量
   const adjustMenuPos = useCallback((el: HTMLDivElement, left: number, top: number) => {
-    const rect = el.getBoundingClientRect()
-    const vw = window.innerWidth, vh = window.innerHeight
-    const gap = 8
-    let x = left, y = top
-    if (x + rect.width + gap > vw) x = vw - rect.width - gap
-    if (x < gap) x = gap
-    if (y + rect.height + gap > vh) y = vh - rect.height - gap
-    if (y < gap) y = gap
-    el.style.left = `${x}px`
-    el.style.top = `${y}px`
-    if (rect.height > vh - gap * 2) { el.style.maxHeight = `${vh - gap * 2}px`; el.style.overflowY = 'auto' }
+    requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect()
+      const vw = window.innerWidth, vh = window.innerHeight
+      const gap = 8
+      let x = left, y = top
+      // 不超出视口
+      if (rect.width > 0) {
+        if (x + rect.width + gap > vw) x = vw - rect.width - gap
+        if (x < gap) x = gap
+        if (y + rect.height + gap > vh) y = vh - rect.height - gap
+        if (y < gap) y = gap
+      }
+      el.style.left = `${x}px`
+      el.style.top = `${y}px`
+      el.style.maxHeight = `${vh - gap * 2}px`
+      el.style.overflowY = 'auto'
+    })
   }, [])
   useLayoutEffect(() => {
     if (insertMenu && insertMenuRef.current) adjustMenuPos(insertMenuRef.current, insertMenu.left, insertMenu.top)
@@ -1163,15 +1169,18 @@ function LiveAlarmPanel({ columns, flashRate, groupBy }: { columns: number; flas
   return <AlarmAnnunciatorPanel columns={columns} flashRate={flashRate} groupBy={groupBy} alarms={alarmDefs} states={alarmStates} />
 }
 
-// ─── 实时信号面板（从 liveData 拉值） ─────────────────
+// ─── 实时信号面板（从 liveData 拉值，兼容旧版静态值） ─
 function LiveSignalPanel({ cfg, liveData }: { cfg: Record<string, any>; liveData?: Record<string, { value: number | boolean }> }) {
-  const ch1Pt = liveData?.[cfg.ch1Var || '']?.value
-  const ch2Pt = liveData?.[cfg.ch2Var || '']?.value
-  const ch1Val = typeof ch1Pt === 'number' ? ch1Pt : (ch1Pt ? 1 : 0)
-  const ch2Val = typeof ch2Pt === 'number' ? ch2Pt : (ch2Pt ? 1 : 0)
+  const ch1Var = cfg.ch1Var || ''
+  const ch2Var = cfg.ch2Var || ''
+  const ch1Pt = ch1Var ? liveData?.[ch1Var]?.value : undefined
+  const ch2Pt = ch2Var ? liveData?.[ch2Var]?.value : undefined
+  // 无变量名时 fallback 到旧版静态值
+  const ch1Val = ch1Pt !== undefined ? (typeof ch1Pt === 'number' ? ch1Pt : (ch1Pt ? 1 : 0)) : (cfg.ch1Val ?? 0)
+  const ch2Val = ch2Pt !== undefined ? (typeof ch2Pt === 'number' ? ch2Pt : (ch2Pt ? 1 : 0)) : (cfg.ch2Val ?? 0)
   return <SignalPanel signals={[
-    { key:'ch1', label:cfg.ch1Label||'CH1', value:ch1Val || 0, unit:cfg.ch1Unit, warnAt:cfg.ch1WarnAt, dangerAt:cfg.ch1DangerAt },
-    { key:'ch2', label:cfg.ch2Label||'CH2', value:ch2Val || 0, unit:cfg.ch2Unit, warnAt:cfg.ch2WarnAt, dangerAt:cfg.ch2DangerAt },
+    { key:'ch1', label:cfg.ch1Label||'CH1', value:ch1Val, unit:cfg.ch1Unit, warnAt:cfg.ch1WarnAt, dangerAt:cfg.ch1DangerAt, thresholdDirection:'above' as const },
+    { key:'ch2', label:cfg.ch2Label||'CH2', value:ch2Val, unit:cfg.ch2Unit, warnAt:cfg.ch2WarnAt, dangerAt:cfg.ch2DangerAt, thresholdDirection:'above' as const },
   ] as any} />
 }
 
@@ -1179,15 +1188,17 @@ function LiveSignalPanel({ cfg, liveData }: { cfg: Record<string, any>; liveData
 function LiveConnectionBar({ title }: { title: string }) {
   const [status, setStatus] = useState<'connected' | 'disconnected'>('disconnected')
   const [latency, setLatency] = useState(0)
+  const [plcIp, setPlcIp] = useState('')
   useEffect(() => {
     const fetchStatus = async () => {
-      try { const r = await fetch('/api/plc/status'); const d = await r.json(); setStatus(d.connected ? 'connected' : 'disconnected'); setLatency(d.latency ?? 0) } catch {}
+      try { const r = await fetch('/api/plc/status'); const d = await r.json(); setStatus(d.connected ? 'connected' : 'disconnected'); setLatency(d.latency ?? 0); if (d.plcIp) setPlcIp(d.plcIp) } catch {}
     }
     fetchStatus()
     const t = setInterval(fetchStatus, 3000)
     return () => clearInterval(t)
   }, [])
-  return <ConnectionBar url={title} status={status} latencyMs={latency} />
+  const url = plcIp ? `${plcIp} (${title})` : title
+  return <ConnectionBar url={url} status={status} latencyMs={latency} />
 }
 
 const TrendRecorderCell = React.memo(function TrendRecorderCell({ channels, timeScale, showGrid, showLegend, showPoints, lineWidth, backgroundColor: bg, yAxisLabel, mockMode, liveData, varMap }: {
