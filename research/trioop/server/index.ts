@@ -734,12 +734,31 @@ app.post("/api/plc/write-raw", async (req, res) => {
   const { address, value, bit } = req.body
   if (!address || value === undefined) return res.status(400).json({ error: "请提供 address 和 value" })
   try {
-    if (bit !== undefined) {
-      await plc.modifyBit(address, bit, !!value)
+    // I/Q/M 地址走 TCP 直写，避开 nodes7
+    const ioMatch = address.match(/^([IQM])B(\d+)$/)
+    if (ioMatch) {
+      const area = ioMatch[1].toLowerCase()
+      if (area !== 'q' && area !== 'm') return res.status(400).json({ error: '仅支持 Q/M 区写入' })
+      const byteAddr = parseInt(ioMatch[2])
+      // 读当前值 → 改位 → 写回
+      const cache = area === 'q' ? ioDataCache.q : ioDataCache.m
+      const currByte = cache[byteAddr] ?? 0
+      const newByte = bit !== undefined
+        ? (value ? (currByte | (1 << Number(bit))) : (currByte & ~(1 << Number(bit))))
+        : Number(value)
+      const areaCode = area === 'q' ? 0x82 : 0x83
+      await s7WriteDirect(runtimePlcIp, runtimePlcPort, areaCode, 0, byteAddr, Buffer.from([newByte]), runtimePlcRack, runtimePlcSlot)
+      cache[byteAddr] = newByte
+      res.json({ success: true })
     } else {
-      await plc.writeRaw(address, Number(value))
+      // DB 地址仍走 nodes7
+      if (bit !== undefined) {
+        await plc.modifyBit(address, bit, !!value)
+      } else {
+        await plc.writeRaw(address, Number(value))
+      }
+      res.json({ success: true })
     }
-    res.json({ success: true })
   } catch (err) { res.status(502).json({ error: (err as Error).message }) }
 })
 
