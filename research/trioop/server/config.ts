@@ -7,7 +7,8 @@ import type { PLCConfig } from '../shared/types.js'
  */
 const config: PLCConfig = {
   plc: {
-    ip: '192.168.0.1',
+    ip: '127.0.0.1',
+    port: 1200,
     rack: 0,
     slot: 1,     // S7-1200 固定 slot=1
   },

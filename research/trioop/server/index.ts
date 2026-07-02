@@ -60,6 +60,7 @@ if (isDev) {
 
 // ─── 运行时连接参数 ───────────────────────────────────────
 let runtimePlcIp: string = config.plc.ip
+let runtimePlcPort: number = config.plc.port ?? 102
 let runtimeLocalAddr: string | undefined
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 let plcDataCache: Record<string, unknown> = {}
@@ -114,10 +115,11 @@ const CONN_TYPE_MAP: Record<string, number> = { PG: 1, OP: 2, BASIC: 3 }
 
 // ─── API: 连接 PLC ───────────────────────────────────────
 app.post('/api/plc/connect', async (req, res) => {
-  const { plcIp, localAddress, connType, pollInterval, ioRanges } = req.body
+  const { plcIp, port, localAddress, connType, pollInterval, ioRanges } = req.body
   if (!plcIp) return res.status(400).json({ error: '请提供 PLC IP' })
 
   runtimePlcIp = plcIp
+  runtimePlcPort = Number(port) || 102
   runtimeLocalAddr = localAddress || undefined
   runtimeConnType = CONN_TYPE_MAP[connType as string] ?? 3
   runtimePollInterval = Math.max(50, Math.min(10000, (pollInterval as number) || 1000))
@@ -128,7 +130,7 @@ app.post('/api/plc/connect', async (req, res) => {
   if (pollingTimer) clearInterval(pollingTimer)
 
   try {
-    await plc.connect(runtimePlcIp, config.plc.rack, config.plc.slot, runtimeLocalAddr, runtimeConnType, config.variables, dbBlocks, ioRanges)
+    await plc.connect(runtimePlcIp, config.plc.rack, config.plc.slot, runtimeLocalAddr, runtimeConnType, config.variables, dbBlocks, ioRanges, runtimePlcPort)
     plcDataCache = {}
     pollingTimer = setInterval(poll, runtimePollInterval)
     poll()
@@ -1217,7 +1219,7 @@ app.get('/api/plc/stream', (req, res) => {
 async function poll() {
   try {
     if (!plc.isConnected()) {
-      try { await plc.connect(runtimePlcIp, config.plc.rack, config.plc.slot, runtimeLocalAddr, runtimeConnType, config.variables, dbBlocks, runtimeIORanges ?? undefined) } catch {}
+      try { await plc.connect(runtimePlcIp, config.plc.rack, config.plc.slot, runtimeLocalAddr, runtimeConnType, config.variables, dbBlocks, runtimeIORanges ?? undefined, runtimePlcPort) } catch {}
       if (!plc.isConnected()) return
     }
 

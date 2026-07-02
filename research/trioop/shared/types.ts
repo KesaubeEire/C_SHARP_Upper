@@ -14,6 +14,7 @@ export interface PLCVariable {
 
 export interface PLCConnection {
   ip: string
+  port?: number
   rack: number
   slot: number
   /** 本地网卡 IP（多网卡时指定用哪块网卡连 PLC） */

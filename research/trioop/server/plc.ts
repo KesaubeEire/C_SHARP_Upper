@@ -128,12 +128,22 @@ export async function connect(
   variables?: PLCVariable[],
   dbBlocks?: { label: string; dbNumber: number; startOffset: number; byteCount: number }[],
   ioRanges?: { i?: { start: number; end: number }[]; q?: { start: number; end: number }[]; m?: { start: number; end: number }[] },
+  port = 102,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    // 等待旧连接完全关闭再创建新连接
     if (client) {
-      client.dropConnection()
+      client.dropConnection(() => {
+        client = null
+        _connected = false
+        doConnect(resolve, reject)
+      })
+    } else {
+      doConnect(resolve, reject)
     }
+  })
 
+  function doConnect(resolve: () => void, reject: (err: Error) => void) {
     client = new NodeS7()
 
     // 注册所有地址
@@ -158,7 +168,7 @@ export async function connect(
     const remoteTSAP = (connTSAP << 8) + (rack * 0x20) + slot
     client.initiateConnection({
       host: ip,
-      port: 102,
+      port,
       rack,
       slot,
       timeout: 3000,
@@ -173,7 +183,7 @@ export async function connect(
         resolve()
       }
     })
-  })
+  }
 }
 
 export function disconnect(): void {
@@ -557,10 +567,13 @@ async function doWriteRaw(s7addr: string, value: number): Promise<void> {
   _pendingWrites++
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => { _pendingWrites--; reject(new Error(`写入 ${s7addr} 超时`)) }, 5000)
-    client!.writeItems(s7addr, value, (err: any) => {
+    client!.writeItems(s7addr, value, (anyBad: boolean) => {
       clearTimeout(timeout)
       _pendingWrites--
-      if (err) reject(new Error(`写入 ${s7addr} 失败: ${err}`))
+      // nodes7 回调签名: writeDoneCallback(anyBadQualities)
+      // anyBad = true 表示所有写入成功 (writeQuality === 'OK')
+      // anyBad = false 表示有写入项质量不好
+      if (anyBad === false) reject(new Error(`写入 ${s7addr} 质量异常`))
       else resolve()
     })
   })

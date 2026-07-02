@@ -20,7 +20,7 @@ function loadSaved() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
-  return { mode: 's7', plcIp: '192.168.0.1', adapterIp: '', connType: 'BASIC', pollInterval: 1000, ioIBytes: '0,1,8', ioQBytes: '0,1,8', ioMBytes: '0,1,8' }
+  return { mode: 's7', plcIp: '192.168.0.1', plcPort: 102, adapterIp: '', connType: 'BASIC', pollInterval: 1000, ioIBytes: '0,1,8', ioQBytes: '0,1,8', ioMBytes: '0,1,8' }
 }
 
 /** 将 "0,1,8" 格式的字节串转为后端用的 {start,end}[] 范围 */
@@ -44,6 +44,7 @@ export default function ConnectionPanel() {
   const [adapters, setAdapters] = useState<NetworkAdapter[]>([])
   const [selectedAdapter, setSelectedAdapter] = useState(saved.adapterIp)
   const [plcIp, setPlcIp] = useState(saved.plcIp)
+  const [plcPort, setPlcPort] = useState(String(saved.plcPort ?? 102))
   const [opcUaPort, setOpcUaPort] = useState('4840')
   const [connType, setConnType] = useState(saved.connType)
   const [pollInterval, setPollInterval] = useState(String(saved.pollInterval))
@@ -57,10 +58,10 @@ export default function ConnectionPanel() {
   // 保存到 localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      mode, plcIp, adapterIp: selectedAdapter, connType, pollInterval: Number(pollInterval) || 1000,
+      mode, plcIp, plcPort: Number(plcPort) || 102, adapterIp: selectedAdapter, connType, pollInterval: Number(pollInterval) || 1000,
       ioIBytes, ioQBytes, ioMBytes,
     }))
-  }, [mode, plcIp, selectedAdapter, connType, pollInterval, ioIBytes, ioQBytes, ioMBytes])
+  }, [mode, plcIp, plcPort, selectedAdapter, connType, pollInterval, ioIBytes, ioQBytes, ioMBytes])
 
   // 加载网卡列表
   useEffect(() => {
@@ -99,7 +100,7 @@ export default function ConnectionPanel() {
           const url = saved.mode === 'opcua' ? '/api/opcua/connect' : '/api/plc/connect'
           const body = saved.mode === 'opcua'
             ? { plcIp: saved.plcIp, ioRanges: { i: bytesToRanges(saved.ioIBytes ?? "0,1,8"), q: bytesToRanges(saved.ioQBytes ?? "0,1,8"), m: bytesToRanges(saved.ioMBytes ?? "0,1,8") } }
-            : { plcIp: saved.plcIp, localAddress: saved.adapterIp || undefined, connType: saved.connType, pollInterval: saved.pollInterval, ioRanges: { i: bytesToRanges(saved.ioIBytes ?? "0,1,8"), q: bytesToRanges(saved.ioQBytes ?? "0,1,8"), m: bytesToRanges(saved.ioMBytes ?? "0,1,8") } }
+            : { plcIp: saved.plcIp, port: Number(saved.plcPort) || 102, localAddress: saved.adapterIp || undefined, connType: saved.connType, pollInterval: saved.pollInterval, ioRanges: { i: bytesToRanges(saved.ioIBytes ?? "0,1,8"), q: bytesToRanges(saved.ioQBytes ?? "0,1,8"), m: bytesToRanges(saved.ioMBytes ?? "0,1,8") } }
           fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
             .then(r => r.json()).then(d => { if (d.success) setStatusMsg(`已重连到 ${saved.plcIp}`) }).catch(() => {})
         }
@@ -118,6 +119,7 @@ export default function ConnectionPanel() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             plcIp: plcIp.trim(),
+            port: Number(plcPort) || 102,
             localAddress: selectedAdapter || undefined,
             connType,
             pollInterval: Number(pollInterval) || 1000,
@@ -179,6 +181,11 @@ export default function ConnectionPanel() {
       <div className="sidebar__group">
         <label className="sidebar__label">PLC IP 地址</label>
         <input className="sidebar__input" type="text" value={plcIp} onChange={e => setPlcIp(e.target.value)} placeholder="192.168.0.1" />
+      </div>
+
+      <div className="sidebar__group">
+        <label className="sidebar__label">PLC 端口</label>
+        <input className="sidebar__input" type="number" value={plcPort} onChange={e => setPlcPort(e.target.value)} placeholder="102" min={1} max={65535} />
       </div>
 
       {mode === 's7' ? (

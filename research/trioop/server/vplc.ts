@@ -94,10 +94,11 @@ function simulate() {
 
 /** 发送 TPKT + COTP + S7 响应 */
 function sendS7(sock: net.Socket, s7payload: Buffer) {
-  // COTP Connection Response (TSDU)
-  const cotp = Buffer.alloc(2)
-  cotp[0] = 0x02    // DT (Data Transfer)
-  cotp[1] = 0xF0    // 保留
+  // COTP DT (Data Transfer) — 带最后数据单元标志
+  const cotp = Buffer.alloc(3)
+  cotp[0] = 0x02    // LI
+  cotp[1] = 0xF0    // DT code
+  cotp[2] = 0x80    // Last data unit flag (bit 7)
 
   const tpktLen = 4 + cotp.length + s7payload.length
   const tpkt = Buffer.alloc(4)
@@ -136,32 +137,56 @@ function s7ReadResponse(reqData: Buffer, resultData: Buffer) {
 }
 
 /** 构建 S7 Write 响应 */
-function s7WriteResponse() {
-  const buf = Buffer.alloc(14)
+function s7WriteResponse(dataLen = 0) {
+  const dataByteLen = dataLen > 0 ? dataLen : 1
+  const buf = Buffer.alloc(12 + dataByteLen)
   buf[0] = 0x32
-  buf[1] = 0x01
+  buf[1] = 0x03         // Message Type: ACK-Data
   buf[2] = 0x00
   buf[3] = 0x00
-  buf.writeUInt16BE(10, 4)  // PDU Ref
+  buf.writeUInt16BE(10, 4)  // PDU Ref (will be overwritten by caller if needed)
   buf[6] = 0x00
   buf[7] = 0x02             // Param length = 2
-  buf[8] = 0x00
-  buf[9] = 0x00             // Data length = 0
+  buf[8] = dataByteLen >> 8 // Data length high
+  buf[9] = dataByteLen & 0xFF // Data length low
 
   // S7 Parameter: Write Response
-  buf[10] = 0xFF            // Item count
+  buf[10] = 0x01            // Item count
   buf[11] = 0x00            // Return code
 
-  // 没有 data 部分
-  const actualLen = 12
-  return buf.subarray(0, actualLen)
+  // 数据区：每个写入项返回 0xFF (成功，S7 协议中 0xFF 表示 OK)
+  for (let i = 0; i < dataByteLen; i++) buf[12 + i] = 0xFF
+
+  return buf
+}
+
+/** 构建 S7 默认响应（未知功能码） */
+function s7DefaultResponse(req: Buffer) {
+  // req 是 s7Req（包含 0x80 前缀），我们需要正确复制 PDU Ref
+  const s7Off = req[0] === 0x80 ? 1 : 0
+  const pduRef = req.readUInt16BE(s7Off + 4)
+  const buf = Buffer.alloc(12)
+  buf[0] = 0x32
+  buf[1] = 0x01       // Response
+  buf[2] = 0x00
+  buf[3] = 0x00
+  buf.writeUInt16BE(pduRef, 4)
+  buf[6] = 0x00
+  buf[7] = 0x02       // Param length = 2
+  buf[8] = 0x00
+  buf[9] = 0x00       // Data length = 0
+  buf[10] = 0xFF
+  buf[11] = 0x00
+  return buf
 }
 
 /** 解析 S7 地址并读取 */
 function s7ReadArea(area: number, dbNum: number, byteAddr: number, bit: number, count: number, transportSize: number): Buffer | null {
   let mem: Uint8Array | undefined
 
-  if (area === 0x82) mem = memory.PE       // I 区 / PE
+  // S7 区域码标准: 0x81=I(输入), 0x82=Q(输出), 0x83=M, 0x84=DB
+  if (area === 0x81) mem = memory.PE       // I 区 / 外设输入
+  else if (area === 0x82) mem = memory.PA  // Q 区 / 外设输出
   else if (area === 0x83) mem = memory.MK  // M 区
   else if (area === 0x84) {                // DB
     mem = memory.DB[dbNum]
@@ -196,10 +221,11 @@ function s7ReadArea(area: number, dbNum: number, byteAddr: number, bit: number, 
 function s7WriteArea(area: number, dbNum: number, byteAddr: number, bit: number, data: Buffer): boolean {
   let mem: Uint8Array | undefined
 
-  if (area === 0x82) mem = memory.PE
+  // S7 区域码标准: 0x81=I(输入), 0x82=Q(输出), 0x83=M, 0x84=DB
+  if (area === 0x81) mem = memory.PE       // I 区
+  else if (area === 0x82) mem = memory.PA  // Q 区
   else if (area === 0x83) mem = memory.MK
   else if (area === 0x84) mem = memory.DB[dbNum]
-  else if (area === 0x81) mem = memory.PA
   else return false
 
   if (!mem) return false
@@ -213,29 +239,83 @@ function s7WriteArea(area: number, dbNum: number, byteAddr: number, bit: number,
 
 /** 解析 COTP Connection Request，回复 Connection Response */
 function handleCOTPConnect(sock: net.Socket, tpktPayload: Buffer): boolean {
-  if (tpktPayload.length < 6) return false
-  // COTP CR (0x0E)
-  if (tpktPayload[0] !== 0x0E) return false
+  if (tpktPayload.length < 7) return false
+  // COTP CR (Connection Request) — tpktPayload 已去掉 TPKT 头
+  // 结构: [0]=LI, [1]=PDU_code(CR=0xE0), [2-3]=DST-REF, [4-5]=SRC-REF, [6]=Class, [7+]=params
+  if (tpktPayload[1] !== 0xE0) return false
 
-  // 提取 src-tsap / dst-tsap
-  const srcTSAP = tpktPayload.subarray(2, 4)
-  const dstTSAP = tpktPayload.subarray(4, 6)
+  // 从 CR 参数中提取 TSAP
+  // nodes7 发: C1 02 01 00 (SRC-TSAP), C2 02 01 02 (DST-TSAP)
+  let srcTSAP: Buffer, dstTSAP: Buffer
+  const params = tpktPayload.subarray(7)
+  const c1Off = params.indexOf(0xC1)
+  const c2Off = params.indexOf(0xC2)
+  if (c1Off >= 0 && c1Off + 3 < params.length) srcTSAP = params.subarray(c1Off + 2, c1Off + 4)
+  else srcTSAP = Buffer.from([0x01, 0x00])
 
-  // 构建 COTP CC (Connection Confirm)
-  const cc = Buffer.alloc(6)
-  cc[0] = 0x0D               // COTP CC
-  cc[1] = 0xE0               // 保留
-  cc[2] = dstTSAP[0]         // 交换 TSAP
-  cc[3] = dstTSAP[1]
-  cc[4] = srcTSAP[0]
-  cc[5] = srcTSAP[1]
+  if (c2Off >= 0 && c2Off + 3 < params.length) dstTSAP = params.subarray(c2Off + 2, c2Off + 4)
+  else dstTSAP = Buffer.from([0x01, 0x02])
 
-  const tpkt = Buffer.alloc(4)
-  tpkt[0] = 0x03
-  tpkt[1] = 0x00
-  tpkt.writeUInt16BE(4 + cc.length, 2)
+  // 构建 ISO-on-TCP CC (Connection Confirm) — 完整响应以通过 nodes7 校验:
+  //   onISOConnectReply 检查:
+  //     data[5] === 0xD0       (CC code)
+  //     data[4] === data.length - 5  (LI 正确)
+  //     data.readInt16BE(2) === data.length  (TPKT 长度一致)
+  const cc = Buffer.alloc(18)
+  cc[0] = 0xD0               // CC code
+  cc[1] = 0x00               // DST-REF (echo, 2 bytes)
+  cc[2] = 0x00
+  cc[3] = 0x00               // SRC-REF (echo, 2 bytes)
+  cc[4] = 0x00
+  cc[5] = 0x00               // Class
+  cc[6] = 0xC0               // TPDU-size = 1024
+  cc[7] = 0x01
+  cc[8] = 0x0A
+  // 交换 TSAP (标准 IBM 实现)
+  cc[9]  = 0xC1              // SRC-TSAP ← echo CR 的 DST-TSAP
+  cc[10] = 0x02
+  cc[11] = dstTSAP[0]
+  cc[12] = dstTSAP[1]
+  cc[13] = 0xC2              // DST-TSAP ← echo CR 的 SRC-TSAP
+  cc[14] = 0x02
+  cc[15] = srcTSAP[0]
+  cc[16] = srcTSAP[1]
 
-  sock.write(Buffer.concat([tpkt, cc]))
+  const totalLen = 4 + 1 + cc.length  // 23 — wait, 4+1+18 = 23
+
+  // 仔细对齐节点:
+  // 原始数据(tcp): [TPKT(4)] [LI(1)] [CC(1)] [DST-REF(2)] [SRC-REF(2)] [Class(1)] [TPDU-size(3)] [SRC-TSAP(4)] [DST-TSAP(4)]
+  // = [0-3] [4] [5] [6-7] [8-9] [10] [11-13] [14-17] [18-21]
+  // 总共 = 22 bytes, LI = total-4-1 = 17 = 0x11
+
+  // 重写为简洁正确的方式:
+  const resp = Buffer.alloc(22)
+  // TPKT 头
+  resp[0] = 0x03
+  resp[1] = 0x00
+  resp.writeUInt16BE(22, 2)     // TPKT 总长度
+  // COTP 固定部分
+  resp[4] = 0x11                 // LI = 17
+  resp[5] = 0xD0                 // CC
+  resp[6] = 0x00                 // DST-REF (2字节)
+  resp[7] = 0x00
+  resp[8] = 0x00                 // SRC-REF (2字节)
+  resp[9] = 0x00
+  resp[10] = 0x00                // Class
+  // 参数
+  resp[11] = 0xC0                // TPDU-size = 1024
+  resp[12] = 0x01
+  resp[13] = 0x0A
+  resp[14] = 0xC1                // SRC-TSAP
+  resp[15] = 0x02
+  resp[16] = dstTSAP[0]
+  resp[17] = dstTSAP[1]
+  resp[18] = 0xC2                // DST-TSAP
+  resp[19] = 0x02
+  resp[20] = srcTSAP[0]
+  resp[21] = srcTSAP[1]
+
+  sock.write(resp)
   return true
 }
 
@@ -244,136 +324,138 @@ const server = net.createServer((sock) => {
   let cotpConnected = false
 
   sock.on('data', (data) => {
-    if (data.length < 4) return
+    try {
+      if (data.length < 4) return
 
-    // TPKT header
-    const tpktLen = data.readUInt16BE(2)
-    const payload = data.subarray(4, tpktLen)
+      // TPKT header
+      const tpktLen = data.readUInt16BE(2)
+      const payload = data.subarray(4, tpktLen)
 
-    if (!cotpConnected) {
-      if (handleCOTPConnect(sock, payload)) {
-        cotpConnected = true
-      }
-      return
-    }
-
-    // COPT DT 帧
-    let s7Req = payload
-    if (payload[0] === 0x02 && payload[1] === 0xF0) {
-      s7Req = payload.subarray(2)  // 跳过 COTP DT header
-    }
-
-    if (s7Req.length < 12) return
-
-    // S7 Header
-    const rosctr = s7Req[1]  // ROSCTR: 1=Job, 2=ACK, 3=ACK-Data, 7=UserData
-    if (rosctr !== 0x01) return
-
-    const paramLen = (s7Req[6] << 8) | s7Req[7]
-    const dataLen = (s7Req[8] << 8) | s7Req[9]
-    const params = s7Req.subarray(10, 10 + paramLen)
-    const dataSection = dataLen > 0 ? s7Req.subarray(10 + paramLen, 10 + paramLen + dataLen) : Buffer.alloc(0)
-
-    const funcGroup = params[1]
-
-    if ((funcGroup & 0xF0) === 0x00 && funcGroup !== 0x00) {
-      // S7 Read (Function 0x04)
-      // 也可能是其他功能，检查 params[0]
-    }
-
-    // S7 Read Job (function code 0x04 in params after header)
-    if (params[0] === 0x04) {
-      // 读取项目的数量
-      const itemCount = params[1]
-      const results: Buffer[] = []
-
-      for (let i = 0; i < itemCount; i++) {
-        const off = 2 + i * 10  // 每个 item 10 bytes
-        if (off + 10 > params.length) break
-
-        const transportSize = params[off + 1]
-        const count = (params[off + 3] << 8) | params[off + 4]
-        const dbNum = (params[off + 5] << 8) | params[off + 6]
-        const area = params[off + 7]
-        const byteAddr = (params[off + 8] << 8) | params[off + 9]  // 包含 bit 信息
-
-        if (transportSize === 0x03) {
-          // Bit access
-          const bit = byteAddr & 0x07
-          const byteOff = (byteAddr >> 3) & 0xFFFF
-          const result = s7ReadArea(area, dbNum, byteOff, bit, 1, 0x03)
-          if (result) results.push(result)
-        } else {
-          // Byte/word access
-          const addr = (params[off + 8] << 8) | params[off + 9]
-          const result = s7ReadArea(area, dbNum, addr, 0, count, transportSize)
-          if (result) results.push(result)
+      if (!cotpConnected) {
+        if (handleCOTPConnect(sock, payload)) {
+          cotpConnected = true
         }
+        return
       }
 
-      const respData = Buffer.concat(results)
-      const resp = s7ReadResponse(data, respData)
-      sendS7(sock, resp)
-    }
-    // S7 Write Job (function code 0x05)
-    else if (params[0] === 0x05) {
-      const itemCount = params[1]
+      // COPT DT 帧
+      let s7Req = payload
+      if (payload[0] === 0x02 && payload[1] === 0xF0) {
+        s7Req = payload.subarray(2)
+      }
 
-      // 解析写入参数
-      let dataOff = 0
-      for (let i = 0; i < itemCount; i++) {
-        const off = 2 + i * 10
-        if (off + 10 > params.length) break
+      if (s7Req.length < 12) return
 
-        const transportSize = params[off + 1]
-        const count = (params[off + 3] << 8) | params[off + 4]
-        const dbNum = (params[off + 5] << 8) | params[off + 6]
-        const area = params[off + 7]
-        const byteAddr = (params[off + 8] << 8) | params[off + 9]
+      // nodes7 的 S7 PDU 开头有一个 0x80 前缀字节
+      const s7Off = s7Req[0] === 0x80 ? 1 : 0
 
-        if (transportSize === 0x03) {
-          // Bit write
-          const bit = byteAddr & 0x07
-          const byteOff = (byteAddr >> 3) & 0xFFFF
-          const val = dataSection[dataOff] ?? 0
-          const mem = area === 0x84 ? memory.DB[dbNum]
-            : area === 0x81 ? memory.PA
-            : area === 0x82 ? memory.PE
-            : area === 0x83 ? memory.MK : undefined
-          if (mem && byteOff < mem.length) {
-            if (val) mem[byteOff] |= (1 << bit)
-            else mem[byteOff] &= ~(1 << bit)
+      const rosctr = s7Req[s7Off + 1]
+      if (rosctr !== 0x01) return
+
+      const pduRef = s7Req.readUInt16BE(s7Off + 4)
+      const paramLen = (s7Req[s7Off + 6] << 8) | s7Req[s7Off + 7]
+      const dataLen = (s7Req[s7Off + 8] << 8) | s7Req[s7Off + 9]
+      const params = s7Req.subarray(s7Off + 10, s7Off + 10 + paramLen)
+      const dataSection = dataLen > 0 ? s7Req.subarray(s7Off + 10 + paramLen, s7Off + 10 + paramLen + dataLen) : Buffer.alloc(0)
+
+      const funcCode = params[0]
+
+      if (funcCode === 0xF0) {
+        // S7 PDU 协商 (Setup Communication)
+        // nodes7 解析偏移（从 TCP 包头算起）:
+        //   data[19-20] → S7[12-13] = param[2-3]   = MaxAmplifier
+        //   data[21-22] → S7[14-15] = param[4-5]   = MaxAmplifier(dup)
+        //   data[23-24] → S7[16-17] = param[6-7]   = MaxAmplifier(dup)
+        //   data[25-26] → S7[18-19] = "data area"  = MaxPDULength
+        const resp = Buffer.alloc(20)
+        resp[0] = 0x32; resp[1] = 0x01; resp[2] = 0x00; resp[3] = 0x00
+        resp.writeUInt16BE(pduRef, 4)
+        resp[6] = 0x00; resp[7] = 0x08   // Param length = 8
+        resp[8] = 0x00; resp[9] = 0x00   // Data length = 0
+        resp[10] = 0xF0; resp[11] = 0x00 // Funct, Reserved
+        resp[12] = 0x00; resp[13] = 0x01 // data[19]: MaxAmplifier
+        resp[14] = 0x00; resp[15] = 0x01 // data[21]: MaxAmplifier(dup)
+        resp[16] = 0x00; resp[17] = 0x01 // data[23]: MaxAmplifier(dup)
+        resp[18] = 0x01; resp[19] = 0xE0 // data[25]: MaxPDU = 480
+        sendS7(sock, resp)
+      }
+      else if (funcCode === 0x04) {
+        // S7 Read
+        const itemCount = params[1]
+        const results: Buffer[] = []
+
+        for (let i = 0; i < itemCount; i++) {
+          const off = 2 + i * 10
+          if (off + 10 > params.length) break
+
+          const transportSize = params[off + 1]
+          const count = (params[off + 3] << 8) | params[off + 4]
+          const dbNum = (params[off + 5] << 8) | params[off + 6]
+          const area = params[off + 7]
+          const byteAddr = (params[off + 8] << 8) | params[off + 9]
+
+          if (transportSize === 0x03) {
+            const bit = byteAddr & 0x07
+            const byteOff = (byteAddr >> 3) & 0xFFFF
+            const r = s7ReadArea(area, dbNum, byteOff, bit, 1, 0x03)
+            if (r) results.push(r)
+          } else {
+            const addr = (params[off + 8] << 8) | params[off + 9]
+            const r = s7ReadArea(area, dbNum, addr, 0, count, transportSize)
+            if (r) results.push(r)
           }
-          dataOff += 1
-        } else {
-          const byteLen = transportSize === 0x04 ? count
-            : transportSize === 0x05 ? count * 2
-            : transportSize === 0x06 ? count * 4
-            : transportSize === 0x07 ? count * 8
-            : count
-          const writeData = dataSection.subarray(dataOff, dataOff + byteLen)
-          s7WriteArea(area, dbNum, byteAddr, 0, writeData)
-          dataOff += byteLen
         }
-      }
 
-      sendS7(sock, s7WriteResponse())
-    }
-    // S7 其他功能（如 SZL 读取、块信息等）— 返回空响应
-    else {
-      // 返回基本响应
-      const resp = Buffer.alloc(18)
-      resp[0] = 0x32
-      resp[1] = 0x03       // ACK-Data
-      resp.writeUInt16BE(22, 4)  // PDU Ref (copied from request)
-      resp[6] = 0x00
-      resp[7] = 0x02       // Param length = 2
-      resp[8] = 0x00
-      resp[9] = 0x00
-      resp[10] = 0xFF
-      resp[11] = 0x00
-      const actual = resp.subarray(0, 12)
-      sendS7(sock, actual)
+        const respData = Buffer.concat(results)
+        const resp = s7ReadResponse(data, respData)
+        sendS7(sock, resp)
+      }
+      else if (funcCode === 0x05) {
+        // S7 Write
+        const itemCount = params[1]
+        let dataOff = 0
+        for (let i = 0; i < itemCount; i++) {
+          const off = 2 + i * 10
+          if (off + 10 > params.length) break
+
+          const transportSize = params[off + 1]
+          const count = (params[off + 3] << 8) | params[off + 4]
+          const dbNum = (params[off + 5] << 8) | params[off + 6]
+          const area = params[off + 7]
+          const byteAddr = (params[off + 8] << 8) | params[off + 9]
+
+          if (transportSize === 0x03) {
+            const bit = byteAddr & 0x07
+            const byteOff = (byteAddr >> 3) & 0xFFFF
+            const val = dataSection[dataOff] ?? 0
+            const mem = area === 0x84 ? memory.DB[dbNum]
+              : area === 0x81 ? memory.PE
+              : area === 0x82 ? memory.PA
+              : area === 0x83 ? memory.MK : undefined
+            if (mem && byteOff < mem.length) {
+              if (val) mem[byteOff] |= (1 << bit)
+              else mem[byteOff] &= ~(1 << bit)
+            }
+            dataOff += 1
+          } else {
+            const byteLen = transportSize === 0x04 ? count
+              : transportSize === 0x05 ? count * 2
+              : transportSize === 0x06 ? count * 4
+              : transportSize === 0x07 ? count * 8
+              : count
+            const writeData = dataSection.subarray(dataOff, dataOff + byteLen)
+            s7WriteArea(area, dbNum, byteAddr, 0, writeData)
+            dataOff += byteLen
+          }
+        }
+
+        sendS7(sock, s7WriteResponse(itemCount))
+      }
+      else {
+        sendS7(sock, s7DefaultResponse(s7Req))
+      }
+    } catch (err) {
+      // S7 处理异常不崩溃
     }
   })
 
@@ -387,10 +469,10 @@ function startS7Server(port: number) {
     if (err.code === 'EACCES') {
       console.error('')
       console.error('╔══════════════════════════════════════════════════╗')
-      console.error('║  权限不足！102 端口需要管理员权限。              ║')
+      console.error(`║  权限不足！端口 ${port} 需要管理员权限或被系统保留。    ║`)
       console.error('║                                               ║')
-      console.error('║  修改 server/vplc-config.json 改用高位端口:     ║')
-      console.error('║    { "port": 1102 }                           ║')
+      console.error('║  修改 server/vplc-config.json 改用其他端口:     ║')
+      console.error(`║    { "port": ${port + 1} }                           ║`)
       console.error('╚══════════════════════════════════════════════════╝')
       process.exit(1)
     }
