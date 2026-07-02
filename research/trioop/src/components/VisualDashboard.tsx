@@ -495,7 +495,7 @@ export default function VisualDashboard({ liveData, ioData }: {
     requestAnimationFrame(() => {
       const rect = el.getBoundingClientRect()
       const vw = window.innerWidth, vh = window.innerHeight
-      const gap = 8
+      const gap = 38  // 底部留 30px 呼吸空间
       let x = left, y = top
       // 不超出视口
       if (rect.width > 0) {
