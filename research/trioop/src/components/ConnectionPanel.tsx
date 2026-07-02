@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Dropdown from './Dropdown'
 
 const STORAGE_KEY = 'trioop_connection'
+const PLC_HISTORY_KEY = 'trioop_plc_history'
 
 const CONN_TYPES = [
   { value: 'PG', label: 'PG (编程器)' },
@@ -21,6 +22,22 @@ function loadSaved() {
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
   return { mode: 's7', plcIp: '192.168.0.1', plcPort: 102, adapterIp: '', connType: 'BASIC', pollInterval: 1000, ioIBytes: '0,1,8', ioQBytes: '0,1,8', ioMBytes: '0,1,8' }
+}
+
+function loadHistory(): { ip: string; port: number }[] {
+  try {
+    const raw = localStorage.getItem(PLC_HISTORY_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveHistory(ip: string, port: number) {
+  try {
+    const list = loadHistory().filter(h => h.ip !== ip || h.port !== port)
+    list.unshift({ ip, port })
+    if (list.length > 20) list.length = 20  // 最多保留 20 条
+    localStorage.setItem(PLC_HISTORY_KEY, JSON.stringify(list))
+  } catch { /* ignore */ }
 }
 
 /** 将 "0,1,8" 格式的字节串转为后端用的 {start,end}[] 范围 */
@@ -127,7 +144,7 @@ export default function ConnectionPanel() {
           }),
         })
         const data = await res.json()
-        if (data.success) { setConnected(true); setStatusMsg(`已连接到 ${plcIp}`) }
+        if (data.success) { setConnected(true); setStatusMsg(`已连接到 ${plcIp}`); saveHistory(plcIp.trim(), Number(plcPort) || 102) }
         else { setStatusMsg(`连接失败: ${data.error}`) }
       } else {
         const res = await fetch('/api/opcua/connect', {
@@ -136,7 +153,7 @@ export default function ConnectionPanel() {
           body: JSON.stringify({ plcIp: plcIp.trim(), port: Number(opcUaPort) || 4840, ioRanges: { i: bytesToRanges(ioIBytes), q: bytesToRanges(ioQBytes), m: bytesToRanges(ioMBytes) } }),
         })
         const data = await res.json()
-        if (data.success) { setConnected(true); setStatusMsg(`OPC UA 已连接到 ${plcIp}`) }
+        if (data.success) { setConnected(true); setStatusMsg(`OPC UA 已连接到 ${plcIp}`); saveHistory(plcIp.trim(), Number(opcUaPort) || 4840) }
         else { setStatusMsg(`OPC UA 连接失败: ${data.error}`) }
       }
     } catch (err) {
@@ -180,12 +197,18 @@ export default function ConnectionPanel() {
 
       <div className="sidebar__group">
         <label className="sidebar__label">PLC IP 地址</label>
-        <input className="sidebar__input" type="text" value={plcIp} onChange={e => setPlcIp(e.target.value)} placeholder="192.168.0.1" />
+        <input className="sidebar__input" type="text" value={plcIp} onChange={e => setPlcIp(e.target.value)} placeholder="192.168.0.1" list="plc-ip-history" />
+        <datalist id="plc-ip-history">
+          {loadHistory().map((h, i) => <option key={i} value={h.ip} />)}
+        </datalist>
       </div>
 
       <div className="sidebar__group">
         <label className="sidebar__label">PLC 端口</label>
-        <input className="sidebar__input" type="number" value={plcPort} onChange={e => setPlcPort(e.target.value)} placeholder="102" min={1} max={65535} />
+        <input className="sidebar__input" type="number" value={plcPort} onChange={e => setPlcPort(e.target.value)} placeholder="102" min={1} max={65535} list="plc-port-history" />
+        <datalist id="plc-port-history">
+          {[...new Set(loadHistory().map(h => h.port))].map((p, i) => <option key={i} value={p} />)}
+        </datalist>
       </div>
 
       {mode === 's7' ? (

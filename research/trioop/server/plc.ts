@@ -550,11 +550,13 @@ async function doReadRaw(s7addr: string): Promise<number> {
     client!.setTranslationCB((t: string) => t === tag ? s7addr : origCB(t))
     client!.addItems([tag])
     setTimeout(() => {
-      client!.readAllItems((err: any, values: Record<string, any>) => {
+      client!.readAllItems((_anyBad: any, values: Record<string, any>) => {
         client!.removeItems([tag])
         client!.setTranslationCB(origCB)
         const val = values[tag]
-        if (err || val === undefined) reject(new Error(`读取 ${s7addr} 失败`))
+        // nodes7 的 anyBadQualities 是全局标记：只要读包里有一项质量不好就 true，
+        // 但我们只关心 temp tag 自己读没读到。val 如果是质量码（非 undefined）也应接受。
+        if (val === undefined || val === null) reject(new Error(`读取 ${s7addr} 失败: 返回值未定义`))
         else resolve(Number(val))
       })
     }, 50)

@@ -110,52 +110,56 @@ function sendS7(sock: net.Socket, s7payload: Buffer) {
 }
 
 /** 构建 S7 Read 响应 */
-function s7ReadResponse(reqData: Buffer, resultData: Buffer) {
+function s7ReadResponse(pduRef: number, resultData: Buffer) {
   const paramLen = 2
+  const padding = 2  // 填充使 data 对齐到 TCP 字节 21（= S7 偏移 14，预留 2 字节填充）
   const dataLen = resultData.length
-  const header = Buffer.alloc(12 + paramLen + dataLen)
+  const header = Buffer.alloc(12 + paramLen + padding + dataLen)
 
   // S7 Header
   header[0] = 0x32          // Protocol ID
-  header[1] = 0x01          // Message Type: Response
+  header[1] = 0x03          // Message Type: ACK-Data (nodes7 要求 ROSCTR=0x03)
   header[2] = 0x00          // Reserved
   header[3] = 0x00          // Reserved
-  header.writeUInt16BE(8 + paramLen + dataLen, 4)  // PDU Ref
-  header[6] = 0x00          // Param length high
-  header[7] = paramLen      // Param length low
+  header.writeUInt16BE(pduRef, 4)  // 回显请求的 PDU Ref
+  header[6] = 0x00
+  header[7] = paramLen + padding  // Param length = 4（nodes7 按此偏移读 data）
   header[8] = dataLen >> 8  // Data length high
   header[9] = dataLen & 0xFF// Data length low
 
-  // S7 Parameter: Read Response
-  header[10] = 0xFF         // Item count
-  header[11] = 0x00         // ?
+  // S7 Parameter: Read ACK (2 字节 + 2 填充)
+  header[10] = 0xFF         // 功能返回码
+  header[11] = 0x00         // Reserved
+  // 填充字节 [12-13] 自动为 0
 
   // S7 Data: Returned items
-  resultData.copy(header, 12)
+  resultData.copy(header, 14)
 
   return header
 }
 
 /** 构建 S7 Write 响应 */
-function s7WriteResponse(dataLen = 0) {
+function s7WriteResponse(pduRef: number, dataLen = 0) {
   const dataByteLen = dataLen > 0 ? dataLen : 1
-  const buf = Buffer.alloc(12 + dataByteLen)
+  const buf = Buffer.alloc(14 + dataByteLen)  // header(10) + params(4) + data
   buf[0] = 0x32
   buf[1] = 0x03         // Message Type: ACK-Data
   buf[2] = 0x00
   buf[3] = 0x00
-  buf.writeUInt16BE(10, 4)  // PDU Ref (will be overwritten by caller if needed)
+  buf.writeUInt16BE(pduRef, 4)  // 回显请求的 PDU Ref
   buf[6] = 0x00
-  buf[7] = 0x02             // Param length = 2
+  buf[7] = 0x04             // Param length = 4（nodes7 用固定 dataPointer=21）
   buf[8] = dataByteLen >> 8 // Data length high
   buf[9] = dataByteLen & 0xFF // Data length low
 
-  // S7 Parameter: Write Response
-  buf[10] = 0x01            // Item count
-  buf[11] = 0x00            // Return code
+  // S7 Parameter: Write Response (4 字节)
+  buf[10] = 0x00            // 功能返回码
+  buf[11] = 0x00            // Reserved
+  buf[12] = 0x00            // Reserved
+  buf[13] = 0x00            // Reserved
 
-  // 数据区：每个写入项返回 0xFF (成功，S7 协议中 0xFF 表示 OK)
-  for (let i = 0; i < dataByteLen; i++) buf[12 + i] = 0xFF
+  // 数据区：每个写入项返回 0xFF (成功)
+  for (let i = 0; i < dataByteLen; i++) buf[14 + i] = 0xFF
 
   return buf
 }
@@ -167,7 +171,7 @@ function s7DefaultResponse(req: Buffer) {
   const pduRef = req.readUInt16BE(s7Off + 4)
   const buf = Buffer.alloc(12)
   buf[0] = 0x32
-  buf[1] = 0x01       // Response
+  buf[1] = 0x03       // ACK-Data (nodes7 要求 ROSCTR=0x03)
   buf[2] = 0x00
   buf[3] = 0x00
   buf.writeUInt16BE(pduRef, 4)
@@ -194,15 +198,17 @@ function s7ReadArea(area: number, dbNum: number, byteAddr: number, bit: number, 
   }
   else if (area === 0x85) mem = memory.CT  // 计数器
   else if (area === 0x87) mem = memory.TM  // 定时器
-  else if (area === 0x81) mem = memory.PA  // Q 区 / PA
   else return null
 
+  // nodes7 用 readTransportCode=0x04，长度字段为位数，且传输码也要匹配 0x04
+  const responseTransportCode = transportSize === 0x03 ? 0x03 : 0x04
+  const lengthValue = responseTransportCode === 0x04 ? count * 8 : count  // 0x04 → 位数
   const buf = Buffer.alloc(count + 4)
   // Return item header
   buf[0] = 0xFF      // Return code: OK
-  buf[1] = transportSize || 0x04  // Transport size
-  buf[2] = count >> 8
-  buf[3] = count & 0xFF
+  buf[1] = responseTransportCode
+  buf[2] = lengthValue >> 8
+  buf[3] = lengthValue & 0xFF
 
   if (transportSize === 0x03) {
     // BIT: 读单个位
@@ -326,8 +332,6 @@ const server = net.createServer((sock) => {
   sock.on('data', (data) => {
     try {
       if (data.length < 4) return
-
-      // TPKT header
       const tpktLen = data.readUInt16BE(2)
       const payload = data.subarray(4, tpktLen)
 
@@ -368,7 +372,7 @@ const server = net.createServer((sock) => {
         //   data[23-24] → S7[16-17] = param[6-7]   = MaxAmplifier(dup)
         //   data[25-26] → S7[18-19] = "data area"  = MaxPDULength
         const resp = Buffer.alloc(20)
-        resp[0] = 0x32; resp[1] = 0x01; resp[2] = 0x00; resp[3] = 0x00
+        resp[0] = 0x32; resp[1] = 0x03; resp[2] = 0x00; resp[3] = 0x00
         resp.writeUInt16BE(pduRef, 4)
         resp[6] = 0x00; resp[7] = 0x08   // Param length = 8
         resp[8] = 0x00; resp[9] = 0x00   // Data length = 0
@@ -380,19 +384,21 @@ const server = net.createServer((sock) => {
         sendS7(sock, resp)
       }
       else if (funcCode === 0x04) {
-        // S7 Read
+        // S7 Read — nodes7 用 12 字节项，不是 10
         const itemCount = params[1]
         const results: Buffer[] = []
 
         for (let i = 0; i < itemCount; i++) {
-          const off = 2 + i * 10
-          if (off + 10 > params.length) break
+          const off = 2 + i * 12
+          if (off + 12 > params.length) break
 
-          const transportSize = params[off + 1]
-          const count = (params[off + 3] << 8) | params[off + 4]
-          const dbNum = (params[off + 5] << 8) | params[off + 6]
-          const area = params[off + 7]
-          const byteAddr = (params[off + 8] << 8) | params[off + 9]
+          const transportSize = params[off + 3]
+          const count = (params[off + 4] << 8) | params[off + 5]
+          const dbNum = (params[off + 6] << 8) | params[off + 7]
+          const area = params[off + 8]
+          const byteAddr = area === 0x84
+            ? (params[off + 9] << 8) | params[off + 10]   // DB
+            : (params[off + 10] << 8) | params[off + 11]  // I/Q/M
 
           if (transportSize === 0x03) {
             const bit = byteAddr & 0x07
@@ -400,14 +406,13 @@ const server = net.createServer((sock) => {
             const r = s7ReadArea(area, dbNum, byteOff, bit, 1, 0x03)
             if (r) results.push(r)
           } else {
-            const addr = (params[off + 8] << 8) | params[off + 9]
-            const r = s7ReadArea(area, dbNum, addr, 0, count, transportSize)
+            const r = s7ReadArea(area, dbNum, byteAddr, 0, count, transportSize)
             if (r) results.push(r)
           }
         }
 
         const respData = Buffer.concat(results)
-        const resp = s7ReadResponse(data, respData)
+        const resp = s7ReadResponse(pduRef, respData)
         sendS7(sock, resp)
       }
       else if (funcCode === 0x05) {
@@ -415,14 +420,16 @@ const server = net.createServer((sock) => {
         const itemCount = params[1]
         let dataOff = 0
         for (let i = 0; i < itemCount; i++) {
-          const off = 2 + i * 10
-          if (off + 10 > params.length) break
+          const off = 2 + i * 12
+          if (off + 12 > params.length) break
 
-          const transportSize = params[off + 1]
-          const count = (params[off + 3] << 8) | params[off + 4]
-          const dbNum = (params[off + 5] << 8) | params[off + 6]
-          const area = params[off + 7]
-          const byteAddr = (params[off + 8] << 8) | params[off + 9]
+          const transportSize = params[off + 3]
+          const count = (params[off + 4] << 8) | params[off + 5]
+          const dbNum = (params[off + 6] << 8) | params[off + 7]
+          const area = params[off + 8]
+          const byteAddr = area === 0x84
+            ? (params[off + 9] << 8) | params[off + 10]   // DB
+            : (params[off + 10] << 8) | params[off + 11]  // I/Q/M
 
           if (transportSize === 0x03) {
             const bit = byteAddr & 0x07
@@ -449,7 +456,7 @@ const server = net.createServer((sock) => {
           }
         }
 
-        sendS7(sock, s7WriteResponse(itemCount))
+        sendS7(sock, s7WriteResponse(pduRef, itemCount))
       }
       else {
         sendS7(sock, s7DefaultResponse(s7Req))

@@ -28,25 +28,29 @@ export function setDeadbands(map: Record<string, number>): void {
 }
 
 // ─── SQLite ────────────────────────────────────────────
-const db = new Database(DB_FILE)
-db.pragma('journal_mode = WAL')
-db.pragma('synchronous = NORMAL')
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS raw  (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
-  CREATE TABLE IF NOT EXISTS _1m   (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
-  CREATE TABLE IF NOT EXISTS _1h   (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
-  CREATE INDEX IF NOT EXISTS idx_raw  ON raw(name, ts);
-  CREATE INDEX IF NOT EXISTS idx_1m   ON _1m(name, ts);
-  CREATE INDEX IF NOT EXISTS idx_1h   ON _1h(name, ts);
-`)
-
-const insRaw = db.prepare('INSERT INTO raw VALUES (?, ?, ?)')
-const ins1m  = db.prepare('INSERT OR REPLACE INTO _1m VALUES (?, ?, ?)')
-const ins1h  = db.prepare('INSERT OR REPLACE INTO _1h VALUES (?, ?, ?)')
-const delRaw = db.prepare('DELETE FROM raw WHERE ts < ?')
-const del1m  = db.prepare('DELETE FROM _1m WHERE ts < ?')
-const del1h  = db.prepare('DELETE FROM _1h WHERE ts < ?')
+let db: Database.Database | null = null
+try { db = new Database(DB_FILE) } catch {
+  console.warn('[history] better-sqlite3 加载失败，历史记录功能不可用')
+}
+if (db) {
+  db.pragma('journal_mode = WAL')
+  db.pragma('synchronous = NORMAL')
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS raw  (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
+    CREATE TABLE IF NOT EXISTS _1m   (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
+    CREATE TABLE IF NOT EXISTS _1h   (name TEXT NOT NULL, ts INTEGER NOT NULL, val REAL NOT NULL);
+    CREATE INDEX IF NOT EXISTS idx_raw  ON raw(name, ts);
+    CREATE INDEX IF NOT EXISTS idx_1m   ON _1m(name, ts);
+    CREATE INDEX IF NOT EXISTS idx_1h   ON _1h(name, ts);
+  `)
+}
+const noop = () => {}
+const insRaw = db?.prepare('INSERT INTO raw VALUES (?, ?, ?)') ?? { run: noop }
+const ins1m  = db?.prepare('INSERT OR REPLACE INTO _1m VALUES (?, ?, ?)') ?? { run: noop }
+const ins1h  = db?.prepare('INSERT OR REPLACE INTO _1h VALUES (?, ?, ?)') ?? { run: noop }
+const delRaw = db?.prepare('DELETE FROM raw WHERE ts < ?') ?? { run: noop }
+const del1m  = db?.prepare('DELETE FROM _1m WHERE ts < ?') ?? { run: noop }
+const del1h  = db?.prepare('DELETE FROM _1h WHERE ts < ?') ?? { run: noop }
 
 const lastVals = new Map<string, { val: number; ts: number }>()
 
@@ -68,6 +72,7 @@ export function writePoints(data: Record<string, number | boolean>): void {
 let last1m = 0, last1h = 0
 
 function downsample() {
+  if (!db) return
   const now = Date.now()
   if (now - last1m >= 60_000) {
     const cutoff = now - 3600_000
@@ -94,7 +99,7 @@ function downsample() {
 let timer: ReturnType<typeof setInterval> | null = null
 
 export function startFlush(): void {
-  if (timer) return
+  if (!db || timer) return
   timer = setInterval(downsample, 10_000)
 }
 
@@ -104,6 +109,7 @@ export function stopFlush(): void {
 
 // ─── 查询（自动选表） ─────────────────────────────────
 export function queryHistory(name: string, from?: number, to?: number, limit = 10000): { timestamp: number; value: number }[] {
+  if (!db) return []
   const tFrom = from ?? 0, tTo = to ?? Date.now()
   const span = tTo - tFrom
   const table = span > 7 * 86400_000 ? '_1h' : span > 3600_000 ? '_1m' : 'raw'
