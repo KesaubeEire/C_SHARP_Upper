@@ -97,6 +97,7 @@ async function pollVplcHttp() {
     if (!d || !d.PE) return
     ioDataCache.i = Object.fromEntries((d.PE as number[]).map((v: number, i: number) => [i, v]))
     ioDataCache.q = Object.fromEntries((d.PA as number[]).map((v: number, i: number) => [i, v]))
+    ioDataCache.m = Object.fromEntries((d.MK as number[]).map((v: number, i: number) => [i, v]))
     broadcast({ db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache })
   } catch {}
 }

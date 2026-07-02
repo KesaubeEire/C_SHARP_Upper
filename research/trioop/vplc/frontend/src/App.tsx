@@ -128,7 +128,7 @@ function MonitorTab({ snap, iAddrs, qAddrs, mAddrs, setIAddrs, setQAddrs, setMAd
             <div className="io-table">
               <div className="io-row io-header">
                 <span className="io-addr">地址</span>
-                {[7, 6, 5, 4, 3, 2, 1, 0].map(b => <span key={b} className="io-bit-label">{b}</span>)}
+                {[0, 1, 2, 3, 4, 5, 6, 7].map(b => <span key={b} className="io-bit-label">{b}</span>)}
                 <span className="io-hex">HEX</span>
                 <span className="io-rnd">随机</span>
               </div>
@@ -137,7 +137,7 @@ function MonitorTab({ snap, iAddrs, qAddrs, mAddrs, setIAddrs, setQAddrs, setMAd
                 return (
                   <div key={addr} className="io-row">
                     <span className="io-addr">{prefix}{addr}</span>
-                    {[7, 6, 5, 4, 3, 2, 1, 0].map(b => (
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map(b => (
                       <span key={b} className={'io-bit' + ((v >> b) & 1 ? ' on' : ' off')}
                         onClick={() => onToggleBit(prefix, addr, b)} />
                     ))}

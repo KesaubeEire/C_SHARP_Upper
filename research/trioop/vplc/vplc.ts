@@ -519,7 +519,7 @@ function memorySnapshot() {
   }
   snap.PE = Array.from(memory.PE.subarray(0, 32))
   snap.PA = Array.from(memory.PA.subarray(0, 32))
-  snap.MK = Array.from(memory.MK.subarray(0, 32))
+  snap.MK = Array.from(memory.MK.subarray(0, 128))  // 暴露到 MB127，覆盖 MB80/MB81
 
   // 添加解析后的可读值
   const db6 = memory.DB[6]; const dv6 = db6 ? new DataView(db6.buffer, db6.byteOffset, db6.byteLength) : null
@@ -549,10 +549,95 @@ function memorySnapshot() {
   return snap
 }
 
-const webServer = http.createServer((req, res) => {
-  if (req.url === '/api/vplc') {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
-    res.end(JSON.stringify(memorySnapshot()))
+function readBody(req: http.IncomingMessage): Promise<Buffer> {
+  return new Promise(resolve => {
+    const chunks: Buffer[] = []
+    req.on('data', (c: Buffer) => chunks.push(c))
+    req.on('end', () => resolve(Buffer.concat(chunks)))
+  })
+}
+
+const webServer = http.createServer(async (req, res) => {
+  const writeJson = (code: number, data: any) => {
+    res.writeHead(code, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+    res.end(JSON.stringify(data))
+  }
+
+  if (req.url === '/api/vplc' && req.method === 'GET') {
+    writeJson(200, memorySnapshot())
+    return
+  }
+
+  if (req.url === '/api/vplc/write' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    const { area, dbNumber, offset, type, value, bit } = body
+    area; dbNumber; offset; type; value; bit
+    console.log(`[vPLC] HTTP write:`, body)
+    if (type === 'bit' && bit !== undefined) {
+      const mem = area === 'I' ? memory.PE : area === 'Q' ? memory.PA : area === 'M' ? memory.MK : null
+      if (mem && offset < mem.length) {
+        if (value) mem[offset] |= (1 << bit)
+        else mem[offset] &= ~(1 << bit)
+      }
+    } else {
+      const mem = area === 'I' ? memory.PE : area === 'Q' ? memory.PA : area === 'M' ? memory.MK : area === 'DB' ? memory.DB[dbNumber] : null
+      if (mem && offset >= 0) {
+        if (type === 'byte') mem[offset] = value & 0xFF
+        else if (type === 'real' && offset + 4 <= mem.length) {
+          // 需要确保 Uint8Array 有后备 buffer（初始化的就有）
+          const dv = new DataView(mem.buffer, mem.byteOffset + offset, 4)
+          dv.setFloat32(0, value, false)
+        }
+      }
+    }
+    writeJson(200, { success: true })
+    return
+  }
+
+  if (req.url === '/api/vplc/toggle-bit' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    const { area, offset, bit } = body
+    const mem = area === 'I' ? memory.PE : area === 'Q' ? memory.PA : area === 'M' ? memory.MK : null
+    if (mem && offset < mem.length) {
+      mem[offset] ^= (1 << bit)
+    }
+    writeJson(200, { success: true })
+    return
+  }
+
+  if (req.url === '/api/vplc/create-db' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    const { dbNumber, size } = body
+    if (!memory.DB[dbNumber]) {
+      memory.DB[dbNumber] = new Uint8Array(size || 64)
+    }
+    writeJson(200, { success: true })
+    return
+  }
+
+  if (req.url === '/api/vplc/import-db' && req.method === 'POST') {
+    writeJson(200, { success: true, dbName: 'imported', fields: 0 })
+    return
+  }
+
+  // Trigger stubs（简化版，让前端触发器 Tab 不报错）
+  if (req.url === '/api/vplc/triggers' && req.method === 'GET') {
+    writeJson(200, [])
+    return
+  }
+  if (req.url === '/api/vplc/triggers' && req.method === 'POST') {
+    writeJson(200, { id: Date.now().toString(), active: false })
+    return
+  }
+  if (req.url?.startsWith('/api/vplc/triggers/') && req.method === 'DELETE') {
+    writeJson(200, { success: true })
+    return
+  }
+
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,DELETE', 'Access-Control-Allow-Headers': 'Content-Type' })
+    res.end()
     return
   }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
