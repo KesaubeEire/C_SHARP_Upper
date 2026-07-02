@@ -81,6 +81,12 @@ function simulate() {
   const dv6 = new DataView(db6.buffer, db6.byteOffset, db6.byteLength)
   dv6.setFloat32(38, Math.max(0, Math.min(100, (Math.sin(now / 2000) + 1) * 50)), false)
 
+  // I0.0-I0.3 间歇变化（不同频率模拟传感器信号）
+  memory.PE[0] = (Math.floor(now / 800) % 2) * 0x01    // I0.0: 0.8s
+                | (Math.floor(now / 1500) % 2) * 0x02   // I0.1: 1.5s
+                | (Math.floor(now / 2200) % 2) * 0x04   // I0.2: 2.2s
+                | (Math.floor(now / 3000) % 2) * 0x08   // I0.3: 3.0s
+
   // Q8 点位的模拟（如果 Q8.2=1 表示运行，则 Q8.3 周期性变化）
   const qb8 = memory.PA[8]
   if (qb8 & 0b00000100) {
@@ -203,7 +209,10 @@ function s7ReadArea(area: number, dbNum: number, byteAddr: number, bit: number, 
   // nodes7 用 readTransportCode=0x04，长度字段为位数，且传输码也要匹配 0x04
   const responseTransportCode = transportSize === 0x03 ? 0x03 : 0x04
   const lengthValue = responseTransportCode === 0x04 ? count * 8 : count  // 0x04 → 位数
-  const buf = Buffer.alloc(count + 4)
+  // S7 协议要求每个 item 数据区对齐到偶数边界，奇数时补 1 字节填充
+  const dataLen = count
+  const paddedLen = dataLen + (dataLen % 2)  // 对齐到偶数
+  const buf = Buffer.alloc(4 + paddedLen)
   // Return item header
   buf[0] = 0xFF      // Return code: OK
   buf[1] = responseTransportCode
@@ -215,9 +224,10 @@ function s7ReadArea(area: number, dbNum: number, byteAddr: number, bit: number, 
     const byteVal = mem[byteAddr] ?? 0
     buf[4] = (byteVal >> bit) & 1
   } else {
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < dataLen; i++) {
       buf[4 + i] = mem[byteAddr + i] ?? 0
     }
+    // 填充字节（对齐到偶数）自动为 0
   }
 
   return buf
@@ -413,6 +423,10 @@ const server = net.createServer((sock) => {
 
         const respData = Buffer.concat(results)
         const resp = s7ReadResponse(pduRef, respData)
+        if (results.length > 0) {
+          const firstItem = results[0]
+          console.log(`[vPLC] RESP item0: ${firstItem.toString('hex')} (len=${firstItem.length})`)
+        }
         sendS7(sock, resp)
       }
       else if (funcCode === 0x05) {

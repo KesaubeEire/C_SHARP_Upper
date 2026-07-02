@@ -8,6 +8,7 @@
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import net from 'net'
 import config from './config.js'
 import * as plc from './plc.js'
 import * as opcua from './opcua.js'
@@ -80,19 +81,38 @@ let dbBlockCache: Record<string, number[] | null> = {}
 /** 轮询防并发锁 — setInterval 不等待 async，用此锁防止堆积 */
 let _isPolling = false
 
-/** 暂停轮询（批量写入/读取时暂停，避免和 nodes7 内部操作冲突） */
+/** 暂停轮询 */
 function pausePolling() {
-  if (pollingTimer) {
-    clearInterval(pollingTimer)
-    pollingTimer = null
-  }
+  if (pollingTimer && typeof pollingTimer === 'object') { clearTimeout(pollingTimer); pollingTimer = null }
+  else pollingTimer = null
+}
+
+/** VPLC HTTP 轮询（每 500ms 直拉 VPLC 真实内存更新 I/Q 缓存并推 SSE） */
+let vplcHttpTimer: ReturnType<typeof setInterval> | null = null
+async function pollVplcHttp() {
+  try {
+    const r = await fetch('http://localhost:1201/api/vplc')
+    if (!r.ok) return
+    const d = await r.json()
+    if (!d || !d.PE) return
+    ioDataCache.i = Object.fromEntries((d.PE as number[]).map((v: number, i: number) => [i, v]))
+    ioDataCache.q = Object.fromEntries((d.PA as number[]).map((v: number, i: number) => [i, v]))
+    broadcast({ db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache })
+  } catch {}
+}
+
+/** 递归 setTimeout 轮询，不会被 _isPolling 跳过导致频率降低 */
+async function pollLoop() {
+  if (!pollingTimer) return  // 被暂停了
+  await poll()
+  if (pollingTimer) pollingTimer = setTimeout(pollLoop, runtimePollInterval)
 }
 
 /** 恢复轮询 */
 function resumePolling() {
   if (!pollingTimer && plc.isConnected()) {
-    pollingTimer = setInterval(poll, runtimePollInterval)
-    poll()
+    pollingTimer = true as any  // 非空标记
+    pollLoop()
   }
 }
 
@@ -131,12 +151,21 @@ app.post('/api/plc/connect', async (req, res) => {
 
   plc.disconnect()
   if (pollingTimer) clearInterval(pollingTimer)
+  // 清空旧数据
+  plcDataCache = {}
+  ioDataCache = { i: {}, q: {}, m: {} }
+  dbBlockCache = {}
+  broadcast({ db: {}, io: { i: {}, q: {}, m: {} }, dbBlocks: {} })
 
   try {
     await plc.connect(runtimePlcIp, config.plc.rack, config.plc.slot, runtimeLocalAddr, runtimeConnType, config.variables, dbBlocks, ioRanges, runtimePlcPort)
     plcDataCache = {}
-    pollingTimer = setInterval(poll, runtimePollInterval)
-    poll()
+    if (runtimePlcIp === '127.0.0.1') {
+      if (!vplcHttpTimer) { vplcHttpTimer = setInterval(pollVplcHttp, runtimePollInterval); pollVplcHttp() }
+    } else {
+      pollingTimer = setInterval(poll, runtimePollInterval)
+      poll()
+    }
     logEvent('plc.connect', `已连接到 ${runtimePlcIp}（S7）`, currentUser(req))
     res.json({ success: true, message: `已连接到 ${runtimePlcIp}` })
   } catch (err) {
@@ -148,10 +177,12 @@ app.post('/api/plc/connect', async (req, res) => {
 app.post('/api/plc/disconnect', (req, res) => {
   logEvent('plc.disconnect', '断开 PLC 连接', currentUser(req))
   plc.disconnect()
-  if (pollingTimer) {
-    clearInterval(pollingTimer)
-    pollingTimer = null
-  }
+  if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null }
+  if (vplcHttpTimer) { clearInterval(vplcHttpTimer); vplcHttpTimer = null }
+  plcDataCache = {}
+  ioDataCache = { i: {}, q: {}, m: {} }
+  dbBlockCache = {}
+  broadcast({ db: {}, io: { i: {}, q: {}, m: {} }, dbBlocks: {} })
   res.json({ success: true })
 })
 
@@ -628,56 +659,6 @@ app.post('/api/plc/imported-db-write', async (req, res) => {
   }
 })
 
-// ─── TCP 直写 S7（给 vPLC 用，不依赖 nodes7） ──────────
-import net from 'net'
-function s7DirectWrite(host: string, port: number, areaCode: number, byteAddr: number, data: Buffer): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const sock = new net.Socket()
-    const tOut = setTimeout(() => { sock.destroy(); reject(new Error('直写超时')) }, 3000)
-    sock.connect(port, host, () => {
-      const cr = Buffer.alloc(22)
-      cr[0]=0x03; cr[1]=0x00; cr.writeUInt16BE(22,2)
-      cr[4]=0x11; cr[5]=0xE0; cr[6]=0x00; cr[7]=0x00
-      cr[8]=0x00; cr[9]=0x01; cr[10]=0x00
-      cr[11]=0xC1; cr[12]=0x02; cr.writeUInt16BE(0x0100,13)
-      cr[15]=0xC2; cr[16]=0x02; cr.writeUInt16BE(0x0102,17)
-      sock.write(cr)
-    })
-    let waitCC = true, buf = Buffer.alloc(0)
-    sock.on('data', (chunk) => {
-      buf = Buffer.concat([buf, chunk])
-      if (buf.length < 4) return
-      const tlen = buf.readUInt16BE(2)
-      if (buf.length < tlen) return
-      if (waitCC && buf[5] === 0xD0) {
-        waitCC = false
-        // S7 Write 请求
-        const req = Buffer.alloc(32)
-        let o=0; req[o++]=0x03; req[o++]=0x00; req[o++]=0x00; req[o++]=0x20
-        req[o++]=0x02; req[o++]=0xF0; req[o++]=0x80
-        req[o++]=0x32; req[o++]=0x01; req[o++]=0x00; req[o++]=0x00
-        req[o++]=0x00; req[o++]=0x01
-        req[o++]=0x00; req[o++]=0x0E; req[o++]=0x00; req[o++]=data.length
-        req[o++]=0x05; req[o++]=0x01
-        req[o++]=0x12; req[o++]=0x0A; req[o++]=0x10
-        req[o++]=0x04; req[o++]=0x00; req[o++]=data.length
-        req[o++]=0x00; req[o++]=0x00; req[o++]=areaCode
-        req[o++]=0x00; req[o++]=byteAddr >> 8; req[o++]=byteAddr & 0xFF
-        data.copy(req, o)
-        sock.write(req)
-        buf = Buffer.alloc(0)
-      } else if (!waitCC && buf[5] === 0xF0 && buf.length >= tlen) {
-        clearTimeout(tOut); sock.destroy()
-        // 检查写响应最后字节是否为 0xFF
-        const ok = buf[tlen - 1] === 0xFF
-        if (ok) resolve()
-        else reject(new Error('vPLC 写入返回非 0xFF'))
-      }
-    })
-    sock.on('error', (e) => { clearTimeout(tOut); reject(e) })
-  })
-}
-
 // ─── API: 写入 I/O 点 ──────────────────────────────────
 app.post('/api/plc/write-io', async (req, res) => {
   const { area, byte: byteAddr, bit, value } = req.body
@@ -690,12 +671,34 @@ app.post('/api/plc/write-io', async (req, res) => {
     const cache = area === 'q' ? ioDataCache.q : ioDataCache.m
     const currByte = cache[byteAddr] ?? 0
     const newByte = value ? (currByte | (1 << Number(bit))) : (currByte & ~(1 << Number(bit)))
-    const areaCode = area === 'q' ? 0x82 : 0x83
-    // 先试 nodes7（真 PLC），不行再试 TCP 直写（vPLC）
-    try {
+    // 开头就分路：127.0.0.1 走 TCP 直写（VPLC），其他走 nodes7
+    if (runtimePlcIp === '127.0.0.1') {
+      await new Promise((resolve, reject) => {
+        const s = new net.Socket(); let b = Buffer.alloc(0), cc = false
+        const t = setTimeout(() => { s.destroy(); reject(new Error('vPLC 直写超时')) }, 2000)
+        s.connect(runtimePlcPort, '127.0.0.1', () => {
+          const cr = Buffer.alloc(22); cr[0]=0x03; cr[1]=0x00; cr.writeUInt16BE(22,2)
+          cr[4]=0x11; cr[5]=0xE0; cr[6]=0x00; cr[7]=0x00; cr[8]=0x00; cr[9]=0x01; cr[10]=0x00
+          cr[11]=0xC1; cr[12]=0x02; cr.writeUInt16BE(0x0100,13)
+          cr[15]=0xC2; cr[16]=0x02; cr.writeUInt16BE(0x0102,17); s.write(cr)
+        })
+        s.on('data', c => {
+          b = Buffer.concat([b,c]); if (b.length<4) return; const l = b.readUInt16BE(2)
+          if (b.length<l) return
+          if (!cc && b[5]===0xD0) {
+            cc=true; let o=0, q=Buffer.alloc(35); const ac=area==='q'?0x82:0x83
+            q[o++]=0x03;q[o++]=0x00;q[o++]=0x00;q[o++]=0x20;q[o++]=0x02;q[o++]=0xF0;q[o++]=0x80
+            q[o++]=0x32;q[o++]=0x01;q[o++]=0x00;q[o++]=0x00;q[o++]=0x00;q[o++]=0x01
+            q[o++]=0x00;q[o++]=0x0E;q[o++]=0x00;q[o++]=0x01;q[o++]=0x05;q[o++]=0x01
+            q[o++]=0x12;q[o++]=0x0A;q[o++]=0x10;q[o++]=0x04;q[o++]=0x00;q[o++]=0x01
+            q[o++]=0x00;q[o++]=0x00;q[o++]=ac;q[o++]=0x00;q[o++]=Number(byteAddr)>>8;q[o++]=Number(byteAddr)&0xFF;q[o++]=newByte
+            s.write(q.slice(0, o));b=Buffer.alloc(0)
+          } else if (cc && b[5]===0xF0) { clearTimeout(t); s.destroy(); resolve() }
+        })
+        s.on('error', e => { clearTimeout(t); reject(e) })
+      })
+    } else {
       await plc.writeByte(area, Number(byteAddr), newByte)
-    } catch {
-      await s7DirectWrite(runtimePlcIp, runtimePlcPort, areaCode, Number(byteAddr), Buffer.from([newByte]))
     }
     if (area === 'q') ioDataCache.q[byteAddr] = newByte
     else ioDataCache.m[byteAddr] = newByte
@@ -1295,9 +1298,12 @@ async function poll() {
     recordPoll(performance.now() - t0)
 
     plcDataCache = result.db
-    ioDataCache.i = result.io.i
-    ioDataCache.q = result.io.q
-    ioDataCache.m = result.io.m
+    // VPLC 的 I/Q/M 由 HTTP 轮询更新，不走 nodes7（nodes7 解析 VPLC 响应时 Q 区为 0）
+    if (runtimePlcIp !== '127.0.0.1') {
+      ioDataCache.i = result.io.i
+      ioDataCache.q = result.io.q
+      ioDataCache.m = result.io.m
+    }
     dbBlockCache = result.dbBlocks
 
     // 写入趋势缓冲区

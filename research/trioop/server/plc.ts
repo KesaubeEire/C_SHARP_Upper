@@ -462,11 +462,14 @@ export async function writeIOBit(area: string, byteAddr: number, bit: number, va
 }
 
 /** 直接写一个字节（前端已算好新值，无需读-改-写），兼容 Q/M 区 */
-export async function writeByte(area: string, byteAddr: number, value: number): Promise<void> {
+export async function writeByte(area: string, byteAddr: number, value: number, _retry = true): Promise<void> {
   if (!client || !_connected) throw new Error('PLC 未连接')
   const prefix = area.toUpperCase()
   return new Promise((resolve, reject) => {
+    // 写操作超时保护：2 秒收不到响应就放弃，不卡死
+    const tOut = setTimeout(() => reject(new Error(`写入 ${prefix}B${byteAddr} 超时`)), 2000)
     client!.writeItems(`${prefix}B${byteAddr}`, value, (err: any) => {
+      clearTimeout(tOut)
       if (err) reject(new Error(`写入 ${prefix}B${byteAddr} 失败: ${err}`))
       else resolve()
     })

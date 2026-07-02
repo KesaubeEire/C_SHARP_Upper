@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Dropdown from './Dropdown'
 
 const STORAGE_KEY = 'trioop_connection'
@@ -62,6 +62,21 @@ export default function ConnectionPanel() {
   const [selectedAdapter, setSelectedAdapter] = useState(saved.adapterIp)
   const [plcIp, setPlcIp] = useState(saved.plcIp)
   const [plcPort, setPlcPort] = useState(String(saved.plcPort ?? 102))
+  const [ipHistOpen, setIpHistOpen] = useState(false)
+  const [portHistOpen, setPortHistOpen] = useState(false)
+  const ipHistRef = useRef<HTMLDivElement>(null)
+  const portHistRef = useRef<HTMLDivElement>(null)
+  const historyList = useMemo(() => loadHistory(), [])
+
+  // 点击外部关闭历史浮层
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ipHistRef.current && !ipHistRef.current.contains(e.target as Node)) setIpHistOpen(false)
+      if (portHistRef.current && !portHistRef.current.contains(e.target as Node)) setPortHistOpen(false)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
   const [opcUaPort, setOpcUaPort] = useState('4840')
   const [connType, setConnType] = useState(saved.connType)
   const [pollInterval, setPollInterval] = useState(String(saved.pollInterval))
@@ -144,7 +159,7 @@ export default function ConnectionPanel() {
           }),
         })
         const data = await res.json()
-        if (data.success) { setConnected(true); setStatusMsg(`已连接到 ${plcIp}`); saveHistory(plcIp.trim(), Number(plcPort) || 102) }
+        if (data.success) { setConnected(true); setStatusMsg(`已连接到 ${plcIp}`); saveHistory(plcIp.trim(), Number(plcPort) || 102); setShowCustomIp(false); setShowCustomPort(false) }
         else { setStatusMsg(`连接失败: ${data.error}`) }
       } else {
         const res = await fetch('/api/opcua/connect', {
@@ -153,7 +168,7 @@ export default function ConnectionPanel() {
           body: JSON.stringify({ plcIp: plcIp.trim(), port: Number(opcUaPort) || 4840, ioRanges: { i: bytesToRanges(ioIBytes), q: bytesToRanges(ioQBytes), m: bytesToRanges(ioMBytes) } }),
         })
         const data = await res.json()
-        if (data.success) { setConnected(true); setStatusMsg(`OPC UA 已连接到 ${plcIp}`); saveHistory(plcIp.trim(), Number(opcUaPort) || 4840) }
+        if (data.success) { setConnected(true); setStatusMsg(`OPC UA 已连接到 ${plcIp}`); saveHistory(plcIp.trim(), Number(opcUaPort) || 4840); setShowCustomIp(false); setShowCustomPort(false) }
         else { setStatusMsg(`OPC UA 连接失败: ${data.error}`) }
       }
     } catch (err) {
@@ -197,18 +212,34 @@ export default function ConnectionPanel() {
 
       <div className="sidebar__group">
         <label className="sidebar__label">PLC IP 地址</label>
-        <input className="sidebar__input" type="text" value={plcIp} onChange={e => setPlcIp(e.target.value)} placeholder="192.168.0.1" list="plc-ip-history" />
-        <datalist id="plc-ip-history">
-          {loadHistory().map((h, i) => <option key={i} value={h.ip} />)}
-        </datalist>
+        <div className="input-combo" ref={ipHistRef}>
+          <input className="sidebar__input input-combo__input" type="text" value={plcIp} onChange={e => setPlcIp(e.target.value)} placeholder="192.168.0.1" />
+          <button className="input-combo__btn" onClick={() => setIpHistOpen(!ipHistOpen)} type="button">▾</button>
+          {ipHistOpen && (
+            <div className="input-combo__menu">
+              {historyList.length === 0 && <div className="input-combo__empty">暂无历史</div>}
+              {historyList.map((h, i) => (
+                <button key={i} className="input-combo__item" onClick={() => { setPlcIp(h.ip); setIpHistOpen(false) }} type="button">{h.ip}</button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="sidebar__group">
         <label className="sidebar__label">PLC 端口</label>
-        <input className="sidebar__input" type="number" value={plcPort} onChange={e => setPlcPort(e.target.value)} placeholder="102" min={1} max={65535} list="plc-port-history" />
-        <datalist id="plc-port-history">
-          {[...new Set(loadHistory().map(h => h.port))].map((p, i) => <option key={i} value={p} />)}
-        </datalist>
+        <div className="input-combo" ref={portHistRef}>
+          <input className="sidebar__input input-combo__input" type="number" value={plcPort} onChange={e => setPlcPort(e.target.value)} placeholder="102" min={1} max={65535} />
+          <button className="input-combo__btn" onClick={() => setPortHistOpen(!portHistOpen)} type="button">▾</button>
+          {portHistOpen && (
+            <div className="input-combo__menu">
+              {historyList.length === 0 && <div className="input-combo__empty">暂无历史</div>}
+              {[...new Set(historyList.map(h => h.port))].map((p, i) => (
+                <button key={i} className="input-combo__item" onClick={() => { setPlcPort(String(p)); setPortHistOpen(false) }} type="button">{p}</button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {mode === 's7' ? (
