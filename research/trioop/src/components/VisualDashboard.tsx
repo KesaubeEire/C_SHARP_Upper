@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import Tooltip from './Tooltip'
 import { Responsive, noCompactor } from 'react-grid-layout'
@@ -150,9 +150,9 @@ const CONFIG_FIELDS: Record<WidgetType, FieldDef[]> = {
   predictive: [{ key:'healthScore', label:'健康指数', type:'number', default:74 }, { key:'rulDays', label:'剩余寿命', type:'number', default:45 }],
   alarm:      [{ key:'columns', label:'列数', type:'number', default:4 }, { key:'flashRate', label:'闪烁Hz', type:'number', default:2 }, { key:'groupBy', label:'分组', type:'text', default:'' }],
   pid:        [{ key:'kp', label:'Kp', type:'number', default:2.5 }, { key:'ki', label:'Ki', type:'number', default:0.8 }, { key:'kd', label:'Kd', type:'number', default:0.3 }],
-  signal:     [{ key:'ch1Label', label:'通道1', type:'text', default:'电流' }, { key:'ch1Val', label:'通道1值', type:'number', default:38 }, { key:'ch1Unit', label:'通道1单位', type:'text', default:'A' }, { key:'ch2Label', label:'通道2', type:'text', default:'温度' }, { key:'ch2Val', label:'通道2值', type:'number', default:72 }, { key:'ch2Unit', label:'通道2单位', type:'text', default:'°C' }],
+  signal:     [{ key:'ch1Label', label:'通道1名称', type:'text', default:'电流' }, { key:'ch1Var', label:'通道1变量', type:'text', default:'DB6:38' }, { key:'ch1Unit', label:'通道1单位', type:'text', default:'A' }, { key:'ch1WarnAt', label:'警告阈值', type:'number', default:80 }, { key:'ch1DangerAt', label:'危险阈值', type:'number', default:95 }, { key:'ch2Label', label:'通道2名称', type:'text', default:'温度' }, { key:'ch2Var', label:'通道2变量', type:'text', default:'DB7:38' }, { key:'ch2Unit', label:'通道2单位', type:'text', default:'°C' }, { key:'ch2WarnAt', label:'警告阈值', type:'number', default:30 }, { key:'ch2DangerAt', label:'危险阈值', type:'number', default:40 }],
   eventlog:   [],
-  connectionbar: [{ key:'title', label:'连接地址', type:'text', default:'PLC-1200' }, { key:'status', label:'状态', type:'select', default:'connected', options:[{ label:'已连接', value:'connected' },{ label:'未连接', value:'disconnected' }] }],
+  connectionbar: [{ key:'title', label:'连接名称', type:'text', default:'PLC-1200' }],
   process:    [{ key:'mockMode', label:'🎲 演示模式', type:'boolean', default:true }],
 }
 
@@ -202,11 +202,11 @@ function renderWidget(type: WidgetType, cfg: Record<string, any>, liveData?: Rec
     case 'oee': return <OEEDashboard availability={cfg.availability ?? 0.85} performance={cfg.performance ?? 0.78} quality={cfg.quality ?? 0.95} shift={cfg.shift || 'A'} mockMode />
     case 'motor': return <MotorDashboard rpm={cfg.rpm ?? 2850} torque={cfg.torque ?? 42} current={cfg.current ?? 38} temperature={cfg.temperature ?? 72} mockMode />
     case 'predictive': return <PredictiveMaintenanceGauge healthScore={cfg.healthScore ?? 74} rulDays={cfg.rulDays ?? 45} size="md" mockMode />
-    case 'alarm': return <AlarmAnnunciatorPanel columns={cfg.columns ?? 4} flashRate={cfg.flashRate ?? 2} groupBy={cfg.groupBy || undefined} mockMode />
+    case 'alarm': return <LiveAlarmPanel columns={cfg.columns ?? 4} flashRate={cfg.flashRate ?? 2} groupBy={cfg.groupBy || undefined} />
     case 'pid': return <PIDTuningPanel kp={cfg.kp ?? 2.5} ki={cfg.ki ?? 0.8} kd={cfg.kd ?? 0.3} mockMode />
-    case 'signal': return <SignalPanel signals={[{ key:'ch1', label:cfg.ch1Label||'CH1', value:cfg.ch1Val, unit:cfg.ch1Unit },{ key:'ch2', label:cfg.ch2Label||'CH2', value:cfg.ch2Val, unit:cfg.ch2Unit }] as any} />
+    case 'signal': return <LiveSignalPanel cfg={cfg} liveData={liveData} />
     case 'eventlog': return <EventLog entries={[{ timestamp: Date.now()-5000, message:'系统启动', severity:'info' },{ timestamp: Date.now()-3000, message:'温度警告', severity:'warn' },{ timestamp: Date.now()-1000, message:'通信超时', severity:'error' }]} maxEntries={100} />
-    case 'connectionbar': return <ConnectionBar url={cfg.title || 'PLC'} status={cfg.status === 'connected' ? 'connected' : 'disconnected'} />
+    case 'connectionbar': return <LiveConnectionBar title={cfg.title || 'PLC'} />
     case 'process': return <ProcessFlowDiagram mockMode={cfg.mockMode !== false} />
     case 'button': return <WidgetButton cfg={cfg} liveVal={liveVal} liveNum={liveNum} hasLive={hasLive} ioVar={ioVar} />
     case 'lamp': return (<div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:12, height:'100%' }}><div style={{ width:32, height:32, borderRadius:'50%', background:hasLive&&liveVal?'#4caf50':'#333', boxShadow:hasLive&&liveVal?'0 0 16px #4caf50':'none', transition:'all 0.2s' }} /><span style={{ fontSize:18, fontWeight:600, color:hasLive&&liveVal?'#4caf50':'var(--text-muted)' }}>{hasLive?(liveVal?'ON':'OFF'):'--'}</span></div>)
@@ -488,6 +488,27 @@ export default function VisualDashboard({ liveData, ioData }: {
     const t = setTimeout(() => document.addEventListener('mousedown', onDown), 0)
     document.addEventListener('keydown', onKey)
     return () => { clearTimeout(t); document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [rowGapMenu])
+
+  // 右键菜单边缘检测：Windows 风格 — 靠右/靠底时翻转
+  const adjustMenuPos = useCallback((el: HTMLDivElement, left: number, top: number) => {
+    const rect = el.getBoundingClientRect()
+    const vw = window.innerWidth, vh = window.innerHeight
+    const gap = 8
+    let x = left, y = top
+    if (x + rect.width + gap > vw) x = vw - rect.width - gap
+    if (x < gap) x = gap
+    if (y + rect.height + gap > vh) y = vh - rect.height - gap
+    if (y < gap) y = gap
+    el.style.left = `${x}px`
+    el.style.top = `${y}px`
+    if (rect.height > vh - gap * 2) { el.style.maxHeight = `${vh - gap * 2}px`; el.style.overflowY = 'auto' }
+  }, [])
+  useLayoutEffect(() => {
+    if (insertMenu && insertMenuRef.current) adjustMenuPos(insertMenuRef.current, insertMenu.left, insertMenu.top)
+  }, [insertMenu])
+  useLayoutEffect(() => {
+    if (rowGapMenu && rowGapMenuRef.current) adjustMenuPos(rowGapMenuRef.current, rowGapMenu.left, rowGapMenu.top)
   }, [rowGapMenu])
 
   const addWidget = useCallback((type: WidgetType) => {
@@ -1122,6 +1143,53 @@ function VariablePicker({ dbName, varName, importedDBs, onChange, ioAreas }: {
 }
 
 /** 趋势图自适应容器：ResizeObserver→width/height→TrendRecorder 原生分辨率渲染 */
+// ─── 实时报警面板（从 API 拉活跃报警） ──────────────────
+function LiveAlarmPanel({ columns, flashRate, groupBy }: { columns: number; flashRate: number; groupBy?: string }) {
+  const [alarmDefs, setAlarmDefs] = useState<{ id: string; label: string; priority?: 1|2|3; group?: string }[]>([])
+  const [alarmStates, setAlarmStates] = useState<Record<string, string>>({})
+  useEffect(() => {
+    const fetchAlarms = async () => {
+      try { const r = await fetch('/api/alarm/active'); const d = await r.json() as any[]
+        const defs = d.map((a: any) => ({ id: a.id || a.variableName, label: a.description || a.variableName || '报警', priority: a.severity === 3 ? 1 : a.severity === 2 ? 2 : 3, group: a.area || undefined }))
+        const states: Record<string, string> = {}
+        for (const a of d) states[a.id || a.variableName] = a.acknowledged ? 'acknowledged' : (a.severity >= 2 ? 'alarm' : 'warning')
+        setAlarmDefs(defs); setAlarmStates(states)
+      } catch {}
+    }
+    fetchAlarms()
+    const t = setInterval(fetchAlarms, 2000)
+    return () => clearInterval(t)
+  }, [])
+  return <AlarmAnnunciatorPanel columns={columns} flashRate={flashRate} groupBy={groupBy} alarms={alarmDefs} states={alarmStates} />
+}
+
+// ─── 实时信号面板（从 liveData 拉值） ─────────────────
+function LiveSignalPanel({ cfg, liveData }: { cfg: Record<string, any>; liveData?: Record<string, { value: number | boolean }> }) {
+  const ch1Pt = liveData?.[cfg.ch1Var || '']?.value
+  const ch2Pt = liveData?.[cfg.ch2Var || '']?.value
+  const ch1Val = typeof ch1Pt === 'number' ? ch1Pt : (ch1Pt ? 1 : 0)
+  const ch2Val = typeof ch2Pt === 'number' ? ch2Pt : (ch2Pt ? 1 : 0)
+  return <SignalPanel signals={[
+    { key:'ch1', label:cfg.ch1Label||'CH1', value:ch1Val || 0, unit:cfg.ch1Unit, warnAt:cfg.ch1WarnAt, dangerAt:cfg.ch1DangerAt },
+    { key:'ch2', label:cfg.ch2Label||'CH2', value:ch2Val || 0, unit:cfg.ch2Unit, warnAt:cfg.ch2WarnAt, dangerAt:cfg.ch2DangerAt },
+  ] as any} />
+}
+
+// ─── 实时连接状态（轮询 /api/plc/status） ────────────
+function LiveConnectionBar({ title }: { title: string }) {
+  const [status, setStatus] = useState<'connected' | 'disconnected'>('disconnected')
+  const [latency, setLatency] = useState(0)
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try { const r = await fetch('/api/plc/status'); const d = await r.json(); setStatus(d.connected ? 'connected' : 'disconnected'); setLatency(d.latency ?? 0) } catch {}
+    }
+    fetchStatus()
+    const t = setInterval(fetchStatus, 3000)
+    return () => clearInterval(t)
+  }, [])
+  return <ConnectionBar url={title} status={status} latencyMs={latency} />
+}
+
 const TrendRecorderCell = React.memo(function TrendRecorderCell({ channels, timeScale, showGrid, showLegend, showPoints, lineWidth, backgroundColor: bg, yAxisLabel, mockMode, liveData, varMap }: {
   channels?: { key: string; label: string; color: string; unit: string; min: number; max: number }[]
   timeScale: string; showGrid: boolean; showLegend: boolean; showPoints: boolean; lineWidth: number; backgroundColor?: string; yAxisLabel?: string; mockMode?: boolean
