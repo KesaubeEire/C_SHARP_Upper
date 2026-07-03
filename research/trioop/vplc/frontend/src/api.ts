@@ -1,11 +1,33 @@
 const BASE = '/api/vplc'
 
+export interface ImportedField {
+  name: string
+  type: string
+  offset: number
+  bit?: number
+  comment?: string
+  arrayCount?: number
+  opaqueSize?: number
+}
+
+export interface ImportedDB {
+  dbNumber: number
+  dbName: string
+  variableCount: number
+  variables: ImportedField[]
+}
+
+export interface UDTDetail {
+  name: string
+  fields: Array<{ name: string; type: string; bit?: number }>
+}
+
 export interface VPLCSnapshot {
   PE: number[]
   PA: number[]
   MK: number[]
   DB: Record<string, number[]>
-  fields?: Record<string, { dbNumber: number; values: Record<string, any> }>
+  fields?: Record<string, { dbNumber: number; values: Record<string, any>; fieldMeta?: Record<string, any> }>
   _imported?: { dbNumber: number; dbName: string; fieldCount: number }[]
   _triggers?: Trigger[]
   _parsed?: any
@@ -45,6 +67,60 @@ export async function importDB(content: string, dbNumber?: number) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content, dbNumber }),
   })
+  return r.json()
+}
+
+export async function importUDT(content: string) {
+  const r = await fetch(BASE + '/import-udt', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  })
+  return r.json()
+}
+
+export async function fetchImportedDBs(): Promise<ImportedDB[]> {
+  const r = await fetch(BASE + '/imported-dbs')
+  return r.json()
+}
+
+export async function deleteImportedDB(key: string) {
+  const r = await fetch(BASE + '/imported-dbs/' + encodeURIComponent(key), { method: 'DELETE' })
+  return r.json()
+}
+
+export async function refreshImportedDB(key: string) {
+  const r = await fetch(BASE + '/imported-dbs/' + encodeURIComponent(key) + '/refresh', { method: 'POST' })
+  return r.json()
+}
+
+export async function writeImportedField(key: string, fieldName: string, value: number | boolean) {
+  const r = await fetch(BASE + '/imported-dbs/' + encodeURIComponent(key) + '/write', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fieldName, value }),
+  })
+  return r.json()
+}
+
+export async function randomizeImportedField(key: string, fieldName: string) {
+  const r = await fetch(BASE + '/imported-dbs/' + encodeURIComponent(key) + '/randomize', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fieldName }),
+  })
+  return r.json()
+}
+
+export async function fetchImportedUDTs(): Promise<string[]> {
+  const r = await fetch(BASE + '/imported-udts')
+  return r.json()
+}
+
+export async function fetchImportedUDTDetail(name: string): Promise<UDTDetail> {
+  const r = await fetch(BASE + '/imported-udts/' + encodeURIComponent(name))
+  return r.json()
+}
+
+export async function deleteImportedUDT(name: string) {
+  const r = await fetch(BASE + '/imported-udts/' + encodeURIComponent(name), { method: 'DELETE' })
   return r.json()
 }
 

@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { fetchSnapshot, writeValue, toggleBit, importDB, createDB, fetchTriggers, createTrigger, deleteTrigger } from './api'
-import type { VPLCSnapshot, Trigger } from './api'
+import { useState, useEffect, useCallback } from 'react'
+import {
+  fetchSnapshot, writeValue, toggleBit, importDB, importUDT, createDB, fetchTriggers, createTrigger, deleteTrigger,
+  fetchImportedDBs, deleteImportedDB, refreshImportedDB, writeImportedField, randomizeImportedField,
+  fetchImportedUDTs, fetchImportedUDTDetail, deleteImportedUDT,
+} from './api'
+import type { VPLCSnapshot, Trigger, ImportedDB, UDTDetail } from './api'
 import './App.css'
 
 type Tab = 'monitor' | 'editor' | 'import' | 'triggers'
@@ -44,6 +48,9 @@ export default function App() {
   const [qAddrs, setQAddrs] = useState(() => loadAddrs('Q'))
   const [mAddrs, setMAddrs] = useState(() => loadAddrs('M'))
   const [triggers, setTriggers] = useState<Trigger[]>([])
+  const [importedDBs, setImportedDBs] = useState<ImportedDB[]>([])
+  const [udtNames, setUdtNames] = useState<string[]>([])
+  const [udtDetail, setUdtDetail] = useState<UDTDetail | null>(null)
   const [toast, setToast] = useState('')
   const [uptime, setUptime] = useState(0)
 
@@ -57,6 +64,11 @@ export default function App() {
 
   useEffect(() => { refresh(); const t = setInterval(refresh, 300); return () => clearInterval(t) }, [refresh])
   useEffect(() => { if (tab === 'triggers') fetchTriggers().then(setTriggers).catch(() => {}) }, [tab])
+  useEffect(() => {
+    if (tab !== 'import') return
+    fetchImportedDBs().then(setImportedDBs).catch(() => {})
+    fetchImportedUDTs().then(setUdtNames).catch(() => {})
+  }, [tab, snap])
 
   const handleToggleBit = useCallback(async (area: string, addr: number, bit: number) => {
     await toggleBit(area, addr, bit)
@@ -93,7 +105,7 @@ export default function App() {
       )}
 
       {tab === 'editor' && <EditorTab snap={snap} onRefresh={refresh} showToast={showToast} />}
-      {tab === 'import' && <ImportTab onRefresh={refresh} showToast={showToast} />}
+      {tab === 'import' && <ImportTab snap={snap} importedDBs={importedDBs} udtNames={udtNames} udtDetail={udtDetail} setUdtDetail={setUdtDetail} onRefresh={refresh} showToast={showToast} />}
       {tab === 'triggers' && (
         <TriggersTab triggers={triggers} setTriggers={setTriggers} snap={snap} onRefresh={refresh} showToast={showToast} />
       )}
@@ -239,24 +251,151 @@ function EditorTab({ snap, onRefresh, showToast }: { snap: VPLCSnapshot | null; 
 }
 
 // ── 导入 Tab ──
-function ImportTab({ onRefresh, showToast }: { onRefresh: () => void; showToast: (msg: string) => void }) {
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+function ImportTab({ snap, importedDBs, udtNames, udtDetail, setUdtDetail, onRefresh, showToast }: {
+  snap: VPLCSnapshot | null
+  importedDBs: ImportedDB[]
+  udtNames: string[]
+  udtDetail: UDTDetail | null
+  setUdtDetail: (detail: UDTDetail | null) => void
+  onRefresh: () => void
+  showToast: (msg: string) => void
+}) {
+  const [editing, setEditing] = useState<string | null>(null)
+  const [editVal, setEditVal] = useState('')
+
+  const handleDbFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const content = await file.text()
     try {
       const r = await importDB(content)
-      if (r.success) showToast(`✅ 已导入 ${r.dbName}（${r.fields} 字段）`)
+      if (r.success) showToast(`✅ 已导入 ${r.dbName}（${r.variableCount} 字段）`)
       else showToast(`❌ ${r.error}`)
     } catch { showToast('❌ 导入失败') }
     onRefresh()
+    e.target.value = ''
   }
+
+  const handleUdtFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const content = await file.text()
+    try {
+      const r = await importUDT(content)
+      if (r.success) showToast(`✅ 已导入 ${r.count} 个 UDT`)
+      else showToast(`❌ ${r.error}`)
+    } catch { showToast('❌ UDT 导入失败') }
+    onRefresh()
+    e.target.value = ''
+  }
+
+  const writeField = async (key: string, fieldName: string, value: number | boolean) => {
+    const r = await writeImportedField(key, fieldName, value)
+    if (r.success) onRefresh()
+    else showToast(`❌ ${r.error || '写入失败'}`)
+  }
+
+  const randomizeField = async (key: string, fieldName: string) => {
+    const r = await randomizeImportedField(key, fieldName)
+    if (r.success) {
+      showToast(`✅ 随机值 = ${String(r.value)}`)
+      onRefresh()
+    } else showToast(`❌ ${r.error || '随机失败'}`)
+  }
+
   return (
     <div>
-      <label className="file-upload" onClick={() => document.getElementById('db-file')?.click()}>
-        📄 点击选择 .db 文件（TIA Portal 导出）
-      </label>
-      <input id="db-file" type="file" accept=".db" style={{ display: 'none' }} onChange={handleFile} />
+      <div className="udt-import">
+        <div className="db-import__bar">
+          <label className="btn btn-sm"><input type="file" accept=".db,.udt" style={{ display: 'none' }} onChange={handleUdtFile} />选择 UDT 文件</label>
+          {udtNames.length > 0 && <div className="udt-tags">{udtNames.map(name => (
+            <span key={name} className="udt-tag" onClick={async () => setUdtDetail(await fetchImportedUDTDetail(name))}>
+              {name}
+              <button className="udt-tag__del" onClick={async e => { e.stopPropagation(); await deleteImportedUDT(name); onRefresh() }}>✕</button>
+            </span>
+          ))}</div>}
+        </div>
+      </div>
+
+      <div className="db-import__bar">
+        <label className="btn btn-primary"><input type="file" accept=".db" style={{ display: 'none' }} onChange={handleDbFile} />选择 .db 文件</label>
+      </div>
+
+      {importedDBs.length === 0 ? <div className="db-empty">尚未导入 DB 文件</div> : (
+        <div className="db-import__list">
+          {importedDBs.map(db => {
+            const key = `${db.dbNumber}_${db.dbName}`
+            const live = snap?.fields?.[db.dbName]
+            return (
+              <div key={key} className="db-import__card">
+                <div className="db-card__header">
+                  <span className="db-card__label">{db.dbName}</span>
+                  <span className="db-card__info">{db.variableCount} 个变量</span>
+                  <button className="btn btn-primary db-card__refresh" onClick={async () => { await refreshImportedDB(key); onRefresh() }}>↻</button>
+                  <button className="btn db-card__del" onClick={async () => { await deleteImportedDB(key); onRefresh() }}>✕</button>
+                </div>
+                <div className="db-import__vars">
+                  <div className="db-import__header">
+                    <span className="db-import__h-name">名称</span>
+                    <span className="db-import__h-ctrl">操作</span>
+                    <span className="db-import__h-val">值</span>
+                    <span className="db-import__h-type">类型</span>
+                    <span className="db-import__h-off">偏移</span>
+                  </div>
+                  {db.variables.map(v => {
+                    const rowKey = `${key}:${v.name}`
+                    const value = live?.values?.[v.name]
+                    const isEditing = editing === rowKey
+                    return (
+                      <div key={rowKey} className="db-import__row">
+                        <span className="db-import__r-name" title={v.comment}>{v.name}</span>
+                        <span className="db-import__r-ctrl">
+                          {v.type === 'bool' ? (
+                            <>
+                              <button className="db-import__momentary" onMouseDown={() => writeField(key, v.name, true)} onMouseUp={() => writeField(key, v.name, false)} onMouseLeave={() => writeField(key, v.name, false)}>按1松0</button>
+                              <button className="db-import__toggle" onClick={() => writeField(key, v.name, !value)}>取反</button>
+                            </>
+                          ) : null}
+                          <button className="db-import__toggle" onClick={() => randomizeField(key, v.name)}>随机</button>
+                        </span>
+                        <span className="db-import__r-val">
+                          {v.type === 'bool' ? (
+                            <span className={`db-import__cell-val ${value ? 'db-import__cell-val--on' : ''}`}>{value ? '1' : '0'}</span>
+                          ) : isEditing ? (
+                            <input className="db-import__edit-input" value={editVal} onChange={e => setEditVal(e.target.value)} onBlur={async () => { await writeField(key, v.name, Number(editVal)); setEditing(null) }} onKeyDown={async e => {
+                              if (e.key === 'Enter') { await writeField(key, v.name, Number(editVal)); setEditing(null) }
+                              if (e.key === 'Escape') setEditing(null)
+                            }} autoFocus />
+                          ) : (
+                            <span className="db-import__cell-val db-import__cell-edit" onClick={() => { setEditing(rowKey); setEditVal(value !== undefined ? String(value) : '0') }}>{value !== undefined ? String(value) : '--'}</span>
+                          )}
+                        </span>
+                        <span className="db-import__r-type">{v.type.toUpperCase()}</span>
+                        <span className="db-import__r-off">@{v.offset}{v.bit !== undefined ? `.${v.bit}` : ''}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {udtDetail && (
+        <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setUdtDetail(null) }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">{udtDetail.name} 字段列表</h3>
+            <div className="modal-form">
+              <table className="db-table">
+                <thead><tr><th>字段名</th><th>类型</th><th>位</th></tr></thead>
+                <tbody>{udtDetail.fields.map(f => <tr key={f.name}><td>{f.name}</td><td>{f.type}</td><td>{f.bit ?? '-'}</td></tr>)}</tbody>
+              </table>
+            </div>
+            <div className="modal-actions"><button className="btn btn-primary" onClick={() => setUdtDetail(null)}>关闭</button></div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

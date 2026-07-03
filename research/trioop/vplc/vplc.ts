@@ -13,6 +13,8 @@ import http from 'http'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { parseDBFile, parseUDTFile } from '../server/dbParser.js'
+import type { ParsedDBVariable, UDTMap, UDTField } from '../server/dbParser.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -30,6 +32,33 @@ function loadConfig(): { port: number; host: string } {
 
 const cfg = loadConfig()
 const PORT = cfg.port
+
+type ImportedDBRuntime = {
+  key: string
+  dbNumber: number
+  dbName: string
+  variableCount: number
+  variables: ParsedDBVariable[]
+  byteSize: number
+  rawContent?: string
+  createdAt: number
+  updatedAt: number
+}
+
+type ImportedFieldMeta = {
+  dbNumber: number
+  name: string
+  type: string
+  offset: number
+  bit?: number
+  arrayCount?: number
+  opaqueSize?: number
+  comment?: string
+}
+
+const udtDefs: UDTMap = {}
+const importedDBs: Record<string, ImportedDBRuntime> = {}
+const importedTriggers: any[] = []
 
 // ─── PLC 内存 ──────────────────────────────────────────────
 const memory = {
@@ -65,6 +94,107 @@ function setDB7() {
 
 setDB6()
 setDB7()
+
+function typeByteSize(v: ParsedDBVariable) {
+  if (v.type === 'bool') return 1
+  if (v.opaqueSize) return v.opaqueSize
+  if (v.type === 'byte') return 1
+  if (v.type === 'int' || v.type === 'word') return 2
+  if (v.type === 'dint' || v.type === 'dword' || v.type === 'real') return 4
+  return 1
+}
+
+function calcImportedDbSize(variables: ParsedDBVariable[]) {
+  return Math.max(1, ...variables.map(v => v.offset + typeByteSize(v) * (v.arrayCount ?? 1)))
+}
+
+function ensureDbSize(dbNumber: number, minSize: number) {
+  const current = memory.DB[dbNumber]
+  if (!current) {
+    memory.DB[dbNumber] = new Uint8Array(minSize)
+    return memory.DB[dbNumber]
+  }
+  if (current.length >= minSize) return current
+  const next = new Uint8Array(minSize)
+  next.set(current)
+  memory.DB[dbNumber] = next
+  return next
+}
+
+function readTypedValueFromMemory(mem: Uint8Array, v: ParsedDBVariable) {
+  const offset = v.offset
+  if (offset >= mem.length) return null
+  if (v.type === 'bool') return !!(mem[offset] & (1 << (v.bit ?? 0)))
+  if (v.arrayCount && v.arrayCount > 1) {
+    return Array.from(mem.slice(offset, offset + typeByteSize(v) * v.arrayCount))
+  }
+  const dv = new DataView(mem.buffer, mem.byteOffset + offset)
+  if (v.type === 'byte') return mem[offset] ?? 0
+  if (v.type === 'int') return dv.getInt16(0, false)
+  if (v.type === 'word') return dv.getUint16(0, false)
+  if (v.type === 'dint') return dv.getInt32(0, false)
+  if (v.type === 'dword') return dv.getUint32(0, false)
+  if (v.type === 'real') return Number(dv.getFloat32(0, false).toFixed(4))
+  return Array.from(mem.slice(offset, offset + typeByteSize(v))).map(b => b.toString(16).padStart(2, '0')).join(' ')
+}
+
+function writeTypedValueToMemory(mem: Uint8Array, v: ParsedDBVariable, value: number | boolean) {
+  const offset = v.offset
+  if (offset >= mem.length) return false
+  if (v.type === 'bool') {
+    const bit = v.bit ?? 0
+    if (value) mem[offset] |= (1 << bit)
+    else mem[offset] &= ~(1 << bit)
+    return true
+  }
+  const dv = new DataView(mem.buffer, mem.byteOffset + offset)
+  const num = Number(value)
+  if (Number.isNaN(num)) return false
+  if (v.type === 'byte') mem[offset] = num & 0xFF
+  else if (v.type === 'int') dv.setInt16(0, Math.max(-32768, Math.min(32767, Math.trunc(num))), false)
+  else if (v.type === 'word') dv.setUint16(0, Math.max(0, Math.min(65535, Math.trunc(num))), false)
+  else if (v.type === 'dint') dv.setInt32(0, Math.trunc(num), false)
+  else if (v.type === 'dword') dv.setUint32(0, Math.max(0, Math.trunc(num)), false)
+  else if (v.type === 'real') dv.setFloat32(0, num, false)
+  else return false
+  return true
+}
+
+function randomValueForVar(v: ParsedDBVariable) {
+  if (v.type === 'bool') return Math.random() >= 0.5
+  if (v.type === 'byte') return Math.floor(Math.random() * 256)
+  if (v.type === 'int') return Math.floor(Math.random() * 65536) - 32768
+  if (v.type === 'word') return Math.floor(Math.random() * 65536)
+  if (v.type === 'dint') return Math.floor(Math.random() * 2000001) - 1000000
+  if (v.type === 'dword') return Math.floor(Math.random() * 1000000)
+  if (v.type === 'real') return Number((Math.random() * 2000 - 1000).toFixed(4))
+  return Math.floor(Math.random() * 256)
+}
+
+function buildImportedSnapshot() {
+  const fields: Record<string, { dbNumber: number; values: Record<string, any>; fieldMeta: Record<string, ImportedFieldMeta> }> = {}
+  const imported = Object.values(importedDBs).map(db => {
+    const mem = ensureDbSize(db.dbNumber, db.byteSize)
+    const values: Record<string, any> = {}
+    const fieldMeta: Record<string, ImportedFieldMeta> = {}
+    for (const v of db.variables) {
+      values[v.name] = readTypedValueFromMemory(mem, v)
+      fieldMeta[v.name] = {
+        dbNumber: db.dbNumber,
+        name: v.name,
+        type: v.type,
+        offset: v.offset,
+        bit: v.bit,
+        arrayCount: v.arrayCount,
+        opaqueSize: v.opaqueSize,
+        comment: v.comment,
+      }
+    }
+    fields[db.dbName] = { dbNumber: db.dbNumber, values, fieldMeta }
+    return { dbNumber: db.dbNumber, dbName: db.dbName, fieldCount: db.variableCount }
+  })
+  return { fields, imported }
+}
 
 // ─── 模拟数据变化 ──────────────────────────────────────────
 function simulate() {
@@ -515,11 +645,16 @@ const WEB_PORT = PORT + 1  // S7端口+1
 function memorySnapshot() {
   const snap: Record<string, any> = { DB: {}, PE: {}, PA: {}, MK: {} }
   for (const [k, v] of Object.entries(memory.DB)) {
-    snap.DB[`DB${k}`] = Array.from(v.subarray(0, Math.min(v.length, 64)))
+    snap.DB[`DB${k}`] = Array.from(v.subarray(0, Math.min(v.length, 128)))
   }
   snap.PE = Array.from(memory.PE.subarray(0, 32))
   snap.PA = Array.from(memory.PA.subarray(0, 32))
-  snap.MK = Array.from(memory.MK.subarray(0, 128))  // 暴露到 MB127，覆盖 MB80/MB81
+  snap.MK = Array.from(memory.MK.subarray(0, 128))
+
+  const importedSnapshot = buildImportedSnapshot()
+  snap.fields = importedSnapshot.fields
+  snap._imported = importedSnapshot.imported
+  snap._triggers = importedTriggers
 
   // 添加解析后的可读值
   const db6 = memory.DB[6]; const dv6 = db6 ? new DataView(db6.buffer, db6.byteOffset, db6.byteLength) : null
@@ -615,8 +750,129 @@ const webServer = http.createServer(async (req, res) => {
     return
   }
 
+  if (req.url === '/api/vplc/import-udt' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    const content = body.content || ''
+    if (!content) { writeJson(400, { error: '请提供 UDT 文件内容' }); return }
+    try {
+      const parsed = parseUDTFile(content)
+      Object.assign(udtDefs, parsed)
+      const names = Object.keys(parsed)
+      writeJson(200, { success: true, count: names.length, names })
+    } catch (err) {
+      writeJson(400, { error: `UDT 解析失败: ${(err as Error).message}` })
+    }
+    return
+  }
+
+  if (req.url === '/api/vplc/imported-udts' && req.method === 'GET') {
+    writeJson(200, Object.keys(udtDefs))
+    return
+  }
+
+  if (req.url?.startsWith('/api/vplc/imported-udts/') && req.method === 'GET') {
+    const name = decodeURIComponent(req.url.split('/').pop() || '')
+    const fields = udtDefs[name]
+    if (!fields) { writeJson(404, { error: '未找到 UDT' }); return }
+    writeJson(200, { name, fields })
+    return
+  }
+
+  if (req.url?.startsWith('/api/vplc/imported-udts/') && req.method === 'DELETE') {
+    const name = decodeURIComponent(req.url.split('/').pop() || '')
+    delete udtDefs[name]
+    writeJson(200, { success: true })
+    return
+  }
+
   if (req.url === '/api/vplc/import-db' && req.method === 'POST') {
-    writeJson(200, { success: true, dbName: 'imported', fields: 0 })
+    const body = JSON.parse((await readBody(req)).toString())
+    const content = body.content || ''
+    const dbNumberOverride = body.dbNumber ? Number(body.dbNumber) : undefined
+    if (!content) { writeJson(400, { error: '请提供 DB 文件内容' }); return }
+    try {
+      const parsed = parseDBFile(content, dbNumberOverride, udtDefs)
+      if (parsed.optimized) { writeJson(400, { error: `DB\"${parsed.dbName}\" 开启了优化块访问，无法通过绝对地址读取` }); return }
+      const byteSize = calcImportedDbSize(parsed.variables)
+      ensureDbSize(parsed.dbNumber, byteSize)
+      const key = `${parsed.dbNumber}_${parsed.dbName}`
+      const now = Date.now()
+      importedDBs[key] = {
+        key,
+        dbNumber: parsed.dbNumber,
+        dbName: parsed.dbName,
+        variableCount: parsed.variables.length,
+        variables: parsed.variables,
+        byteSize,
+        rawContent: content,
+        createdAt: importedDBs[key]?.createdAt || now,
+        updatedAt: now,
+      }
+      writeJson(200, { success: true, dbNumber: parsed.dbNumber, dbName: parsed.dbName, variableCount: parsed.variables.length, variables: parsed.variables })
+    } catch (err) {
+      writeJson(400, { error: `解析失败: ${(err as Error).message}` })
+    }
+    return
+  }
+
+  if (req.url === '/api/vplc/imported-dbs' && req.method === 'GET') {
+    writeJson(200, Object.values(importedDBs).map(db => ({ dbNumber: db.dbNumber, dbName: db.dbName, variableCount: db.variableCount, variables: db.variables })))
+    return
+  }
+
+  if (req.url?.startsWith('/api/vplc/imported-dbs/') && req.method === 'DELETE') {
+    const key = decodeURIComponent(req.url.split('/').pop() || '')
+    delete importedDBs[key]
+    writeJson(200, { success: true })
+    return
+  }
+
+  if (req.url?.endsWith('/refresh') && req.method === 'POST') {
+    const parts = req.url.split('/')
+    const key = decodeURIComponent(parts[parts.length - 2] || '')
+    const db = importedDBs[key]
+    if (!db) { writeJson(404, { error: '未找到 DB' }); return }
+    ensureDbSize(db.dbNumber, db.byteSize)
+    if (db.rawContent) {
+      const parsed = parseDBFile(db.rawContent, db.dbNumber, udtDefs)
+      db.variables = parsed.variables
+      db.variableCount = parsed.variables.length
+      db.byteSize = calcImportedDbSize(parsed.variables)
+      db.updatedAt = Date.now()
+      ensureDbSize(db.dbNumber, db.byteSize)
+    }
+    writeJson(200, { success: true, registered: db.variableCount })
+    return
+  }
+
+  if (req.url?.endsWith('/write') && req.method === 'POST' && req.url.includes('/api/vplc/imported-dbs/')) {
+    const parts = req.url.split('/')
+    const key = decodeURIComponent(parts[parts.length - 2] || '')
+    const db = importedDBs[key]
+    if (!db) { writeJson(404, { error: '未找到 DB' }); return }
+    const body = JSON.parse((await readBody(req)).toString())
+    const { fieldName, value } = body
+    const variable = db.variables.find(v => v.name === fieldName)
+    if (!variable) { writeJson(404, { error: '未找到字段' }); return }
+    const mem = ensureDbSize(db.dbNumber, db.byteSize)
+    if (!writeTypedValueToMemory(mem, variable, value)) { writeJson(400, { error: '写入失败' }); return }
+    writeJson(200, { success: true })
+    return
+  }
+
+  if (req.url?.endsWith('/randomize') && req.method === 'POST') {
+    const parts = req.url.split('/')
+    const key = decodeURIComponent(parts[parts.length - 2] || '')
+    const db = importedDBs[key]
+    if (!db) { writeJson(404, { error: '未找到 DB' }); return }
+    const body = JSON.parse((await readBody(req)).toString())
+    const { fieldName } = body
+    const variable = db.variables.find(v => v.name === fieldName)
+    if (!variable) { writeJson(404, { error: '未找到字段' }); return }
+    const mem = ensureDbSize(db.dbNumber, db.byteSize)
+    const value = randomValueForVar(variable)
+    if (!writeTypedValueToMemory(mem, variable, value)) { writeJson(400, { error: '随机写入失败' }); return }
+    writeJson(200, { success: true, value, type: variable.type })
     return
   }
 
