@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  fetchSnapshot, writeValue, toggleBit, importDB, importUDT, createDB, fetchTriggers, createTrigger, deleteTrigger,
+  fetchSnapshot, writeValue, toggleBit, importDB, importUDT, fetchTriggers, createTrigger, deleteTrigger,
   fetchImportedDBs, deleteImportedDB, refreshImportedDB, writeImportedField, randomizeImportedField,
   fetchImportedUDTs, fetchImportedUDTDetail, deleteImportedUDT,
+  fetchDbs, upsertDb, deleteDb,
 } from './api'
 import type { VPLCSnapshot, Trigger, ImportedDB, UDTDetail } from './api'
 import './App.css'
 
-type Tab = 'monitor' | 'editor' | 'import' | 'triggers'
+type Tab = 'monitor' | 'import' | 'triggers'
 
 const START_TIME = Date.now()
 
@@ -88,9 +89,9 @@ export default function App() {
       <p className="app-subtitle">S7 端口 1200 | Web 端口 1201 | {uptime}s</p>
 
       <div className="tabs">
-        {(['monitor', 'editor', 'import', 'triggers'] as Tab[]).map(t => (
+        {(['monitor', 'import', 'triggers'] as Tab[]).map(t => (
           <button key={t} className={'tab' + (tab === t ? ' active' : '')} onClick={() => setTab(t)}>
-            {t === 'monitor' ? '📊 监视' : t === 'editor' ? '✏️ DB 编辑' : t === 'import' ? '📥 导入' : '⚡ 触发器'}
+            {t === 'monitor' ? '📊 监视' : t === 'import' ? '📥 导入' : '⚡ 触发器'}
           </button>
         ))}
       </div>
@@ -104,7 +105,6 @@ export default function App() {
         />
       )}
 
-      {tab === 'editor' && <EditorTab snap={snap} onRefresh={refresh} showToast={showToast} />}
       {tab === 'import' && <ImportTab snap={snap} importedDBs={importedDBs} udtNames={udtNames} udtDetail={udtDetail} setUdtDetail={setUdtDetail} onRefresh={refresh} showToast={showToast} />}
       {tab === 'triggers' && (
         <TriggersTab triggers={triggers} setTriggers={setTriggers} snap={snap} onRefresh={refresh} showToast={showToast} />
@@ -121,6 +121,12 @@ function MonitorTab({ snap, iAddrs, qAddrs, mAddrs, setIAddrs, setQAddrs, setMAd
   onToggleBit: (area: string, addr: number, bit: number) => void
   onRandom: (prefix: string, addr: number) => void
 }) {
+  const [dbView, setDbView] = useState<'card' | 'table'>('card')
+  const parsed = snap?._parsed
+  const st = parsed?.state
+  const isRun = st?.mode === 'RUN'
+  const isStop = st?.mode === 'STOP'
+  const leds = parsed?.leds || {}
   const areas = [
     { prefix: 'I', label: '🟡 输入点 (I 区)', data: snap?.PE, addrs: iAddrs, setAddrs: setIAddrs },
     { prefix: 'Q', label: '🔵 输出点 (Q 区)', data: snap?.PA, addrs: qAddrs, setAddrs: setQAddrs },
@@ -129,6 +135,27 @@ function MonitorTab({ snap, iAddrs, qAddrs, mAddrs, setIAddrs, setQAddrs, setMAd
 
   return (
     <div>
+      {/* PLC 状态栏 */}
+      <div className="status-bar">
+        <div className="status-item">
+          <span className={'status-led ' + (isRun ? 'led-on' : '')} style={{background: leds.run?.state === 'on' ? '#1D9E75' : leds.run?.state === 'blink' ? '#5F5E5A' : '#2E3133'}} />
+          <span className="status-label">RUN</span>
+        </div>
+        <div className="status-item">
+          <span className={'status-led ' + (isStop ? 'led-on' : '')} style={{background: leds.stop?.state === 'on' ? '#E8A838' : '#2E3133'}} />
+          <span className="status-label">STOP</span>
+        </div>
+        <div className="status-item">
+          <span className={'status-led'} style={{background: leds.error?.state === 'on' ? '#E24B4A' : '#2E3133'}} />
+          <span className="status-label">ERROR</span>
+        </div>
+        <div className="status-item" style={{marginLeft:16, color: isRun ? '#1D9E75' : '#E8A838', fontWeight:600, fontSize:13}}>
+          {st?.mode || '--'}
+        </div>
+        <div className="status-item" style={{marginLeft:'auto', color:'#7A7872', fontSize:11}}>
+          🕒 {parsed?.rtc ? new Date(parsed.rtc).toLocaleTimeString() : '--'}
+        </div>
+      </div>
       {areas.map(({ prefix, label, data, addrs, setAddrs }) => (
         <div key={prefix} className="io-panel">
           <div className="io-title">{label}</div>
@@ -164,8 +191,14 @@ function MonitorTab({ snap, iAddrs, qAddrs, mAddrs, setIAddrs, setQAddrs, setMAd
       ))}
       {snap?._imported && snap._imported.length > 0 && (
         <>
-          <h2 className="section-title">📦 已导入 DB</h2>
-          {snap._imported.map(imp => {
+          <div className="section-header">
+            <h2 className="section-title">📦 已导入 DB</h2>
+            <div className="view-toggle">
+              <button className={'toggle-btn' + (dbView === 'card' ? ' active' : '')} onClick={() => setDbView('card')}>▦ 卡片</button>
+              <button className={'toggle-btn' + (dbView === 'table' ? ' active' : '')} onClick={() => setDbView('table')}>⊞ 表格</button>
+            </div>
+          </div>
+          {dbView === 'card' && snap._imported.map(imp => {
             const fs = snap.fields?.[imp.dbName]
             return (
               <div key={imp.dbName} className="db-card">
@@ -181,71 +214,33 @@ function MonitorTab({ snap, iAddrs, qAddrs, mAddrs, setIAddrs, setQAddrs, setMAd
               </div>
             )
           })}
+          {dbView === 'table' && snap._imported.map(imp => {
+            const fs = snap.fields?.[imp.dbName]
+            return (
+              <div key={imp.dbName} className="io-panel" style={{marginBottom:8}}>
+                <div className="io-title">{imp.dbName} (DB{imp.dbNumber})</div>
+                {fs && <div className="io-table">
+                  <div className="io-row io-header">
+                    <span className="io-addr" style={{width:120}}>字段</span>
+                    <span className="io-hex" style={{textAlign:'left',width:80}}>类型</span>
+                    <span className="io-hex" style={{textAlign:'left',flex:1}}>值</span>
+                  </div>
+                  {Object.entries(fs.values).map(([k, v]) => {
+                    const meta = fs.fieldMeta?.[k]
+                    return (
+                      <div key={k} className="io-row">
+                        <span className="io-addr" style={{width:120,color:'#378ADD'}} title={meta?.comment}>{k}</span>
+                        <span className="io-hex" style={{textAlign:'left',width:80,color:'#7A7872'}}>{(meta?.type || '').toUpperCase()}</span>
+                        <span className="io-hex" style={{textAlign:'left',flex:1}}>{v !== null && v !== undefined ? String(v) : '--'}</span>
+                      </div>
+                    )
+                  })}
+                </div>}
+              </div>
+            )
+          })}
         </>
       )}
-    </div>
-  )
-}
-
-// ── DB 编辑 Tab ──
-function EditorTab({ snap, onRefresh, showToast }: { snap: VPLCSnapshot | null; onRefresh: () => void; showToast: (msg: string) => void }) {
-  const [dbNum, setDbNum] = useState<number>(6)
-  const dbKeys = snap ? Object.keys(snap.DB || {}).map(k => parseInt(k.replace('DB', ''))).sort((a, b) => a - b) : []
-
-  const handleEdit = async (offset: number) => {
-    const val = prompt(`DB${dbNum}[${offset}] 输入新值（浮点数）：`)
-    if (val === null) return
-    const num = parseFloat(val)
-    if (isNaN(num)) { showToast('无效数字'); return }
-    await writeValue('DB', dbNum, offset, 'real', num)
-    showToast(`✅ DB${dbNum}[${offset}] = ${num}`)
-    onRefresh()
-  }
-
-  const handleCreate = async () => {
-    const n = prompt('新 DB 块号：')
-    if (!n) return
-    const num = parseInt(n)
-    if (isNaN(num) || num < 1) { showToast('无效 DB 号'); return }
-    const size = prompt('字节数（默认 64）：', '64')
-    await createDB(num, parseInt(size || '64'))
-    showToast(`✅ 创建 DB${num}`)
-    onRefresh()
-  }
-
-  const raw = snap?.DB?.[`DB${dbNum}`]
-  return (
-    <div>
-      <div className="flex">
-        <span className="addr-label">选择 DB：</span>
-        <select className="addr-field" value={dbNum} onChange={e => setDbNum(parseInt(e.target.value))}>
-          {dbKeys.map(n => <option key={n} value={n}>DB{n}</option>)}
-        </select>
-        <button className="btn btn-primary btn-sm" onClick={handleCreate}>+ 新建</button>
-      </div>
-      {raw ? (
-        <table className="db-table">
-          <thead><tr><th>偏移</th><th>HEX</th><th>十进制</th><th>REAL</th><th>操作</th></tr></thead>
-          <tbody>
-            {Array.from({ length: Math.min(raw.length, 128) }, (_, i) => i).filter(i => i % 4 === 0).map(off => {
-              const b0 = raw[off], b1 = raw[off + 1] ?? 0, b2 = raw[off + 2] ?? 0, b3 = raw[off + 3] ?? 0
-              const hex = [b0, b1, b2, b3].map(b => b.toString(16).padStart(2, '0')).join(' ')
-              const dec = b0 + (b1 << 8) + (b2 << 16) + (b3 << 24)
-              const dv = new DataView(new Uint8Array(raw.slice(off, off + 4)).buffer)
-              const real = dv.getFloat32(0, false).toFixed(4)
-              return (
-                <tr key={off}>
-                  <td>{off}</td>
-                  <td className="hex">{hex}</td>
-                  <td>{dec}</td>
-                  <td>{real}</td>
-                  <td><button className="btn btn-sm btn-primary" onClick={() => handleEdit(off)}>编辑</button></td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      ) : <div className="empty">选择要查看的 DB 块</div>}
     </div>
   )
 }
@@ -262,18 +257,38 @@ function ImportTab({ snap, importedDBs, udtNames, udtDetail, setUdtDetail, onRef
 }) {
   const [editing, setEditing] = useState<string | null>(null)
   const [editVal, setEditVal] = useState('')
+  const [dbsCfg, setDbsCfg] = useState<Record<string, number>>({})
+  const [newDbNum, setNewDbNum] = useState('')
+  const [newDbSize, setNewDbSize] = useState('64')
+  const [pendingDbImport, setPendingDbImport] = useState<{content: string; dbNum: number} | null>(null)
+  const udtInputRef = useRef<HTMLInputElement>(null)
+  const dbInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { fetchDbs().then(setDbsCfg).catch(() => {}) }, [])
 
   const handleDbFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const input = prompt(`映射到哪个 DB 块？\n（文件本身有块号，但你可以改成其他号）`, '')
+    if (input === null) { e.target.value = ''; return }
+    const dbNum = parseInt(input)
+    if (isNaN(dbNum) || dbNum < 1) { showToast('❌ 无效 DB 号'); e.target.value = ''; return }
     const content = await file.text()
     try {
-      const r = await importDB(content)
-      if (r.success) showToast(`✅ 已导入 ${r.dbName}（${r.variableCount} 字段）`)
-      else showToast(`❌ ${r.error}`)
+      const r = await importDB(content, dbNum)
+      if (r.success) {
+        showToast(`✅ 已导入 DB${dbNum}（${r.variableCount} 字段）`)
+        setPendingDbImport(null)
+      } else if (r.missingUdt && r.missingUdt.length > 0) {
+        showToast(`❌ 缺少 UDT: ${r.missingUdt.join(', ')}，请先上传 .udt 文件`)
+        setPendingDbImport({ content, dbNum })
+      } else {
+        showToast(`❌ ${r.error}`)
+      }
     } catch { showToast('❌ 导入失败') }
     onRefresh()
     e.target.value = ''
+    ;(document.activeElement as HTMLElement)?.blur()
   }
 
   const handleUdtFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,11 +297,26 @@ function ImportTab({ snap, importedDBs, udtNames, udtDetail, setUdtDetail, onRef
     const content = await file.text()
     try {
       const r = await importUDT(content)
-      if (r.success) showToast(`✅ 已导入 ${r.count} 个 UDT`)
-      else showToast(`❌ ${r.error}`)
+      if (r.success) {
+        showToast(`✅ 已导入 ${r.count} 个 UDT`)
+        // 如果有待处理的 DB 导入，自动重试
+        if (pendingDbImport) {
+          const retry = await importDB(pendingDbImport.content, pendingDbImport.dbNum)
+          if (retry.success) {
+            showToast(`✅ DB${pendingDbImport.dbNum} 导入成功（${retry.variableCount} 字段）`)
+            setPendingDbImport(null)
+          } else if (retry.missingUdt) {
+            showToast(`❌ 还缺 UDT: ${retry.missingUdt.join(', ')}`)
+          } else {
+            showToast(`❌ ${retry.error}`)
+          }
+        }
+      } else showToast(`❌ ${r.error}`)
     } catch { showToast('❌ UDT 导入失败') }
     onRefresh()
     e.target.value = ''
+    ;(document.activeElement as HTMLElement)?.blur()
+  }
   }
 
   const writeField = async (key: string, fieldName: string, value: number | boolean) => {
@@ -307,7 +337,8 @@ function ImportTab({ snap, importedDBs, udtNames, udtDetail, setUdtDetail, onRef
     <div>
       <div className="udt-import">
         <div className="db-import__bar">
-          <label className="btn btn-sm"><input type="file" accept=".db,.udt" style={{ display: 'none' }} onChange={handleUdtFile} />选择 UDT 文件</label>
+          <button className="btn btn-sm" onClick={() => udtInputRef.current?.click()}>选择 UDT 文件</button>
+          <input ref={udtInputRef} type="file" accept=".db,.udt" style={{ display: 'none' }} onChange={handleUdtFile} />
           {udtNames.length > 0 && <div className="udt-tags">{udtNames.map(name => (
             <span key={name} className="udt-tag" onClick={async () => setUdtDetail(await fetchImportedUDTDetail(name))}>
               {name}
@@ -318,7 +349,41 @@ function ImportTab({ snap, importedDBs, udtNames, udtDetail, setUdtDetail, onRef
       </div>
 
       <div className="db-import__bar">
-        <label className="btn btn-primary"><input type="file" accept=".db" style={{ display: 'none' }} onChange={handleDbFile} />选择 .db 文件</label>
+        <button className="btn btn-primary" onClick={() => dbInputRef.current?.click()}>选择 .db 文件</button>
+        <input ref={dbInputRef} type="file" accept=".db" style={{ display: 'none' }} onChange={handleDbFile} />
+      </div>
+
+      <div className="dbs-config">
+        <h3 className="section-title">🧱 DB 块管理</h3>
+        <div className="dbs-config__list">
+          {Object.entries(dbsCfg).sort(([a], [b]) => Number(a) - Number(b)).map(([num, size]) => (
+            <div key={num} className="dbs-config__item">
+              <span className="dbs-config__label">DB{num}</span>
+              <span className="dbs-config__size">{size} 字节</span>
+              <button className="btn btn-sm" onClick={async () => {
+                const s = prompt(`DB${num} 新大小（字节）：`, String(size))
+                if (!s) return
+                await upsertDb(Number(num), parseInt(s) || 64)
+                fetchDbs().then(setDbsCfg)
+              }}>✎</button>
+              <button className="btn btn-sm" onClick={async () => {
+                await deleteDb(Number(num))
+                fetchDbs().then(setDbsCfg)
+              }}>✕</button>
+            </div>
+          ))}
+        </div>
+        <div className="dbs-config__add">
+          <input className="addr-field" placeholder="DB 号" value={newDbNum} onChange={e => setNewDbNum(e.target.value)} style={{ width: 60 }} />
+          <input className="addr-field" placeholder="字节" value={newDbSize} onChange={e => setNewDbSize(e.target.value)} style={{ width: 60 }} />
+          <button className="btn btn-primary btn-sm" onClick={async () => {
+            const n = parseInt(newDbNum)
+            if (isNaN(n) || n < 1) return
+            await upsertDb(n, parseInt(newDbSize) || 64)
+            setNewDbNum(''); setNewDbSize('64')
+            fetchDbs().then(setDbsCfg)
+          }}>+ 添加 DB</button>
+        </div>
       </div>
 
       {importedDBs.length === 0 ? <div className="db-empty">尚未导入 DB 文件</div> : (

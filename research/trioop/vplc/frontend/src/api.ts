@@ -132,6 +132,24 @@ export async function createDB(dbNumber: number, size: number) {
   return r.json()
 }
 
+export async function fetchDbs(): Promise<Record<string, number>> {
+  const r = await fetch(BASE + '/dbs')
+  return r.json()
+}
+
+export async function upsertDb(dbNumber: number, size: number) {
+  const r = await fetch(BASE + '/dbs', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dbNumber, size }),
+  })
+  return r.json()
+}
+
+export async function deleteDb(dbNumber: number) {
+  const r = await fetch(BASE + '/dbs/' + dbNumber, { method: 'DELETE' })
+  return r.json()
+}
+
 export async function fetchTriggers(): Promise<Trigger[]> {
   const r = await fetch(BASE + '/triggers')
   return r.json()
@@ -147,4 +165,28 @@ export async function createTrigger(body: any) {
 
 export async function deleteTrigger(id: string) {
   await fetch(BASE + '/triggers/' + id, { method: 'DELETE' })
+}
+
+export async function setPLCState(state: string) {
+  const r = await fetch(BASE + '/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state }) })
+  return r.json()
+}
+export async function fetchRTC() {
+  const r = await fetch(BASE + '/rtc')
+  return r.json()
+}
+export async function setRTC(iso: string) {
+  const r = await fetch(BASE + '/rtc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ iso }) })
+  return r.json()
+}
+export async function fetchDiag() {
+  const r = await fetch(BASE + '/diag')
+  return r.json()
+}
+export async function clearDiag() {
+  await fetch(BASE + '/diag', { method: 'DELETE' })
+}
+export async function fetchLeds() {
+  const r = await fetch(BASE + '/leds')
+  return r.json()
 }

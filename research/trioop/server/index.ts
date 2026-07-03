@@ -12,7 +12,7 @@ import net from 'net'
 import config from './config.js'
 import * as plc from './plc.js'
 import * as opcua from './opcua.js'
-import { parseDBFile, parseUDTFile, parsedVarsToNodes7Tags } from './dbParser.js'
+import { parseDBFile, parseUDTFile, extractReferencedUDTs, parsedVarsToNodes7Tags } from './dbParser.js'
 import { trendBuffer } from './ringBuffer.js'
 import {
   checkAlarms, getRules, addRule, removeRule, updateRule,
@@ -467,6 +467,11 @@ app.post('/api/plc/import-db', async (req, res) => {
   if (!content) return res.status(400).json({ error: '请提供 DB 文件内容' })
 
   try {
+    // 先检查是否有缺失的 UDT 依赖
+    const udtCheck = extractReferencedUDTs(content, udtDefs)
+    if (udtCheck.missing.length > 0) {
+      return res.status(412).json({ error: `缺少 UDT 数据类型: ${udtCheck.missing.join(', ')}`, missingUdt: udtCheck.missing, allUdt: udtCheck.all })
+    }
     const parsed = parseDBFile(content, dbNumber, udtDefs)
     if (parsed.optimized) {
       return res.status(400).json({ error: `DB"${parsed.dbName}" 开启了优化块访问，无法通过绝对地址读取` })
@@ -618,6 +623,13 @@ app.post('/api/plc/imported-dbs/:key/refresh', async (req, res) => {
         const effectiveDbNumber = req.body?.dbNumber ?? db.dbNumber
         const tags = parsedVarsToNodes7Tags(db.variables, effectiveDbNumber)
         plc.addDynamicTags(tags.map(t => ({ tag: t.tag, s7addr: t.s7addr, varName: `${db.dbName}:${t.name}` })))
+        // 注册后立即读取一次，让新 DB 数据进缓存
+        if (runtimePlcIp === '127.0.0.1') {
+          plc.readOnce().then(result => {
+            if (result?.db) Object.assign(plcDataCache, result.db)
+            if (result?.dbBlocks) Object.assign(dbBlockCache, result.dbBlocks)
+          }).catch(() => {})
+        }
         res.json({ success: true, registered: tags.length })
       } else {
         res.status(400).json({ error: 'PLC 未连接' })

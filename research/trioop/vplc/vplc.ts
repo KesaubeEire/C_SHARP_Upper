@@ -19,12 +19,13 @@ import type { ParsedDBVariable, UDTMap, UDTField } from '../server/dbParser.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /** 读取配置文件，不存在则创建默认 */
-function loadConfig(): { port: number; host: string } {
+function loadConfig(): { port: number; host: string; dbs: Record<string, number> } {
   const cfgPath = path.resolve(__dirname, 'vplc-config.json')
   try {
-    return JSON.parse(fs.readFileSync(cfgPath, 'utf-8'))
+    const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'))
+    return { port: 1102, host: '0.0.0.0', dbs: {}, ...raw }
   } catch {
-    const defaults = { port: 1102, host: '0.0.0.0' }
+    const defaults = { port: 1102, host: '0.0.0.0', dbs: { '1': 64, '6': 64, '7': 100 } as Record<string, number> }
     fs.writeFileSync(cfgPath, JSON.stringify(defaults, null, 2), 'utf-8')
     return defaults
   }
@@ -32,6 +33,72 @@ function loadConfig(): { port: number; host: string } {
 
 const cfg = loadConfig()
 const PORT = cfg.port
+const cfgPath = path.resolve(__dirname, 'vplc-config.json')
+const pidPath = path.resolve(__dirname, 'vplc.pid')
+
+// 杀掉前一个实例（如果有）
+try {
+  const oldPid = Number(fs.readFileSync(pidPath, 'utf-8').trim())
+  if (oldPid && oldPid !== process.pid) {
+    try { process.kill(oldPid, 'SIGTERM') } catch {}
+  }
+} catch {}
+fs.writeFileSync(pidPath, String(process.pid), 'utf-8')
+
+// 可变 DB 配置（启动后可通过 API 修改并持久化）
+let dbsConfig: Record<string, number> = { ...cfg.dbs }
+
+function writeConfig() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'))
+    raw.dbs = dbsConfig
+    raw.udts = Object.fromEntries(
+      Object.entries(udtDefs).map(([k, v]) => [k, v])
+    )
+    raw.imported = Object.fromEntries(
+      Object.entries(importedDBs).map(([k, v]) => [k, { ...v, variables: v.variables }])
+    )
+    fs.writeFileSync(cfgPath, JSON.stringify(raw, null, 2), 'utf-8')
+  } catch { /* 忽略 */ }
+}
+
+// ─── DB 内存数据持久化 ──
+const memPath = path.resolve(__dirname, 'vplc-memory.json')
+let _memDirty = false
+let _memTimer: any = null
+
+function saveMemory() {
+  try {
+    const data: Record<string, number[]> = {}
+    for (const [k, v] of Object.entries(memory.DB)) {
+      data[String(k)] = Array.from(v)
+    }
+    fs.writeFileSync(memPath, JSON.stringify(data), 'utf-8')
+    _memDirty = false
+  } catch { /* 忽略 */ }
+}
+
+function loadMemory() {
+  try {
+    const data = JSON.parse(fs.readFileSync(memPath, 'utf-8'))
+    for (const [k, arr] of Object.entries(data)) {
+      const dbNum = Number(k)
+      const bytes = arr as number[]
+      if (memory.DB[dbNum] && memory.DB[dbNum].length === bytes.length) {
+        memory.DB[dbNum].set(bytes)
+      } else if (bytes.length > 0) {
+        memory.DB[dbNum] = new Uint8Array(bytes)
+      }
+    }
+  } catch { /* 忽略 */ }
+}
+
+function markMemDirty() {
+  _memDirty = true
+  // 防抖：最后一次写入后 2 秒保存
+  if (_memTimer) clearTimeout(_memTimer)
+  _memTimer = setTimeout(saveMemory, 2000)
+}
 
 type ImportedDBRuntime = {
   key: string
@@ -60,6 +127,104 @@ const udtDefs: UDTMap = {}
 const importedDBs: Record<string, ImportedDBRuntime> = {}
 const importedTriggers: any[] = []
 
+// 从配置恢复 UDT 和导入的 DB
+try {
+  const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'))
+  if (raw.udts) Object.assign(udtDefs, raw.udts)
+  if (raw.imported) {
+    for (const [key, val] of Object.entries(raw.imported)) {
+      const v = val as any
+      importedDBs[key] = {
+        key, dbNumber: v.dbNumber, dbName: v.dbName,
+        variableCount: v.variableCount, variables: v.variables,
+        byteSize: v.byteSize,
+        rawContent: v.rawContent, createdAt: v.createdAt, updatedAt: v.updatedAt,
+      }
+      if (v.dbNumber && v.byteSize) ensureDbSize(v.dbNumber, v.byteSize)
+    }
+  }
+} catch {}
+
+// ─── PLC 状态 ──────────────────────────────────────────────
+type PlcStateType = 'RUN' | 'STOP' | 'STARTUP'
+let plcState: PlcStateType = 'RUN'
+let stateChangedAt = Date.now()
+
+// ─── RTC 偏移(ms) ─────────────────────────────────────────
+let rtcOffset = 0
+
+// ─── LED ───────────────────────────────────────────────────
+const plcLEDs: Record<string, {color:string; state:string}> = {
+  RUN: {color:'green', state:'on'},
+  STOP: {color:'orange', state:'off'},
+  ERROR: {color:'red', state:'off'},
+  MAINT: {color:'yellow', state:'off'},
+}
+function updateLEDs() {
+  if (plcState === 'RUN') { plcLEDs.RUN.state='on'; plcLEDs.STOP.state='off'; plcLEDs.ERROR.state='off'; plcLEDs.MAINT.state='off' }
+  else if (plcState === 'STOP') { plcLEDs.RUN.state='off'; plcLEDs.STOP.state='on'; plcLEDs.ERROR.state='off'; plcLEDs.MAINT.state='off' }
+  else { plcLEDs.RUN.state='blink'; plcLEDs.STOP.state='off'; plcLEDs.ERROR.state='off'; plcLEDs.MAINT.state='off' }
+}
+
+// ─── 诊断缓冲区 ────────────────────────────────────────────
+const MAX_DIAG = 200
+const diagBuffer: any[] = []
+let diagId = 0
+function addDiag(cat: string, src: string, msg: string, det?: string) {
+  diagBuffer.unshift({id:++diagId, timestamp:Date.now(), category:cat, source:src, message:msg, detail:det})
+  if (diagBuffer.length > MAX_DIAG) diagBuffer.length = MAX_DIAG
+}
+
+// ─── OB 周期管理 ────────────────────────────────────────────
+interface OBCycle {
+  num: number
+  name: string
+  type: 'startup' | 'freecycle' | 'cyclic'
+  intervalMs: number
+  runCount: number
+  lastRun: number
+  errors: number
+  lastExecuteMs: number
+  state: 'waiting' | 'running' | 'finished' | 'error'
+}
+
+const obCycles: OBCycle[] = [
+  { num: 1,   name: 'OB1',   type: 'freecycle', intervalMs: 0,     runCount: 0, lastRun: 0, errors: 0, lastExecuteMs: 0, state: 'waiting' },
+  { num: 35,  name: 'OB35',  type: 'cyclic',    intervalMs: 500,   runCount: 0, lastRun: 0, errors: 0, lastExecuteMs: 0, state: 'waiting' },
+  { num: 100, name: 'OB100', type: 'startup',   intervalMs: 0,     runCount: 0, lastRun: 0, errors: 0, lastExecuteMs: 0, state: 'waiting' },
+]
+
+function executeOB(ob: OBCycle): void {
+  try {
+    ob.state = 'running'
+    const start = Date.now()
+    if (ob.num === 100) {
+      // OB100 (Startup): 启动初始化 — 复位 M 区/Q 区
+      memory.MK[0] = 0
+      memory.PA[0] = 0
+    }
+    ob.lastExecuteMs = Date.now() - start
+    ob.runCount++
+    ob.state = 'finished'
+  } catch {
+    ob.errors++
+    ob.state = 'error'
+  }
+  ob.lastRun = Date.now()
+}
+
+function runOBCycles(now: number): void {
+  for (const ob of obCycles) {
+    if (ob.type === 'startup') continue // OB100 由启动时手动触发
+    if (ob.num === 1) {
+      // OB1: 每次 simulate 都执行
+      executeOB(ob)
+    } else if (ob.type === 'cyclic' && (now - ob.lastRun >= ob.intervalMs)) {
+      executeOB(ob)
+    }
+  }
+}
+
 // ─── PLC 内存 ──────────────────────────────────────────────
 const memory = {
   DB: {} as Record<number, Uint8Array>,
@@ -70,13 +235,17 @@ const memory = {
   CT: new Uint8Array(256),   // 计数器
 }
 
-// 初始化 DB
-memory.DB[6] = new Uint8Array(64)
-memory.DB[7] = new Uint8Array(100)
-memory.DB[1] = new Uint8Array(64)
+// 初始化 DB（从配置读取）
+for (const [dbNum, size] of Object.entries(dbsConfig)) {
+  memory.DB[Number(dbNum)] = new Uint8Array(size)
+}
+// 恢复内存数据
+loadMemory()
+addDiag('info', 'SYSTEM', 'VPLC 启动完成', 'DB 块: ' + Object.keys(dbsConfig).join(','))
 
 // ─── 模拟数据初始化 ────────────────────────────────────────
 function setDB6() {
+  if (!memory.DB[6] || memory.DB[6].length < 50) return
   const buf = memory.DB[6]
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
   dv.setFloat32(38, 0, false)    // position
@@ -85,6 +254,7 @@ function setDB6() {
 }
 
 function setDB7() {
+  if (!memory.DB[7] || memory.DB[7].length < 50) return
   const buf = memory.DB[7]
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
   dv.setUint8(0, 0b00000000)    // X0.0-X0.7: startBtn, stopBtn, running, alarm...
@@ -94,6 +264,10 @@ function setDB7() {
 
 setDB6()
 setDB7()
+
+// 启动时执行 OB100（Startup OB，只执行一次）
+const ob100 = obCycles.find(o => o.num === 100)
+if (ob100) executeOB(ob100)
 
 function typeByteSize(v: ParsedDBVariable) {
   if (v.type === 'bool') return 1
@@ -198,18 +372,26 @@ function buildImportedSnapshot() {
 
 // ─── 模拟数据变化 ──────────────────────────────────────────
 function simulate() {
+  if (plcState !== 'RUN') return
   const now = Date.now()
+
+  // 执行 OB 周期
+  runOBCycles(now)
+
+  // DB7 温度、压力波动（如果存在且够大）
   const db7 = memory.DB[7]
-  const dv7 = new DataView(db7.buffer, db7.byteOffset, db7.byteLength)
+  if (db7 && db7.length >= 50) {
+    const dv7 = new DataView(db7.buffer, db7.byteOffset, db7.byteLength)
+    dv7.setFloat32(38, 25 + Math.sin(now / 3000) * 3 + Math.random() * 0.5, false)
+    dv7.setFloat32(42, 0.5 + Math.sin(now / 5000) * 0.2 + Math.random() * 0.05, false)
+  }
 
-  // 温度、压力波动
-  dv7.setFloat32(38, 25 + Math.sin(now / 3000) * 3 + Math.random() * 0.5, false)
-  dv7.setFloat32(42, 0.5 + Math.sin(now / 5000) * 0.2 + Math.random() * 0.05, false)
-
-  // 位置波动
+  // DB6 位置波动（如果存在且够大）
   const db6 = memory.DB[6]
-  const dv6 = new DataView(db6.buffer, db6.byteOffset, db6.byteLength)
-  dv6.setFloat32(38, Math.max(0, Math.min(100, (Math.sin(now / 2000) + 1) * 50)), false)
+  if (db6 && db6.length >= 50) {
+    const dv6 = new DataView(db6.buffer, db6.byteOffset, db6.byteLength)
+    dv6.setFloat32(38, Math.max(0, Math.min(100, (Math.sin(now / 2000) + 1) * 50)), false)
+  }
 
   // I0.0-I0.3 间歇变化（不同频率模拟传感器信号）
   memory.PE[0] = (Math.floor(now / 800) % 2) * 0x01    // I0.0: 0.8s
@@ -277,22 +459,23 @@ function s7ReadResponse(pduRef: number, resultData: Buffer) {
 /** 构建 S7 Write 响应 */
 function s7WriteResponse(pduRef: number, dataLen = 0) {
   const dataByteLen = dataLen > 0 ? dataLen : 1
-  const buf = Buffer.alloc(14 + dataByteLen)  // header(10) + params(4) + data
+  // nodes7 期望 dataPointer=21（从 TCP 头算），即: TPKT(4)+COTP(3)+S7header(10)+param(2)+padding(2)
+  // param 只需 2 字节(code+reserved)，padding 自动为 2 字节
+  const buf = Buffer.alloc(14 + dataByteLen)  // header(10) + params(2) + padding(2) = 14
   buf[0] = 0x32
   buf[1] = 0x03         // Message Type: ACK-Data
   buf[2] = 0x00
   buf[3] = 0x00
   buf.writeUInt16BE(pduRef, 4)  // 回显请求的 PDU Ref
   buf[6] = 0x00
-  buf[7] = 0x04             // Param length = 4（nodes7 用固定 dataPointer=21）
+  buf[7] = 0x02             // Param length = 2（不包含 padding，用固定 dataPointer=21）
   buf[8] = dataByteLen >> 8 // Data length high
   buf[9] = dataByteLen & 0xFF // Data length low
 
-  // S7 Parameter: Write Response (4 字节)
-  buf[10] = 0x00            // 功能返回码
+  // S7 Parameter: Write Response (2 字节)
+  buf[10] = 0xFF            // 成功返回码
   buf[11] = 0x00            // Reserved
-  buf[12] = 0x00            // Reserved
-  buf[13] = 0x00            // Reserved
+  // buf[12-13] 自动为 0（填充到 dataPointer=21）
 
   // 数据区：每个写入项返回 0xFF (成功)
   for (let i = 0; i < dataByteLen; i++) buf[14 + i] = 0xFF
@@ -330,7 +513,7 @@ function s7ReadArea(area: number, dbNum: number, byteAddr: number, bit: number, 
   else if (area === 0x83) mem = memory.MK  // M 区
   else if (area === 0x84) {                // DB
     mem = memory.DB[dbNum]
-    if (!mem) mem = new Uint8Array(count + byteAddr)  // 不存在就动态创建
+    if (!mem) { mem = new Uint8Array(count + byteAddr); memory.DB[dbNum] = mem }  // 不存在就动态创建并保存
   }
   else if (area === 0x85) mem = memory.CT  // 计数器
   else if (area === 0x87) mem = memory.TM  // 定时器
@@ -371,7 +554,7 @@ function s7WriteArea(area: number, dbNum: number, byteAddr: number, bit: number,
   if (area === 0x81) mem = memory.PE       // I 区
   else if (area === 0x82) mem = memory.PA  // Q 区
   else if (area === 0x83) mem = memory.MK
-  else if (area === 0x84) mem = memory.DB[dbNum]
+  else if (area === 0x84) { mem = memory.DB[dbNum]; if (!mem) { mem = new Uint8Array(byteAddr + data.length); memory.DB[dbNum] = mem } }
   else return false
 
   if (!mem) return false
@@ -380,6 +563,7 @@ function s7WriteArea(area: number, dbNum: number, byteAddr: number, bit: number,
   for (let i = 0; i < data.length; i++) {
     mem[byteAddr + i] = data[i]
   }
+  markMemDirty()
   return true
 }
 
@@ -590,6 +774,7 @@ const server = net.createServer((sock) => {
               : transportSize === 0x07 ? count * 8
               : count
             const writeData = dataSection.subarray(dataOff, dataOff + byteLen)
+            console.log(`[vPLC] S7 write: area=0x${area.toString(16)} db=${dbNum} addr=${byteAddr} len=${byteLen} data=${writeData.toString('hex')}`)
             s7WriteArea(area, dbNum, byteAddr, 0, writeData)
             dataOff += byteLen
           }
@@ -609,30 +794,27 @@ const server = net.createServer((sock) => {
   sock.on('close', () => { cotpConnected = false })
 })
 
-function startS7Server(port: number) {
-  server.listen(port, cfg.host)
-  server.on('error', (err: any) => {
-    if (err.code === 'EACCES') {
-      console.error('')
-      console.error('╔══════════════════════════════════════════════════╗')
-      console.error(`║  权限不足！端口 ${port} 需要管理员权限或被系统保留。    ║`)
-      console.error('║                                               ║')
-      console.error('║  修改 server/vplc-config.json 改用其他端口:     ║')
-      console.error(`║    { "port": ${port + 1} }                           ║`)
-      console.error('╚══════════════════════════════════════════════════╝')
-      process.exit(1)
-    }
-    if (err.code === 'EADDRINUSE' && port < 65535) {
-      console.log(`[vPLC] S7 端口 ${port} 被占用，尝试 ${port + 1}...`)
-      startS7Server(port + 1)
-    } else {
-      console.error('[vPLC] S7 服务器启动失败:', err.message)
-      process.exit(1)
-    }
-  })
-}
-startS7Server(PORT)
-const s7PortRef = { current: PORT }
+let s7PortRef = { current: PORT }
+server.on('error', (err: any) => {
+  if (err.code === 'EACCES') {
+    console.error(`\n╔════════════════════════════════════╗`)
+    console.error(`║  权限不足！端口 ${s7PortRef.current}    ║`)
+    console.error(`║  修改 vplc-config.json 改端口      ║`)
+    console.error(`╚════════════════════════════════════╝`)
+    process.exit(1)
+  }
+  if (err.code === 'EADDRINUSE' && s7PortRef.current < 65535) {
+    s7PortRef.current++
+    server.listen(s7PortRef.current, cfg.host)
+  } else {
+    console.error('[vPLC] S7 服务器启动失败:', err.message)
+    process.exit(1)
+  }
+})
+server.listen(s7PortRef.current, cfg.host)
+server.on('listening', () => {
+  s7PortRef = { current: server.address()?.port as number || s7PortRef.current }
+})
 
 // ─── Web API（HTTP 服务，供 React 前端使用） ──────────────
 const WEB_PORT = PORT + 1  // S7端口+1
@@ -652,8 +834,8 @@ function memorySnapshot() {
   snap._triggers = importedTriggers
 
   // 添加解析后的可读值
-  const db6 = memory.DB[6]; const dv6 = db6 ? new DataView(db6.buffer, db6.byteOffset, db6.byteLength) : null
-  const db7 = memory.DB[7]; const dv7 = db7 ? new DataView(db7.buffer, db7.byteOffset, db7.byteLength) : null
+  const db6 = memory.DB[6]; const dv6 = db6 && db6.length >= 50 ? new DataView(db6.buffer, db6.byteOffset, db6.byteLength) : null
+  const db7 = memory.DB[7]; const dv7 = db7 && db7.length >= 50 ? new DataView(db7.buffer, db7.byteOffset, db7.byteLength) : null
   snap._parsed = {
     DB6: dv6 ? {
       position: dv6.getFloat32(38, false).toFixed(2),
@@ -675,6 +857,19 @@ function memorySnapshot() {
       QB8: memory.PA[8],
       bits: Array.from({length:8}, (_, i) => !!(memory.PA[8] & (1 << i))),
     },
+    ob: obCycles.map(o => ({
+      num: o.num,
+      name: o.name,
+      type: o.type,
+      runCount: o.runCount,
+      errors: o.errors,
+      lastExecuteMs: o.lastExecuteMs,
+      lastRun: o.lastRun,
+      state: o.state,
+    })),
+    state: { mode: plcState, since: stateChangedAt },
+    rtc: new Date(Date.now() + rtcOffset).toISOString(),
+    leds: Object.fromEntries(Object.entries(plcLEDs).map(([k,v]) => [k.toLowerCase(), v])),
   }
   return snap
 }
@@ -718,6 +913,7 @@ const webServer = http.createServer(async (req, res) => {
         }
       }
     }
+    markMemDirty()
     writeJson(200, { success: true })
     return
   }
@@ -728,6 +924,7 @@ const webServer = http.createServer(async (req, res) => {
     const mem = area === 'I' ? memory.PE : area === 'Q' ? memory.PA : area === 'M' ? memory.MK : null
     if (mem && offset < mem.length) {
       mem[offset] ^= (1 << bit)
+      markMemDirty()
     }
     writeJson(200, { success: true })
     return
@@ -738,6 +935,7 @@ const webServer = http.createServer(async (req, res) => {
     const { dbNumber, size } = body
     if (!memory.DB[dbNumber]) {
       memory.DB[dbNumber] = new Uint8Array(size || 64)
+      markMemDirty()
     }
     writeJson(200, { success: true })
     return
@@ -750,6 +948,7 @@ const webServer = http.createServer(async (req, res) => {
     try {
       const parsed = parseUDTFile(content)
       Object.assign(udtDefs, parsed)
+      writeConfig()
       const names = Object.keys(parsed)
       writeJson(200, { success: true, count: names.length, names })
     } catch (err) {
@@ -774,6 +973,7 @@ const webServer = http.createServer(async (req, res) => {
   if (req.url?.startsWith('/api/vplc/imported-udts/') && req.method === 'DELETE') {
     const name = decodeURIComponent(req.url.split('/').pop() || '')
     delete udtDefs[name]
+    writeConfig()
     writeJson(200, { success: true })
     return
   }
@@ -784,10 +984,18 @@ const webServer = http.createServer(async (req, res) => {
     const dbNumberOverride = body.dbNumber ? Number(body.dbNumber) : undefined
     if (!content) { writeJson(400, { error: '请提供 DB 文件内容' }); return }
     try {
+      // 先检查是否有缺失的 UDT 依赖
+      const { extractReferencedUDTs } = await import('../server/dbParser.js')
+      const udtCheck = extractReferencedUDTs(content, udtDefs)
+      if (udtCheck.missing.length > 0) {
+        writeJson(412, { error: `缺少 UDT 数据类型`, missingUdt: udtCheck.missing, allUdt: udtCheck.all })
+        return
+      }
       const parsed = parseDBFile(content, dbNumberOverride, udtDefs)
       if (parsed.optimized) { writeJson(400, { error: `DB\"${parsed.dbName}\" 开启了优化块访问，无法通过绝对地址读取` }); return }
       const byteSize = calcImportedDbSize(parsed.variables)
       ensureDbSize(parsed.dbNumber, byteSize)
+      dbsConfig[String(parsed.dbNumber)] = Math.max(dbsConfig[String(parsed.dbNumber)] || 0, byteSize)
       const key = `${parsed.dbNumber}_${parsed.dbName}`
       const now = Date.now()
       importedDBs[key] = {
@@ -801,6 +1009,7 @@ const webServer = http.createServer(async (req, res) => {
         createdAt: importedDBs[key]?.createdAt || now,
         updatedAt: now,
       }
+      writeConfig()
       writeJson(200, { success: true, dbNumber: parsed.dbNumber, dbName: parsed.dbName, variableCount: parsed.variables.length, variables: parsed.variables })
     } catch (err) {
       writeJson(400, { error: `解析失败: ${(err as Error).message}` })
@@ -809,18 +1018,25 @@ const webServer = http.createServer(async (req, res) => {
   }
 
   if (req.url === '/api/vplc/imported-dbs' && req.method === 'GET') {
-    writeJson(200, Object.values(importedDBs).map(db => ({ dbNumber: db.dbNumber, dbName: db.dbName, variableCount: db.variableCount, variables: db.variables })))
+    const result = Object.values(importedDBs).map(db => {
+      const mem = ensureDbSize(db.dbNumber, db.byteSize)
+      const values: Record<string, any> = {}
+      for (const v of db.variables) values[v.name] = readTypedValueFromMemory(mem, v)
+      return { dbNumber: db.dbNumber, dbName: db.dbName, variableCount: db.variableCount, variables: db.variables, values }
+    })
+    writeJson(200, result)
     return
   }
 
   if (req.url?.startsWith('/api/vplc/imported-dbs/') && req.method === 'DELETE') {
     const key = decodeURIComponent(req.url.split('/').pop() || '')
     delete importedDBs[key]
+    writeConfig()
     writeJson(200, { success: true })
     return
   }
 
-  if (req.url?.endsWith('/refresh') && req.method === 'POST') {
+  if (req.url?.endsWith('/refresh') && (req.method === 'POST' || req.method === 'GET')) {
     const parts = req.url.split('/')
     const key = decodeURIComponent(parts[parts.length - 2] || '')
     const db = importedDBs[key]
@@ -834,7 +1050,11 @@ const webServer = http.createServer(async (req, res) => {
       db.updatedAt = Date.now()
       ensureDbSize(db.dbNumber, db.byteSize)
     }
-    writeJson(200, { success: true, registered: db.variableCount })
+    // 刷新后返回当前值
+    const mem = ensureDbSize(db.dbNumber, db.byteSize)
+    const values: Record<string, any> = {}
+    for (const v of db.variables) values[v.name] = readTypedValueFromMemory(mem, v)
+    writeJson(200, { success: true, registered: db.variableCount, values })
     return
   }
 
@@ -849,6 +1069,7 @@ const webServer = http.createServer(async (req, res) => {
     if (!variable) { writeJson(404, { error: '未找到字段' }); return }
     const mem = ensureDbSize(db.dbNumber, db.byteSize)
     if (!writeTypedValueToMemory(mem, variable, value)) { writeJson(400, { error: '写入失败' }); return }
+    markMemDirty()
     writeJson(200, { success: true })
     return
   }
@@ -865,6 +1086,7 @@ const webServer = http.createServer(async (req, res) => {
     const mem = ensureDbSize(db.dbNumber, db.byteSize)
     const value = randomValueForVar(variable)
     if (!writeTypedValueToMemory(mem, variable, value)) { writeJson(400, { error: '随机写入失败' }); return }
+    markMemDirty()
     writeJson(200, { success: true, value, type: variable.type })
     return
   }
@@ -883,6 +1105,143 @@ const webServer = http.createServer(async (req, res) => {
     return
   }
 
+  // ── DB 配置管理（持久化到 vplc-config.json） ──
+  if (req.url === '/api/vplc/dbs' && req.method === 'GET') {
+    writeJson(200, dbsConfig)
+    return
+  }
+
+  if (req.url === '/api/vplc/dbs' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    const { dbNumber, size } = body
+    if (!dbNumber || !size) { writeJson(400, { error: '需要 dbNumber 和 size' }); return }
+    const key = String(dbNumber)
+    dbsConfig[key] = size
+    memory.DB[dbNumber] = new Uint8Array(size)
+    markMemDirty()
+    writeConfig()
+    writeJson(200, { success: true, dbs: dbsConfig })
+    return
+  }
+
+  if (req.url?.startsWith('/api/vplc/dbs/') && req.method === 'DELETE') {
+    const key = req.url.split('/').pop() || ''
+    if (!dbsConfig[key]) { writeJson(404, { error: 'DB 不存在' }); return }
+    delete dbsConfig[key]
+    delete memory.DB[Number(key)]
+    markMemDirty()
+    writeConfig()
+    writeJson(200, { success: true, dbs: dbsConfig })
+    return
+  }
+
+  // ── OB 周期状态 API ──
+  if (req.url === '/api/vplc/ob' && req.method === 'GET') {
+    writeJson(200, obCycles.map(o => ({
+      num: o.num,
+      name: o.name,
+      type: o.type,
+      intervalMs: o.intervalMs,
+      runCount: o.runCount,
+      errors: o.errors,
+      lastExecuteMs: o.lastExecuteMs,
+      lastRun: o.lastRun,
+      state: o.state,
+    })))
+    return
+  }
+
+  if (req.url?.startsWith('/api/vplc/ob/') && req.method === 'POST') {
+    const parts = req.url.split('/')
+    const resetTarget = parts[parts.length - 1]
+    if (resetTarget === 'reset') {
+      // POST /api/vplc/ob/reset — 重置所有 OB
+      for (const ob of obCycles) {
+        ob.runCount = 0
+        ob.errors = 0
+        ob.lastRun = 0
+        ob.lastExecuteMs = 0
+        ob.state = 'waiting'
+      }
+      writeJson(200, { success: true, message: '所有 OB 已重置' })
+    } else {
+      // POST /api/vplc/ob/:num/reset — 重置指定 OB
+      const targetNum = Number(resetTarget)
+      const ob = obCycles.find(o => o.num === targetNum)
+      if (!ob) { writeJson(404, { error: `OB${targetNum} 不存在` }); return }
+      ob.runCount = 0
+      ob.errors = 0
+      ob.lastRun = 0
+      ob.lastExecuteMs = 0
+      ob.state = 'waiting'
+      writeJson(200, { success: true, message: `OB${targetNum} 已重置` })
+    }
+    return
+  }
+
+  // 兼容：部分前端发 POST /api/vplc/ob/100/reset 带末尾路径
+  if (req.url?.match(/^\/api\/vplc\/ob\/\d+\/reset$/) && req.method === 'POST') {
+    const targetNum = Number(req.url.split('/')[4])
+    const ob = obCycles.find(o => o.num === targetNum)
+    if (!ob) { writeJson(404, { error: `OB${targetNum} 不存在` }); return }
+    ob.runCount = 0
+    ob.errors = 0
+    ob.lastRun = 0
+    ob.lastExecuteMs = 0
+    ob.state = 'waiting'
+    writeJson(200, { success: true, message: `OB${targetNum} 已重置` })
+    return
+  }
+
+  // ── RUN/STOP ──
+  if (req.url === '/api/vplc/state' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    if (body.state !== 'RUN' && body.state !== 'STOP') { writeJson(400, {error:'无效状态'}); return }
+    const prev = plcState
+    plcState = body.state
+    stateChangedAt = Date.now()
+    updateLEDs()
+    addDiag('info', 'STATE', 'PLC 状态: ' + prev + ' → ' + plcState)
+    writeJson(200, { success: true, state: plcState, since: stateChangedAt })
+    return
+  }
+
+  // ── RTC ──
+  if (req.url === '/api/vplc/rtc' && req.method === 'GET') {
+    writeJson(200, { iso: new Date(Date.now() + rtcOffset).toISOString(), offsetMs: rtcOffset })
+    return
+  }
+  if (req.url === '/api/vplc/rtc' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    if (body.iso) {
+      const t = new Date(body.iso).getTime()
+      if (isNaN(t)) { writeJson(400, {error:'无效 ISO 日期'}); return }
+      rtcOffset = t - Date.now()
+    } else if (body.offset !== undefined) {
+      rtcOffset = body.offset
+    }
+    addDiag('info', 'RTC', 'PLC 时间设置为 ' + new Date(Date.now()+rtcOffset).toISOString())
+    writeJson(200, { success: true, iso: new Date(Date.now()+rtcOffset).toISOString(), offsetMs: rtcOffset })
+    return
+  }
+
+  // ── 诊断缓冲区 ──
+  if (req.url === '/api/vplc/diag' && req.method === 'GET') {
+    writeJson(200, diagBuffer)
+    return
+  }
+  if (req.url === '/api/vplc/diag' && req.method === 'DELETE') {
+    diagBuffer.length = 0
+    writeJson(200, { success: true })
+    return
+  }
+
+  // ── LED ──
+  if (req.url === '/api/vplc/leds' && req.method === 'GET') {
+    writeJson(200, { state: plcState, leds: Object.fromEntries(Object.entries(plcLEDs).map(([k,v]) => [k.toLowerCase(), v])) })
+    return
+  }
+
   // CORS preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,DELETE', 'Access-Control-Allow-Headers': 'Content-Type' })
@@ -895,14 +1254,15 @@ const webServer = http.createServer(async (req, res) => {
 })
 
 function startWebServer(port: number) {
-  webServer.listen(port, cfg.host)
   webServer.on('error', (err: any) => {
     if (err.code === 'EADDRINUSE' && port < PORT + 100) {
-      startWebServer(port + 1)
+      port++
+      webServer.listen(port, cfg.host)
     } else {
       console.error(`[vPLC] Web 服务器启动失败 (${port}): ${err.message}`)
     }
   })
+  webServer.listen(port, cfg.host)
 }
 startWebServer(WEB_PORT)
 const webPortRef = { current: WEB_PORT }
@@ -921,7 +1281,7 @@ function printFinalBanner() {
   console.log('║      IP: 127.0.0.1  Rack:0  Slot:1          ║')
   console.log('║      Port: ' + s7PortRef.current + '                        ║')
   console.log('║                                              ║')
-  console.log('║    模拟区域:  DB1/DB6/DB7  I区 Q区 M区      ║')
+  console.log('║    模拟区域:  DB' + Object.keys(dbsConfig).sort((a, b) => Number(a) - Number(b)).join('/') + '  I区 Q区 M区      ║')
   console.log('║    模拟值自动变化: 温度/压力/位置             ║')
   console.log('╚══════════════════════════════════════════════╝')
   console.log('')
@@ -930,4 +1290,21 @@ server.on('listening', () => { s7PortRef.current = server.address()?.port || POR
 webServer.on('listening', () => { webReady = true; printFinalBanner() })
 
 // 模拟定时器
-setInterval(simulate, 500)
+const simTimer = setInterval(simulate, 500)
+
+// 内存数据自动保存（每 30 秒写一次，避免频繁写盘）
+setInterval(() => { if (_memDirty) saveMemory() }, 30000)
+
+// ─── 优雅退出 ──────────────────────────────────────────────
+function shutdown() {
+  console.log('\n[vPLC] 正在关闭...')
+  clearInterval(simTimer)
+  if (_memTimer) clearTimeout(_memTimer)
+  saveMemory()
+  server.close()
+  webServer.close()
+  try { fs.unlinkSync(pidPath) } catch {}
+  process.exit(0)
+}
+process.on('SIGINT', shutdown)
+process.on('SIGTERM', shutdown)

@@ -576,9 +576,9 @@ async function doWriteRaw(s7addr: string, value: number): Promise<void> {
       clearTimeout(timeout)
       _pendingWrites--
       // nodes7 回调签名: writeDoneCallback(anyBadQualities)
-      // anyBad = true 表示所有写入成功 (writeQuality === 'OK')
-      // anyBad = false 表示有写入项质量不好
-      if (anyBad === false) reject(new Error(`写入 ${s7addr} 质量异常`))
+      // anyBad = true 表示有写入项质量不好（失败）
+      // anyBad = false 表示全部写入成功
+      if (anyBad) reject(new Error(`写入 ${s7addr} 质量异常`))
       else resolve()
     })
   })

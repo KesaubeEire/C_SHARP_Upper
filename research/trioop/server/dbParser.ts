@@ -201,6 +201,49 @@ export function flattenUDTArray(prefix: string, fields: UDTField[], arrayCount: 
 }
 
 /**
+ * 扫描 DB 文件内容，提取所有引用的 UDT 名称
+ * 返回 { found, missing } 基于已加载的 udtMap
+ */
+export function extractReferencedUDTs(content: string, udtMap?: UDTMap): { all: string[]; found: string[]; missing: string[] } {
+  const lines = content.split(/\r?\n/)
+  const referenced: string[] = []
+  let inDataBlock = false
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+
+    // 跳过 DATA_BLOCK 行（DB 名称会被误判为 UDT）
+    if (/^DATA_BLOCK\s+"/i.test(trimmed)) {
+      inDataBlock = true
+      continue
+    }
+    // 跳过 { S7_Optimized_Access := ... } 属性块
+    if (/^\s*\{.*\}\s*$/.test(trimmed)) continue
+    // 跳过 BEGIN / END_DATA_BLOCK
+    if (/^(BEGIN|END_DATA_BLOCK)/i.test(trimmed)) continue
+    if (!inDataBlock) continue
+
+    const quoted = trimmed.match(/"([^"]+)"/g)
+    if (quoted) {
+      for (const q of quoted) {
+        const name = q.replace(/"/g, '')
+        if (/^\d/.test(name) || /^(DATA_BLOCK|TYPE|STRUCT|END_STRUCT|BEGIN|END_DATA|VERSION|AUTHOR|NAME|FAMILY)$/i.test(name)) continue
+        if (['BOOL','BYTE','WORD','DWORD','INT','DINT','REAL','LREAL','SINT','USINT','UINT','UDINT','CHAR','WCHAR','TIME','DATE','TOD','DTL','STRING','ARRAY','STRUCT','VARIANT','TRUE','FALSE','TIMER','COUNTER','BLOCK_DB','BLOCK_FC','BLOCK_FB','IEC_TIMER','IEC_LTIMER','IEC_SCOUNTER','IEC_COUNTER','IEC_DCOUNTER','IEC_LCOUNTER','IEC_SCOUNTER'].includes(name.toUpperCase())) continue
+        if (!referenced.includes(name)) referenced.push(name)
+      }
+    }
+  }
+
+  const found: string[] = []
+  const missing: string[] = []
+  for (const name of referenced) {
+    if (udtMap?.[name]) found.push(name)
+    else missing.push(name)
+  }
+  return { all: referenced, found, missing }
+}
+
+/**
  * 解析 .db 文件内容
  */
 export function parseDBFile(content: string, defaultDbNumber?: number, udtMap?: UDTMap): ParsedDB {
