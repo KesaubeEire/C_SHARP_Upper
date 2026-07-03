@@ -16,7 +16,6 @@
   "dependencies": {
     "@altara/core": "^0.0.2",
     "@altara/industrial": "^0.1.0",
-    "@types/react-grid-layout": "^2.1.0",
     "better-sqlite3": "^12.11.1",
     "express": "^4.21.2",
     "node-opcua": "2.160.0",
@@ -31,6 +30,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
+    "@types/react-grid-layout": "^2.1.0",
     "concurrently": "^9.1.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",

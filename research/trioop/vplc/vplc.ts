@@ -506,11 +506,6 @@ const server = net.createServer((sock) => {
 
       if (funcCode === 0xF0) {
         // S7 PDU 协商 (Setup Communication)
-        // nodes7 解析偏移（从 TCP 包头算起）:
-        //   data[19-20] → S7[12-13] = param[2-3]   = MaxAmplifier
-        //   data[21-22] → S7[14-15] = param[4-5]   = MaxAmplifier(dup)
-        //   data[23-24] → S7[16-17] = param[6-7]   = MaxAmplifier(dup)
-        //   data[25-26] → S7[18-19] = "data area"  = MaxPDULength
         const resp = Buffer.alloc(20)
         resp[0] = 0x32; resp[1] = 0x03; resp[2] = 0x00; resp[3] = 0x00
         resp.writeUInt16BE(pduRef, 4)
@@ -639,7 +634,7 @@ function startS7Server(port: number) {
 startS7Server(PORT)
 const s7PortRef = { current: PORT }
 
-// ─── Web 仪表盘（HTTP 服务） ──────────────────────────────
+// ─── Web API（HTTP 服务，供 React 前端使用） ──────────────
 const WEB_PORT = PORT + 1  // S7端口+1
 
 function memorySnapshot() {
@@ -706,7 +701,6 @@ const webServer = http.createServer(async (req, res) => {
   if (req.url === '/api/vplc/write' && req.method === 'POST') {
     const body = JSON.parse((await readBody(req)).toString())
     const { area, dbNumber, offset, type, value, bit } = body
-    area; dbNumber; offset; type; value; bit
     console.log(`[vPLC] HTTP write:`, body)
     if (type === 'bit' && bit !== undefined) {
       const mem = area === 'I' ? memory.PE : area === 'Q' ? memory.PA : area === 'M' ? memory.MK : null
@@ -719,7 +713,6 @@ const webServer = http.createServer(async (req, res) => {
       if (mem && offset >= 0) {
         if (type === 'byte') mem[offset] = value & 0xFF
         else if (type === 'real' && offset + 4 <= mem.length) {
-          // 需要确保 Uint8Array 有后备 buffer（初始化的就有）
           const dv = new DataView(mem.buffer, mem.byteOffset + offset, 4)
           dv.setFloat32(0, value, false)
         }
@@ -896,91 +889,9 @@ const webServer = http.createServer(async (req, res) => {
     res.end()
     return
   }
-  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-  res.end(`<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8"><title>虚拟 PLC 状态</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,-apple-system,sans-serif;background:#0E0F10;color:#E8E6DF;padding:20px}
-h1{font-size:18px;margin-bottom:16px;color:#9A9890}
-h2{font-size:14px;margin:16px 0 8px;color:#378ADD;border-bottom:1px solid #2E3133;padding-bottom:4px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
-.card{background:#181A1B;border:1px solid #2E3133;border-radius:6px;padding:10px}
-.card .label{font-size:10px;color:#7A7872;text-transform:uppercase;letter-spacing:.5px}
-.card .val{font-size:20px;font-weight:600;font-family:'JetBrains Mono','Fira Code',monospace;margin-top:2px}
-.card .val.green{color:#1D9E75}
-.card .val.red{color:#E24B4A}
-.bits{display:flex;gap:4px;margin-top:6px}
-.bit{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:monospace;border:1px solid #2E3133}
-.bit.on{background:#1D9E75;color:#fff;border-color:#1D9E75}
-.bit.off{background:transparent;color:#5F5E5A}
-.bytes{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.byte{background:#1F2224;border:1px solid #2E3133;border-radius:4px;padding:4px 6px;font-size:11px;font-family:monospace}
-.byte .addr{color:#7A7872;margin-right:4px}
-.byte .hex{color:#E8E6DF}
-</style>
-</head><body>
-<h1>🔌 虚拟 S7-1200 PLC · <span id="status">运行中</span></h1>
-<p style="font-size:12px;color:#7A7872;margin-bottom:16px">
-  S7 端口: ${PORT} &nbsp;|&nbsp; Web 端口: ${WEB_PORT} &nbsp;|&nbsp;
-  更新: <span id="uptime">0</span>s
-</p>
 
-<h2>DB6 — 滑台位置</h2>
-<div class="grid" id="db6"></div>
-
-<h2>DB7 — 综合数据</h2>
-<div class="grid" id="db7"></div>
-
-<h2>Q 区 — QB8</h2>
-<div class="grid" id="qarea"></div>
-
-<h2>Q 区字节</h2>
-<div class="bytes" id="qbytes"></div>
-
-<h2>I 区字节</h2>
-<div class="bytes" id="ibytes"></div>
-
-<h2>M 区字节</h2>
-<div class="bytes" id="mbytes"></div>
-
-<script>
-function createCard(label, val, cls='') {
-  return \`<div class="card"><div class="label">\${label}</div><div class="val \${cls}">\${val}</div></div>\`
-}
-function bitsRow(v, label) {
-  let html = '<div class="card"><div class="label">' + label + '</div><div class="bits">'
-  for(let i=7;i>=0;i--) html += '<div class="bit ' + (v&(1<<i)?'on':'off') + '">' + i + '</div>'
-  return html + '</div></div>'
-}
-function bytesHtml(data) {
-  return data.map((v,i) => '<span class="byte"><span class="addr">' + i + ':</span><span class="hex">0x' + v.toString(16).padStart(2,'0') + '</span></span>').join('')
-}
-async function refresh() {
-  const r = await fetch('/api/vplc')
-  const d = await r.json()
-  const p = d._parsed
-  document.getElementById('db6').innerHTML =
-    createCard('位置', p.DB6.position) +
-    createCard('目标', p.DB6.target) +
-    createCard('速度', p.DB6.speed)
-  document.getElementById('db7').innerHTML =
-    createCard('温度', p.DB7.temp + ' ℃') +
-    createCard('压力', p.DB7.pressure + ' MPa') +
-    createCard('运行', p.DB7.running ? '● 运行中' : '○ 停止', p.DB7.running?'green':'') +
-    createCard('报警', p.DB7.alarm ? '⚠ 报警' : '正常', p.DB7.alarm?'red':'green') +
-    createCard('传感器A', p.DB7.sensorA ? '触发' : '未触发', p.DB7.sensorA?'green':'') +
-    createCard('传感器B', p.DB7.sensorB ? '触发' : '未触发', p.DB7.sensorB?'green':'') +
-    createCard('阀门', p.DB7.valve ? '开启' : '关闭', p.DB7.valve?'green':'')
-  document.getElementById('qarea').innerHTML = bitsRow(d.PA[8]||0, 'QB8')
-  document.getElementById('qbytes').innerHTML = bytesHtml(d.PA)
-  document.getElementById('ibytes').innerHTML = bytesHtml(d.PE)
-  document.getElementById('mbytes').innerHTML = bytesHtml(d.MK)
-}
-refresh()
-setInterval(refresh, 300)
-</script>
-</body></html>`)
+  // 非 API 路径：返回简单提示（无内联 HTML）
+  writeJson(404, { error: 'Not Found', api: '/api/vplc' })
 })
 
 function startWebServer(port: number) {
@@ -995,11 +906,6 @@ function startWebServer(port: number) {
 }
 startWebServer(WEB_PORT)
 const webPortRef = { current: WEB_PORT }
-webServer.on('listening', () => {
-  webPortRef.current = webServer.address()?.port || WEB_PORT
-  webReady = true
-  printFinalBanner()
-})
 
 // 等两个服务器都就绪后再打完整的启动横幅
 let s7Ready = false, webReady = false
@@ -1009,7 +915,7 @@ function printFinalBanner() {
   console.log('╔══════════════════════════════════════════════╗')
   console.log('║    虚拟 S7-1200 PLC 已启动                   ║')
   console.log(`║    S7:  127.0.0.1:${s7PortRef.current}                   ║`)
-  console.log(`║    Web: http://localhost:${webPortRef.current}           ║`)
+  console.log(`║    API: http://localhost:${webPortRef.current}/api/vplc   ║`)
   console.log('║                                              ║')
   console.log('║    上位机连接:                               ║')
   console.log('║      IP: 127.0.0.1  Rack:0  Slot:1          ║')
