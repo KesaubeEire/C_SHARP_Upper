@@ -2,111 +2,105 @@
 
 ## 项目概述
 
-这是一个 **C# WinForms Modbus 上位机**学习/实战项目，同时配套生成了面试深度解析文档。
-目标是：边做项目边沉淀知识，最终形成一套可用于面试准备和实际开发的完整素材。
-
-## 技术栈
-
-- **框架**: .NET 10.0-windows (WinForms)
-- **语言**: C# 12+（Nullable + ImplicitUsings 均开启）
-- **协议**: Modbus RTU/TCP
-- **依赖**: `System.IO.Ports` 10.0.8（串口通信）
-- **Shell**: PowerShell 5.1（Windows 环境，注意不支持 `&&` 管道链、三元运算符等 Bash 语法）
+这是一个 **C# 上位机+WPF 控件展示**综合学习/实战项目仓库，包含多个独立子项目。
 
 ## 目录结构
 
 ```
 VS_Dev/
 ├── CLAUDE.md                          ← 本文件
-├── Project/TEST_101/                  ← 主项目（Modbus 上位机）
-│   ├── TEST_101.slnx                  ← 解决方案（.slnx 格式）
-│   ├── TEST_101.csproj                ← 项目文件（net10.0-windows）
-│   ├── Program.cs                     ← 入口：控制台 or WinForms 切换
-│   ├── ConsoleRunner.cs               ← 控制台模式运行器
-│   ├── ModbusForm.cs / .Designer.cs   ← 主窗口 UI + 逻辑
-│   ├── ModbusProtocol.cs             ← Modbus 帧组装/解析（协议层）
-│   ├── ModbusTransport.cs            ← Modbus 传输层（串口/TCP 抽象）
-│   ├── TestForm.cs / .Designer.cs    ← 测试窗口
-│   ├── HistoryDropDown.cs            ← 下拉历史记录控件
-│   ├── InputHistoryManager.cs        ← 输入历史管理器
-│   ├── CSharpConceptsDemo.cs         ← C# 核心概念示例代码
-│   └── CSharpMasterGuide.cs          ← C# 语法全攻略（21章，约2800行）
 │
-├── ModbusForm代码讲解_面试深度.html      ← ModbusForm 逐函数面试讲解
-├── ModbusForm代码面试级解析.html          ← ModbusForm 代码结构面试解析
-├── Modbus_上位机_面试题库.html            ← Modbus 上位机相关面试题集合
-└── WinForms上位机开发最佳实践_2024-2026.html ← WinForms 最佳实践总结
+├── Project/WpfScada/                  ← 主项目（WPF SCADA 上位机 + WPF-UI 控件画廊）
+│   ├── WpfScada.sln                   ← 解决方案
+│   ├── WpfScada.csproj                ← 项目文件（net10.0-windows, WPF）
+│   ├── App.xaml / App.xaml.cs         ← DI Host + 主题
+│   ├── Views/…                        ← 页面（PLC 监控 + 控件画廊 50+ 页面）
+│   ├── ViewModels/…                   ← MVVM ViewModel
+│   ├── Services/Plc/                  ← PLC 服务
+│   │   ├── S7Service.cs              ← Sharp7 封装（西门子 S7）
+│   │   ├── PollingScheduler.cs       ← 双路径轮询引擎
+│   │   ├── AlarmService.cs           ← 报警管理（ISA 18.2）
+│   │   ├── RecipeService.cs          ← 配方管理 + 版本历史
+│   │   └── Modbus/…                  ← Modbus RTU/TCP 协议栈
+│   ├── Controls/…                     ← 自定义 UserControl
+│   ├── Models/…                       ← 数据模型
+│   └── Helpers/…                      ← Converters
+│
+├── Project/WinForms_References/       ← WinForms Modbus 上位机（参考保留）
+│   ├── Modbus/                        ← Modbus 协议+传输+轮询
+│   ├── Alarm/ Recipe/ Report/         ← 报警/配方/报表
+│   ├── Storage/                       ← 数据库抽象（SQLite+SQL Server）
+│   ├── Core/                          ← EventBus + 数据模型
+│   ├── Forms/                         ← WinForms UI
+│   └── CSharpDemos/                   ← C# 语法教程
+│
+├── Project/wpfui/                     ← lepoco/wpfui 官方库（clone，仅供查阅）
+│
+├── ModbusForm代码讲解_面试深度.html     ← 面试文档
+├── ModbusForm代码面试级解析.html
+├── Modbus_上位机_面试题库.html
+└── WinForms上位机开发最佳实践_2024-2026.html
 ```
 
-## 架构设计要点
+## 技术栈
 
-### Modbus 分层架构
-- **ModbusProtocol**: 纯协议逻辑，不含 IO — 负责帧的组装（请求）和解析（响应），计算 CRC
-- **ModbusTransport**: 传输层抽象 — 封装串口/TCP 连接管理、发送接收字节流
-- **ModbusForm**: UI 层 — 调用 Transport 发送 Protocol 组装的帧，接收并显示结果
+### WpfScada（主项目）
+- **框架**: .NET 10.0-windows, WPF
+- **UI**: WPF-UI 4.3.0 (Fluent Design), NuGet 包引用
+- **MVVM**: CommunityToolkit.Mvvm（源生成器）
+- **DI**: Microsoft.Extensions.Hosting
+- **PLC 通信**: Sharp7 (S7) + 自研 Modbus 协议栈
+- **图表**: LiveChartsCore.SkiaSharpView 2.0.5 + SkiaSharp
+- **i18n**: Lepo.i18n
 
-### 启动模式
-`Program.cs` 支持两种运行模式：
-- **WinForms 模式**：启动 `ModbusForm` 图形界面
-- **控制台模式**：通过 `ConsoleRunner` 在终端运行，便于调试
+## 架构设计要点（WpfScada）
+
+### 分层架构
+- **Services**: 无 UI 依赖的纯服务层（S7Service, PollingScheduler, AlarmService, RecipeService, Modbus 协议栈）
+- **ViewModels**: 继承 ViewModel 基类，注入服务，使用 `[ObservableProperty]` + `[RelayCommand]`
+- **Views**: 通过 DI 注入 ViewModel，XAML 绑定，code-behind 只放 UI 行为
+- **Modbus**: 独立协议栈，Protocol / Transport / PollingService 三层
+
+### DI 注册（App.xaml.cs）
+```csharp
+services.AddSingleton<S7Service>();
+services.AddSingleton<AlarmService>();
+services.AddSingleton<ModbusPage>();
+services.AddSingleton<ModbusViewModel>();
+// 页面通过 AddTransientFromNamespace 批量注册
+```
 
 ## 协作规则（重要）
 
-- **不自动 commit**：改完代码先给用户检查，用户确认后再提交
-- **不自动 push**：未经用户允许绝不推送到任何远程仓库（internal / origin 等）
-- **git 操作前先问**：commit、push、merge、branch 等操作必须用户明确指令
+- **不自动 commit**：改完代码先给用户检查
+- **不自动 push**：未经允许绝不推送到任何远程
+- **git 操作前先问**：commit、push、merge、branch 必须用户明确指令
 
 ## 关键注意事项
 
 ### C# / .NET 约定
-- 目标框架是 **net10.0**，可用最新 C# 语法特性
-- `Nullable` 和 `ImplicitUsings` 已开启，无需手动写 `using System;` 等
-- WinForms 项目需要 `UseWindowsForms` 标志
+- 目标框架 net10.0-windows，Nullable + ImplicitUsings 已开启
+- 私有字段 `_camelCase`，类型 PascalCase
+- 所有 ViewModel 继承项目的 `ViewModel` 基类
+- 禁止硬编码颜色，必须使用 `DynamicResource`
+- XAML 使用 `ui:` 前缀覆盖 WPF-UI 控件
+- 颜色/画刷使用 `DynamicResource` 以支持运行时主题切换
 
-### PowerShell 环境限制
-Windows PowerShell 5.1 环境下：
-- **不支持** `&&` 和 `||` 管道链操作符 — 用 `A; if ($?) { B }` 替代
-- **不支持** 三元运算符 `?:`、null 合并 `??`、null 条件 `?.`
-- 用 `if/else` 和 `$null -eq` 检查替代
-- 默认编码 UTF-16 LE，写文件给其他工具读时用 `-Encoding utf8`
+### PowerShell 5.1 限制
+- 不支持 `&&` / `||` 管道链、三元运算符、null 合并
+- 默认编码 UTF-16 LE，写文件给其他工具读用 `-Encoding utf8`
 
 ### Git 规范
 - 主分支: `master`
-- 提交信息格式: `@ <描述> @`（用户自定义格式）
-- 新功能开发建议先创建分支，完成后合并回 master
+- 提交格式: `@ <描述> @`（用户自定义格式）
 
-## 面试文档说明
+## 面试文档
 
-根目录的 4 份 HTML 文档是配套学习资料：
-1. **代码讲解** — ModbusForm 逐函数、逐行深度讲解，适合面试口述
-2. **代码解析** — 从架构到细节的整体面试级分析
-3. **面试题库** — Modbus 协议 + 上位机开发相关面试题汇总
-4. **最佳实践** — 2024-2026 WinForms 开发工程化最佳实践
+根目录的 4 份 HTML 文档是配套学习资料。
 
-## 子项目
+## WpfScada 子项目约定
 
-`Project/Wpf.Ui.Gallery.Kesa/` 是独立的 WPF UI 项目，有专属编码规范：
-- 在该目录下工作时，`.claude/rules/wpf-conventions.md` 和 `wpfui-official-conventions.md` 会**自动加载**
-- 规则涵盖：主题适配（禁止硬编码色）、ViewModel基类约定、INPC规范、WPF UI 控件使用优先级等
-- **切目录后规则会自动切换**，无需手动操作
-
-## 下一步方向（待定）
-
-- [ ] 完善 Modbus 功能（多寄存器读写、异常处理、断线重连）
-- [ ] TestForm 测试窗口功能扩展
-- [ ] 补充更多 C# 语法实战示例
-- [ ] 面试题库持续更新
-
-## Agent skills
-
-### 问题追踪器
-
-Issue 以本地 markdown 文件形式存放在 `.scratch/<功能名>/` 下。详见 `docs/agents/issue-tracker.md`。
-
-### 分类标签
-
-五个标准分类标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。详见 `docs/agents/triage-labels.md`。
-
-### 领域文档
-
-单上下文布局：项目根目录下 `CONTEXT.md` + `docs/adr/`。详见 `docs/agents/domain.md`。
+在该目录下工作时，`.claude/rules/` 下的规则文件会**自动加载**：
+- `csharp-conventions.md` — C# 编码规范
+- `wpf-conventions.md` — WPF 项目约定
+- `wpfui-official-conventions.md` — WPF-UI 库官方规范

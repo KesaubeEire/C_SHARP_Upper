@@ -1,0 +1,264 @@
+﻿// This Source Code Form is subject to the terms of the MIT License.
+// If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
+// Copyright (C) Leszek Pomianowski and WPF UI Contributors.
+// All Rights Reserved.
+
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.Localization;
+using Wpf.Ui.Controls;
+using WpfScada.Resources;
+using WpfScada.Services.Plc;
+using WpfScada.Views.Pages;
+using WpfScada.Views.Pages.BasicInput;
+using WpfScada.Views.Pages.Collections;
+using WpfScada.Views.Pages.DateAndTime;
+using WpfScada.Views.Pages.DesignGuidance;
+using WpfScada.Views.Pages.DialogsAndFlyouts;
+using WpfScada.Views.Pages.Layout;
+using WpfScada.Views.Pages.Media;
+using WpfScada.Views.Pages.Navigation;
+using WpfScada.Views.Pages.OpSystem;
+using WpfScada.Views.Pages.StatusAndInfo;
+using WpfScada.Views.Pages.Text;
+using WpfScada.Views.Pages.Windows;
+using WpfScada.Views.Pages.Plc;
+
+namespace WpfScada.ViewModels.Windows;
+
+public partial class MainWindowViewModel(
+    IStringLocalizer<Translations> localizer,
+    AppConfigService config
+) : ViewModel
+{
+    [ObservableProperty]
+    private string _applicationTitle = localizer["WPF_SCADA"];
+
+    private ObservableCollection<object> _menuItems = [];
+
+    public ObservableCollection<object> MenuItems => _menuItems;
+
+    /// <summary>根据当前的 ShowGallery 配置重建左侧菜单。</summary>
+    public void RebuildMenuItems()
+    {
+        var items = new ObservableCollection<object>();
+
+        // Gallery 节点 - 由配置控制显示
+        if (config.ShowGallery)
+        {
+            items.Add(BuildGalleryNode());
+            items.Add(new NavigationViewItemSeparator());
+        }
+
+        // PLC 连接
+        items.Add(new NavigationViewItem()
+        {
+            Content = "PLC 连接",
+            Icon = new SymbolIcon { Symbol = SymbolRegular.PlugDisconnected24 },
+        });
+
+        // PLC 监视模块
+        items.Add(new NavigationViewItem("PLC 监视模块", SymbolRegular.Desktop24, typeof(IoMonitorPage))
+        {
+            MenuItemsSource = new object[]
+            {
+                new NavigationViewItem("I/Q/M 监控", SymbolRegular.List24, typeof(IoMonitorPage)),
+                new NavigationViewItem("趋势图", SymbolRegular.ChartMultiple24, typeof(TrendChartPage)),
+                new NavigationViewItem("仪表盘", SymbolRegular.Gauge24, typeof(GaugeDashboardPage)),
+                new NavigationViewItem("DB 块", SymbolRegular.Box24, typeof(DbMonitorPage)),
+                new NavigationViewItem("报警管理", SymbolRegular.Alert24, typeof(AlarmPage)),
+                new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
+                new NavigationViewItem("配方管理", SymbolRegular.DocumentData24, typeof(RecipePage)),
+            },
+        });
+
+        _menuItems = items;
+        OnPropertyChanged(nameof(MenuItems));
+    }
+
+    private static NavigationViewItem BuildGalleryNode()
+    {
+        return new NavigationViewItem
+        {
+            Content = "Gallery",
+            Icon = new SymbolIcon { Symbol = SymbolRegular.Apps24 },
+            IsExpanded = false,
+            MenuItemsSource = new object[]
+            {
+                new NavigationViewItem("Home", SymbolRegular.Home24, typeof(DashboardPage)),
+                new NavigationViewItem()
+                {
+                    Content = "Design guidance",
+                    Icon = new SymbolIcon { Symbol = SymbolRegular.DesignIdeas24 },
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem("Typography", SymbolRegular.TextFont24, typeof(TypographyPage)),
+                        new NavigationViewItem("Icons", SymbolRegular.Diversity24, typeof(IconsPage)),
+                        new NavigationViewItem("Colors", SymbolRegular.Color24, typeof(ColorsPage)),
+                    },
+                },
+                new NavigationViewItem("All samples", SymbolRegular.List24, typeof(AllControlsPage)),
+                new NavigationViewItemSeparator(),
+                new NavigationViewItem("Basic Input", SymbolRegular.CheckboxChecked24, typeof(BasicInputPage))
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem(nameof(Anchor), typeof(AnchorPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.Button), typeof(ButtonPage)),
+                        new NavigationViewItem(nameof(CheckBox), typeof(CheckBoxPage)),
+                        new NavigationViewItem(nameof(ComboBox), typeof(ComboBoxPage)),
+                        new NavigationViewItem(nameof(DropDownButton), typeof(DropDownButtonPage)),
+                        new NavigationViewItem(nameof(HyperlinkButton), typeof(HyperlinkButtonPage)),
+                        new NavigationViewItem(nameof(RadioButton), typeof(RadioButtonPage)),
+                        new NavigationViewItem(nameof(RatingControl), typeof(RatingPage)),
+                        new NavigationViewItem(nameof(Slider), typeof(SliderPage)),
+                        new NavigationViewItem(nameof(SplitButton), typeof(SplitButtonPage)),
+                        new NavigationViewItem(nameof(ThumbRate), typeof(ThumbRatePage)),
+                        new NavigationViewItem(nameof(ToggleButton), typeof(ToggleButtonPage)),
+                        new NavigationViewItem(nameof(ToggleSwitch), typeof(ToggleSwitchPage)),
+                    },
+                },
+                new NavigationViewItem
+                {
+                    Content = "Collections",
+                    Icon = new SymbolIcon { Symbol = SymbolRegular.Table24 },
+                    TargetPageType = typeof(CollectionsPage),
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem(nameof(System.Windows.Controls.DataGrid), typeof(DataGridPage)),
+                        new NavigationViewItem(nameof(ListBox), typeof(ListBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.ListView), typeof(ListViewPage)),
+                        new NavigationViewItem(nameof(TreeView), typeof(TreeViewPage)),
+#if DEBUG
+                        new NavigationViewItem("TreeList", typeof(TreeListPage)),
+#endif
+                    },
+                },
+                new NavigationViewItem("Date & time", SymbolRegular.CalendarClock24, typeof(DateAndTimePage))
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem(nameof(CalendarDatePicker), typeof(CalendarDatePickerPage)),
+                        new NavigationViewItem(nameof(System.Windows.Controls.Calendar), typeof(CalendarPage)),
+                        new NavigationViewItem(nameof(DatePicker), typeof(DatePickerPage)),
+                        new NavigationViewItem(nameof(TimePicker), typeof(TimePickerPage)),
+                    },
+                },
+                new NavigationViewItem("Dialogs & flyouts", SymbolRegular.Chat24, typeof(DialogsAndFlyoutsPage))
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem(nameof(Snackbar), typeof(SnackbarPage)),
+                        new NavigationViewItem(nameof(ContentDialog), typeof(ContentDialogPage)),
+                        new NavigationViewItem(nameof(Flyout), typeof(FlyoutPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.MessageBox), typeof(MessageBoxPage)),
+                    },
+                },
+#if DEBUG
+                new NavigationViewItem("Layout", SymbolRegular.News24, typeof(LayoutPage))
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem("Expander", typeof(ExpanderPage)),
+                        new NavigationViewItem("CardControl", typeof(CardControlPage)),
+                        new NavigationViewItem("CardAction", typeof(CardActionPage)),
+                    },
+                },
+#endif
+                new NavigationViewItem
+                {
+                    Content = "Media",
+                    Icon = new SymbolIcon { Symbol = SymbolRegular.PlayCircle24 },
+                    TargetPageType = typeof(MediaPage),
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem("Image", typeof(ImagePage)),
+                        new NavigationViewItem("Canvas", typeof(CanvasPage)),
+                        new NavigationViewItem("WebView", typeof(WebViewPage)),
+                        new NavigationViewItem("WebBrowser", typeof(WebBrowserPage)),
+                    },
+                },
+                new NavigationViewItem("Navigation", SymbolRegular.Navigation24, typeof(NavigationPage))
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem("BreadcrumbBar", typeof(BreadcrumbBarPage)),
+                        new NavigationViewItem("NavigationView", typeof(NavigationViewPage)),
+                        new NavigationViewItem("Menu", typeof(MenuPage)),
+                        new NavigationViewItem("Multilevel navigation", typeof(MultilevelNavigationPage)),
+                        new NavigationViewItem("TabControl", typeof(TabControlPage)),
+                        new NavigationViewItem("TabView", typeof(TabViewPage)),
+                    },
+                },
+                new NavigationViewItem(
+                    "Status & info",
+                    SymbolRegular.ChatBubblesQuestion24,
+                    typeof(StatusAndInfoPage)
+                )
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem("InfoBadge", typeof(InfoBadgePage)),
+                        new NavigationViewItem("InfoBar", typeof(InfoBarPage)),
+                        new NavigationViewItem("ProgressBar", typeof(ProgressBarPage)),
+                        new NavigationViewItem("ProgressRing", typeof(ProgressRingPage)),
+                        new NavigationViewItem("ToolTip", typeof(ToolTipPage)),
+                    },
+                },
+                new NavigationViewItem("Text", SymbolRegular.DrawText24, typeof(TextPage))
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem(nameof(AutoSuggestBox), typeof(AutoSuggestBoxPage)),
+                        new NavigationViewItem(nameof(Label), typeof(LabelPage)),
+                        new NavigationViewItem(nameof(NumberBox), typeof(NumberBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.PasswordBox), typeof(PasswordBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.RichTextBox), typeof(RichTextBoxPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBlock), typeof(TextBlockPage)),
+                        new NavigationViewItem(nameof(Wpf.Ui.Controls.TextBox), typeof(TextBoxPage)),
+                    },
+                },
+                new NavigationViewItem("System", SymbolRegular.Desktop24, typeof(OpSystemPage))
+                {
+                    MenuItemsSource = new object[]
+                    {
+                        new NavigationViewItem("Clipboard", typeof(ClipboardPage)),
+                        new NavigationViewItem("FilePicker", typeof(FilePickerPage)),
+                    },
+                },
+                new NavigationViewItem("Windows", SymbolRegular.WindowApps24, typeof(WindowsPage)),
+            },
+        };
+    }
+
+    [ObservableProperty]
+    private ObservableCollection<object> _footerMenuItems =
+    [
+        new NavigationViewItem("设置", SymbolRegular.Settings24, typeof(SettingsPage)),
+    ];
+
+    [ObservableProperty]
+    private ObservableCollection<Control> _trayMenuItems =
+    [
+        new Wpf.Ui.Controls.MenuItem()
+        {
+            Header = "主页",
+            Tag = "tray_home",
+            Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
+        },
+        new Wpf.Ui.Controls.MenuItem()
+        {
+            Header = "设置",
+            Tag = "tray_settings",
+            Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
+        },
+        new Separator(),
+        new Wpf.Ui.Controls.MenuItem()
+        {
+            Header = "关闭",
+            Tag = "tray_close",
+            Icon = new SymbolIcon { Symbol = SymbolRegular.Dismiss24 },
+        },
+    ];
+}

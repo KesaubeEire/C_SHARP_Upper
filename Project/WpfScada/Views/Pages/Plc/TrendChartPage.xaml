@@ -1,0 +1,334 @@
+﻿<Page
+    x:Class="WpfScada.Views.Pages.Plc.TrendChartPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:WpfScada.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:plc="clr-namespace:WpfScada.Controls.Plc"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="趋势图"
+    controls:PageControlDocumentation.Show="False"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
+    <StackPanel Margin="0,0,0,24">
+        <!--  ===== 控制栏 =====  -->
+        <Border
+            Margin="0,0,0,12"
+            Padding="16"
+            Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <Grid HorizontalAlignment="Right">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="120" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="时间范围:" />
+                <ComboBox
+                    x:Name="timeRangeCombo"
+                    Grid.Column="2"
+                    SelectedIndex="4"
+                    SelectionChanged="OnTimeRangeChanged" />
+            </Grid>
+        </Border>
+
+        <!--  ===== 趋势图 =====  -->
+        <Border
+            MinHeight="420"
+            Margin="0,0,0,12"
+            Padding="0"
+            Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:CartesianChartKesaTrend
+                    x:Name="trendChart"
+                    Grid.Row="0"
+                    Margin="8"
+                    AnimationsSpeed="00:00:00.050"
+                    Background="Transparent"
+                    FillOpacity="0"
+                    GeometrySize="0"
+                    LineSmoothness="0.2"
+                    LineStrokeThickness="3"
+                    TooltipPosition="Top"
+                    ZoomMode="X"
+                    AxisLabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                    AxisGridBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                    TooltipBgBrush="{DynamicResource CardBackground}"
+                    TooltipTextBrush="{DynamicResource TextFillColorPrimaryBrush}" />
+                <!--  图例 + 实时值  -->
+                <Border
+                    x:Name="legendBar"
+                    Grid.Row="1"
+                    Padding="12,8"
+                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,8,8">
+                    <StackPanel x:Name="legendPanel" Orientation="Horizontal" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <!--  ===== 设备控制（3×3 按1松0） =====  -->
+        <Border
+            Margin="0,12,0,0"
+            Padding="20"
+            Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <StackPanel>
+                <TextBlock
+                    Margin="0,0,0,12"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    Text="设备控制" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <!--  左侧：3×5 按钮（每行原有3个 + 使能/复位）  -->
+                    <Grid MinWidth="60" VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                    <ui:Button
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="⚙ 传送正转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="1.0.0" />
+                    <ui:Button
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="⏸ 传送暂停"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="1.10.4" />
+                    <ui:Button
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="🔄 传送反转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="1.0.1" />
+
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="⬆ 滑台正转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.0.2" />
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="🏠 滑台回原"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.6.0" />
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="⬇ 滑台反转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.0.3" />
+
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="⭕ 圆盘正转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.4" />
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="🏠 圆盘回原"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.3" />
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="2"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Primary"
+                        Content="🔄 圆盘反转"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.5" />
+
+                    <!--  滑台使能（点按取反）  -->
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="3"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="滑台使能"
+                        Click="OnEnableToggleClick"
+                        Tag="6.0.0" />
+                    <ui:Button
+                        Grid.Row="1"
+                        Grid.Column="4"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="↩ 滑台复位"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="6.0.1" />
+
+                    <!--  圆盘使能（点按取反）  -->
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="3"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Success"
+                        Content="圆盘使能"
+                        Click="OnEnableToggleClick"
+                        Tag="7.0.0" />
+                    <ui:Button
+                        Grid.Row="2"
+                        Grid.Column="4"
+                        
+                        Height="40"
+                        Margin="4"
+                        Appearance="Caution"
+                        Content="↩ 圆盘复位"
+                        MouseLeave="OnMotorPressLeave"
+                        PreviewMouseLeftButtonDown="OnMotorPressDown"
+                        PreviewMouseLeftButtonUp="OnMotorPressUp"
+                        Tag="7.0.1" />
+                </Grid>
+
+                    <!--  右侧：速度仪表  -->
+                    <!--
+                        圆盘速度 → DB7.DBD42 (REAL)  量程 0~360
+                        步进速度 → DB6.DBD42 (REAL)  量程 0~120
+                    -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,4"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Text="⭕ 圆盘速度"
+                                TextAlignment="Center" />
+                            <plc:ServoGauge
+                                x:Name="gaugeDiscSpeed"
+                                MinValue="0"
+                                MaxValue="360"
+                                GreenMax="180"
+                                YellowMax="300"
+                                RedMax="360"
+                                UnitLabel="°/s"
+                                NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                UnitBrush="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Margin="24,0,0,0">
+                            <TextBlock
+                                Margin="0,0,0,4"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Text="↗ 步进速度"
+                                TextAlignment="Center" />
+                            <plc:ServoGauge
+                                x:Name="gaugeStepSpeed"
+                                MinValue="0"
+                                MaxValue="120"
+                                GreenMax="50"
+                                YellowMax="80"
+                                RedMax="120"
+                                UnitLabel="mm/s"
+                                NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                                ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                UnitBrush="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</Page>

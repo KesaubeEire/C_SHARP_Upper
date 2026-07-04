@@ -1,0 +1,96 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>WpfScada</AssemblyName>
+    <RootNamespace>WpfScada</RootNamespace>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationIcon>wpfui.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <NoWarn>$(NoWarn);SA1601;WPF0041;IDE0044;MA0004;S1199;S108;S2486;S1075;S3626;IDE0059;S1244;CA1854;S3358;S1186;CA2263;CA1309;CA1824;CS0219;MA0015;MA0025;MA0026;S1118;S1121;S1135;S125;S2292;S3928;WPF0016;CS0618;NU1701;S1144</NoWarn>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Platforms>AnyCPU;x86;x64;arm64</Platforms>
+    <!-- Version -->
+    <Version>0.0.0.1</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="wpfui.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Lepo.i18n.DependencyInjection" Version="2.1.0" />
+    <PackageReference Include="Lepo.i18n.Wpf" Version="2.1.0" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.5" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3912.50" />
+    <PackageReference Include="ReflectionEventing" Version="5.0.0" />
+    <PackageReference Include="ReflectionEventing.DependencyInjection" Version="5.0.0" />
+    <PackageReference Include="Sharp7" Version="1.1.84" />
+    <PackageReference Include="SkiaSharp" Version="3.119.0" />
+    <PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.0" />
+    <PackageReference Include="WpfAnalyzers" Version="4.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+    <PackageReference Include="WPF-UI.DependencyInjection" Version="4.3.0" />
+    <PackageReference Include="WPF-UI.Tray" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\geo_icons.png" />
+    <Resource Include="Assets\octonaut.jpg" />
+    <Resource Include="Assets\wpfui.png" />
+    <Resource Include="Assets\wpfui_full.png" />
+    <Resource Include="CodeSamples\Typography\TypographySample_xaml.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Monaco\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="default-rules.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="License - Monaco.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="License - Images.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\Monaco\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Translations.pl-PL.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Translations.pl-PL.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources\Translations.pl-PL.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Translations.pl-PL.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+</Project>

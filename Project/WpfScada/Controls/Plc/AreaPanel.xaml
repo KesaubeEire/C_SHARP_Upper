@@ -1,0 +1,126 @@
+﻿<UserControl
+    x:Class="WpfScada.Controls.Plc.AreaPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:WpfScada.Controls.Plc"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:WpfScada.Models.Plc"
+    xmlns:plc="clr-namespace:WpfScada.Controls.Plc"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Name="root"
+    d:DesignHeight="300"
+    d:DesignWidth="600"
+    mc:Ignorable="d">
+    <Border
+        Margin="0,0,0,0"
+        Padding="16"
+        Background="{DynamicResource CardBackground}"
+        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1"
+        CornerRadius="8">
+        <StackPanel>
+            <!--  标题行：色块 + 区名 + 地址输入 + 按钮  -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <plc:LedIndicator
+                    Grid.Column="0"
+                    Width="12"
+                    Height="12"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Quality="Info"
+                    ToolTipText="{Binding AreaLabel, ElementName=root}"
+                    LedColor="{Binding AreaColor, ElementName=root}" />
+                <ui:TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontTypography="Subtitle"
+                    Foreground="{Binding AreaColor, ElementName=root}"
+                    Text="{Binding AreaLabel, ElementName=root}" />
+                <TextBox
+                    x:Name="addrInput"
+                    Grid.Column="2"
+                    Height="32"
+                    Margin="8,0"
+                    VerticalAlignment="Center"
+                    Text="{Binding AddressText, ElementName=root, UpdateSourceTrigger=PropertyChanged}" />
+                <ui:Button
+                    x:Name="btnRead"
+                    Grid.Column="3"
+                    Height="32"
+                    Margin="4,0"
+                    Appearance="Primary"
+                    Click="OnReadClick"
+                    Content="读取" />
+                <ui:Button
+                    x:Name="btnWriteMode"
+                    Grid.Column="4"
+                    Height="32"
+                    Margin="4,0"
+                    Appearance="Secondary"
+                    Click="OnWriteModeClick"
+                    Content="写模式"
+                    Visibility="{Binding ShowWriteButton, Converter={StaticResource BoolToVisibilityConverter}}" />
+            </Grid>
+
+            <!--  列标题  -->
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="80" />
+                </Grid.ColumnDefinitions>
+                <ui:TextBlock
+                    Grid.Column="0"
+                    FontTypography="Caption"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="地址" />
+                <ui:TextBlock
+                    Grid.Column="1"
+                    FontTypography="Caption"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="位 0 → 7" />
+                <ui:TextBlock
+                    Grid.Column="2"
+                    HorizontalAlignment="Center"
+                    FontTypography="Caption"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="HEX" />
+                <ui:TextBlock
+                    x:Name="colStatusHeader"
+                    Grid.Column="3"
+                    HorizontalAlignment="Center"
+                    FontTypography="Caption"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="状态"
+                    Visibility="{Binding ShowStatusColumn, Converter={StaticResource BoolToVisibilityConverter}}" />
+            </Grid>
+
+            <!--  字节行列表  -->
+            <ItemsControl x:Name="byteList" ItemsSource="{Binding ByteRows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="models:ByteRowViewModel">
+                        <local:ByteRow BitToggled="OnRowBitToggled" DataContext="{Binding}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!--  空状态提示  -->
+            <ui:TextBlock
+                x:Name="emptyHint"
+                Margin="0,12,0,0"
+                FontTypography="Body"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                Text="输入地址后点击 读取"
+                Visibility="{Binding ShowEmptyHint, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibilityConverter}}" />
+        </StackPanel>
+    </Border>
+</UserControl>
