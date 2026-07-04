@@ -45,6 +45,7 @@ pnpm dev
 | `pnpm dev` | 开发模式：Vite HMR (:5173) + API (:3001) |
 | `pnpm dev:server` | 只启动后端 API |
 | `pnpm dev:client` | 只启动前端 HMR |
+| `pnpm dev:vplc` | 启动虚拟 PLC：S7 (:1200) + Web API (:1201) + Modbus (:1210) + 前端 (:1420) |
 | `pnpm build` | 构建前端到 `dist/` |
 | `pnpm start` | 生产模式：一个端口 (:3000) 提供 API + 前端 |
 
@@ -74,6 +75,10 @@ trioop/
 ├── vite.config.ts        ← Vite 配置（API proxy）
 ├── tsconfig.json         ← 前端 TS 配置
 ├── tsconfig.server.json  ← 后端 TS 配置
+├── vplc/                 ← 虚拟 PLC（纯 Node.js 软 PLC）
+│   ├── server/           ← 后端模块（S7/Modbus/脚本引擎/HTTP API）
+│   ├── frontend/         ← React 管理界面
+│   └── README.md         ← 详细文档
 └── package.json
 ```
 
