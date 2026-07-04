@@ -1,17 +1,47 @@
 /**
- * vPLC 客户端 — 独立于 nodes7，通过 HTTP API 读写 vPLC
+ * vPLC 客户端 — 通过 HTTP API / TCP 直写读写 vPLC
  *
- * 使用时机：检测到 PLC IP 为 127.0.0.1 时自动启用
- * 读：轮询 http://localhost:1201/api/vplc
- * 写：原生 TCP Socket 发 S7 Write
+ * 自动检测端口：
+ *   1. 优先读 .port.json（vPLC 启动后写出，含自动回退后的真实端口）
+ *   2. 其次读 vplc-config.json
+ *   3. 兜底默认 :1200(S7) / :1201(HTTP)
  */
 
 import net from 'net'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+interface VplcPorts {
+  s7: number
+  webApi: number
+}
+
+function detectPorts(): VplcPorts {
+  // 1. 运行时端口文件（含自动回退）
+  try {
+    const pj = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', '.port.json'), 'utf-8'))
+    return { s7: pj.s7Port ?? 1200, webApi: pj.webApiPort ?? 1201 }
+  } catch {}
+
+  // 2. 配置文件
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'vplc-config.json'), 'utf-8'))
+    const s7 = cfg.port ?? 1200
+    return { s7, webApi: s7 + 1 }
+  } catch {}
+
+  return { s7: 1200, webApi: 1201 }
+}
+
+const ports = detectPorts()
 
 /** 从 vPLC HTTP API 读取 I/Q 区数据 */
 export async function fetchIO(): Promise<{ i: Record<number, number>; q: Record<number, number> } | null> {
   try {
-    const res = await fetch('http://localhost:1201/api/vplc')
+    const res = await fetch(`http://localhost:${ports.webApi}/api/vplc`)
     if (!res.ok) return null
     const d = await res.json()
     if (!d || !d.PE) return null
@@ -23,17 +53,16 @@ export async function fetchIO(): Promise<{ i: Record<number, number>; q: Record<
   } catch { return null }
 }
 
-/** TCP 直写 Q/M 区 */
+/** TCP 直写 Q/M 区 (COTP + S7) */
 export async function writeByte(area: 'q' | 'm', byteAddr: number, value: number): Promise<void> {
   const host = '127.0.0.1'
-  const port = 1200
+  const port = ports.s7
   const areaCode = area === 'q' ? 0x82 : 0x83
 
   return new Promise((resolve, reject) => {
     const sock = new net.Socket()
     const tOut = setTimeout(() => { sock.destroy(); reject(new Error('vPLC 直写超时')) }, 3000)
     sock.connect(port, host, () => {
-      // COTP Connection Request
       const cr = Buffer.alloc(22)
       cr[0] = 0x03; cr[1] = 0x00; cr.writeUInt16BE(22, 2)
       cr[4] = 0x11; cr[5] = 0xE0; cr[6] = 0x00; cr[7] = 0x00
@@ -50,7 +79,6 @@ export async function writeByte(area: 'q' | 'm', byteAddr: number, value: number
       if (buf.length < tlen) return
       if (waitCC && buf[5] === 0xD0) {
         waitCC = false
-        // S7 Write Request
         const req = Buffer.alloc(32)
         let o = 0
         req[o++] = 0x03; req[o++] = 0x00; req[o++] = 0x00; req[o++] = 0x20

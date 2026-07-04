@@ -7,7 +7,7 @@
     "dev": "concurrently -n server,client -c blue,green \"pnpm dev:server\" \"pnpm dev:client\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
-    "dev:vplc": "concurrently -n vplc-backend,vplc-ui -c yellow,cyan \"tsx vplc/vplc.ts\" \"pnpm dev:vplc-ui\"",
+    "dev:vplc": "concurrently -n vplc-backend,vplc-ui -c yellow,cyan \"tsx vplc/server/vplc.ts\" \"pnpm dev:vplc-ui\"",
     "dev:vplc-ui": "cd vplc/frontend && npm run dev",
     "build": "vite build",
     "start": "NODE_ENV=production tsx server/index.ts",

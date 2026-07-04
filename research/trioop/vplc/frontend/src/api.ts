@@ -190,3 +190,25 @@ export async function fetchLeds() {
   const r = await fetch(BASE + '/leds')
   return r.json()
 }
+
+// ── 用户脚本 ──
+
+export interface ScriptConfig {
+  name: string
+  source: string
+  obNumber: number
+  enabled: boolean
+}
+
+export async function fetchScripts(): Promise<ScriptConfig[]> {
+  const r = await fetch(BASE + '/scripts')
+  return r.json()
+}
+
+export async function saveScripts(scripts: ScriptConfig[]) {
+  const r = await fetch(BASE + '/scripts', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scripts }),
+  })
+  return r.json()
+}

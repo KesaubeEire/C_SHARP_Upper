@@ -136,6 +136,25 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0E0F10;color:#E8
 .del{color:#E24B4A;cursor:pointer;padding:2px 6px;font-size:14px}
 .trigger-desc{color:#7A7872;font-size:11px;margin-top:4px;word-break:break-all}
 
+/* ─── 脚本 Tab ─── */
+.scripts-list{display:flex;flex-direction:column;gap:8px}
+.script-card{background:#181A1B;border:1px solid #2E3133;border-radius:6px;padding:10px}
+.script-card__header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.script-name-input{background:#1F2224;border:1px solid #2E3133;color:#E8E6DF;border-radius:4px;padding:4px 8px;font-size:12px;font-family:Consolas,monospace;width:140px}
+.script-name-input:focus{border-color:#378ADD;outline:none}
+.script-ob-select{background:#1F2224;border:1px solid #2E3133;color:#E8E6DF;border-radius:4px;padding:3px 6px;font-size:11px}
+.script-toggle-label{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#7A7872;user-select:none}
+.script-toggle-label input[type=checkbox]{accent-color:#1D9E75}
+.script-editor{margin-top:8px}
+.script-source{width:100%;background:#0E0F10;border:1px solid #2E3133;color:#E8E6DF;border-radius:4px;padding:8px;font-family:Consolas,'Courier New',monospace;font-size:12px;line-height:1.5;resize:vertical;min-height:120px;tab-size:2}
+.script-source:focus{border-color:#378ADD;outline:none}
+.script-editor__hint{color:#5F5E5A;font-size:10px;margin-top:4px}
+
+@media (max-width: 760px) {
+  .script-name-input{width:100%}
+  .script-card__header{gap:4px}
+}
+
 /* ─── 响应式布局 ─── */
 @media (max-width: 760px) {
   body{padding:6px;font-size:12px}

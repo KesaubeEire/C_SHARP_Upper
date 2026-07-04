@@ -1,1 +1,30 @@
-{"port":1200,"host":"0.0.0.0","dbs":{"1":64,"6":64}}
+{
+  "port": 1200,
+  "host": "0.0.0.0",
+  "dbs": {
+    "1": 64,
+    "6": 64
+  },
+  "udts": {},
+  "imported": {},
+  "scripts": [
+    {
+      "name": "inc_pos",
+      "source": "if(readBit(\"I\",0,0,0)){var p=readReal(\"DB\",6,38);writeReal(\"DB\",6,38,p+0.1)}",
+      "obNumber": 1,
+      "enabled": true
+    },
+    {
+      "name": "log_temp",
+      "source": "log(\"temp:\",readReal(\"DB\",7,38))",
+      "obNumber": 35,
+      "enabled": true
+    },
+    {
+      "name": "reset_on_stop",
+      "source": "if(!readBit(\"I\",0,0,2)){writeReal(\"DB\",6,38,0)}",
+      "obNumber": 1,
+      "enabled": false
+    }
+  ]
+}

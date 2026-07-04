@@ -4,11 +4,12 @@ import {
   fetchImportedDBs, deleteImportedDB, refreshImportedDB, writeImportedField, randomizeImportedField,
   fetchImportedUDTs, fetchImportedUDTDetail, deleteImportedUDT,
   fetchDbs, upsertDb, deleteDb,
+  fetchScripts, saveScripts,
 } from './api'
-import type { VPLCSnapshot, Trigger, ImportedDB, UDTDetail } from './api'
+import type { VPLCSnapshot, Trigger, ImportedDB, UDTDetail, ScriptConfig } from './api'
 import './App.css'
 
-type Tab = 'monitor' | 'import' | 'triggers'
+type Tab = 'monitor' | 'import' | 'triggers' | 'scripts'
 
 const START_TIME = Date.now()
 
@@ -89,9 +90,9 @@ export default function App() {
       <p className="app-subtitle">S7 端口 1200 | Web 端口 1201 | {uptime}s</p>
 
       <div className="tabs">
-        {(['monitor', 'import', 'triggers'] as Tab[]).map(t => (
+        {(['monitor', 'import', 'triggers', 'scripts'] as Tab[]).map(t => (
           <button key={t} className={'tab' + (tab === t ? ' active' : '')} onClick={() => setTab(t)}>
-            {t === 'monitor' ? '📊 监视' : t === 'import' ? '📥 导入' : '⚡ 触发器'}
+            {t === 'monitor' ? '📊 监视' : t === 'import' ? '📥 导入' : t === 'triggers' ? '⚡ 触发器' : '📜 脚本'}
           </button>
         ))}
       </div>
@@ -109,6 +110,7 @@ export default function App() {
       {tab === 'triggers' && (
         <TriggersTab triggers={triggers} setTriggers={setTriggers} snap={snap} onRefresh={refresh} showToast={showToast} />
       )}
+      {tab === 'scripts' && <ScriptsTab showToast={showToast} />}
     </div>
   )
 }
@@ -316,7 +318,6 @@ function ImportTab({ snap, importedDBs, udtNames, udtDetail, setUdtDetail, onRef
     onRefresh()
     e.target.value = ''
     ;(document.activeElement as HTMLElement)?.blur()
-  }
   }
 
   const writeField = async (key: string, fieldName: string, value: number | boolean) => {
@@ -541,6 +542,108 @@ function TriggersTab({ triggers, setTriggers, snap, onRefresh, showToast }: {
             </div>
           )
         })
+      )}
+    </div>
+  )
+}
+
+// ── 脚本 Tab ──
+
+const SCRIPT_TEMPLATE = `// 在 OB 周期执行的 JavaScript
+// API: readByte/writeByte/readBit/writeBit/readReal/writeReal/readInt/writeInt/log/now
+// area: 'I' | 'Q' | 'M' | 'DB'
+if (readBit('I', 0, 0, 0)) {
+  const pos = readReal('DB', 6, 38)
+  writeReal('DB', 6, 38, pos + 0.5)
+  log('position:', pos + 0.5)
+}`
+
+function ScriptsTab({ showToast }: { showToast: (msg: string) => void }) {
+  const [scripts, setScripts] = useState<ScriptConfig[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingIdx, setEditingIdx] = useState<number | null>(null)
+  const [editSource, setEditSource] = useState('')
+  const [dirty, setDirty] = useState(false)
+
+  const load = useCallback(async () => {
+    try { setScripts(await fetchScripts()) } catch {} finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const handleSave = async () => {
+    await saveScripts(scripts)
+    setDirty(false)
+    showToast('✅ 脚本已保存')
+  }
+
+  const handleAdd = () => {
+    setScripts(prev => [...prev, { name: `script_${prev.length + 1}`, source: SCRIPT_TEMPLATE, obNumber: 1, enabled: true }])
+    setDirty(true)
+  }
+
+  const handleDelete = (idx: number) => {
+    setScripts(prev => prev.filter((_, i) => i !== idx))
+    if (editingIdx === idx) setEditingIdx(null)
+    setDirty(true)
+  }
+
+  const updateScript = (idx: number, patch: Partial<ScriptConfig>) => {
+    setScripts(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s))
+    setDirty(true)
+  }
+
+  if (loading) return <div className="empty">加载中...</div>
+
+  return (
+    <div>
+      <div className="flex" style={{ marginBottom: 10 }}>
+        <button className="btn btn-primary btn-sm" onClick={handleAdd}>+ 新建脚本</button>
+        {dirty && <button className="btn btn-primary btn-sm" onClick={handleSave}>💾 保存</button>}
+        <span style={{ color: '#7A7872', fontSize: 11, marginLeft: 'auto' }}>脚本在 OB 周期执行，超时 100ms</span>
+      </div>
+
+      {scripts.length === 0 ? (
+        <div className="empty">暂无脚本 — 点击「+ 新建脚本」添加</div>
+      ) : (
+        <div className="scripts-list">
+          {scripts.map((script, idx) => (
+            <div key={idx} className="script-card">
+              <div className="script-card__header">
+                <input className="script-name-input" value={script.name}
+                  onChange={e => updateScript(idx, { name: e.target.value })} placeholder="脚本名称" />
+                <select className="script-ob-select" value={script.obNumber}
+                  onChange={e => updateScript(idx, { obNumber: Number(e.target.value) })}>
+                  <option value={1}>OB1 (自由循环)</option>
+                  <option value={35}>OB35 (500ms)</option>
+                  <option value={100}>OB100 (启动)</option>
+                </select>
+                <label className="script-toggle-label">
+                  <input type="checkbox" checked={script.enabled}
+                    onChange={e => updateScript(idx, { enabled: e.target.checked })} />
+                  <span>{script.enabled ? '已启用' : '已禁用'}</span>
+                </label>
+                <button className="btn btn-sm" onClick={() => {
+                  if (editingIdx === idx) { setEditingIdx(null); return }
+                  setEditingIdx(idx); setEditSource(script.source)
+                }}>{editingIdx === idx ? '收起' : '编辑'}</button>
+                <span className="del" onClick={() => handleDelete(idx)}>✕</span>
+              </div>
+
+              {editingIdx === idx && (
+                <div className="script-editor">
+                  <textarea className="script-source" value={editSource}
+                    onChange={e => setEditSource(e.target.value)}
+                    onBlur={() => updateScript(idx, { source: editSource })}
+                    spellCheck={false} rows={12} />
+                  <div className="script-editor__hint">
+                    API: readByte/writeByte/readBit/writeBit/readReal/writeReal/readInt/writeInt/log/now
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
