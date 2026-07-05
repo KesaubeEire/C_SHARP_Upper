@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   if (!ready) return (
     <div className="login-overlay">
       <div className="login-form" style={{ alignItems: 'center' }}>
-        <h1 className="login-title">🔌 WebScada HMI</h1>
+        <h1 className="login-title">WebScada HMI</h1>
         <div style={{ color: '#666', fontSize: 14 }}>加载中...</div>
       </div>
     </div>
@@ -91,7 +91,7 @@ function LoginScreen({ onLogin }: { onLogin: (u: string, p: string) => Promise<s
   return (
     <div className="login-overlay">
       <form className="login-form" onSubmit={handleSubmit}>
-        <h1 className="login-title">🔌 WebScada HMI</h1>
+        <h1 className="login-title">WebScada HMI</h1>
         <input className="login-input" type="text" placeholder="用户名" value={user} onChange={e => setUser(e.target.value)} autoFocus />
         <input className="login-input" type="password" placeholder="密码" value={pass} onChange={e => setPass(e.target.value)} />
         {error && <div className="login-error">{error}</div>}
