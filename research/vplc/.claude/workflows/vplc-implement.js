@@ -13,7 +13,7 @@ export const meta = {
   ],
 }
 
-var basePath = 'C:/KesaData/Projects/Claude_msi2020/C_SHARP_Upper/research/trioop/vplc'
+var basePath = 'C:/KesaData/Projects/Claude_msi2020/C_SHARP_Upper/research/vplc'
 
 phase('分析现有代码')
 

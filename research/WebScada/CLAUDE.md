@@ -1,4 +1,4 @@
-# Trioop PLC Monitor
+# WebScada PLC Monitor
 
 纯 Node.js 西门子 S7-1200 实时监控与控制系统。
 **pnpm + Vite + React + TypeScript + Express + node-snap7js**
@@ -16,7 +16,7 @@ pnpm dev
 ## 结构
 
 ```
-trioop/
+WebScada/
 ├── shared/types.ts           ← 前后端共享类型
 ├── server/                   ← 后端（Express + S7）
 │   ├── index.ts              ← 主入口

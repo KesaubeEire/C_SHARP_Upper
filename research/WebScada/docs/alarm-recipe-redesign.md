@@ -5,7 +5,7 @@
 
 ## 概述
 
-对 Trioop PLC Monitor 的报警和配方模块进行了全面重写，参照 WPF 参考项目的功能设计和交互模式，在 Web (React + Express) 上实现了功能等价的功能。
+对 WebScada PLC Monitor 的报警和配方模块进行了全面重写，参照 WPF 参考项目的功能设计和交互模式，在 Web (React + Express) 上实现了功能等价的功能。
 
 ---
 

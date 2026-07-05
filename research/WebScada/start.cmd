@@ -1,5 +1,5 @@
 @echo off
-REM trioop PLC Monitor - one-click start
+REM WebScada PLC Monitor - one-click start
 REM Usage: pnpm launch  or  double-click start.cmd
 
 setlocal enabledelayedexpansion
@@ -7,7 +7,7 @@ setlocal enabledelayedexpansion
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 echo ========================================
-echo   Trioop PLC Monitor
+echo   WebScada PLC Monitor
 echo ========================================
 echo.
 

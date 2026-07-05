@@ -1,4 +1,4 @@
-# trioop PLC Monitor — 一键启动脚本 (PowerShell)
+# WebScada PLC Monitor — 一键启动脚本 (PowerShell)
 # 自动解决 Node 版本、端口占用、原生模块编译问题
 # 用法: 右键 → 使用 PowerShell 运行 或 .\start.ps1
 
@@ -7,7 +7,7 @@ $ROOT = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ROOT
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Trioop PLC Monitor — 启动器" -ForegroundColor Cyan
+Write-Host "  WebScada PLC Monitor — 启动器" -ForegroundColor Cyan
 
 # ─── 检测主线还是 worktree ────────────────────────────
 $gitDir = git rev-parse --git-dir 2>$null

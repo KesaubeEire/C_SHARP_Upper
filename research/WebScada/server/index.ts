@@ -1,5 +1,5 @@
 /**
- * Trioop PLC Monitor — 服务端入口
+ * WebScada PLC Monitor — 服务端入口
  *
  * 开发：pnpm dev       (Vite HMR :5173 + API :3001)
  * 生产：pnpm start     (Express :3000 提供 API + 前端静态文件)
@@ -1351,7 +1351,7 @@ async function start() {
 
   app.listen(apiPort, () => {
     console.log(`\n========================================`)
-    console.log(`  Trioop PLC Monitor`)
+    console.log(`  WebScada PLC Monitor`)
     console.log(`  环境: ${isDev ? '开发' : '生产'}`)
     console.log(`  API:  http://localhost:${apiPort}/api/plc`)
     console.log(`  推流: http://localhost:${apiPort}/api/plc/stream`)
