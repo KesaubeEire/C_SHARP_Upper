@@ -77,6 +77,8 @@ public partial class App
                 _ = services.AddSingleton<AlarmViewModel>();
                 _ = services.AddSingleton<RecipePage>();
                 _ = services.AddSingleton<RecipeViewModel>();
+                _ = services.AddSingleton<ModbusPage>();
+                _ = services.AddSingleton<ModbusViewModel>();
 
                 // Sidebar panel
                 _ = services.AddTransient<PpeConnectionSection>();
