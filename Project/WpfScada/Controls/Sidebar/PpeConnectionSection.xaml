@@ -18,6 +18,14 @@
 
     <StackPanel Margin="0,0,0,0">
 
+        <!--  ===== 连接模式 =====  -->
+        <controls:ControlExample Margin="0,0,0,8" HeaderText="连接模式">
+            <StackPanel>
+                <RadioButton Content="S7 直连" IsChecked="{Binding UseVplcHttp, Converter={StaticResource InverseBoolConverter}}" />
+                <RadioButton Margin="0,4,0,0" Content="vPLC (HTTP)" IsChecked="{Binding UseVplcHttp}" />
+            </StackPanel>
+        </controls:ControlExample>
+
         <!--  ===== 本机网卡 =====  -->
         <controls:ControlExample Margin="0,0,0,8" HeaderText="本机网卡">
             <ComboBox

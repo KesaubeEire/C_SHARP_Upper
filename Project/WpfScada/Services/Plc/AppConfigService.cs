@@ -24,6 +24,7 @@ public class AppConfigService
     public double WindowHeight { get; set; } = 820;
     public string WindowState { get; set; } = "Normal";
     public bool ShowGallery { get; set; } = false;
+    public bool UseVplcHttp { get; set; }
     public List<ImportedDbInfo> ImportedDbs { get; set; } = [];
     public List<ImportedUdtInfo> ImportedUdts { get; set; } = [];
 

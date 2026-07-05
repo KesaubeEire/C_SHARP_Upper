@@ -13,16 +13,18 @@ namespace WpfScada.ViewModels.Plc;
 public partial class PpeConnectionSectionViewModel : ObservableObject
 {
     private readonly S7Service _s7;
+    private readonly VplcHttpService _vplcHttp;
     private readonly AppConfigService _config;
     private readonly PollingScheduler _scheduler;
     private readonly IContentDialogService _contentDialog;
 
     public PollingStore Store { get; }
 
-    public PpeConnectionSectionViewModel(S7Service s7, PollingScheduler scheduler, PollingStore store,
+    public PpeConnectionSectionViewModel(S7Service s7, VplcHttpService vplcHttp, PollingScheduler scheduler, PollingStore store,
         AppConfigService config, IContentDialogService contentDialog)
     {
         _s7 = s7;
+        _vplcHttp = vplcHttp;
         _scheduler = scheduler;
         _config = config;
         _contentDialog = contentDialog;
@@ -57,6 +59,9 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _showStatusBar;
+
+    [ObservableProperty]
+    private bool _useVplcHttp;
 
     public Brush LatencyColor
     {
@@ -205,6 +210,7 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
         SetField(ref _rack, _config.Rack.ToString(), nameof(Rack));
         SetField(ref _slot, _config.Slot.ToString(), nameof(Slot));
         SetField(ref _pollInterval, _config.PollInterval.ToString(), nameof(PollInterval));
+        UseVplcHttp = _config.UseVplcHttp;
     }
 
     /// <summary>更新字段并通知 UI，不触发额外逻辑</summary>
@@ -230,6 +236,31 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
 
         try
         {
+            if (UseVplcHttp)
+            {
+                bool ok = await _vplcHttp.ConnectAsync();
+                IsConnected = ok;
+                ShowStatusBar = true;
+                if (ok)
+                {
+                    StatusText = "vPLC 已连接";
+                    ConnectionQuality = LedQuality.Good;
+                }
+                else
+                {
+                    StatusText = $"vPLC 连接失败: {_vplcHttp.LastError ?? "未知错误"}";
+                    ConnectionQuality = LedQuality.Bad;
+                    await _contentDialog.ShowSimpleDialogAsync(
+                        new SimpleContentDialogCreateOptions
+                        {
+                            Title = "连接失败",
+                            Content = _vplcHttp.LastError ?? "无法连接 vPLC (127.0.0.1:1201)",
+                            CloseButtonText = "确定",
+                        });
+                }
+                return;
+            }
+
             // 异步执行 TCP 连接，不阻塞 UI
             int result = await Task.Run(() => _s7.Connect(localIp, ip, port, rack, slot));
 
@@ -273,7 +304,14 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     [RelayCommand]
     private void Disconnect()
     {
-        _s7.Disconnect();
+        if (UseVplcHttp)
+        {
+            _vplcHttp.Disconnect();
+        }
+        else
+        {
+            _s7.Disconnect();
+        }
         IsConnected = false;
         ConnectionQuality = LedQuality.Disabled;
         StatusText = "已断开";
@@ -282,6 +320,33 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     [RelayCommand]
     private async Task StartPolling()
     {
+        if (UseVplcHttp)
+        {
+            if (!_vplcHttp.IsConnected)
+            {
+                await _contentDialog.ShowSimpleDialogAsync(
+                    new SimpleContentDialogCreateOptions
+                    {
+                        Title = "提示",
+                        Content = "请先连接 vPLC",
+                        CloseButtonText = "确定",
+                    });
+                return;
+            }
+
+            // vplc 模式：获取一次快照验证连接
+            var snap = await _vplcHttp.GetSnapshotAsync();
+            if (snap != null)
+            {
+                StatusText = "vPLC 轮询就绪";
+            }
+            else
+            {
+                StatusText = "vPLC 快照获取失败";
+            }
+            return;
+        }
+
         if (!_s7.IsConnected)
         {
             await _contentDialog.ShowSimpleDialogAsync(

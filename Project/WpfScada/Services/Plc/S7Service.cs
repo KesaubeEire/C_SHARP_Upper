@@ -35,8 +35,7 @@ public sealed class S7Service : IDisposable
                 if (_client.Connected)
                     _client.Disconnect();
 
-                int portVal = port;
-                _client.SetParam(Sharp7.S7Consts.p_u16_LocalPort, ref portVal);
+                _client.PLCPort = port;
 
                 if (!string.IsNullOrEmpty(localIp))
                     return ConnectWithLocalBind(localIp, ip, port, rack, slot);
