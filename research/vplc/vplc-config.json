@@ -18,7 +18,7 @@
       "name": "log_temp",
       "source": "log(\"temp:\",readReal(\"DB\",7,38))",
       "obNumber": 35,
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "reset_on_stop",

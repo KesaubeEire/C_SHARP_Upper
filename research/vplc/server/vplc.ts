@@ -65,6 +65,7 @@ let s7Server: net.Server | null = null
 
 // ─── 启动标志 ──
 let s7Ready = false, webReady = false, modbusReady = false
+let _bannerPrinted = false
 
 const portJsonPath = path.resolve(__dirname, '..', '.port.json')
 
@@ -77,23 +78,20 @@ function writePortJson(ports: { s7: number; webApi: number; modbus: number }) {
 }
 
 function printFinalBanner() {
-  if (!s7Ready || !webReady) return
-  const modbusPort = modbusServer ? getModbusPort(modbusServer) : 0
-  writePortJson({ s7: s7Port, webApi: webPort, modbus: modbusPort })
+  if (!s7Ready || !webReady || _bannerPrinted) return
+  _bannerPrinted = true
   console.log('')
-  console.log('╔══════════════════════════════════════════════════╗')
-  console.log('║     虚拟 S7-1200 PLC 已启动                      ║')
-  console.log(`║    S7:  127.0.0.1:${s7Port}                              ║`)
-  console.log(`║    API: http://localhost:${webPort}/api/vplc              ║`)
-  if (modbusPort) console.log(`║    Modbus: 127.0.0.1:${modbusPort}                        ║`)
-  console.log('║                                                    ║')
-  console.log(`║    上位机: 127.0.0.1 Rack:0 Slot:1 Port:${s7Port}               ║`)
-  if (modbusPort) console.log(`║    Modbus TCP: ${modbusPort}                                ║`)
-  console.log('║                                                    ║')
-  console.log('║    模拟: DB' + Object.keys(dbsConfig).sort((a, b) => Number(a) - Number(b)).join('/') + ' I Q M        ║')
-  console.log('║    脚本: ' + (typeof getUserScripts === 'function' ? '已启用' : '未启用') + '                                    ║')
-  console.log('╚══════════════════════════════════════════════════╝')
-  console.log('')
+  writePortJson({ s7: s7Port, webApi: webPort, modbus: 0 })
+  console.log(`  S7:  127.0.0.1:${s7Port}`)
+  console.log(`  API: http://localhost:${webPort}/api/vplc`)
+  console.log(`  上位机: 127.0.0.1 Rack:0 Slot:1 Port:${s7Port}`)
+  console.log(`  模拟: DB${Object.keys(dbsConfig).sort((a, b) => Number(a) - Number(b)).join('/')}  I  Q  M`)
+  console.log(`  脚本: ${typeof getUserScripts === 'function' ? '已启用' : '未启用'}`)
+}
+
+function printModbusReady(port: number) {
+  writePortJson({ s7: s7Port, webApi: webPort, modbus: port })
+  console.log(`  Modbus TCP: ${port}`)
 }
 
 // ─── 杀前一个实例 ──
@@ -138,7 +136,8 @@ createModbusServer({ preferredPort: MODBUS_PORT })
   .then(srv => {
     modbusServer = srv
     modbusReady = true
-    printFinalBanner()
+    const port = getModbusPort(srv)
+    if (port) printModbusReady(port)
   })
   .catch((err) => {
     console.error('[vPLC] Modbus 服务器启动失败:', err.message)
