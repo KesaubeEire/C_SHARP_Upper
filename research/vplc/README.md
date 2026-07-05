@@ -5,9 +5,14 @@
 ## 快速开始
 
 ```bash
-# 从项目根目录
-pnpm dev:vplc
+# 安装所有依赖（根目录 + 前端，一次搞定）
+pnpm install
+
+# 一键启动（前后端同时）
+pnpm launch
 ```
+
+> 首次使用先执行 `pnpm install` 和 `cd frontend && npm install`。
 
 启动后：
 
@@ -18,7 +23,7 @@ pnpm dev:vplc
 | Modbus TCP | 1210 | 标准 Modbus TCP，兼容 SCADA/HMI |
 | 前端管理界面 | 1420 | `http://localhost:1420` |
 
-> 端口可在 `vplc/vplc-config.json` 中修改。发生冲突时自动回退，真实端口写入 `.port.json`。
+> 端口可在 `vplc-config.json` 中修改。发生冲突时自动回退，真实端口写入 `.port.json`。
 
 ## 架构
 

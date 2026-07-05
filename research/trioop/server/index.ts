@@ -87,7 +87,14 @@ function pausePolling() {
   else pollingTimer = null
 }
 
-/** VPLC HTTP 轮询（每 500ms 直拉 VPLC 真实内存更新 I/Q 缓存并推 SSE） */
+/** 递归 setTimeout 轮询，不会被 _isPolling 跳过导致频率降低 */
+async function pollLoop() {
+  if (!pollingTimer) return  // 被暂停了
+  await poll()
+  if (pollingTimer) pollingTimer = setTimeout(pollLoop, runtimePollInterval)
+}
+
+/** VPLC HTTP 轮询（每 500ms 直拉 VPLC REST API 更新 I/Q/M，不走 nodes7） */
 let vplcHttpTimer: ReturnType<typeof setInterval> | null = null
 async function pollVplcHttp() {
   try {
@@ -101,14 +108,6 @@ async function pollVplcHttp() {
     broadcast({ db: plcDataCache, io: ioDataCache, dbBlocks: dbBlockCache })
   } catch {}
 }
-
-/** 递归 setTimeout 轮询，不会被 _isPolling 跳过导致频率降低 */
-async function pollLoop() {
-  if (!pollingTimer) return  // 被暂停了
-  await poll()
-  if (pollingTimer) pollingTimer = setTimeout(pollLoop, runtimePollInterval)
-}
-
 /** 恢复轮询 */
 function resumePolling() {
   if (!pollingTimer && plc.isConnected()) {
@@ -162,7 +161,10 @@ app.post('/api/plc/connect', async (req, res) => {
     await plc.connect(runtimePlcIp, config.plc.rack, config.plc.slot, runtimeLocalAddr, runtimeConnType, config.variables, dbBlocks, ioRanges, runtimePlcPort)
     plcDataCache = {}
     if (runtimePlcIp === '127.0.0.1') {
+      // vplc: S7 轮询读 DB 变量 + HTTP 轮询读 I/Q/M（nodes7 读 vplc 的 I/Q/M 有问题）
       if (!vplcHttpTimer) { vplcHttpTimer = setInterval(pollVplcHttp, runtimePollInterval); pollVplcHttp() }
+      pollingTimer = setInterval(poll, runtimePollInterval)
+      poll()
     } else {
       pollingTimer = setInterval(poll, runtimePollInterval)
       poll()
@@ -1371,6 +1373,7 @@ process.on('uncaughtException', (err) => {
 process.on('SIGINT', () => {
   console.log('\n正在关闭...')
   if (pollingTimer) clearInterval(pollingTimer)
+  if (vplcHttpTimer) clearInterval(vplcHttpTimer)
   stopOpcuaBroadcast()
   stopFlush()
   plc.disconnect()

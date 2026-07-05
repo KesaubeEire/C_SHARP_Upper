@@ -1,6 +1,6 @@
 /** vPLC 共享类型定义 */
 
-import type { ParsedDBVariable, UDTMap } from '../../server/dbParser.js'
+import type { ParsedDBVariable, UDTMap } from './dbParser.js'
 
 export type { ParsedDBVariable, UDTMap }
 

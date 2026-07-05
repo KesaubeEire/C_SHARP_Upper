@@ -12,7 +12,7 @@ import { obCycles, resetAllOBs, getRuntimeSnapshot, setUserScripts, getUserScrip
 import { writeConfig } from './persistence.js'
 
 // ─── 导入解析器 ──
-import { parseUDTFile, parseDBFile, extractReferencedUDTs } from '../../server/dbParser.js'
+import { parseUDTFile, parseDBFile, extractReferencedUDTs } from './dbParser.js'
 
 // ─── JSON 响应工具 ──
 

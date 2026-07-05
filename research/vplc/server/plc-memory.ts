@@ -3,7 +3,7 @@
  * 所有 PLC 内存区域的读写操作
  */
 
-import type { ParsedDBVariable, UDTMap } from '../../server/dbParser.js'
+import type { ParsedDBVariable, UDTMap } from './dbParser.js'
 import type { PlcMemory, ImportedDBRuntime, ImportedFieldMeta } from './types.js'
 
 // ─── 内存区域 ──
