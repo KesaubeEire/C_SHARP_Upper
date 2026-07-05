@@ -10,6 +10,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import type { RecipeRecord, RecipeMeta, RecipeGroup, RecipeParameter, RecipeVersionSnapshot } from '../shared/types.js'
 import { RecipeStatus } from '../shared/types.js'
+import { buildXlsx, parseXlsx } from './excel.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.resolve(__dirname, '..', 'data')
@@ -208,19 +209,74 @@ function getAllParams(recipe: RecipeRecord): RecipeParameter[] {
 
 export function exportToCsv(recipe: RecipeRecord): string {
   const params = getAllParams(recipe)
-  const lines = ['Name,Value,Unit,Address,Scale,Offset,Group,PlcDataType,DbNumber,MinValue,MaxValue']
+  // UTF-8 BOM 让 Excel 正确识别编码，避免中文乱码
+  const lines = ['﻿Name,Value,Unit,Address,Scale,Offset,Group,PlcDataType,DbNumber,MinValue,MaxValue']
   for (const p of params) {
     lines.push([
       escCsv(p.name), String(p.value), escCsv(p.unit), String(p.address),
       String(p.scale), String(p.offset),
       escCsv(p.group), escCsv(p.plcDataType), String(p.dbNumber),
-      // JSON.stringify 会丢失 Infinity，从 JSON 加载后 minValue/maxValue 变为 null
-      // 此处将 null 转回 -Infinity/Infinity 字符串
       String(p.minValue === null ? -Infinity : p.minValue),
       String(p.maxValue === null ? Infinity : p.maxValue),
     ].join(','))
   }
   return lines.join('\n')
+}
+
+/** xlsx 导出 — 数据与 CSV 同源 */
+export function exportToXlsx(recipe: RecipeRecord): Buffer {
+  const params = getAllParams(recipe)
+  const cols = [
+    { header: 'Name', key: 'name', width: 16 },
+    { header: 'Value', key: 'value', width: 12 },
+    { header: 'Unit', key: 'unit', width: 8 },
+    { header: 'Address', key: 'address', width: 14 },
+    { header: 'Scale', key: 'scale', width: 8 },
+    { header: 'Offset', key: 'offset', width: 8 },
+    { header: 'Group', key: 'group', width: 12 },
+    { header: 'PlcDataType', key: 'plcDataType', width: 12 },
+    { header: 'DbNumber', key: 'dbNumber', width: 8 },
+    { header: 'MinValue', key: 'minValue', width: 10 },
+    { header: 'MaxValue', key: 'maxValue', width: 10 },
+  ]
+  const rows = params.map(p => ({
+    name: p.name,
+    value: p.value,
+    unit: p.unit,
+    address: p.address,
+    scale: p.scale,
+    offset: p.offset,
+    group: p.group,
+    plcDataType: p.plcDataType,
+    dbNumber: p.dbNumber,
+    minValue: p.minValue === null ? -Infinity : p.minValue,
+    maxValue: p.maxValue === null ? Infinity : p.maxValue,
+  }))
+  return buildXlsx('配方参数', cols, rows)
+}
+
+/** 从 xlsx 导入配方参数 */
+export async function importFromXlsx(buffer: Buffer): Promise<RecipeParameter[]> {
+  const rows = await parseXlsx(buffer)
+  const result: RecipeParameter[] = []
+  for (const r of rows) {
+    const name = r['Name']?.trim()
+    if (!name) continue
+    result.push({
+      name,
+      value: parseFloat(r['Value'] ?? '0'),
+      unit: r['Unit'] ?? '',
+      address: r['Address'] ?? '',
+      scale: parseFloat(r['Scale'] ?? '1'),
+      offset: parseFloat(r['Offset'] ?? '0'),
+      group: r['Group'] ?? '',
+      plcDataType: r['PlcDataType'] ?? 'REAL',
+      dbNumber: parseInt(r['DbNumber'] ?? '0') || 0,
+      minValue: parseFloat(r['MinValue'] ?? '') || -Infinity,
+      maxValue: parseFloat(r['MaxValue'] ?? '') || Infinity,
+    })
+  }
+  return result
 }
 
 export function importFromCsv(csvText: string, targetGroup?: string): RecipeParameter[] {

@@ -8,6 +8,7 @@
  */
 
 import Database from 'better-sqlite3'
+import { buildXlsx } from './excel.js'
 import path from 'path'
 import fs from 'fs'
 
@@ -119,7 +120,17 @@ export function queryHistory(name: string, from?: number, to?: number, limit = 1
 
 export function exportCSV(name: string, from?: number, to?: number): string {
   const data = queryHistory(name, from, to, 50000)
-  return 'timestamp,value\n' + data.map(d => `${new Date(d.timestamp).toISOString()},${d.value}`).join('\n')
+  return '﻿timestamp,value\n' + data.map(d => `${new Date(d.timestamp).toISOString()},${d.value}`).join('\n')
+}
+
+export function exportXlsx(name: string, from?: number, to?: number): Buffer {
+  const data = queryHistory(name, from, to, 50000)
+  const cols = [
+    { header: 'timestamp', key: 'ts', width: 28 },
+    { header: 'value', key: 'value', width: 16 },
+  ]
+  const rows = data.map(d => ({ ts: new Date(d.timestamp).toISOString(), value: d.value }))
+  return buildXlsx(name, cols, rows)
 }
 
 startFlush()

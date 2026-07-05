@@ -18,12 +18,13 @@ import {
   checkAlarms, getRules, addRule, removeRule, updateRule,
   getActiveAlarms, getAlarmHistory, acknowledgeAlarm, acknowledgeAll,
   shelveAlarm, unshelveAlarm, addComment, clearAll,
-  getStatistics, exportAlarmsCsv, exportRulesCsv, importRulesCsv,
+  getStatistics, exportAlarmsCsv, exportAlarmsXlsx,
+  exportRulesCsv, exportRulesXlsx, importRulesCsv,
   getAlarms, getShelvedAlarms,
 } from './alarmEngine.js'
-import { writePoints, queryHistory, exportCSV, stopFlush } from './historyStore.js'
+import { writePoints, queryHistory, exportCSV, exportXlsx as exportHistoryXlsx, stopFlush } from './historyStore.js'
 import { recordPoll, recordError, getDiagnostics, resetDiagnostics } from './diagnostics.js'
-import { getAllRecipes, loadRecipe, saveRecipe as saveRecipeSvc, deleteRecipe as deleteRecipeSvc, copyRecipe, getVersionHistory, loadRecipeVersion, restoreVersion, exportToCsv, importFromCsv, readCsvFileWithAutoDetect } from './recipeManager.js'
+import { getAllRecipes, loadRecipe, saveRecipe as saveRecipeSvc, deleteRecipe as deleteRecipeSvc, copyRecipe, getVersionHistory, loadRecipeVersion, restoreVersion, exportToCsv, exportToXlsx, importFromCsv, importFromXlsx, readCsvFileWithAutoDetect } from './recipeManager.js'
 import { authenticate, validateToken, logout, getUsers, addUser, removeUser, changePassword, extractToken } from './auth.js'
 import { logEvent, getEvents, getEventCount, getEventStats } from './eventLog.js'
 
@@ -820,19 +821,35 @@ app.get('/api/alarm/statistics', (_req, res) => {
 })
 
 app.get('/api/alarm/export', (req, res) => {
-  const csv = exportAlarmsCsv()
-  logEvent('alarm.export', `导出报警 CSV`, currentUser(req))
-  res.setHeader('Content-Type', 'text/csv')
-  res.setHeader('Content-Disposition', `attachment; filename="alarms-${new Date().toISOString().slice(0, 10)}.csv"`)
-  res.send(csv)
+  const fmt = (req.query.format as string)?.toLowerCase()
+  logEvent('alarm.export', `导出报警 ${fmt === 'xlsx' ? 'Excel' : 'CSV'}`, currentUser(req))
+  if (fmt === 'xlsx') {
+    const buf = exportAlarmsXlsx()
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', `attachment; filename="alarms-${new Date().toISOString().slice(0, 10)}.xlsx"`)
+    res.send(buf)
+  } else {
+    const csv = exportAlarmsCsv()
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="alarms-${new Date().toISOString().slice(0, 10)}.csv"`)
+    res.send(csv)
+  }
 })
 
 app.get('/api/alarm/rules/export', (req, res) => {
-  const csv = exportRulesCsv()
-  logEvent('alarm.rules_export', `导出报警规则 CSV`, currentUser(req))
-  res.setHeader('Content-Type', 'text/csv')
-  res.setHeader('Content-Disposition', `attachment; filename="alarm-rules.csv"`)
-  res.send(csv)
+  const fmt = (req.query.format as string)?.toLowerCase()
+  logEvent('alarm.rules_export', `导出报警规则 ${fmt === 'xlsx' ? 'Excel' : 'CSV'}`, currentUser(req))
+  if (fmt === 'xlsx') {
+    const buf = exportRulesXlsx()
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', `attachment; filename="alarm-rules.xlsx"`)
+    res.send(buf)
+  } else {
+    const csv = exportRulesCsv()
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="alarm-rules.csv"`)
+    res.send(csv)
+  }
 })
 
 app.post('/api/alarm/rules/import', (req, res) => {
@@ -900,11 +917,19 @@ app.get('/api/history/export', (req, res) => {
   const name = req.query.name as string
   const from = req.query.from ? Number(req.query.from) : undefined
   const to = req.query.to ? Number(req.query.to) : undefined
+  const fmt = (req.query.format as string)?.toLowerCase()
   if (!name) return res.status(400).json({ error: '请提供 name' })
-  const csv = exportCSV(name, from, to)
-  res.setHeader('Content-Type', 'text/csv')
-  res.setHeader('Content-Disposition', `attachment; filename="${name}-history.csv"`)
-  res.send(csv)
+  if (fmt === 'xlsx') {
+    const buf = exportHistoryXlsx(name, from, to)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', `attachment; filename="${name}-history.xlsx"`)
+    res.send(buf)
+  } else {
+    const csv = exportCSV(name, from, to)
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="${name}-history.csv"`)
+    res.send(csv)
+  }
 })
 
 // ─── API: 系统诊断 ──────────────────────────────────────
@@ -1061,11 +1086,19 @@ app.post('/api/recipe/:id/restore/:version', (req, res) => {
 app.get('/api/recipe/:id/export-csv', (req, res) => {
   const recipe = loadRecipe(req.params.id)
   if (!recipe) return res.status(404).json({ error: '配方不存在' })
-  const csv = exportToCsv(recipe)
-  res.setHeader('Content-Type', 'text/csv')
+  const fmt = (req.query.format as string)?.toLowerCase()
   const encodedName = encodeURIComponent(recipe.name).replace(/%20/g, ' ')
-  res.setHeader('Content-Disposition', `attachment; filename="${encodedName}.csv"; filename*=UTF-8''${encodeURIComponent(recipe.name)}.csv`)
-  res.send(csv)
+  if (fmt === 'xlsx') {
+    const buf = exportToXlsx(recipe)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', `attachment; filename="${encodedName}.xlsx"; filename*=UTF-8''${encodeURIComponent(recipe.name)}.xlsx`)
+    res.send(buf)
+  } else {
+    const csv = exportToCsv(recipe)
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="${encodedName}.csv"; filename*=UTF-8''${encodeURIComponent(recipe.name)}.csv`)
+    res.send(csv)
+  }
 })
 
 app.post('/api/recipe/:id/import-csv', (req, res) => {
@@ -1073,6 +1106,18 @@ app.post('/api/recipe/:id/import-csv', (req, res) => {
   if (!csv) return res.status(400).json({ error: '请提供 csv 内容' })
   const params = importFromCsv(csv, targetGroup)
   res.json({ success: true, imported: params.length, parameters: params })
+})
+
+app.post('/api/recipe/:id/import-xlsx', async (req, res) => {
+  const { file, targetGroup } = req.body
+  if (!file) return res.status(400).json({ error: '请提供文件内容' })
+  try {
+    const buf = Buffer.from(file, 'base64')
+    const params = await importFromXlsx(buf)
+    res.json({ success: true, imported: params.length, parameters: params })
+  } catch (err) {
+    res.status(400).json({ error: `Excel 解析失败: ${(err as Error).message}` })
+  }
 })
 
 app.post('/api/recipe/:id/apply', async (req, res) => {

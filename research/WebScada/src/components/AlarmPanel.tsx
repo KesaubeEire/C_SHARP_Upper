@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { confirm } from './ConfirmDialog'
+import { TransferDialog } from './TransferDialog'
 import type { AlarmItem, AlarmRule, AlarmStatistics } from '../../shared/types'
 
 enum AlarmSeverity { Info = 0, Warning = 1, Critical = 2, Emergency = 3 }
@@ -40,6 +41,9 @@ export default function AlarmPanel() {
   const [formOffDelay, setFormOffDelay] = useState(0)
   const [formArea, setFormArea] = useState('')
   const [formEnabled, setFormEnabled] = useState(true)
+  const [showExportAlarm, setShowExportAlarm] = useState(false)
+  const [showExportRule, setShowExportRule] = useState(false)
+  const [showImportRule, setShowImportRule] = useState(false)
 
   // 过滤
   const [filterText, setFilterText] = useState('')
@@ -175,15 +179,41 @@ export default function AlarmPanel() {
     } catch {}
   }
 
-  const handleExportCsv = async () => {
+  const handleExportAlarm = async (fmt: 'csv' | 'xlsx') => {
     try {
-      const res = await fetch('/api/alarm/export')
+      const res = await fetch(`/api/alarm/export?format=${fmt}`)
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url; a.download = `alarms-${new Date().toISOString().slice(0,10)}.csv`
+      const a = document.createElement('a'); a.href = url; a.download = `alarms-${new Date().toISOString().slice(0,10)}.${fmt}`
       a.click(); URL.revokeObjectURL(url)
       setStatusText(`已导出 ${alarms.length} 条报警`)
     } catch {}
+  }
+
+  const handleExportRule = async (fmt: 'csv' | 'xlsx') => {
+    try {
+      const res = await fetch(`/api/alarm/rules/export?format=${fmt}`)
+      const blob = await res.blob()
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `alarm-rules.${fmt}`
+      a.click()
+      setStatusText(`已导出 ${rules.length} 条规则`)
+    } catch {}
+  }
+
+  const handleImportRule = async (fmt: 'csv' | 'xlsx', file: File) => {
+    if (fmt === 'csv') {
+      const text = await file.text()
+      const res = await fetch('/api/alarm/rules/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv: text }) })
+      const data = await res.json()
+      setStatusText(`已导入 ${data.imported || 0} 条规则`)
+    } else {
+      const buf = await file.arrayBuffer()
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)))
+      const res = await fetch('/api/alarm/rules/import-xlsx', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file: b64 }) })
+      const data = await res.json()
+      setStatusText(`已导入 ${data.imported || 0} 条规则`)
+    }
+    loadRules()
   }
 
   // ─── 规则操作 ───────────────────────────────────────────────
@@ -351,7 +381,7 @@ export default function AlarmPanel() {
 
         <div className="alarm-toolbar__spacer" />
 
-        <button className="btn btn--sm btn--secondary" onClick={handleExportCsv}>📤 导出 CSV</button>
+        <button className="btn btn--sm btn--secondary" onClick={() => setShowExportAlarm(true)}>📤 导出</button>
         <button className="btn btn--sm btn--secondary" onClick={() => setShowRuleManager(!showRuleManager)}>
           {showRuleManager ? '✕ 关闭规则' : '⚙ 规则管理'}
         </button>
@@ -364,8 +394,8 @@ export default function AlarmPanel() {
           <div className="alarm-rule-header">
             <span className="alarm-rule-header__title">规则管理</span>
             <div style={{ display: 'flex', gap: 4 }}>
-              <button className="btn btn--sm btn--secondary" onClick={handleExportRulesCsv}>导出 CSV</button>
-              <button className="btn btn--sm btn--secondary" onClick={handleImportRulesCsv}>导入 CSV</button>
+              <button className="btn btn--sm btn--secondary" onClick={() => setShowExportRule(true)}>导出</button>
+              <button className="btn btn--sm btn--secondary" onClick={() => setShowImportRule(true)}>导入</button>
               <button className="btn btn--sm btn--primary" onClick={handleAddRule}>+ 添加规则</button>
             </div>
           </div>
@@ -689,6 +719,17 @@ export default function AlarmPanel() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* ─── Dialog ────────────────────────────────────── */}
+      {showExportAlarm && (
+        <TransferDialog title="导出报警" mode="export" onExport={handleExportAlarm} onClose={() => setShowExportAlarm(false)} />
+      )}
+      {showExportRule && (
+        <TransferDialog title="导出报警规则" mode="export" onExport={handleExportRule} onClose={() => setShowExportRule(false)} />
+      )}
+      {showImportRule && (
+        <TransferDialog title="导入报警规则" mode="import" onImport={handleImportRule} onClose={() => setShowImportRule(false)} />
       )}
 
       {/* ─── 状态条 ───────────────────────────────────── */}

@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url'
 import type { AlarmItem, AlarmRule, AlarmStatistics } from '../shared/types.js'
 import { AlarmSeverity, AlarmConditionType } from '../shared/types.js'
 import { logEvent } from './eventLog.js'
+import { buildXlsx } from './excel.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.resolve(__dirname, '..', 'data')
@@ -399,12 +400,12 @@ export function getStatistics(): AlarmStatistics {
   }
 }
 
-// ─── CSV 导出 ─────────────────────────────────────────────
+// ─── CSV 导出 / XLSX 导出 ──────────────────────────────────
 
 export function exportAlarmsCsv(items?: AlarmItem[]): string {
   const source = items ?? _alarms
   const severityNames = ['Info', 'Warning', 'Critical', 'Emergency']
-  const lines = ['时间,严重度,类型,变量,描述,区域,值,阈值,死区,状态,确认人,确认时间,备注,搁置人,搁置到期']
+  const lines = ['﻿时间,严重度,类型,变量,描述,区域,值,阈值,死区,状态,确认人,确认时间,备注,搁置人,搁置到期']
   for (const a of source) {
     const t = new Date(a.timestamp)
     const ts = `${t.getFullYear()}-${pad2(t.getMonth()+1)}-${pad2(t.getDate())} ${pad2(t.getHours())}:${pad2(t.getMinutes())}:${pad2(t.getSeconds())}`
@@ -424,9 +425,49 @@ export function exportAlarmsCsv(items?: AlarmItem[]): string {
   return lines.join('\n')
 }
 
+export function exportAlarmsXlsx(items?: AlarmItem[]): Buffer {
+  const source = items ?? _alarms
+  const severityNames = ['Info', 'Warning', 'Critical', 'Emergency']
+  const cols = [
+    { header: '时间', key: 'time', width: 20 },
+    { header: '严重度', key: 'severity', width: 10 },
+    { header: '类型', key: 'type', width: 10 },
+    { header: '变量', key: 'variable', width: 16 },
+    { header: '描述', key: 'desc', width: 20 },
+    { header: '区域', key: 'area', width: 12 },
+    { header: '值', key: 'value', width: 10 },
+    { header: '阈值', key: 'threshold', width: 10 },
+    { header: '死区', key: 'deadband', width: 8 },
+    { header: '状态', key: 'status', width: 10 },
+    { header: '确认人', key: 'ackBy', width: 10 },
+    { header: '确认时间', key: 'ackAt', width: 20 },
+    { header: '备注', key: 'comment', width: 20 },
+    { header: '搁置人', key: 'shelvedBy', width: 10 },
+    { header: '搁置到期', key: 'shelvedUntil', width: 20 },
+  ]
+  const rows = source.map(a => ({
+    time: formatDt(a.timestamp),
+    severity: severityNames[a.severity] ?? 'Unknown',
+    type: String(a.alarmType),
+    variable: a.variableName,
+    desc: a.description,
+    area: a.area,
+    value: a.currentValue,
+    threshold: a.threshold ?? '',
+    deadband: a.deadband,
+    status: a.isShelved ? '已搁置' : (!a.isActive ? '已恢复' : (a.isAcknowledged ? '已确认' : '未确认')),
+    ackBy: a.acknowledgedBy ?? '',
+    ackAt: a.acknowledgedAt ? formatDt(a.acknowledgedAt) : '',
+    comment: a.comment ?? '',
+    shelvedBy: a.shelvedBy ?? '',
+    shelvedUntil: a.shelvedUntil ? formatDt(a.shelvedUntil) : '',
+  }))
+  return buildXlsx('报警记录', cols, rows)
+}
+
 export function exportRulesCsv(): string {
   const severityNames = ['Info', 'Warning', 'Critical', 'Emergency']
-  const lines = ['VariableKey,DataType,Description,Severity,ConditionType,Threshold,Deadband,OnDelayMs,OffDelayMs,Area,IsEnabled']
+  const lines = ['﻿VariableKey,DataType,Description,Severity,ConditionType,Threshold,Deadband,OnDelayMs,OffDelayMs,Area,IsEnabled']
   for (const r of _rules) {
     lines.push([
       escCsv(r.variableKey), escCsv(r.dataType), escCsv(r.description),
@@ -436,6 +477,37 @@ export function exportRulesCsv(): string {
     ].join(','))
   }
   return lines.join('\n')
+}
+
+export function exportRulesXlsx(): Buffer {
+  const severityNames = ['Info', 'Warning', 'Critical', 'Emergency']
+  const cols = [
+    { header: 'VariableKey', key: 'key', width: 20 },
+    { header: 'DataType', key: 'dataType', width: 10 },
+    { header: 'Description', key: 'desc', width: 24 },
+    { header: 'Severity', key: 'severity', width: 10 },
+    { header: 'ConditionType', key: 'cond', width: 14 },
+    { header: 'Threshold', key: 'threshold', width: 10 },
+    { header: 'Deadband', key: 'deadband', width: 10 },
+    { header: 'OnDelayMs', key: 'onDelay', width: 10 },
+    { header: 'OffDelayMs', key: 'offDelay', width: 10 },
+    { header: 'Area', key: 'area', width: 12 },
+    { header: 'IsEnabled', key: 'enabled', width: 10 },
+  ]
+  const rows = _rules.map(r => ({
+    key: r.variableKey,
+    dataType: r.dataType,
+    desc: r.description,
+    severity: severityNames[r.severity] ?? 'Warning',
+    cond: String(r.conditionType),
+    threshold: r.threshold,
+    deadband: r.deadband,
+    onDelay: r.onDelayMs,
+    offDelay: r.offDelayMs,
+    area: r.area,
+    enabled: r.isEnabled,
+  }))
+  return buildXlsx('报警规则', cols, rows)
 }
 
 export function importRulesCsv(csvText: string): number {
@@ -480,6 +552,11 @@ export function importRulesCsv(csvText: string): number {
 // ─── 工具函数 ─────────────────────────────────────────────
 
 function pad2(n: number): string { return n < 10 ? '0' + n : String(n) }
+
+function formatDt(ts: number): string {
+  const t = new Date(ts)
+  return `${t.getFullYear()}-${pad2(t.getMonth()+1)}-${pad2(t.getDate())} ${pad2(t.getHours())}:${pad2(t.getMinutes())}:${pad2(t.getSeconds())}`
+}
 
 function escCsv(s: string | number): string {
   const str = String(s)

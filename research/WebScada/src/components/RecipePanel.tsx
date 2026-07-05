@@ -3,6 +3,7 @@ import CollapsibleSection from './CollapsibleSection'
 import type { RecipeMeta, RecipeRecord, RecipeGroup, RecipeParameter, RecipeVersionSnapshot } from '../../shared/types'
 import { RecipeStatus } from '../../shared/types'
 import { confirm } from './ConfirmDialog'
+import { TransferDialog } from './TransferDialog'
 import { useResizableColumns } from '../hooks/useResizableColumns'
 
 const STATUS_NAMES = ['草稿', '使用中', '已归档']
@@ -66,6 +67,8 @@ export default function RecipePanel() {
   // ─── 状态 ──────────────────────────────────────────────────
   const [statusText, setStatusText] = useState('就绪')
   const [isPlcConnected, setIsPlcConnected] = useState(false)
+  const [showExport, setShowExport] = useState(false)
+  const [showImport, setShowImport] = useState(false)
 
   // ─── 数据加载 ──────────────────────────────────────────────
   const loadRecipes = useCallback(async () => {
@@ -283,43 +286,47 @@ export default function RecipePanel() {
     } catch {}
   }
 
-  // ─── CSV ───────────────────────────────────────────────────
-  const handleExportCsv = async () => {
+  // ─── CSV/Excel ──────────────────────────────────────────────
+  const handleExportRecipe = async (fmt: 'csv' | 'xlsx') => {
     if (!currentId) return
     try {
-      const res = await fetch(`/api/recipe/${currentId}/export-csv`)
+      const res = await fetch(`/api/recipe/${currentId}/export-csv?format=${fmt}`)
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url; a.download = `${currentName}.csv`
+      const a = document.createElement('a'); a.href = url; a.download = `${currentName}.${fmt}`
       a.click(); URL.revokeObjectURL(url)
-      setStatusText('已导出 CSV')
+      setStatusText(`已导出 ${fmt.toUpperCase()}`)
     } catch {}
   }
 
-  const handleImportCsv = () => {
-    const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv'
-    input.onchange = async () => {
-      const file = input.files?.[0]
-      if (!file) return
-      try {
-        const text = await file.text()
-        const res = await fetch(`/api/recipe/${currentId}/import-csv`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv: text }) })
-        const data = await res.json()
-        if (data.parameters && data.parameters.length > 0) {
-          const updated = [...groups]
-          updated[selectedGroupIdx] = {
-            ...currentGroup,
-            parameters: [...currentGroup.parameters, ...data.parameters],
-            parameterCount: currentGroup.parameters.length + data.parameters.length,
-          }
-          setGroups(updated)
-          setStatusText(`已导入 ${data.parameters.length} 个参数`)
-        } else {
-          setStatusText('CSV 导入失败：未找到有效参数')
-        }
-      } catch {}
+  const handleImportRecipe = async (fmt: 'csv' | 'xlsx', file: File) => {
+    if (!currentId) return
+    if (fmt === 'csv') {
+      const text = await file.text()
+      const res = await fetch(`/api/recipe/${currentId}/import-csv`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv: text }) })
+      const data = await res.json()
+      if (data.parameters && data.parameters.length > 0) {
+        const updated = [...groups]
+        updated[selectedGroupIdx] = { ...currentGroup, parameters: [...currentGroup.parameters, ...data.parameters], parameterCount: currentGroup.parameters.length + data.parameters.length }
+        setGroups(updated)
+        setStatusText(`已导入 ${data.parameters.length} 个参数`)
+      } else {
+        setStatusText('CSV 导入失败：未找到有效参数')
+      }
+    } else {
+      const buf = await file.arrayBuffer()
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)))
+      const res = await fetch(`/api/recipe/${currentId}/import-xlsx`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file: b64 }) })
+      const data = await res.json()
+      if (data.parameters && data.parameters.length > 0) {
+        const updated = [...groups]
+        updated[selectedGroupIdx] = { ...currentGroup, parameters: [...currentGroup.parameters, ...data.parameters], parameterCount: currentGroup.parameters.length + data.parameters.length }
+        setGroups(updated)
+        setStatusText(`已导入 ${data.parameters.length} 个参数`)
+      } else {
+        setStatusText('Excel 导入失败：未找到有效参数')
+      }
     }
-    input.click()
   }
 
   // ─── PLC ───────────────────────────────────────────────────
@@ -529,8 +536,8 @@ export default function RecipePanel() {
             <button className="btn btn--sm btn--primary" onClick={handleUpload} title="从 PLC 上传">⬆ PLC</button>
             <button className="btn btn--sm btn--secondary" onClick={handleAddParam} title="添加参数">+ 参数</button>
             <button className="btn btn--sm btn--secondary" onClick={handleRemoveParam} title="删除参数">− 参数</button>
-            <button className="btn btn--sm btn--secondary" onClick={handleImportCsv} title="从 CSV 导入">📂 CSV</button>
-            <button className="btn btn--sm btn--secondary" onClick={handleExportCsv} title="导出 CSV">💾 CSV</button>
+            <button className="btn btn--sm btn--secondary" onClick={() => setShowImport(true)} title="导入">📂 导入</button>
+            <button className="btn btn--sm btn--secondary" onClick={() => setShowExport(true)} title="导出">💾 导出</button>
           </div>
 
           {/* 参数表 */}
@@ -590,6 +597,14 @@ export default function RecipePanel() {
           </div>
         </div>
       </div>
+
+      {/* ─── Dialog ────────────────────────────────────── */}
+      {showExport && (
+        <TransferDialog title="导出配方参数" mode="export" onExport={handleExportRecipe} onClose={() => setShowExport(false)} />
+      )}
+      {showImport && (
+        <TransferDialog title="导入配方参数" mode="import" onImport={handleImportRecipe} onClose={() => setShowImport(false)} />
+      )}
     </CollapsibleSection>
   )
 }
