@@ -1,4 +1,5 @@
 .port.json
 vplc.pid
 vplc-memory.json
+vplc-config.json
 node_modules/
