@@ -223,13 +223,17 @@ export function extractReferencedUDTs(content: string, udtMap?: UDTMap): { all: 
     if (/^(BEGIN|END_DATA_BLOCK)/i.test(trimmed)) continue
     if (!inDataBlock) continue
 
-    const quoted = trimmed.match(/"([^"]+)"/g)
-    if (quoted) {
-      for (const q of quoted) {
-        const name = q.replace(/"/g, '')
-        if (/^\d/.test(name) || /^(DATA_BLOCK|TYPE|STRUCT|END_STRUCT|BEGIN|END_DATA|VERSION|AUTHOR|NAME|FAMILY)$/i.test(name)) continue
-        if (['BOOL','BYTE','WORD','DWORD','INT','DINT','REAL','LREAL','SINT','USINT','UINT','UDINT','CHAR','WCHAR','TIME','DATE','TOD','DTL','STRING','ARRAY','STRUCT','VARIANT','TRUE','FALSE','TIMER','COUNTER','BLOCK_DB','BLOCK_FC','BLOCK_FB','IEC_TIMER','IEC_LTIMER','IEC_SCOUNTER','IEC_COUNTER','IEC_DCOUNTER','IEC_LCOUNTER','IEC_SCOUNTER'].includes(name.toUpperCase())) continue
-        if (!referenced.includes(name)) referenced.push(name)
+    // 只检查冒号右边的引号内容（类型列），排除变量名中的引号
+    const declMatch = trimmed.match(/^\s*\w.*?\s*:\s*(.+)/)
+    if (declMatch) {
+      const quoted = declMatch[1].match(/"([^"]+)"/g)
+      if (quoted) {
+        for (const q of quoted) {
+          const name = q.replace(/"/g, '')
+          if (/^\d/.test(name) || /^(DATA_BLOCK|TYPE|STRUCT|END_STRUCT|BEGIN|END_DATA|VERSION|AUTHOR|NAME|FAMILY)$/i.test(name)) continue
+          if (['BOOL','BYTE','WORD','DWORD','INT','DINT','REAL','LREAL','SINT','USINT','UINT','UDINT','CHAR','WCHAR','TIME','DATE','TOD','DTL','STRING','ARRAY','STRUCT','VARIANT','TRUE','FALSE','TIMER','COUNTER','BLOCK_DB','BLOCK_FC','BLOCK_FB','IEC_TIMER','IEC_LTIMER','IEC_SCOUNTER','IEC_COUNTER','IEC_DCOUNTER','IEC_LCOUNTER','IEC_SCOUNTER'].includes(name.toUpperCase())) continue
+          if (!referenced.includes(name)) referenced.push(name)
+        }
       }
     }
   }
