@@ -13,7 +13,7 @@
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     mc:Ignorable="d">
-    <StackPanel Margin="0,0,0,24">
+        <StackPanel Margin="0,0,0,24">
 
         <!--  ===== 顶部：导入 + 配置 =====  -->
         <Border
@@ -191,11 +191,7 @@
                 </Border>
 
                 <!--  变量列表  -->
-                <ScrollViewer
-                    Grid.Row="1"
-                    MaxHeight="500"
-                    VerticalScrollBarVisibility="Auto">
-                    <Grid>
+                    <Grid Grid.Row="1">
                         <ItemsControl x:Name="variableList">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:DbVariableDisplay}">
@@ -350,7 +346,6 @@
                             </StackPanel>
                         </Border>
                     </Grid>
-                </ScrollViewer>
             </Grid>
         </Border>
 

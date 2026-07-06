@@ -4,8 +4,8 @@
     xmlns:input="clr-namespace:WpfScada.Controls.Input"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
-    <!-- HistoryItem 的 DataTemplate：值左边显示，删除按钮右边 -->
-    <DataTemplate DataType="{x:Type input:HistoryItem}">
+    <!-- HistoryItem 的 DataTemplate -->
+    <DataTemplate x:Key="HistoryItemDataTemplate" DataType="{x:Type input:HistoryItem}">
         <Grid Margin="4,0,4,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -35,8 +35,8 @@
         </Grid>
     </DataTemplate>
 
-    <!-- HistorySuggestBox 默认样式 — 基于 WPF UI 的 AutoSuggestBox 样式 + 替换 ItemTemplate -->
-    <Style TargetType="{x:Type input:HistorySuggestBox}" BasedOn="{StaticResource DefaultUiAutoSuggestBoxStyle}">
+    <!-- HistorySuggestBox 默认样式 — 基于自动找到的父类样式 -->
+    <Style TargetType="{x:Type input:HistorySuggestBox}" BasedOn="{StaticResource {x:Type ui:AutoSuggestBox}}">
         <Setter Property="ItemTemplate" Value="{StaticResource HistoryItemDataTemplate}" />
     </Style>
 

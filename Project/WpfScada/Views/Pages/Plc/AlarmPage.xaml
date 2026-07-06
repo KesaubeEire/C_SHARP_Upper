@@ -62,7 +62,6 @@
     </Page.Resources>
 
     <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,24">
 
             <!-- 工具栏 -->
@@ -795,7 +794,6 @@
                 ConnectionText="{Binding StatusText}"
                 PollingText="-" />
         </StackPanel>
-    </ScrollViewer>
 
     <!-- 覆盖层 -->
     <plcc:AlarmDetailPanel />
