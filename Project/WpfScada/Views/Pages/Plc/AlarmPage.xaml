@@ -62,9 +62,407 @@
     </Page.Resources>
 
     <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,24">
 
-            <!-- 过滤器 -->
+            <!-- 工具栏 -->
+            <plcc:AlarmToolbar />
+
+            <!-- 统计条 -->
+            <plcc:AlarmStatCards />
+
+            <!-- ============================================================ -->
+            <!-- 规则管理面板 — Vercel 风格 -->
+            <!-- ============================================================ -->
+            <Border
+                Margin="0,16,0,0"
+                Padding="16"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Visibility="{Binding IsRuleManagerVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <!-- 头部：标题 + 导入/导出/添加 -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontTypography="BodyStrong"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="规则管理" />
+                        <ui:Button
+                            Grid.Column="1"
+                            Margin="0,0,4,0"
+                            Appearance="Secondary"
+                            Command="{Binding ExportRulesCommand}"
+                            Content="导出 CSV">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <ui:Button
+                            Grid.Column="2"
+                            Margin="0,0,4,0"
+                            Appearance="Secondary"
+                            Command="{Binding ImportRulesCommand}"
+                            Content="导入 CSV">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="ArrowUpload24" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <ui:Button
+                            Grid.Column="3"
+                            Appearance="Primary"
+                            Command="{Binding AddNewRuleCommand}"
+                            Content="添加规则">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="Add24" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                    </Grid>
+
+                    <!-- 规则列表 -->
+                    <Border
+                        MinHeight="80"
+                        MaxHeight="280"
+                         Margin="0,10"
+                        Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                        <ListBox
+                            Background="Transparent"
+                            BorderThickness="0"
+                            ItemsSource="{Binding Rules}"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.Resources>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource ControlFillColorInputActiveBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource ControlFillColorInputActiveBrush}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListBox.Resources>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="services:AlarmRule">
+                                <Border
+                                    Padding="12,8"
+                                    BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                    BorderThickness="0,0,0,0.5">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="100" />
+                                            <ColumnDefinition Width="100" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Variable + DataType -->
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                            <ui:TextBlock
+                                                VerticalAlignment="Center"
+                                                FontTypography="BodyStrong"
+                                                FontFamily="Consolas"
+                                                Text="{Binding VariableKey}" />
+                                            <Border
+                                                Margin="6,0,0,0"
+                                                Padding="4,1"
+                                                VerticalAlignment="Center"
+                                                Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                                                CornerRadius="3">
+                                                <ui:TextBlock
+                                                    FontTypography="Caption"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding DataType}" />
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- Severity 彩色药丸 -->
+                                        <Border
+                                            Grid.Column="1"
+                                            Margin="0,0,8,0"
+                                            Height="20"
+                                            Padding="8,0"
+                                            VerticalAlignment="Center"
+                                            CornerRadius="10">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{DynamicResource SystemFillColorAttentionBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Emergency">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <ui:TextBlock
+                                                VerticalAlignment="Center"
+                                                TextAlignment="Center"
+                                                FontTypography="Caption"
+                                                FontWeight="Bold"
+                                                Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                                Text="{Binding Severity}" />
+                                        </Border>
+
+                                        <!-- ConditionType -->
+                                        <ui:TextBlock
+                                            Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            FontTypography="Body"
+                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                            Text="{Binding ConditionType}" />
+
+                                        <!-- Description (主要列) -->
+                                        <ui:TextBlock
+                                            Grid.Column="3"
+                                            VerticalAlignment="Center"
+                                            FontTypography="Body"
+                                            Text="{Binding Description}"
+                                            TextTrimming="CharacterEllipsis" />
+
+                                        <!-- Threshold + Deadband -->
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal">
+                                            <ui:TextBlock
+                                                VerticalAlignment="Center"
+                                                FontTypography="Body"
+                                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                Text="{Binding Threshold, StringFormat={}{0:0.##}}" />
+                                            <ui:TextBlock
+                                                Margin="4,0,0,0"
+                                                VerticalAlignment="Center"
+                                                FontTypography="Caption"
+                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                Text="{Binding Deadband, StringFormat=±{0:0.#}}" />
+                                        </StackPanel>
+
+                                        <!-- Area -->
+                                        <ui:TextBlock
+                                            Grid.Column="5"
+                                            VerticalAlignment="Center"
+                                            FontTypography="Caption"
+                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                            Text="{Binding Area}" />
+
+                                        <!-- Actions -->
+                                        <StackPanel Grid.Column="6" Orientation="Horizontal">
+                                            <ui:Button
+                                                Appearance="Info"
+                                                Margin="0,0,4,0"
+                                                Padding="4,0"
+                                                Command="{Binding DataContext.EditRuleCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                CommandParameter="{Binding}"
+                                                Content="编辑"
+                                                ToolTip="编辑此规则" />
+                                            <ui:Button
+                                                Appearance="Danger"
+                                                Padding="4,0"
+                                                Command="{Binding DataContext.DeleteRuleCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                CommandParameter="{Binding}"
+                                                Content="删除"
+                                                ToolTip="删除此规则" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+
+                    <!-- 编辑/添加表单 -->
+                    <Border
+                        Margin="0,12,0,0"
+                        Padding="16"
+                        Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Visibility="{Binding IsEditingRule, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border
+                                    Grid.Column="0"
+                                    Width="3"
+                                    Height="18"
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center"
+                                    Background="{DynamicResource SystemFillColorAttentionBrush}"
+                                    CornerRadius="2" />
+                                <ui:TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontTypography="BodyStrong"
+                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                    Text="规则设置" />
+                            </Grid>
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 第一行：变量名 / 数据类型 / 级别 -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="变量名 *" />
+                                    <ui:TextBox PlaceholderText="I0, Q5, M10, DB1:6..." Text="{Binding EditVariableKey}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="4,0,8,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="数据类型" />
+                                    <ComboBox
+                                        ItemsSource="{Binding EditDataTypeOptions}"
+                                        SelectedItem="{Binding EditDataType}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="2" Margin="4,0,0,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="级别" />
+                                    <ComboBox
+                                        ItemsSource="{Binding EditSeverityOptions}"
+                                        SelectedItem="{Binding EditSeverity}" />
+                                </StackPanel>
+
+                                <!-- 第二行：报警类型 / 阈值 / 死区 -->
+                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,8,8,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="报警类型" />
+                                    <ComboBox
+                                        ItemsSource="{Binding EditConditionTypeOptions}"
+                                        SelectedItem="{Binding EditConditionType}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Margin="4,8,8,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="阈值" />
+                                    <ui:NumberBox
+                                        Maximum="99999"
+                                        Minimum="-99999"
+                                        Value="{Binding EditThreshold}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="4,8,0,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="死区" />
+                                    <ui:NumberBox
+                                        Maximum="99999"
+                                        Minimum="0"
+                                        Value="{Binding EditDeadband}" />
+                                </StackPanel>
+
+                                <!-- 第三行：触发延时 / 恢复延时 / 区域 -->
+                                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,8,8,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="触发延时 (ms)" />
+                                    <ui:NumberBox
+                                        Maximum="60000"
+                                        Minimum="0"
+                                        Value="{Binding EditOnDelayMs}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Margin="4,8,8,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="恢复延时 (ms)" />
+                                    <ui:NumberBox
+                                        Maximum="60000"
+                                        Minimum="0"
+                                        Value="{Binding EditOffDelayMs}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="2" Margin="4,8,0,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="区域" />
+                                    <ui:TextBox PlaceholderText="反应釜A、蒸馏塔..." Text="{Binding EditArea}" />
+                                </StackPanel>
+
+                                <!-- 第四行：描述 + 启用 + 操作 -->
+                                <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,8,8,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="描述" />
+                                    <ui:TextBox PlaceholderText="例如：温度高限报警" Text="{Binding EditDescription}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Grid.Column="1" Margin="4,8,0,0">
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="启用" />
+                                    <CheckBox
+                                        Margin="0,6,0,0"
+                                        IsChecked="{Binding EditIsEnabled}" />
+                                </StackPanel>
+                                <StackPanel
+                                    Grid.Row="3"
+                                    Grid.Column="2"
+                                    Margin="4,8,0,0"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal">
+                                    <ui:Button
+                                        Margin="0,0,8,0"
+                                        Appearance="Primary"
+                                        Command="{Binding SaveRuleCommand}"
+                                        Content="保存" />
+                                    <ui:Button
+                                        Appearance="Secondary"
+                                        Command="{Binding CancelEditRuleCommand}"
+                                        Content="取消" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 过滤栏 -->
             <plcc:AlarmFilterBar />
 
             <!-- ============================================================ -->
@@ -397,6 +795,7 @@
                 ConnectionText="{Binding StatusText}"
                 PollingText="-" />
         </StackPanel>
+    </ScrollViewer>
 
     <!-- 覆盖层 -->
     <plcc:AlarmDetailPanel />

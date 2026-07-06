@@ -194,7 +194,7 @@
                 <ScrollViewer
                     Grid.Row="1"
                     MaxHeight="500"
-                    VerticalScrollBarVisibility="Disabled">
+                    VerticalScrollBarVisibility="Auto">
                     <Grid>
                         <ItemsControl x:Name="variableList">
                             <ItemsControl.ItemTemplate>
