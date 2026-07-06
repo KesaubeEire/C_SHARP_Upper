@@ -24,6 +24,9 @@
 
                 <!-- Multi-level NavigationViewItem template override -->
                 <ResourceDictionary Source="Controls/NavigationViewMultiLevel.xaml" />
+
+                <!-- HistorySuggestBox 控件样式 -->
+                <ResourceDictionary Source="Controls/Input/HistorySuggestBox.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />

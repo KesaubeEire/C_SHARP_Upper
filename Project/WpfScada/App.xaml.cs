@@ -55,6 +55,7 @@ public partial class App
                 _ = services.AddSingleton<PpeConnectionSectionViewModel>();
                 _ = services.AddSingleton<S7Service>();
                 _ = services.AddSingleton<VplcHttpService>();
+                _ = services.AddSingleton<InputHistoryService>();
                 _ = services.AddSingleton<PollingStore>();
                 _ = services.AddSingleton<PollingScheduler>();
                 _ = services.AddSingleton<AppConfigService>(_ => AppConfigService.Load());

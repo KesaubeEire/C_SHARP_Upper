@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:plc="clr-namespace:WpfScada.Controls.Plc"
+    xmlns:input="clr-namespace:WpfScada.Controls.Input"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Padding="12"
     d:DesignHeight="655.988"
@@ -54,40 +55,56 @@
                         VerticalAlignment="Center"
                         FontTypography="Body"
                         Text="IP 地址" />
-                    <ui:TextBox
+                    <input:HistorySuggestBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="0,2"
-                        Text="{Binding IpAddress, UpdateSourceTrigger=PropertyChanged}" />
+                        HistoryKey="plc_ip"
+                        HistoryService="{Binding HistoryService}"
+                        Text="{Binding IpAddress, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="192.168.0.1" />
                     <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
                         VerticalAlignment="Center"
                         FontTypography="Body"
                         Text="端口" />
-                    <ui:TextBox
+                    <input:HistorySuggestBox
                         Grid.Row="1"
                         Grid.Column="1"
                         Margin="0,2"
-                        Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
+                        HistoryKey="plc_port"
+                        HistoryService="{Binding HistoryService}"
+                        Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="102" />
                     <ui:TextBlock
                         Grid.Row="2"
                         Grid.Column="0"
                         VerticalAlignment="Center"
                         FontTypography="Body"
                         Text="机架" />
-                    <ui:TextBox
+                    <input:HistorySuggestBox
                         Grid.Row="2"
                         Grid.Column="1"
                         Margin="0,2"
-                        Text="{Binding Rack, UpdateSourceTrigger=PropertyChanged}" />
+                        HistoryKey="plc_rack"
+                        HistoryService="{Binding HistoryService}"
+                        Text="{Binding Rack, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="0" />
                     <ui:TextBlock
                         Grid.Row="3"
                         Grid.Column="0"
                         VerticalAlignment="Center"
                         FontTypography="Body"
                         Text="槽位" />
-                    <ui:TextBox
+                    <input:HistorySuggestBox
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        Margin="0,2"
+                        HistoryKey="plc_slot"
+                        HistoryService="{Binding HistoryService}"
+                        Text="{Binding Slot, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="1" />
                         Grid.Row="3"
                         Grid.Column="1"
                         Margin="0,2"
@@ -164,11 +181,14 @@
                         VerticalAlignment="Center"
                         FontTypography="Body"
                         Text="间隔 (ms)" />
-                    <ui:TextBox
+                    <input:HistorySuggestBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="0,2"
-                        Text="{Binding PollInterval, UpdateSourceTrigger=PropertyChanged}" />
+                        HistoryKey="plc_poll_interval"
+                        HistoryService="{Binding HistoryService}"
+                        Text="{Binding PollInterval, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="500" />
                     <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="0"

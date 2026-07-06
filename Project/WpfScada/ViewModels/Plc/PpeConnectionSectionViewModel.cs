@@ -5,8 +5,10 @@ using CommunityToolkit.Mvvm.Input;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Extensions;
 using WpfScada.Controls.Plc;
+using WpfScada.Controls.Input;
 using WpfScada.Models.Plc;
 using WpfScada.Services.Plc;
+using WpfScada.Services;
 
 namespace WpfScada.ViewModels.Plc;
 
@@ -17,17 +19,21 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
     private readonly AppConfigService _config;
     private readonly PollingScheduler _scheduler;
     private readonly IContentDialogService _contentDialog;
+    private readonly InputHistoryService _history;
+
+    public IInputHistoryService HistoryService => _history;
 
     public PollingStore Store { get; }
 
     public PpeConnectionSectionViewModel(S7Service s7, VplcHttpService vplcHttp, PollingScheduler scheduler, PollingStore store,
-        AppConfigService config, IContentDialogService contentDialog)
+        AppConfigService config, IContentDialogService contentDialog, InputHistoryService history)
     {
         _s7 = s7;
         _vplcHttp = vplcHttp;
         _scheduler = scheduler;
         _config = config;
         _contentDialog = contentDialog;
+        _history = history;
         Store = store;
 
         // 构造函数：直接从配置恢复字段（不走属性 setter，避免触发 Save）
