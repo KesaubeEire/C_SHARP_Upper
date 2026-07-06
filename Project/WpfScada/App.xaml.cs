@@ -10,6 +10,7 @@ using Wpf.Ui.DependencyInjection;
 using WpfScada.Controls.Sidebar;
 using WpfScada.DependencyModel;
 using WpfScada.Resources;
+using WpfScada.Services.Motion;
 using WpfScada.Services;
 using WpfScada.Services.Contracts;
 using WpfScada.Services.Plc;
@@ -81,6 +82,11 @@ public partial class App
                 _ = services.AddSingleton<RecipeViewModel>();
                 _ = services.AddSingleton<ModbusPage>();
                 _ = services.AddSingleton<ModbusViewModel>();
+
+                // Motion control card
+                _ = services.AddSingleton<IMotionController, MockMotionController>();
+                _ = services.AddSingleton<MotionPage>();
+                _ = services.AddSingleton<MotionViewModel>();
 
                 // Sidebar panel
                 _ = services.AddTransient<PpeConnectionSection>();

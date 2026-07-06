@@ -1,0 +1,499 @@
+<Page
+    x:Class="WpfScada.Views.Pages.Plc.MotionPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:WpfScada.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:plc="clr-namespace:WpfScada.ViewModels.Pages.Plc"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="运动控制"
+    controls:PageControlDocumentation.Show="False"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
+
+    <Grid Margin="0,0,0,24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!--  ============================================================  -->
+        <!--  Left Panel: 连接 + 急停  -->
+        <!--  ============================================================  -->
+        <StackPanel Grid.Column="0">
+
+            <!--  连接配置  -->
+            <Border
+                Padding="16"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border
+                            Grid.Column="0"
+                            Width="3"
+                            Height="14"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource SystemFillColorAttentionBrush}"
+                            CornerRadius="2" />
+                        <ui:TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontTypography="BodyStrong"
+                            Text="连接配置" />
+                    </Grid>
+
+                    <ui:TextBlock
+                        Margin="0,0,0,4"
+                        FontTypography="Caption"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="地址" />
+                    <ui:TextBox
+                        Margin="0,0,0,8"
+                        PlaceholderText="192.168.0.100"
+                        Text="{Binding Address}" />
+
+                    <StackPanel Orientation="Horizontal">
+                        <ui:Button
+                            Margin="0,0,8,0"
+                            Appearance="Success"
+                            Command="{Binding ConnectCommand}"
+                            IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="PlugConnected24" />
+                            </ui:Button.Icon>
+                            连接
+                        </ui:Button>
+                        <ui:Button
+                            Appearance="Danger"
+                            Command="{Binding DisconnectCommand}"
+                            IsEnabled="{Binding IsConnected}">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="PlugDisconnected24" />
+                            </ui:Button.Icon>
+                            断开
+                        </ui:Button>
+                    </StackPanel>
+
+                    <Border
+                        Margin="0,8,0,0"
+                        Padding="8,4"
+                        Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                        CornerRadius="4">
+                        <ui:TextBlock
+                            FontTypography="Caption"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="{Binding ConnectionStatus}" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!--  急停  -->
+            <Border
+                Margin="0,12,0,0"
+                Padding="16"
+                Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel>
+                    <ui:Button
+                        Height="48"
+                        HorizontalAlignment="Stretch"
+                        Appearance="Danger"
+                        Command="{Binding EmergencyStopCommand}"
+                        FontSize="18"
+                        FontWeight="Bold">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Alert24" Foreground="White" />
+                        </ui:Button.Icon>
+                        急停
+                    </ui:Button>
+                </StackPanel>
+            </Border>
+
+            <!--  IO 监控  -->
+            <Border
+                Margin="0,12,0,0"
+                Padding="16"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border
+                            Grid.Column="0"
+                            Width="3"
+                            Height="14"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource SystemFillColorAttentionBrush}"
+                            CornerRadius="2" />
+                        <ui:TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontTypography="BodyStrong"
+                            Text="IO 状态" />
+                    </Grid>
+
+                    <ui:TextBlock
+                        FontTypography="Caption"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="数字量输入" />
+                    <ItemsControl
+                        Margin="0,4,0,8"
+                        ItemsSource="{Binding DiPoints}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="plc:IoPointViewModel">
+                                <Border
+                                    Margin="2"
+                                    Padding="6,2"
+                                    CornerRadius="4">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorNeutralBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Value}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Text="{Binding Label}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <ui:TextBlock
+                        FontTypography="Caption"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="数字量输出" />
+                    <ItemsControl
+                        Margin="0,4,0,0"
+                        ItemsSource="{Binding DoPoints}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="plc:IoPointViewModel">
+                                <Border
+                                    Margin="2"
+                                    Padding="6,2"
+                                    CornerRadius="4">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorNeutralBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Value}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <ui:TextBlock
+                                        FontTypography="Caption"
+                                        Text="{Binding Label}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!--  ============================================================  -->
+        <!--  Right Panel: 轴控制  -->
+        <!--  ============================================================  -->
+        <StackPanel Grid.Column="2">
+            <StackPanel>
+                <ItemsControl ItemsSource="{Binding Axes}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="plc:AxisViewModel">
+                            <Border
+                                Margin="0,0,0,12"
+                                Padding="16"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel>
+                                    <!--  轴标题 + 状态  -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border
+                                            Grid.Column="0"
+                                            Width="3"
+                                            Height="14"
+                                            Margin="0,0,10,0"
+                                            VerticalAlignment="Center"
+                                            Background="{DynamicResource SystemFillColorAttentionBrush}"
+                                            CornerRadius="2" />
+                                        <ui:TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            FontTypography="BodyStrong"
+                                            Text="{Binding Index, StringFormat='轴 {0}'}" />
+
+                                        <!--  状态标签  -->
+                                        <Border
+                                            Grid.Column="3"
+                                            Margin="0,0,8,0"
+                                            Padding="8,2"
+                                            CornerRadius="4">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{DynamicResource SystemFillColorNeutralBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding StatusValue}" Value="1">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding StatusValue}" Value="2">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding StatusValue}" Value="3">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorAttentionBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding StatusValue}" Value="4">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <ui:TextBlock
+                                                FontTypography="Caption"
+                                                FontWeight="Bold"
+                                                Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                                Text="{Binding StatusText}" />
+                                        </Border>
+
+                                        <!--  使能指示  -->
+                                        <Ellipse
+                                            Grid.Column="4"
+                                            Width="10"
+                                            Height="10"
+                                            VerticalAlignment="Center">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="{DynamicResource TextFillColorDisabledBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsServoOn}" Value="True">
+                                                            <Setter Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                    </Grid>
+
+                                    <!--  位置显示  -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <ui:TextBlock
+                                                FontTypography="Caption"
+                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                Text="指令位置" />
+                                            <ui:TextBlock
+                                                FontFamily="Consolas"
+                                                FontSize="18"
+                                                FontWeight="Bold"
+                                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                Text="{Binding CommandPos, StringFormat='{}{0:F1}'}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <ui:TextBlock
+                                                FontTypography="Caption"
+                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                Text="编码器位置" />
+                                            <ui:TextBlock
+                                                FontFamily="Consolas"
+                                                FontSize="18"
+                                                FontWeight="Bold"
+                                                Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                                Text="{Binding EncoderPos, StringFormat='{}{0:F1}'}" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!--  运动参数  -->
+                                    <Border
+                                        Margin="0,0,0,8"
+                                        Padding="12"
+                                        Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                                        CornerRadius="6">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="8" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="8" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Row="0" Grid.Column="0">
+                                                <ui:TextBlock
+                                                    FontTypography="Caption"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="目标位置" />
+                                                <ui:NumberBox
+                                                    Maximum="999999"
+                                                    Minimum="-999999"
+                                                    Value="{Binding TargetPos}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="2">
+                                                <ui:TextBlock
+                                                    FontTypography="Caption"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="移动距离" />
+                                                <ui:NumberBox
+                                                    Maximum="999999"
+                                                    Minimum="-999999"
+                                                    Value="{Binding MoveDistance}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="4">
+                                                <ui:TextBlock
+                                                    FontTypography="Caption"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="速度" />
+                                                <ui:NumberBox
+                                                    Maximum="999999"
+                                                    Minimum="1"
+                                                    Value="{Binding Velocity}" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Row="1" Grid.Column="0">
+                                                <ui:TextBlock
+                                                    FontTypography="Caption"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="JOG 速度" />
+                                                <ui:NumberBox
+                                                    Maximum="999999"
+                                                    Minimum="1"
+                                                    Value="{Binding JogVelocity}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="2">
+                                                <ui:TextBlock
+                                                    FontTypography="Caption"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="回零模式" />
+                                                <ui:NumberBox
+                                                    Maximum="16"
+                                                    Minimum="1"
+                                                    Value="{Binding HomeMode}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!--  操作按钮  -->
+                                    <WrapPanel>
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Appearance="Primary"
+                                            Command="{Binding DoServoOnCommand}"
+                                            Content="使能" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Appearance="Secondary"
+                                            Command="{Binding DoServoOffCommand}"
+                                            Content="去使能" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Appearance="Success"
+                                            Command="{Binding DoMoveAbsCommand}"
+                                            Content="绝对定位" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Appearance="Success"
+                                            Command="{Binding DoMoveRelCommand}"
+                                            Content="相对定位" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Appearance="Caution"
+                                            Command="{Binding DoJogFwdCommand}"
+                                            Content="JOG+" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Appearance="Caution"
+                                            Command="{Binding DoJogRevCommand}"
+                                            Content="JOG-" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Command="{Binding DoJogStopCommand}"
+                                            Content="JOG 停" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Command="{Binding DoHomeCommand}"
+                                            Content="回零" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Appearance="Danger"
+                                            Command="{Binding DoStopCommand}"
+                                            Content="停止" />
+                                        <ui:Button
+                                            Margin="0,0,4,4"
+                                            Padding="8,2"
+                                            Command="{Binding DoClearAlarmCommand}"
+                                            Content="清报警" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>

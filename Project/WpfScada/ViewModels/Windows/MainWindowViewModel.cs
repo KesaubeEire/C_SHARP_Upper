@@ -71,6 +71,7 @@ public partial class MainWindowViewModel(
                 new NavigationViewItem("图库画廊", SymbolRegular.ChartMultiple24, typeof(LvcGalleryPage)),
                 new NavigationViewItem("配方管理", SymbolRegular.DocumentData24, typeof(RecipePage)),
                 new NavigationViewItem("Modbus 调试", SymbolRegular.PlugDisconnected24, typeof(ModbusPage)),
+                new NavigationViewItem("运动控制", SymbolRegular.Board24, typeof(MotionPage)),
             },
         });
 
