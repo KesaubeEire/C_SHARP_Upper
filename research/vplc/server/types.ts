@@ -91,6 +91,28 @@ export interface Trigger {
   active?: boolean
 }
 
+/** DB Editor：一行变量（类似博图 DB 编辑视图） */
+export interface DBEditorField {
+  name: string
+  type: string       // bool, byte, word, int, dint, real, dword 等
+  startValue?: string
+  comment?: string
+  // computed（非持久化）
+  offset?: number
+  bit?: number
+  arrayCount?: number
+}
+
+/** DB Editor：一个 DB 块的定义 */
+export interface DBEditorDef {
+  key: string        // `${dbNumber}_${dbName}`
+  dbNumber: number
+  dbName: string
+  fields: DBEditorField[]
+  createdAt: number
+  updatedAt: number
+}
+
 /** S7 内存区域码 */
 export const S7_AREA = {
   PE: 0x81,   // I / 外设输入

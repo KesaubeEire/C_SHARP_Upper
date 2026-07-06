@@ -7,7 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { memory, dbsConfig, udtDefs, importedDBs, ensureDbSize, isMemDirty, clearMemDirty, onMemDirty } from './plc-memory.js'
+import { memory, dbsConfig, udtDefs, importedDBs, dbEditorDefs, ensureDbSize, syncEditorDefToMemory, isMemDirty, clearMemDirty, onMemDirty } from './plc-memory.js'
 import { getUserScripts, setUserScripts } from './plc-runtime.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -47,12 +47,15 @@ export function writeConfig() {
     raw.imported = Object.fromEntries(
       Object.entries(importedDBs).map(([k, v]) => [k, { ...v, variables: v.variables }])
     )
+    raw.dbEditors = Object.fromEntries(
+      Object.entries(dbEditorDefs).map(([k, v]) => [k, v])
+    )
     raw.scripts = getUserScripts().map(s => ({ name: s.name, source: s.source, obNumber: s.obNumber, enabled: s.enabled }))
     fs.writeFileSync(cfgPath, JSON.stringify(raw, null, 2), 'utf-8')
   } catch { /* 忽略 */ }
 }
 
-/** 从配置恢复 UDT、导入 DB 和脚本 */
+/** 从配置恢复 UDT、导入 DB、DB Editor 和脚本 */
 export function restoreImports(raw: any) {
   if (raw.udts) Object.assign(udtDefs, raw.udts)
   if (raw.imported) {
@@ -66,6 +69,14 @@ export function restoreImports(raw: any) {
       }
       if (v.dbNumber && v.byteSize) ensureDbSize(v.dbNumber, v.byteSize)
     }
+  }
+  // 恢复 DB Editor 定义
+  if (raw.dbEditors) {
+    for (const [key, val] of Object.entries(raw.dbEditors)) {
+      const v = val as any
+      syncEditorDefToMemory(v)
+    }
+    Object.assign(dbEditorDefs, raw.dbEditors)
   }
   // 恢复用户脚本
   if (raw.scripts && Array.isArray(raw.scripts)) {

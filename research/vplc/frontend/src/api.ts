@@ -212,3 +212,80 @@ export async function saveScripts(scripts: ScriptConfig[]) {
   })
   return r.json()
 }
+
+// ── DB Editor ──
+
+export interface DBEditorField {
+  name: string
+  type: string
+  startValue?: string
+  comment?: string
+  offset?: number
+  bit?: number
+}
+
+export interface DBEditorDef {
+  key: string
+  dbNumber: number
+  dbName: string
+  fields: DBEditorField[]
+  values?: Record<string, any>
+  totalSize?: number
+  createdAt: number
+  updatedAt: number
+}
+
+export async function fetchDBEditors(): Promise<DBEditorDef[]> {
+  const r = await fetch(BASE + '/db-editor')
+  return r.json()
+}
+
+export async function saveDBEditor(dbNumber: number, dbName: string, fields: DBEditorField[]): Promise<any> {
+  const r = await fetch(BASE + '/db-editor', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dbNumber, dbName, fields }),
+  })
+  return r.json()
+}
+
+export async function deleteDBEditor(key: string) {
+  const r = await fetch(BASE + '/db-editor/' + encodeURIComponent(key), { method: 'DELETE' })
+  return r.json()
+}
+
+export async function writeDBEditorField(key: string, fieldName: string, value: number | boolean) {
+  const r = await fetch(BASE + '/db-editor/' + encodeURIComponent(key) + '/write', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fieldName, value }),
+  })
+  return r.json()
+}
+
+export async function importDBEditorDB(content: string, dbNumber?: number): Promise<any> {
+  const r = await fetch(BASE + '/db-editor/import-db', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, dbNumber }),
+  })
+  return r.json()
+}
+
+export async function importDBEditorUDT(content: string): Promise<any> {
+  const r = await fetch(BASE + '/db-editor/import-udt', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  })
+  return r.json()
+}
+
+export async function exportDBEditorDB(key: string): Promise<any> {
+  const r = await fetch(BASE + '/db-editor/' + encodeURIComponent(key) + '/export-db')
+  return r.json()
+}
+
+export async function randomizeDBEditorField(key: string, fieldName: string): Promise<any> {
+  const r = await fetch(BASE + '/db-editor/' + encodeURIComponent(key) + '/randomize', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fieldName }),
+  })
+  return r.json()
+}

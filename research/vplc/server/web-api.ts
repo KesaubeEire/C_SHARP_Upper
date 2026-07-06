@@ -4,9 +4,10 @@
  */
 
 import http from 'http'
-import { memory, ensureDbSize, markMemDirty, dbsConfig, udtDefs, importedDBs, importedTriggers,
+import { memory, ensureDbSize, markMemDirty, dbsConfig, udtDefs, importedDBs, importedTriggers, dbEditorDefs,
          readTypedValueFromMemory, writeTypedValueToMemory, randomValueForVar, buildImportedSnapshot,
-         calcImportedDbSize } from './plc-memory.js'
+         calcImportedDbSize, calculateDBEditorOffsets, calcEditorTotalSize, syncEditorDefToMemory,
+         readEditorValues, writeEditorValue, typeByteSize } from './plc-memory.js'
 import { plcState, stateChangedAt, rtcOffset, setRtcOffset, setPlcState, addDiag, getLedsSnapshot, getRtcIso, getDiagBuffer, clearDiagBuffer } from './plc-state.js'
 import { obCycles, resetAllOBs, getRuntimeSnapshot, setUserScripts, getUserScripts } from './plc-runtime.js'
 import { writeConfig } from './persistence.js'
@@ -395,6 +396,198 @@ export async function handleAPI(req: http.IncomingMessage, res: http.ServerRespo
   // ── Modbus 状态 ──
   if (url === '/api/vplc/modbus' && method === 'GET') {
     json(res, 200, { enabled: true, port: (global as any).__modbusPort || 0 })
+    return
+  }
+
+  // POST /api/vplc/db-editor/import-db — 解析 .db 文件返回字段供 DB Editor 使用
+  const dbEditorImportMatch = url === '/api/vplc/db-editor/import-db' && method === 'POST'
+  if (dbEditorImportMatch) {
+    const body = JSON.parse((await readBody(req)).toString())
+    const content = body.content || ''
+    const dbNumberOverride = body.dbNumber ? Number(body.dbNumber) : undefined
+    if (!content) { json(res, 400, { error: '请提供 DB 文件内容' }); return }
+    try {
+      const udtCheck = extractReferencedUDTs(content, udtDefs)
+      if (udtCheck.missing.length > 0) {
+        json(res, 412, { error: '缺少 UDT 数据类型', missingUdt: udtCheck.missing, allUdt: udtCheck.all })
+        return
+      }
+      const parsed = parseDBFile(content, dbNumberOverride, udtDefs)
+      if (parsed.optimized) { json(res, 400, { error: '优化块访问无法通过绝对地址读取' }); return }
+      // 转成 DBEditorField[]（标准化类型名首字母大写）
+      const typeMap: Record<string, string> = {
+        bool: 'Bool', byte: 'Byte', word: 'Word', int: 'Int', dint: 'DInt',
+        dword: 'DWord', real: 'Real', lreal: 'LReal',
+        sint: 'SInt', usint: 'USInt', uint: 'UInt', udint: 'UDInt',
+        lword: 'LWord', lint: 'LInt', char: 'Char',
+        time: 'Time', date: 'Date', tod: 'TOD', dtl: 'DTL',
+      }
+      const fields = parsed.variables.map(v => ({
+        name: v.name,
+        type: typeMap[v.type] || v.type.replace(/\b\w/g, c => c.toUpperCase()),
+        startValue: '',
+        comment: v.comment || '',
+      }))
+      json(res, 200, { success: true, dbNumber: parsed.dbNumber, dbName: parsed.dbName, fields, variableCount: parsed.variables.length })
+    } catch (err) {
+      json(res, 400, { error: `解析失败: ${(err as Error).message}` })
+    }
+    return
+  }
+
+  // POST /api/vplc/db-editor/import-udt — 解析 .udt 文件
+  const dbEditorUdtMatch = url === '/api/vplc/db-editor/import-udt' && method === 'POST'
+  if (dbEditorUdtMatch) {
+    const body = JSON.parse((await readBody(req)).toString())
+    const content = body.content || ''
+    if (!content) { json(res, 400, { error: '请提供 UDT 文件内容' }); return }
+    try {
+      const parsed = parseUDTFile(content)
+      Object.assign(udtDefs, parsed)
+      writeConfig()
+      json(res, 200, { success: true, count: Object.keys(parsed).length, names: Object.keys(parsed) })
+    } catch (err) {
+      json(res, 400, { error: `UDT 解析失败: ${(err as Error).message}` })
+    }
+    return
+  }
+
+  // GET /api/vplc/db-editor — 获取所有编辑器定义
+  if (url === '/api/vplc/db-editor' && method === 'GET') {
+    const result = Object.values(dbEditorDefs).map(def => ({
+      ...def,
+      fields: calculateDBEditorOffsets(def.fields),
+      values: readEditorValues(def),
+      totalSize: calcEditorTotalSize(def.fields),
+    }))
+    json(res, 200, result)
+    return
+  }
+
+  // POST /api/vplc/db-editor — 新建/更新 DB Editor 定义
+  if (url === '/api/vplc/db-editor' && method === 'POST') {
+    const body = JSON.parse((await readBody(req)).toString())
+    const { dbNumber, dbName, fields /* DBEditorField[] */ } = body
+    if (!dbNumber || !dbName) { json(res, 400, { error: '需要 dbNumber 和 dbName' }); return }
+    const key = `${dbNumber}_${dbName}`
+    const now = Date.now()
+    const def: typeof dbEditorDefs[string] = {
+      key,
+      dbNumber,
+      dbName,
+      fields: fields || [],
+      createdAt: dbEditorDefs[key]?.createdAt || now,
+      updatedAt: now,
+    }
+    dbEditorDefs[key] = def
+    syncEditorDefToMemory(def)
+    writeConfig()
+    const withOffsets = calculateDBEditorOffsets(def.fields)
+    json(res, 200, { success: true, key, def: { ...def, fields: withOffsets, totalSize: calcEditorTotalSize(def.fields), values: readEditorValues(def) } })
+    return
+  }
+
+  // DELETE /api/vplc/db-editor/:key — 删除 DB Editor 定义
+  const dbEditorDelMatch = url.match(/^\/api\/vplc\/db-editor\/(.+)$/)
+  if (dbEditorDelMatch && method === 'DELETE') {
+    const key = decodeURIComponent(dbEditorDelMatch[1])
+    if (!dbEditorDefs[key]) { json(res, 404, { error: '未找到 DB Editor' }); return }
+    delete dbEditorDefs[key]
+    writeConfig()
+    json(res, 200, { success: true })
+    return
+  }
+
+  // POST /api/vplc/db-editor/:key/write — 写入 DB Editor 字段
+  const dbEditorWriteMatch = url.match(/^\/api\/vplc\/db-editor\/(.+)\/write$/)
+  if (dbEditorWriteMatch && method === 'POST') {
+    const key = decodeURIComponent(dbEditorWriteMatch[1])
+    const def = dbEditorDefs[key]
+    if (!def) { json(res, 404, { error: '未找到 DB Editor' }); return }
+    const body = JSON.parse((await readBody(req)).toString())
+    const { fieldName, value } = body
+    if (!writeEditorValue(def, fieldName, value)) { json(res, 400, { error: '写入失败' }); return }
+    markMemDirty()
+    json(res, 200, { success: true })
+    return
+  }
+
+  // GET /api/vplc/db-editor/:key/export-db — 导出 .db 文件
+  const dbEditorExportMatch = url.match(/^\/api\/vplc\/db-editor\/(.+)\/export-db$/)
+  if (dbEditorExportMatch && method === 'GET') {
+    const key = decodeURIComponent(dbEditorExportMatch[1])
+    const def = dbEditorDefs[key]
+    if (!def) { json(res, 404, { error: '未找到 DB Editor' }); return }
+    const withOffsets = calculateDBEditorOffsets(def.fields)
+    const totalSize = calcEditorTotalSize(def.fields)
+
+    // 类型名映射（大写 S7 标准名）
+    const typeToString: Record<string, string> = {
+      bool: 'Bool', byte: 'Byte', word: 'Word', int: 'Int', dint: 'DInt',
+      dword: 'DWord', real: 'Real', lreal: 'LReal', char: 'Char',
+      sint: 'SInt', usint: 'USInt', uint: 'UInt', udint: 'UDInt',
+      lword: 'LWord', lint: 'LInt', time: 'Time', date: 'Date', tod: 'TOD',
+    }
+
+    const lines: string[] = []
+    lines.push(`DATA_BLOCK "${def.dbName}"`)
+    lines.push(`  { S7_Optimized_Access := 'FALSE' }`)
+    lines.push(`  STRUCT`)
+
+    for (const f of withOffsets) {
+      const st = typeToString[f.type.toLowerCase()] || f.type
+      const comment = f.comment ? `  // ${f.comment}` : ''
+      if (f.bit !== undefined) {
+        lines.push(`    ${f.name} : ${st};${comment}`)
+      } else if (f.arrayCount && f.arrayCount > 1) {
+        lines.push(`    ${f.name} : Array[0..${f.arrayCount - 1}] of ${st};${comment}`)
+      } else {
+        lines.push(`    ${f.name} : ${st};${comment}`)
+      }
+    }
+
+    lines.push(`  END_STRUCT;`)
+    lines.push(`BEGIN`)
+    lines.push(`END_DATA_BLOCK`)
+
+    const content = lines.join('\n')
+    json(res, 200, { success: true, content, dbNumber: def.dbNumber, dbName: def.dbName })
+    return
+  }
+
+  // GET /api/vplc/db-editor/:key/values — 获取实时值
+  const dbEditorValuesMatch = url.match(/^\/api\/vplc\/db-editor\/(.+)\/values$/)
+  if (dbEditorValuesMatch && method === 'GET') {
+    const key = decodeURIComponent(dbEditorValuesMatch[1])
+    const def = dbEditorDefs[key]
+    if (!def) { json(res, 404, { error: '未找到 DB Editor' }); return }
+    json(res, 200, { success: true, values: readEditorValues(def), fields: calculateDBEditorOffsets(def.fields) })
+    return
+  }
+
+  // POST /api/vplc/db-editor/:key/randomize — 随机化字段
+  const dbEditorRndMatch = url.match(/^\/api\/vplc\/db-editor\/(.+)\/randomize$/)
+  if (dbEditorRndMatch && method === 'POST') {
+    const key = decodeURIComponent(dbEditorRndMatch[1])
+    const def = dbEditorDefs[key]
+    if (!def) { json(res, 404, { error: '未找到 DB Editor' }); return }
+    const body = JSON.parse((await readBody(req)).toString())
+    const { fieldName } = body
+    // 使用 index 而非 name 匹配（避免中文编码不一致）
+    const idx = def.fields.findIndex(f => f.name === fieldName)
+    if (idx === -1) { json(res, 404, { error: '未找到字段' }); return }
+    const withOffsets = calculateDBEditorOffsets(def.fields)
+    const f = withOffsets[idx]
+    const pv: ParsedDBVariable = {
+      name: f.name,
+      type: f.type.toLowerCase(),
+      offset: f.offset ?? 0,
+      bit: f.bit,
+    }
+    const value = randomValueForVar(pv)
+    if (!writeEditorValue(def, fieldName, value)) { json(res, 400, { error: '随机写入失败' }); return }
+    markMemDirty()
+    json(res, 200, { success: true, value, type: f.type })
     return
   }
 

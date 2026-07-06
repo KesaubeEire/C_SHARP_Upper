@@ -4,7 +4,7 @@
  */
 
 import type { ParsedDBVariable, UDTMap } from './dbParser.js'
-import type { PlcMemory, ImportedDBRuntime, ImportedFieldMeta } from './types.js'
+import type { PlcMemory, ImportedDBRuntime, ImportedFieldMeta, DBEditorDef, DBEditorField } from './types.js'
 
 // ─── 内存区域 ──
 export const memory: PlcMemory = {
@@ -24,6 +24,9 @@ export const dbsConfig: Record<string, number> = {}
 export const udtDefs: UDTMap = {}
 export const importedDBs: Record<string, ImportedDBRuntime> = {}
 export const importedTriggers: any[] = []
+
+// ─── DB Editor 存储 ──
+export const dbEditorDefs: Record<string, DBEditorDef> = {}
 
 // ─── 内存脏标记（供 persistence 模块使用） ──
 let _memDirty = false
@@ -146,4 +149,90 @@ export function buildImportedSnapshot() {
     return { dbNumber: db.dbNumber, dbName: db.dbName, fieldCount: db.variableCount }
   })
   return { fields, imported }
+}
+
+// ─── DB Editor 偏移量计算（博图方式）──
+
+/** S7-1200 基本类型字节数（非优化 DB，2 字节对齐） */
+const EDITOR_TYPE_SIZES: Record<string, number> = {
+  bool: 1, byte: 1, char: 1, sint: 1, usint: 1,
+  word: 2, int: 2, uint: 2, wchar: 2,
+  dword: 4, dint: 4, udint: 4, real: 4, time: 4, tod: 4,
+  lword: 8, lint: 8, ulint: 8, lreal: 8,
+}
+
+/** 根据编辑器字段列表计算每个字段的偏移量（博图式累加+对齐） */
+export function calculateDBEditorOffsets(fields: DBEditorField[]): DBEditorField[] {
+  let byteOff = 0
+  let nextBit = 0
+  return fields.map(f => {
+    const f2 = { ...f }
+    const rawType = f.type.toLowerCase()
+    if (rawType === 'bool') {
+      if (nextBit >= 8) { byteOff++; nextBit = 0 }
+      f2.offset = byteOff
+      f2.bit = nextBit
+      nextBit++
+    } else {
+      if (nextBit > 0) { byteOff++; nextBit = 0 }
+      if (byteOff % 2 !== 0) byteOff++
+      const size = EDITOR_TYPE_SIZES[rawType] ?? 2
+      f2.offset = byteOff
+      byteOff += size
+    }
+    return f2
+  })
+}
+
+/** 根据 DB Editor 定义计算总字节数 */
+export function calcEditorTotalSize(fields: DBEditorField[]): number {
+  const withOffsets = calculateDBEditorOffsets(fields)
+  let maxEnd = 0
+  for (const f of withOffsets) {
+    const size = EDITOR_TYPE_SIZES[f.type.toLowerCase()] ?? 2
+    const end = (f.offset ?? 0) + (f.arrayCount ?? 1) * size
+    if (end > maxEnd) maxEnd = end
+  }
+  if (maxEnd % 2 !== 0) maxEnd++
+  return Math.max(maxEnd, 1)
+}
+
+/** 将 dbEditorDefs 同步到 dbsConfig 和 memory.DB */
+export function syncEditorDefToMemory(def: DBEditorDef) {
+  const totalSize = calcEditorTotalSize(def.fields)
+  dbsConfig[String(def.dbNumber)] = Math.max(dbsConfig[String(def.dbNumber)] || 0, totalSize)
+  ensureDbSize(def.dbNumber, totalSize)
+}
+
+/** 读取 DB Editor 字段的实时值 */
+export function readEditorValues(def: DBEditorDef): Record<string, any> {
+  const withOffsets = calculateDBEditorOffsets(def.fields)
+  const mem = ensureDbSize(def.dbNumber, calcEditorTotalSize(def.fields))
+  const result: Record<string, any> = {}
+  for (const f of withOffsets) {
+    const pv: ParsedDBVariable = {
+      name: f.name,
+      type: f.type.toLowerCase(),
+      offset: f.offset ?? 0,
+      bit: f.bit,
+      arrayCount: f.arrayCount,
+    }
+    result[f.name] = readTypedValueFromMemory(mem, pv)
+  }
+  return result
+}
+
+/** 写入 DB Editor 字段的值 */
+export function writeEditorValue(def: DBEditorDef, fieldName: string, value: number | boolean): boolean {
+  const withOffsets = calculateDBEditorOffsets(def.fields)
+  const f = withOffsets.find(x => x.name === fieldName)
+  if (!f) return false
+  const mem = ensureDbSize(def.dbNumber, calcEditorTotalSize(def.fields))
+  const pv: ParsedDBVariable = {
+    name: f.name,
+    type: f.type.toLowerCase(),
+    offset: f.offset ?? 0,
+    bit: f.bit,
+  }
+  return writeTypedValueToMemory(mem, pv, value)
 }
