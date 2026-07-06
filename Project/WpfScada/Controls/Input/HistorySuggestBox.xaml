@@ -4,8 +4,8 @@
     xmlns:input="clr-namespace:WpfScada.Controls.Input"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
-    <!-- HistoryItem 的 DataTemplate：值左边显示，删除按钮右边 -->
-    <DataTemplate DataType="{x:Type input:HistoryItem}">
+    <!-- HistoryItem 的 DataTemplate -->
+    <DataTemplate x:Key="HistoryItemDataTemplate">
         <Grid Margin="4,0,4,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -17,17 +17,12 @@
                 Text="{Binding Value}" />
             <Button
                 Grid.Column="1"
-                Width="20"
-                Height="20"
-                Padding="0"
-                Background="Transparent"
-                BorderThickness="0"
+                Width="20" Height="20" Padding="0"
+                Background="Transparent" BorderThickness="0"
                 Command="{Binding RemoveCommand}"
-                Cursor="Hand"
-                ToolTip="删除此项">
+                Cursor="Hand" ToolTip="删除此项">
                 <TextBlock
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
                     FontSize="12"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                     Text="✕" />
@@ -35,7 +30,7 @@
         </Grid>
     </DataTemplate>
 
-    <!-- HistorySuggestBox 默认样式 — 基于 WPF UI 的 AutoSuggestBox 样式 + 替换 ItemTemplate -->
+    <!-- HistorySuggestBox 默认样式 -->
     <Style TargetType="{x:Type input:HistorySuggestBox}" BasedOn="{StaticResource DefaultUiAutoSuggestBoxStyle}">
         <Setter Property="ItemTemplate" Value="{StaticResource HistoryItemDataTemplate}" />
     </Style>
