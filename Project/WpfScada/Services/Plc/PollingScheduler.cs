@@ -15,7 +15,6 @@ public class PollingScheduler : IDisposable
     private Timer? _timer;
     private volatile bool _busy;
     private S7Service? _s7;
-    private S7Client? _dbClient;
     private int _dbIndex;
     private int _maxThisTick = 2;
     private readonly ConcurrentDictionary<string, byte> _lastValues = new(StringComparer.OrdinalIgnoreCase);
@@ -39,16 +38,6 @@ public class PollingScheduler : IDisposable
         Stop();
         _s7 = s7;
 
-        if (Config.DbItems.Any(x => x.Enabled))
-        {
-            _dbClient = new S7Client();
-            int ret = _dbClient.ConnectTo(Config.DbIp, Config.DbRack, Config.DbSlot);
-            if (ret != 0)
-            {
-                _dbClient = null;
-            }
-        }
-
         _timer = new Timer(Config.FastInterval);
         _timer.Elapsed += OnTimerElapsed;
         _timer.AutoReset = false;
@@ -64,8 +53,6 @@ public class PollingScheduler : IDisposable
         _timer?.Stop();
         _timer?.Dispose();
         _timer = null;
-        _dbClient?.Disconnect();
-        _dbClient = null;
         _busy = false;
 
         _store.IsRunning = false;
@@ -129,7 +116,7 @@ public class PollingScheduler : IDisposable
             }
 
             // DB polling (round-robin)
-            if (_dbClient != null && _dbClient.Connected)
+            if (_s7.IsConnected)
             {
                 var enabled = Config.DbItems.Where(x => x.Enabled).ToList();
                 int tickCount = 0;
@@ -140,20 +127,19 @@ public class PollingScheduler : IDisposable
                     if (item.Length > 100) { _maxThisTick = 1; }
                     else { _maxThisTick = 2; }
 
-                    var buf = new byte[item.EffectiveLength];
-                    int ret = _dbClient.DBRead(item.DbNumber, item.Offset, item.EffectiveLength, buf);
-                    if (ret == 0)
+                    byte[]? raw = _s7.ReadBytesRaw(S7Service.AreaDB, item.Offset, item.EffectiveLength, item.DbNumber);
+                    if (raw != null)
                     {
                         for (int i = 0; i < item.EffectiveLength; i++)
                         {
                             string key = $"DB{item.DbNumber}[{item.Offset + i}]";
-                            _lastValues[key] = buf[i];
+                            _lastValues[key] = raw[i];
                             updated.Add(key);
                         }
 
                         // 解析类型化值（非 BYTE 类型）
                         string typedKey = $"DB{item.DbNumber}:{item.Offset}";
-                        double decoded = DecodeTypedValue(buf, item.DataType);
+                        double decoded = DecodeTypedValue(raw, item.DataType);
                         _typedValues[typedKey] = decoded;
                         updated.Add(typedKey);
 
@@ -161,19 +147,18 @@ public class PollingScheduler : IDisposable
                     }
                     else
                     {
-                        string errorText = _dbClient.ErrorText(ret);
-                        item.Status = $"错误: {ret} {errorText}";
+                        string errorText = _s7.LastError ?? "未知错误";
+                        item.Status = $"错误: {errorText}";
                         anyFailure = true;
 #pragma warning disable CA1873 // 失败路径日志参数是简单值类型，开销可忽略
                         _logger.LogWarning(
-                            "DB 轮询读取失败: DB{DbNumber} Offset={Offset} Length={Length} Ret={Ret} Error={Error}",
+                            "DB 轮询读取失败: DB{DbNumber} Offset={Offset} Length={Length} Error={Error}",
                             item.DbNumber,
                             item.Offset,
                             item.EffectiveLength,
-                            ret,
                             errorText);
 #pragma warning restore CA1873
-                        failureMessage = $"DB{item.DbNumber}[{item.Offset}] 读取失败: {errorText} ({ret})";
+                        failureMessage = $"DB{item.DbNumber}[{item.Offset}] 读取失败: {errorText}";
                     }
                     tickCount++;
                 }

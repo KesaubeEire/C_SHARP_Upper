@@ -336,9 +336,6 @@ public partial class AlarmViewModel : ViewModel
     private void StartPollingInternal()
     {
         _scheduler.Config.FastInterval = _config.PollInterval;
-        _scheduler.Config.DbIp = _config.IP;
-        _scheduler.Config.DbRack = _config.Rack;
-        _scheduler.Config.DbSlot = _config.Slot;
         _scheduler.Config.Fast.PollIAddr = _config.ManualIAddress;
         _scheduler.Config.Fast.PollQAddr = _config.ManualQAddress;
         _scheduler.Config.Fast.PollMAddr = _config.ManualMAddress;

@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Windows;
+using Microsoft.Extensions.Logging;
 using WpfScada.Models.Plc;
 
 namespace WpfScada.Services.Plc;
@@ -133,6 +134,7 @@ public class AlarmStatistics
 /// </summary>
 public class AlarmService
 {
+    private readonly ILogger<AlarmService> _logger;
     private readonly PollingScheduler _scheduler;
     private readonly List<AlarmRule> _rules = [];
     private readonly System.Windows.Threading.Dispatcher _dispatcher;
@@ -168,8 +170,9 @@ public class AlarmService
             "WpfScada",
             "default-rules.json");
 
-    public AlarmService(PollingScheduler scheduler)
+    public AlarmService(ILogger<AlarmService> logger, PollingScheduler scheduler)
     {
+        _logger = logger;
         _scheduler = scheduler;
         _dispatcher = Application.Current.Dispatcher;
         LoadFromFile();
@@ -479,7 +482,7 @@ public class AlarmService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[AlarmService] Save failed: {ex.Message}");
+            _logger.LogWarning(ex, "保存报警历史失败");
         }
     }
 
@@ -512,7 +515,7 @@ public class AlarmService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[AlarmService] Load failed: {ex.Message}");
+            _logger.LogWarning(ex, "加载报警历史失败");
         }
     }
 
@@ -532,7 +535,7 @@ public class AlarmService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[AlarmService] SaveRules failed: {ex.Message}");
+            _logger.LogWarning(ex, "保存报警规则失败");
         }
     }
 
@@ -588,7 +591,7 @@ public class AlarmService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[AlarmService] LoadRules failed: {ex.Message}");
+            _logger.LogWarning(ex, "加载报警规则失败");
         }
     }
 
@@ -685,9 +688,9 @@ public class AlarmService
                 };
                 AddRule(rule);
             }
-            catch
+            catch (Exception ex)
             {
-                // 跳过格式错误的行
+                _logger.LogWarning(ex, "导入报警规则 CSV 行失败: {Line}", line);
             }
         }
     }

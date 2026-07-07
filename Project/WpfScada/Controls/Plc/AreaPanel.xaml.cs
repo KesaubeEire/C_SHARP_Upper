@@ -153,7 +153,7 @@ public partial class AreaPanel : UserControl
         }
     }
 
-    private void OnReadClick(object sender, RoutedEventArgs e)
+    private async void OnReadClick(object sender, RoutedEventArgs e)
     {
         if (_s7 == null) return;
         _manualSet = true;
@@ -161,7 +161,28 @@ public partial class AreaPanel : UserControl
         var addrs = ParseAddresses(addrInput.Text);
         if (addrs.Length == 0) return;
 
-        var bytes = _s7.ReadBytes(_areaCode, addrs);
+        var bytes = new Dictionary<int, byte>();
+        string? readError = null;
+        try
+        {
+            foreach (var (start, count) in BuildContiguousGroups(addrs))
+            {
+                byte[]? buffer = _s7.ReadBytesRaw(_areaCode, start, count);
+                if (buffer == null)
+                {
+                    readError = _s7.LastError ?? "未知错误";
+                    continue;
+                }
+
+                for (int i = 0; i < count; i++)
+                    bytes[start + i] = buffer[i];
+            }
+        }
+        catch (Exception ex)
+        {
+            readError = ex.Message;
+        }
+
         ByteRows.Clear();
         ShowEmptyHint = false;
 
@@ -174,6 +195,18 @@ public partial class AreaPanel : UserControl
             if (bytes.TryGetValue(addr, out byte val))
                 row.Value = val;
             ByteRows.Add(row);
+        }
+
+        if (readError != null)
+        {
+            var dialog = App.GetRequiredService<IContentDialogService>();
+            await dialog.ShowSimpleDialogAsync(
+                new SimpleContentDialogCreateOptions
+                {
+                    Title = "PLC 读取错误",
+                    Content = readError,
+                    CloseButtonText = "确定",
+                });
         }
     }
 
@@ -242,6 +275,30 @@ public partial class AreaPanel : UserControl
         return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                    .Select(s => s.Trim()).Where(s => int.TryParse(s, out _))
                    .Select(int.Parse).Distinct().OrderBy(a => a).ToArray();
+    }
+
+    private static List<(int Start, int Count)> BuildContiguousGroups(int[] byteAddresses)
+    {
+        var groups = new List<(int Start, int Count)>();
+        if (byteAddresses.Length == 0) return groups;
+
+        int start = byteAddresses[0];
+        int end = byteAddresses[0];
+        for (int i = 1; i < byteAddresses.Length; i++)
+        {
+            if (byteAddresses[i] == end + 1)
+            {
+                end = byteAddresses[i];
+                continue;
+            }
+
+            groups.Add((start, end - start + 1));
+            start = byteAddresses[i];
+            end = byteAddresses[i];
+        }
+
+        groups.Add((start, end - start + 1));
+        return groups;
     }
 
     private static Brush GetResourceBrush(string key, Color fallback)

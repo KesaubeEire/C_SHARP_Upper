@@ -167,6 +167,7 @@ public sealed class S7Service : IDisposable
                 LastError = _client.ErrorText(result);
                 return null;
             }
+            LastError = null;
             return buffer[0];
         }
     }
@@ -186,6 +187,7 @@ public sealed class S7Service : IDisposable
         }
         groups.Add((gs, ge - gs + 1));
 
+        bool hasFailure = false;
         lock (_clientLock)
         {
             foreach (var (start, count) in groups)
@@ -198,11 +200,14 @@ public sealed class S7Service : IDisposable
                 if (ret != 0)
                 {
                     LastError = _client.ErrorText(ret);
-                    for (int i = 0; i < count; i++) result[start + i] = 0;
+                    hasFailure = true;
                     continue;
                 }
                 for (int i = 0; i < count; i++) result[start + i] = buffer[i];
             }
+
+            if (!hasFailure)
+                LastError = null;
         }
         return result;
     }
@@ -221,6 +226,7 @@ public sealed class S7Service : IDisposable
                 LastError = _client.ErrorText(ret);
                 return null;
             }
+            LastError = null;
             return buffer;
         }
     }
@@ -239,6 +245,7 @@ public sealed class S7Service : IDisposable
                 LastError = _client.ErrorText(result);
                 return false;
             }
+            LastError = null;
             return true;
         }
     }
@@ -256,6 +263,7 @@ public sealed class S7Service : IDisposable
                 LastError = _client.ErrorText(result);
                 return false;
             }
+            LastError = null;
             return true;
         }
     }
