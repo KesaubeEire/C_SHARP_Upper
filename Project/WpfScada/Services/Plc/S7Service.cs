@@ -5,7 +5,7 @@ using Sharp7;
 
 namespace WpfScada.Services.Plc;
 
-public sealed class S7Service : IDisposable
+public sealed class S7Service : IPlcClient, IDisposable
 {
     private readonly S7Client _client = new();
     private readonly object _clientLock = new();

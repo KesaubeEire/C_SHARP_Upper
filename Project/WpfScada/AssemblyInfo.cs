@@ -4,3 +4,4 @@
 // All Rights Reserved.
 
 [assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("WpfScada.Tests")]

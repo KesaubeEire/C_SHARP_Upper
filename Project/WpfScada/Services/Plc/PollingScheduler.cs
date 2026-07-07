@@ -14,7 +14,7 @@ public class PollingScheduler : IDisposable
     private readonly PollingStore _store;
     private Timer? _timer;
     private volatile bool _busy;
-    private S7Service? _s7;
+    private IPlcClient? _s7;
     private int _dbIndex;
     private int _maxThisTick = 2;
     private readonly ConcurrentDictionary<string, byte> _lastValues = new(StringComparer.OrdinalIgnoreCase);
@@ -48,6 +48,17 @@ public class PollingScheduler : IDisposable
         _store.Quality = LedQuality.Good;
     }
 
+    internal void AttachForTests(IPlcClient s7)
+    {
+        Stop();
+        _s7 = s7;
+        _store.IsRunning = true;
+        _store.StatusText = "轮询运行中";
+        _store.Quality = LedQuality.Good;
+    }
+
+    internal void TickForTests() => RunPollingCycle(restartTimer: false);
+
     public void Stop()
     {
         _timer?.Stop();
@@ -62,6 +73,11 @@ public class PollingScheduler : IDisposable
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
+        RunPollingCycle(restartTimer: true);
+    }
+
+    private void RunPollingCycle(bool restartTimer)
+    {
         if (_s7 == null) return;
 
         if (_busy)
@@ -69,7 +85,8 @@ public class PollingScheduler : IDisposable
             _store.MissedTicks++;
             _logger.LogWarning("轮询上一周期尚未完成，已跳过 {Count} 次",
                 _store.MissedTicks);
-            RestartTimer();
+            if (restartTimer)
+                RestartTimer();
             return;
         }
 
@@ -83,7 +100,8 @@ public class PollingScheduler : IDisposable
                 _logger.LogInformation("轮询退避中，第 {N} 次跳过（连续 {F} 次失败）",
                     _store.TotalTicks, _store.ConsecutiveFailures);
 #pragma warning restore CA1873
-                RestartTimer();
+                if (restartTimer)
+                    RestartTimer();
                 return;
             }
         }
@@ -211,7 +229,8 @@ public class PollingScheduler : IDisposable
             }
 
             _busy = false;
-            RestartTimer();
+            if (restartTimer)
+                RestartTimer();
         }
 
         if (updated.Count > 0)

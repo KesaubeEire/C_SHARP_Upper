@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.6.11822.322 stable
+VisualStudioVersion = 18.6.11822.322
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfScada", "WpfScada.csproj", "{6825C48F-1BAD-768D-15FD-386157962D31}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfScada.Tests", "Tests\WpfScada.Tests\WpfScada.Tests.csproj", "{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,9 +37,28 @@ Global
 		{6825C48F-1BAD-768D-15FD-386157962D31}.Release|x64.Build.0 = Release|x64
 		{6825C48F-1BAD-768D-15FD-386157962D31}.Release|x86.ActiveCfg = Release|x86
 		{6825C48F-1BAD-768D-15FD-386157962D31}.Release|x86.Build.0 = Release|x86
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|arm64.ActiveCfg = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|arm64.Build.0 = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|x64.Build.0 = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Debug|x86.Build.0 = Debug|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|arm64.ActiveCfg = Release|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|arm64.Build.0 = Release|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|x64.ActiveCfg = Release|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|x64.Build.0 = Release|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|x86.ActiveCfg = Release|Any CPU
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{04490E6E-CDFF-4E9E-ACA3-89B4971BC387} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AEDB663D-FA83-4599-BA5B-FFA1BEDC7956}
