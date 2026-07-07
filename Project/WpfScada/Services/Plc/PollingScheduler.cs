@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Timers;
+using Microsoft.Extensions.Logging;
 using Sharp7;
 using Timer = System.Timers.Timer;
 using WpfScada.Controls.Plc;
@@ -9,6 +10,7 @@ namespace WpfScada.Services.Plc;
 
 public class PollingScheduler : IDisposable
 {
+    private readonly ILogger<PollingScheduler> _logger;
     private readonly PollingStore _store;
     private Timer? _timer;
     private volatile bool _busy;
@@ -19,8 +21,9 @@ public class PollingScheduler : IDisposable
     private readonly ConcurrentDictionary<string, byte> _lastValues = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, double> _typedValues = new(StringComparer.OrdinalIgnoreCase);
 
-    public PollingScheduler(PollingStore store)
+    public PollingScheduler(ILogger<PollingScheduler> logger, PollingStore store)
     {
+        _logger = logger;
         _store = store;
     }
 
@@ -72,18 +75,58 @@ public class PollingScheduler : IDisposable
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
-        if (_busy || _s7 == null) return;
+        if (_s7 == null) return;
+
+        if (_busy)
+        {
+            _store.MissedTicks++;
+            _logger.LogWarning("轮询上一周期尚未完成，已跳过 {Count} 次",
+                _store.MissedTicks);
+            RestartTimer();
+            return;
+        }
+
+        // 连续失败后退避：每隔一次跳过一个 tick
+        if (_store.ConsecutiveFailures > 0)
+        {
+            _store.TotalTicks++;
+            if (_store.TotalTicks % 2 == 1)
+            {
+#pragma warning disable CA1873 // 退避日志参数是简单值类型，开销可忽略
+                _logger.LogInformation("轮询退避中，第 {N} 次跳过（连续 {F} 次失败）",
+                    _store.TotalTicks, _store.ConsecutiveFailures);
+#pragma warning restore CA1873
+                RestartTimer();
+                return;
+            }
+        }
+
         _busy = true;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var updated = new HashSet<string>();
+        _store.LastStartedAt = DateTime.Now;
+        bool anyFailure = false;
+        string? failureMessage = null;
 
         try
         {
             // Fast path: I/Q/M
             var fast = Config.Fast;
-            ReadFastArea(S7Service.AreaI, fast.PollIAddr, "I", updated);
-            ReadFastArea(S7Service.AreaQ, fast.PollQAddr, "Q", updated);
-            ReadFastArea(S7Service.AreaM, fast.PollMAddr, "M", updated);
+            if (!ReadFastArea(S7Service.AreaI, fast.PollIAddr, "I", updated, out var fastIFailure))
+            {
+                anyFailure = true;
+                failureMessage ??= fastIFailure;
+            }
+            if (!ReadFastArea(S7Service.AreaQ, fast.PollQAddr, "Q", updated, out var fastQFailure))
+            {
+                anyFailure = true;
+                failureMessage ??= fastQFailure;
+            }
+            if (!ReadFastArea(S7Service.AreaM, fast.PollMAddr, "M", updated, out var fastMFailure))
+            {
+                anyFailure = true;
+                failureMessage ??= fastMFailure;
+            }
 
             // DB polling (round-robin)
             if (_dbClient != null && _dbClient.Connected)
@@ -118,41 +161,149 @@ public class PollingScheduler : IDisposable
                     }
                     else
                     {
-                        item.Status = "错误: " + ret;
+                        string errorText = _dbClient.ErrorText(ret);
+                        item.Status = $"错误: {ret} {errorText}";
+                        anyFailure = true;
+#pragma warning disable CA1873 // 失败路径日志参数是简单值类型，开销可忽略
+                        _logger.LogWarning(
+                            "DB 轮询读取失败: DB{DbNumber} Offset={Offset} Length={Length} Ret={Ret} Error={Error}",
+                            item.DbNumber,
+                            item.Offset,
+                            item.EffectiveLength,
+                            ret,
+                            errorText);
+#pragma warning restore CA1873
+                        failureMessage = $"DB{item.DbNumber}[{item.Offset}] 读取失败: {errorText} ({ret})";
                     }
                     tickCount++;
                 }
             }
+
+            if (!anyFailure)
+            {
+                if (_store.ConsecutiveFailures > 0)
+                {
+#pragma warning disable CA1873 // 恢复日志参数是简单值类型
+                    _logger.LogInformation("轮询已恢复，此前连续失败 {Count} 次",
+                        _store.ConsecutiveFailures);
+#pragma warning restore CA1873
+                }
+                _store.ConsecutiveFailures = 0;
+                _store.LastError = null;
+                _store.LastSuccessAt = DateTime.Now;
+            }
+            else
+            {
+                _store.ConsecutiveFailures++;
+                _store.LastError = failureMessage ?? "轮询周期存在读取失败";
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _store.ConsecutiveFailures++;
+            _store.LastError = ex.Message;
+            anyFailure = true;
+            _logger.LogWarning(ex, "轮询周期异常（连续 {Count} 次失败）",
+                _store.ConsecutiveFailures);
+        }
         finally
         {
             sw.Stop();
+            _store.TotalTicks++;
+            _store.LastDurationMs = sw.ElapsedMilliseconds;
             _store.LatencyMs = sw.ElapsedMilliseconds;
-            _busy = false;
-            if (_timer != null)
+            _store.LastCompletedAt = DateTime.Now;
+
+            // 长周期告警：耗时超过配置间隔的 2 倍
+            long threshold = Config.FastInterval * 2;
+            if (sw.ElapsedMilliseconds > threshold)
             {
-                try { _timer.Start(); } catch { }
+                _store.LongCycleCount++;
+#pragma warning disable CA1873 // 长周期告警参数是简单值类型，开销可忽略
+                _logger.LogWarning("轮询周期过长：{Duration}ms，超过阈值 {Threshold}ms（间隔 {Interval}ms × 2），累计 {Count} 次",
+                    sw.ElapsedMilliseconds, threshold, Config.FastInterval, _store.LongCycleCount);
+#pragma warning restore CA1873
             }
+
+            _busy = false;
+            RestartTimer();
         }
 
         if (updated.Count > 0)
             DataUpdated?.Invoke(updated);
     }
 
-    private void ReadFastArea(int area, string addrStr, string prefix, HashSet<string> updated)
+    /// <summary>
+    /// 安全重启 Timer。AutoReset=false 模式下必须显式调用 Start() 来触发下一 tick。
+    /// </summary>
+    private void RestartTimer()
     {
-        if (_s7 == null || string.IsNullOrWhiteSpace(addrStr)) return;
-        var addrs = Config.Fast.ResolveAddr(addrStr);
-        if (addrs.Length == 0) return;
-
-        var bytes = _s7.ReadBytes(area, addrs);
-        foreach (var kv in bytes)
+        if (_timer != null)
         {
-            string key = $"{prefix}{kv.Key}";
-            _lastValues[key] = kv.Value;
-            updated.Add(key);
+            try { _timer.Start(); } catch (Exception ex) { _logger.LogWarning(ex, "Timer 重启失败"); }
         }
+    }
+
+    private bool ReadFastArea(int area, string addrStr, string prefix, HashSet<string> updated, out string? failureMessage)
+    {
+        failureMessage = null;
+        if (_s7 == null || string.IsNullOrWhiteSpace(addrStr)) return true;
+        var addrs = Config.Fast.ResolveAddr(addrStr);
+        if (addrs.Length == 0) return true;
+
+        bool success = true;
+        foreach (var (start, count) in BuildContiguousGroups(addrs))
+        {
+            byte[]? buffer = _s7.ReadBytesRaw(area, start, count);
+            if (buffer == null)
+            {
+                success = false;
+                failureMessage = $"{prefix}{start}-{start + count - 1} 读取失败: {_s7.LastError ?? "未知错误"}";
+#pragma warning disable CA1873 // 失败路径日志参数是简单值类型，开销可忽略
+                _logger.LogWarning(
+                    "快速区轮询读取失败: Area={Area} Start={Start} Count={Count} Error={Error}",
+                    prefix,
+                    start,
+                    count,
+                    _s7.LastError ?? "未知错误");
+#pragma warning restore CA1873
+                continue;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                string key = $"{prefix}{start + i}";
+                _lastValues[key] = buffer[i];
+                updated.Add(key);
+            }
+        }
+
+        return success;
+    }
+
+    private static List<(int Start, int Count)> BuildContiguousGroups(int[] byteAddresses)
+    {
+        var groups = new List<(int Start, int Count)>();
+        if (byteAddresses.Length == 0) return groups;
+
+        var sorted = byteAddresses.Distinct().OrderBy(a => a).ToArray();
+        int start = sorted[0];
+        int end = sorted[0];
+        for (int i = 1; i < sorted.Length; i++)
+        {
+            if (sorted[i] == end + 1)
+            {
+                end = sorted[i];
+                continue;
+            }
+
+            groups.Add((start, end - start + 1));
+            start = sorted[i];
+            end = sorted[i];
+        }
+
+        groups.Add((start, end - start + 1));
+        return groups;
     }
 
     public bool WriteByte(int areaType, int byteAddr, byte value)

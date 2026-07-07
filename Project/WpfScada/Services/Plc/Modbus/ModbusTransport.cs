@@ -1,10 +1,12 @@
 using System.IO.Ports;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
 
 namespace WpfScada.Services.Plc.Modbus;
 
 public sealed class ModbusTransport : IDisposable
 {
+    private readonly ILogger<ModbusTransport> _logger;
     private SerialPort? _serialPort;
     private TcpClient? _tcpClient;
     private NetworkStream? _tcpStream;
@@ -24,6 +26,11 @@ public sealed class ModbusTransport : IDisposable
     public event Action<bool, string>? ConnectionChanged;
 
     public static string[] GetPortNames() => SerialPort.GetPortNames();
+
+    public ModbusTransport(ILogger<ModbusTransport> logger)
+    {
+        _logger = logger;
+    }
 
     public void OpenSerial(string portName, int baudRate, StopBits stopBits, Parity parity)
     {
@@ -52,7 +59,7 @@ public sealed class ModbusTransport : IDisposable
                 _serialPort.Close();
             }
         }
-        catch { }
+        catch (Exception ex) { _logger.LogWarning(ex, "串口关闭异常"); }
         finally
         {
             _serialPort?.Dispose();
@@ -89,9 +96,10 @@ public sealed class ModbusTransport : IDisposable
             ConnectionChanged?.Invoke(false, "TCP 连接失败：" + ex.Message);
             CleanupTcp();
         }
-        catch
+        catch (Exception ex)
         {
-            ConnectionChanged?.Invoke(false, "TCP 连接失败：未知错误");
+            _logger.LogWarning(ex, "TCP 连接异常: {Msg}", ex.Message);
+            ConnectionChanged?.Invoke(false, "TCP 连接失败：" + ex.Message);
             CleanupTcp();
         }
         finally
@@ -109,8 +117,8 @@ public sealed class ModbusTransport : IDisposable
 
     private void CleanupTcp()
     {
-        try { _tcpStream?.Close(); } catch { }
-        try { _tcpClient?.Close(); } catch { }
+        try { _tcpStream?.Close(); } catch (Exception ex) { _logger.LogWarning(ex, "TCP Stream 关闭异常"); }
+        try { _tcpClient?.Close(); } catch (Exception ex) { _logger.LogWarning(ex, "TCP Client 关闭异常"); }
         _tcpStream = null;
         _tcpClient = null;
         _tcpCts?.Dispose();

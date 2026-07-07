@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace WpfScada.Services.Plc;
 
@@ -12,8 +13,14 @@ namespace WpfScada.Services.Plc;
 /// </summary>
 public sealed class VplcHttpService
 {
+    private readonly ILogger<VplcHttpService> _logger;
     private readonly HttpClient _http = new() { BaseAddress = new Uri("http://localhost:1201"), Timeout = TimeSpan.FromSeconds(3) };
     private VplcSnapshot? _lastSnapshot;
+
+    public VplcHttpService(ILogger<VplcHttpService> logger)
+    {
+        _logger = logger;
+    }
 
     public bool IsConnected { get; private set; }
     public string? LastError { get; private set; }
@@ -64,8 +71,9 @@ public sealed class VplcHttpService
             _lastSnapshot = snap;
             IsConnected = snap != null;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "vPLC 快照刷新失败");
             IsConnected = false;
         }
     }
@@ -88,8 +96,9 @@ public sealed class VplcHttpService
             var resp = await _http.PostAsJsonAsync("/api/vplc/write", payload);
             return resp.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "vPLC 写入失败");
             return false;
         }
     }
@@ -145,7 +154,7 @@ public class VplcSnapshot
     {
         if (el == null) return null;
         try { return el.Value.Deserialize<byte[]>(); }
-        catch { }
+        catch { /* 可能是 int[] 格式，继续尝试 */ }
         try
         {
             var arr = el.Value.Deserialize<int[]>();

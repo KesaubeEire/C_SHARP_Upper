@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Text;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Extensions;
 using WpfScada.Services.Plc.Modbus;
@@ -53,11 +54,11 @@ public partial class ModbusViewModel : ViewModel
     public string[] ParityOptions => ["None", "Odd", "Even"];
     public string[] StopBitsOptions => ["One", "Two", "OnePointFive"];
 
-    public ModbusViewModel(IContentDialogService contentDialog)
+    public ModbusViewModel(IContentDialogService contentDialog, ILoggerFactory loggerFactory)
     {
         _contentDialog = contentDialog;
-        _transport = new ModbusTransport();
-        _polling = new ModbusPollingService(_transport, () => IsTcpMode);
+        _transport = new ModbusTransport(loggerFactory.CreateLogger<ModbusTransport>());
+        _polling = new ModbusPollingService(loggerFactory.CreateLogger<ModbusPollingService>(), _transport, () => IsTcpMode);
 
         _transport.FrameReceived += OnFrameReceived;
         _transport.ConnectionChanged += OnConnectionChanged;
