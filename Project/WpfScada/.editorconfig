@@ -261,6 +261,7 @@ dotnet_diagnostic.MA0049.severity = suggestion   # Meziantou: type safety
 dotnet_diagnostic.S2386.severity = suggestion    # Sonar: mutable static field
 dotnet_diagnostic.S3881.severity = suggestion    # Sonar: IDisposable pattern
 dotnet_diagnostic.S3887.severity = suggestion    # Sonar: use ConcurrentDirectory
+dotnet_diagnostic.CA1848.severity = suggestion   # source-generated logging only for high-frequency log paths
 
 # --- reactive suppressions: pre-existing WPF code issues ---
 # These rules fire on the existing Gallery codebase. Suppressed as suggestion for

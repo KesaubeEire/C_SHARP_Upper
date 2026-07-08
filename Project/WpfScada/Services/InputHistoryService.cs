@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using WpfScada.Controls.Input;
 
 namespace WpfScada.Services;
@@ -9,9 +10,11 @@ public sealed class InputHistoryService : IInputHistoryService
     private readonly string _filePath;
     private readonly Dictionary<string, List<string>> _data;
     private readonly object _lock = new();
+    private readonly ILogger<InputHistoryService> _logger;
 
-    public InputHistoryService()
+    public InputHistoryService(ILogger<InputHistoryService> logger)
     {
+        _logger = logger;
         var dir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "WpfScada");
@@ -72,7 +75,7 @@ public sealed class InputHistoryService : IInputHistoryService
                 return JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json) ?? [];
             }
         }
-        catch { }
+        catch (Exception ex) { _logger.LogWarning(ex, "加载历史失败"); }
         return [];
     }
 
@@ -87,6 +90,6 @@ public sealed class InputHistoryService : IInputHistoryService
             var json = JsonSerializer.Serialize(_data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_filePath, json);
         }
-        catch { }
+        catch (Exception ex) { _logger.LogWarning(ex, "保存历史失败"); }
     }
 }

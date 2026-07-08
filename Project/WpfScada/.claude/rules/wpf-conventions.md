@@ -57,3 +57,10 @@
 - **严禁**在 code-behind 中操作 `x:Name` 控件属性（`btn.Visibility = ...`、`indicator.Fill = ...`）
 - 业务逻辑（连接/断开/数据处理/状态变更）一律放 ViewModel 或 Service
 - 复杂 UserControl（如 Sidebar 面板）**必须**有对应的 ViewModel
+
+## 日志（上线前必须配置）
+
+- 当前使用 `ILogger` + `AddDebug()`，仅在调试时可见
+- **上线前**必须在 `App.xaml.cs` 的 `ConfigureLogging` 中添加文件日志目标（如 Serilog.Sinks.File）
+- 日志路径统一使用 `%APPDATA%\WpfScada\logs\`（与其他运行时数据一致）
+- 日志按天滚动，保留最近 30 天

@@ -9,7 +9,7 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ApplicationIcon>wpfui.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <NoWarn>$(NoWarn);SA1601;WPF0041;IDE0044;MA0004;S1199;S108;S2486;S1075;S3626;IDE0059;S1244;CA1854;S3358;S1186;CA2263;CA1309;CA1824;CS0219;MA0015;MA0025;MA0026;S1118;S1121;S1135;S125;S2292;S3928;WPF0016;CS0618;NU1701;S1144;WPF0012</NoWarn>
+    <NoWarn>$(NoWarn);SA1601;WPF0041;IDE0044;MA0004;S1199;S1075;S3626;IDE0059;S1244;CA1854;S3358;S1186;CA2263;CA1309;CA1824;CS0219;MA0015;MA0025;MA0026;S1118;S1121;S1135;S125;S2292;S3928;WPF0016;CS0618;NU1701;S1144;WPF0012</NoWarn>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Platforms>AnyCPU;x86;x64;arm64</Platforms>
     <!-- Version -->
@@ -18,6 +18,11 @@
 
   <ItemGroup>
     <Content Include="wpfui.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Tests\**\*.cs" />
+    <None Remove="Tests\**\*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +35,8 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3912.50" />
     <PackageReference Include="ReflectionEventing" Version="5.0.0" />
     <PackageReference Include="ReflectionEventing.DependencyInjection" Version="5.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Sharp7" Version="1.1.84" />
     <PackageReference Include="SkiaSharp" Version="3.119.0" />
     <PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.0" />

@@ -1,12 +1,14 @@
 ﻿using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using WpfScada.Models.Plc;
 
 namespace WpfScada.Services.Plc;
 
 public class RecipeService
 {
+    private readonly ILogger<RecipeService> _logger;
     private readonly string _recipesDir;
     private readonly string _versionsDir;
     private readonly S7Service _s7;
@@ -16,8 +18,9 @@ public class RecipeService
         WriteIndented = true,
     };
 
-    public RecipeService(S7Service s7)
+    public RecipeService(ILogger<RecipeService> logger, S7Service s7)
     {
+        _logger = logger;
         _s7 = s7;
         var baseDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -62,8 +65,9 @@ public class RecipeService
                         ParameterCount = CountParameters(root),
                     };
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger.LogWarning(ex, "读取配方失败: {File}", f);
                     return null;
                 }
             })
@@ -101,7 +105,7 @@ public class RecipeService
             var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<RecipeRecord>(json);
         }
-        catch { return null; }
+        catch (Exception ex) { _logger.LogWarning(ex, "加载配方失败: {Id}", id); return null; }
     }
 
     public void SaveRecipe(RecipeRecord recipe)
@@ -199,7 +203,7 @@ public class RecipeService
                         FilePath = f,
                     };
                 }
-                catch { return null; }
+                catch (Exception ex) { _logger.LogWarning(ex, "读取版本快照失败: {File}", f); return null; }
             })
             .OfType<RecipeVersionSnapshot>()
             .OrderByDescending(s => s.Version)
@@ -216,7 +220,7 @@ public class RecipeService
             var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<RecipeRecord>(json);
         }
-        catch { return null; }
+        catch (Exception ex) { _logger.LogWarning(ex, "加载版本失败: {Id} v{Version}", recipeId, version); return null; }
     }
 
     /// <summary>Restore a previous version as the current recipe (creates a new version).</summary>
@@ -357,7 +361,7 @@ public class RecipeService
                 };
                 result.Add(param);
             }
-            catch { /* skip malformed lines */ }
+            catch (Exception ex) { _logger.LogWarning(ex, "CSV 第 {Line} 行解析失败", i + 1); }
         }
         return result;
     }

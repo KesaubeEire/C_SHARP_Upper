@@ -5,6 +5,8 @@
 
 using System.Windows.Media;
 using Lepo.i18n.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.DependencyInjection;
 using WpfScada.Controls.Sidebar;
@@ -36,6 +38,20 @@ public partial class App
         {
             _ = c.SetBasePath(AppContext.BaseDirectory);
         })
+        .ConfigureLogging(logging =>
+        {
+            logging.SetMinimumLevel(LogLevel.Information);
+            logging.AddDebug();
+            logging.AddSerilog(new LoggerConfiguration()
+                .WriteTo.File(
+                    Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "WpfScada", "logs", "wpfscada-.log"),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 30)
+                .CreateLogger(),
+                dispose: true);
+        })
         .ConfigureServices(
             (_1, services) =>
             {
@@ -59,7 +75,8 @@ public partial class App
                 _ = services.AddSingleton<InputHistoryService>();
                 _ = services.AddSingleton<PollingStore>();
                 _ = services.AddSingleton<PollingScheduler>();
-                _ = services.AddSingleton<AppConfigService>(_ => AppConfigService.Load());
+                _ = services.AddSingleton<AppConfigService>(sp => AppConfigService.Load(
+                    logger: sp.GetService<ILogger<AppConfigService>>()));
                 _ = services.AddSingleton<AlarmService>();
                 _ = services.AddSingleton<RecipeService>();
 
@@ -123,7 +140,7 @@ public partial class App
     private void OnStartup(object sender, StartupEventArgs e)
     {
         // 加载已保存的主题配置
-        var config = Services.Plc.AppConfigService.Load();
+        var config = Services.Plc.AppConfigService.Load(logger: null);
         var theme = config.ThemeMode == "Light" ? ApplicationTheme.Light : ApplicationTheme.Dark;
         ApplicationThemeManager.Apply(theme);
 
@@ -154,13 +171,37 @@ public partial class App
         _host.StopAsync().Wait();
 
         _host.Dispose();
+
+        // 确保所有 Serilog 缓冲日志写入磁盘
+        Log.CloseAndFlush();
     }
 
     /// <summary>
     /// Occurs when an exception is thrown by an application but not handled.
+    /// 可恢复的 UI 异常（如绑定错误、资源未找到）记日志后吞掉；
+    /// 致命异常（访问违例、栈溢出、文件损坏等）不设置 Handled，让进程自然崩溃。
+    /// 上位机在内部状态不明时继续运行比崩溃更危险。
     /// </summary>
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // For more info see https://docs.microsoft.com/en-us/dotnet/api/system.windows.application.dispatcherunhandledexception?view=windowsdesktop-6.0
+        var logger = _host.Services.GetRequiredService<ILogger<App>>();
+
+        // 已知偏可恢复的 UI 异常 → 记日志、吞掉。
+        // 空引用、XAML 加载失败、类型转换失败通常代表程序状态或资源已经不可信，交给默认崩溃处理。
+        if (e.Exception is InvalidOperationException
+            or ArgumentException
+            or KeyNotFoundException
+            or TaskCanceledException)
+        {
+            logger.LogWarning(e.Exception, "可恢复的 UI 异常（已拦截）: {Msg}", e.Exception.Message);
+            e.Handled = true;
+            return;
+        }
+
+        // 致命异常 → 记录后让程序崩溃（不设 Handled）
+#pragma warning disable CA1873 // 进程即将终止，日志开销无关紧要
+        logger.LogCritical(e.Exception, "未处理的致命 UI 异常，进程即将终止: {Msg}", e.Exception.Message);
+#pragma warning restore CA1873
+        // 不设置 e.Handled = true，让 WPF 继续默认的崩溃处理
     }
 }

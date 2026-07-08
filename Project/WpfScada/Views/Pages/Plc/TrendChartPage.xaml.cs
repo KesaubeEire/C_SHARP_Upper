@@ -10,6 +10,7 @@ using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.WPF;
+using Microsoft.Extensions.Logging;
 using SkiaSharp;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Extensions;
@@ -26,6 +27,7 @@ public partial class TrendChartPage : Page
     private readonly S7Service _s7;
     private readonly AppConfigService _config;
     private readonly IContentDialogService _contentDialog;
+    private readonly ILoggerFactory _loggerFactory;
 
     // 通道定义
     private sealed class ChannelDef
@@ -91,11 +93,12 @@ public partial class TrendChartPage : Page
     private readonly List<VariableMonitor> _monitors = [];
     private TimeSpan _selectedDuration = TimeRanges[4].Duration; // 默认 30min
 
-    public TrendChartPage(S7Service s7, AppConfigService config, IContentDialogService contentDialog)
+    public TrendChartPage(S7Service s7, AppConfigService config, IContentDialogService contentDialog, ILoggerFactory loggerFactory)
     {
         _s7 = s7;
         _config = config;
         _contentDialog = contentDialog;
+        _loggerFactory = loggerFactory;
         InitializeComponent();
         InitTimeRangeCombo();
         InitChart();
@@ -290,7 +293,7 @@ public partial class TrendChartPage : Page
     {
         foreach (var ch in Channels)
         {
-            var monitor = new VariableMonitor(_s7)
+            var monitor = new VariableMonitor(_loggerFactory.CreateLogger<VariableMonitor>(), _s7)
             {
                 Key = ch.Key,
                 Label = ch.Label,
@@ -313,7 +316,7 @@ public partial class TrendChartPage : Page
     {
         foreach (var g in _gaugeDefs)
         {
-            var monitor = new VariableMonitor(_s7)
+            var monitor = new VariableMonitor(_loggerFactory.CreateLogger<VariableMonitor>(), _s7)
             {
                 Key = g.Key,
                 Label = g.Label,

@@ -369,9 +369,6 @@ public partial class PpeConnectionSectionViewModel : ObservableObject
             interval = 500;
 
         _scheduler.Config.FastInterval = interval;
-        _scheduler.Config.DbIp = IpAddress.Trim();
-        _scheduler.Config.DbRack = int.TryParse(Rack, out int rack) ? rack : 0;
-        _scheduler.Config.DbSlot = int.TryParse(Slot, out int slot) ? slot : 1;
         _scheduler.Config.Fast.PollIAddr = _config.ManualIAddress;
         _scheduler.Config.Fast.PollQAddr = _config.ManualQAddress;
         _scheduler.Config.Fast.PollMAddr = _config.ManualMAddress;

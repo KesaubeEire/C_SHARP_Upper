@@ -73,7 +73,4 @@ public class PollingConfig
     public FastPathConfig Fast { get; set; } = new();
     public List<DbPollItem> DbItems { get; set; } = [];
     public int FastInterval { get; set; } = 500;
-    public string DbIp { get; set; } = "";
-    public int DbRack { get; set; }
-    public int DbSlot { get; set; }
 }

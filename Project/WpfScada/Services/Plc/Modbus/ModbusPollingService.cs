@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Timers;
+using Microsoft.Extensions.Logging;
 using Timer = System.Timers.Timer;
 
 namespace WpfScada.Services.Plc.Modbus;
@@ -39,6 +40,7 @@ public class ModbusPollingResult
 
 public class ModbusPollingService : IDisposable
 {
+    private readonly ILogger<ModbusPollingService> _logger;
     private readonly ModbusTransport _transport;
     private readonly Func<bool> _isTcpMode;
 
@@ -62,8 +64,9 @@ public class ModbusPollingService : IDisposable
     public event Action<byte, bool>? DeviceOnlineChanged;
     public event Action<bool>? ServiceStateChanged;
 
-    public ModbusPollingService(ModbusTransport transport, Func<bool> isTcpModeCallback)
+    public ModbusPollingService(ILogger<ModbusPollingService> logger, ModbusTransport transport, Func<bool> isTcpModeCallback)
     {
+        _logger = logger;
         _transport = transport;
         _isTcpMode = isTcpModeCallback;
     }
@@ -86,7 +89,7 @@ public class ModbusPollingService : IDisposable
         StopPollingTimer();
         _cts?.Cancel();
         _signal.Set();
-        try { _consumerTask?.Wait(1000); } catch { }
+        try { _consumerTask?.Wait(1000); } catch (Exception ex) { _logger.LogDebug(ex, "Modbus 消费者任务等待超时"); }
         _consumerTask = null;
         _cts?.Dispose();
         _cts = null;
@@ -210,10 +213,11 @@ public class ModbusPollingService : IDisposable
                     DeviceOnlineChanged?.Invoke(request.DeviceAddr, devState.IsOnline);
                 DataReceived?.Invoke(ModbusPollingResult.Timeout(request, _isTcpMode(), sw.Elapsed));
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Modbus 请求处理异常: Addr={Addr} Func={Func}", request.DeviceAddr, request.FuncCode);
                 Interlocked.Increment(ref _requestsFailed);
-                DataReceived?.Invoke(ModbusPollingResult.Error(request, _isTcpMode(), "未知错误"));
+                DataReceived?.Invoke(ModbusPollingResult.Error(request, _isTcpMode(), ex.Message));
             }
         }
     }
