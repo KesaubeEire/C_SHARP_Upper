@@ -16,19 +16,19 @@
     </UserControl.Style>
 
     <Grid>
-        <!-- 半透明遮罩 -->
+        <!--  半透明遮罩  -->
         <Border
             x:Name="DetailBackdrop"
             Background="#20000000"
             MouseDown="OnBackdropMouseDown" />
 
-        <!-- 详情面板 -->
+        <!--  详情面板  -->
         <Border
             x:Name="DetailPanel"
             Width="320"
             Margin="0,0,0,0"
-            HorizontalAlignment="Right"
             Padding="0"
+            HorizontalAlignment="Right"
             Background="{DynamicResource CardBackgroundBrush}"
             BorderBrush="{DynamicResource CardBorderBrush}"
             BorderThickness="1,0,0,0"
@@ -44,22 +44,30 @@
                             <DataTrigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" />
                                         <DoubleAnimation
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.2" />
+                                        <DoubleAnimation
+                                            DecelerationRatio="0.25"
                                             Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.X)"
-                                            To="0" Duration="0:0:0.25"
-                                            DecelerationRatio="0.25" />
+                                            To="0"
+                                            Duration="0:0:0.25" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </DataTrigger.EnterActions>
                             <DataTrigger.ExitActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15" />
                                         <DoubleAnimation
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.15" />
+                                        <DoubleAnimation
+                                            AccelerationRatio="0.25"
                                             Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.X)"
-                                            To="320" Duration="0:0:0.15"
-                                            AccelerationRatio="0.25" />
+                                            To="320"
+                                            Duration="0:0:0.15" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </DataTrigger.ExitActions>
@@ -69,12 +77,12 @@
             </Border.Style>
 
             <Border.Resources>
-                <Style TargetType="ui:TextBlock" x:Key="DetailLabel">
+                <Style x:Key="DetailLabel" TargetType="ui:TextBlock">
                     <Setter Property="FontTypography" Value="Caption" />
                     <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
                     <Setter Property="Margin" Value="0,8,0,2" />
                 </Style>
-                <Style TargetType="ui:TextBlock" x:Key="DetailValue">
+                <Style x:Key="DetailValue" TargetType="ui:TextBlock">
                     <Setter Property="FontTypography" Value="Body" />
                     <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                     <Setter Property="FontWeight" Value="Medium" />
@@ -87,7 +95,7 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- 面板头部：标题 + 关闭按钮 -->
+                <!--  面板头部：标题 + 关闭按钮  -->
                 <Border
                     Grid.Row="0"
                     Padding="16,12"
@@ -114,19 +122,28 @@
                             Click="OnCloseClick"
                             Cursor="Hand"
                             ToolTip="关闭">
-                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" />
+                            <ui:SymbolIcon FontSize="16" Symbol="Dismiss24" />
                         </ui:Button>
                     </Grid>
                 </Border>
 
-                <!-- 内容 -->
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16,8">
+                <!--  内容  -->
+                <ScrollViewer
+                    Grid.Row="1"
+                    Padding="16,8"
+                    VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <ui:TextBlock Style="{StaticResource DetailLabel}" Text="描述" />
-                        <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.Description}" TextWrapping="Wrap" />
+                        <ui:TextBlock
+                            Style="{StaticResource DetailValue}"
+                            Text="{Binding SelectedAlarm.Description}"
+                            TextWrapping="Wrap" />
 
                         <ui:TextBlock Style="{StaticResource DetailLabel}" Text="变量" />
-                        <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.VariableName}" FontFamily="Consolas" />
+                        <ui:TextBlock
+                            FontFamily="Consolas"
+                            Style="{StaticResource DetailValue}"
+                            Text="{Binding SelectedAlarm.VariableName}" />
 
                         <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
@@ -135,11 +152,17 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <ui:TextBlock Style="{StaticResource DetailLabel}" Text="当前值" />
-                                <ui:TextBlock FontTypography="Subtitle" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Text="{Binding SelectedAlarm.CurrentValue, StringFormat=F2}" />
+                                <ui:TextBlock
+                                    FontTypography="Subtitle"
+                                    Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                    Text="{Binding SelectedAlarm.CurrentValue, StringFormat=F2}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1">
                                 <ui:TextBlock Style="{StaticResource DetailLabel}" Text="阈值" />
-                                <ui:TextBlock FontTypography="Subtitle" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding SelectedAlarm.Threshold, StringFormat={}{0:F2}}" />
+                                <ui:TextBlock
+                                    FontTypography="Subtitle"
+                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                    Text="{Binding SelectedAlarm.Threshold, StringFormat={}{0:F2}}" />
                             </StackPanel>
                         </Grid>
 
@@ -153,7 +176,10 @@
                         <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.Area}" />
 
                         <ui:TextBlock Style="{StaticResource DetailLabel}" Text="产生时间" />
-                        <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.DateTimeText}" FontFamily="Consolas" />
+                        <ui:TextBlock
+                            FontFamily="Consolas"
+                            Style="{StaticResource DetailValue}"
+                            Text="{Binding SelectedAlarm.DateTimeText}" />
 
                         <ui:TextBlock Style="{StaticResource DetailLabel}" Text="状态" />
                         <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.StatusText}" />
@@ -165,9 +191,13 @@
                         <ui:TextBlock Style="{StaticResource DetailValue}" Text="{Binding SelectedAlarm.AcknowledgedBy, TargetNullValue=—}" />
 
                         <ui:TextBlock Style="{StaticResource DetailLabel}" Text="确认时间" />
-                        <ui:TextBlock FontTypography="Caption" FontFamily="Consolas" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding SelectedAlarm.AcknowledgedAt, TargetNullValue=—}" />
+                        <ui:TextBlock
+                            FontFamily="Consolas"
+                            FontTypography="Caption"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="{Binding SelectedAlarm.AcknowledgedAt, TargetNullValue=—}" />
 
-                        <!-- 备注编辑 -->
+                        <!--  备注编辑  -->
                         <ui:TextBlock Style="{StaticResource DetailLabel}" Text="操作员备注" />
                         <TextBox
                             Margin="0,2,0,4"
@@ -175,16 +205,51 @@
                             MaxLines="3"
                             Text="{Binding SelectedAlarm.Comment, UpdateSourceTrigger=PropertyChanged}"
                             TextWrapping="Wrap" />
-                        <ui:Button Margin="0,0,0,8" Appearance="Primary" Command="{Binding SaveCommentCommand}" Content="保存备注" />
+                        <ui:Button
+                            Margin="0,0,0,8"
+                            Appearance="Primary"
+                            Command="{Binding SaveCommentCommand}"
+                            Content="保存备注" />
 
-                        <!-- 搁置操作 -->
-                        <Rectangle Height="1" Margin="0,4" Fill="{DynamicResource ControlElevationBorderBrush}" />
-                        <TextBlock Margin="0,4,0,4" FontWeight="Bold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="搁置操作" />
+                        <!--  搁置操作  -->
+                        <Rectangle
+                            Height="1"
+                            Margin="0,4"
+                            Fill="{DynamicResource ControlElevationBorderBrush}" />
+                        <TextBlock
+                            Margin="0,4,0,4"
+                            FontWeight="Bold"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="搁置操作" />
                         <WrapPanel>
-                            <ui:Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm1HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="1 小时" FontSize="12" />
-                            <ui:Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm8HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="8 小时" FontSize="12" />
-                            <ui:Button Height="34" Margin="0,0,4,4" Command="{Binding ShelveAlarm24HCommand}" CommandParameter="{Binding SelectedAlarm}" Content="24 小时" FontSize="12" />
-                            <ui:Button Height="34" Margin="0,0,0,4" Command="{Binding UnshelveAlarmCommand}" CommandParameter="{Binding SelectedAlarm}" Content="取消搁置" FontSize="12" />
+                            <ui:Button
+                                Height="34"
+                                Margin="0,0,4,4"
+                                Command="{Binding ShelveAlarm1HCommand}"
+                                CommandParameter="{Binding SelectedAlarm}"
+                                Content="1 小时"
+                                FontSize="12" />
+                            <ui:Button
+                                Height="34"
+                                Margin="0,0,4,4"
+                                Command="{Binding ShelveAlarm8HCommand}"
+                                CommandParameter="{Binding SelectedAlarm}"
+                                Content="8 小时"
+                                FontSize="12" />
+                            <ui:Button
+                                Height="34"
+                                Margin="0,0,4,4"
+                                Command="{Binding ShelveAlarm24HCommand}"
+                                CommandParameter="{Binding SelectedAlarm}"
+                                Content="24 小时"
+                                FontSize="12" />
+                            <ui:Button
+                                Height="34"
+                                Margin="0,0,0,4"
+                                Command="{Binding UnshelveAlarmCommand}"
+                                CommandParameter="{Binding SelectedAlarm}"
+                                Content="取消搁置"
+                                FontSize="12" />
                         </WrapPanel>
                     </StackPanel>
                 </ScrollViewer>

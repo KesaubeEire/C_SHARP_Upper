@@ -22,10 +22,8 @@
             FontTypography="BodyStrong"
             Text="外观与行为" />
 
-        <!-- Gallery 显示开关 -->
-        <ui:CardControl
-            Margin="0,0,0,12"
-            Icon="{ui:SymbolIcon Apps24}">
+        <!--  Gallery 显示开关  -->
+        <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Apps24}">
             <ui:CardControl.Header>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -42,8 +40,7 @@
                         Text="在左侧菜单中显示 WPF SCADA 示例页面" />
                 </Grid>
             </ui:CardControl.Header>
-            <ui:ToggleSwitch
-                IsChecked="{Binding ViewModel.ShowGallery, Mode=TwoWay}" />
+            <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowGallery, Mode=TwoWay}" />
         </ui:CardControl>
 
         <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Color24}">

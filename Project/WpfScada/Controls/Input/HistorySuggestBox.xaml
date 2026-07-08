@@ -1,10 +1,10 @@
-<ResourceDictionary
+﻿<ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:input="clr-namespace:WpfScada.Controls.Input"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
-    <!-- HistoryItem 的 DataTemplate -->
+    <!--  HistoryItem 的 DataTemplate  -->
     <DataTemplate x:Key="HistoryItemDataTemplate" DataType="{x:Type input:HistoryItem}">
         <Grid Margin="4,0,4,0">
             <Grid.ColumnDefinitions>
@@ -35,8 +35,8 @@
         </Grid>
     </DataTemplate>
 
-    <!-- HistorySuggestBox 默认样式 — 基于自动找到的父类样式 -->
-    <Style TargetType="{x:Type input:HistorySuggestBox}" BasedOn="{StaticResource {x:Type ui:AutoSuggestBox}}">
+    <!--  HistorySuggestBox 默认样式 — 基于自动找到的父类样式  -->
+    <Style BasedOn="{StaticResource {x:Type ui:AutoSuggestBox}}" TargetType="{x:Type input:HistorySuggestBox}">
         <Setter Property="ItemTemplate" Value="{StaticResource HistoryItemDataTemplate}" />
     </Style>
 

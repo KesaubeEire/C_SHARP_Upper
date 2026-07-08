@@ -94,51 +94,51 @@
 
             <ui:TitleBar.TrailingContent>
                 <StackPanel Orientation="Horizontal">
-                    <!-- 连接 -->
+                    <!--  连接  -->
                     <ui:Button
+                        Height="26"
                         Appearance="Primary"
                         Command="{Binding PlcViewModel.ConnectCommand}"
                         FontSize="12"
-                        Height="26"
                         Icon="{ui:SymbolIcon PlugDisconnected24}"
                         IsEnabled="{Binding PlcViewModel.IsConnected, Converter={StaticResource InverseBoolConverter}}"
                         ToolTip="连接到 PLC"
                         ToolTipService.ShowOnDisabled="True" />
-                    <!-- 断开 -->
+                    <!--  断开  -->
                     <ui:Button
+                        Height="26"
                         Margin="4,0,0,0"
                         Appearance="Secondary"
                         Command="{Binding PlcViewModel.DisconnectCommand}"
                         FontSize="12"
-                        Height="26"
                         Icon="{ui:SymbolIcon PlugConnected24}"
                         IsEnabled="{Binding PlcViewModel.IsConnected}"
                         ToolTip="断开 PLC 连接"
                         ToolTipService.ShowOnDisabled="True" />
-                    <!-- 启动 -->
+                    <!--  启动  -->
                     <ui:Button
+                        Height="26"
                         Margin="4,0,0,0"
                         Appearance="Success"
                         Command="{Binding PlcViewModel.StartPollingCommand}"
                         FontSize="12"
-                        Height="26"
                         Icon="{ui:SymbolIcon Play24}"
                         IsEnabled="{Binding PlcViewModel.IsConnected}"
                         ToolTip="开始轮询"
                         ToolTipService.ShowOnDisabled="True" />
-                    <!-- 停止 -->
+                    <!--  停止  -->
                     <ui:Button
+                        Height="26"
                         Margin="4,0,12,0"
                         Appearance="Danger"
                         Command="{Binding PlcViewModel.StopPollingCommand}"
                         FontSize="12"
-                        Height="26"
                         Icon="{ui:SymbolIcon Stop24}"
                         IsEnabled="{Binding PlcViewModel.Store.IsRunning}"
                         ToolTip="停止轮询"
                         ToolTipService.ShowOnDisabled="True" />
 
-                    <!-- 延迟 -->
+                    <!--  延迟  -->
                     <ui:TextBlock
                         VerticalAlignment="Center"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -151,7 +151,7 @@
                         Foreground="{Binding PlcViewModel.LatencyColor}"
                         Text="{Binding PlcViewModel.LatencyText}" />
 
-                    <!-- LED 指示灯 -->
+                    <!--  LED 指示灯  -->
                     <plc:LedIndicator
                         Width="10"
                         Height="10"
@@ -159,7 +159,7 @@
                         VerticalAlignment="Center"
                         Quality="{Binding PlcViewModel.Store.Quality}" />
 
-                    <!-- 与主题按钮之间的分隔 -->
+                    <!--  与主题按钮之间的分隔  -->
                     <Rectangle
                         Width="1"
                         Height="18"
@@ -177,7 +177,7 @@
                         FontSize="16"
                         ToolTip="切换深浅主题">
                         <ui:Button.Style>
-                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                            <Style BasedOn="{StaticResource {x:Type ui:Button}}" TargetType="ui:Button">
                                 <Setter Property="Icon">
                                     <Setter.Value>
                                         <ui:SymbolIcon Symbol="WeatherSunny24" />

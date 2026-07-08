@@ -13,7 +13,7 @@
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     mc:Ignorable="d">
-        <StackPanel Margin="0,0,0,24">
+    <StackPanel Margin="0,0,0,24">
 
         <!--  ===== 顶部：导入 + 配置 =====  -->
         <Border
@@ -69,8 +69,8 @@
                         <TextBox
                             x:Name="dbNumberInput"
                             Width="60"
-                            Padding="5"
                             Margin="6,0"
+                            Padding="5"
                             VerticalAlignment="Center"
                             HorizontalContentAlignment="Center"
                             Text="1" />
@@ -191,161 +191,164 @@
                 </Border>
 
                 <!--  变量列表  -->
-                    <Grid Grid.Row="1">
-                        <ItemsControl x:Name="variableList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type models:DbVariableDisplay}">
-                                    <Border
-                                        Padding="16,8"
-                                        BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                                        BorderThickness="0,0,0,1">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="70" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="DataProcessCol" />
-                                                <ColumnDefinition Width="100" />
-                                                <ColumnDefinition Width="60" />
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="ValueCol" />
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="CommentCol" />
-                                            </Grid.ColumnDefinitions>
+                <Grid Grid.Row="1">
+                    <ItemsControl x:Name="variableList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:DbVariableDisplay}">
+                                <Border
+                                    Padding="16,8"
+                                    BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                    BorderThickness="0,0,0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="DataProcessCol" />
+                                            <ColumnDefinition Width="100" />
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="ValueCol" />
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="CommentCol" />
+                                        </Grid.ColumnDefinitions>
 
-                                            <!--  偏移量  -->
+                                        <!--  偏移量  -->
+                                        <ui:TextBlock
+                                            Grid.Column="0"
+                                            VerticalAlignment="Center"
+                                            FontTypography="Caption"
+                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                            Text="{Binding OffsetDisplay}" />
+
+                                        <!--  变量名  -->
+                                        <StackPanel
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Orientation="Horizontal">
                                             <ui:TextBlock
-                                                Grid.Column="0"
-                                                VerticalAlignment="Center"
-                                                FontTypography="Caption"
-                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                Text="{Binding OffsetDisplay}" />
+                                                FontTypography="Body"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding Name}" />
+                                            <ui:InfoBadge
+                                                Margin="6,0,0,0"
+                                                Padding="6,0"
+                                                Severity="Informational"
+                                                Style="{DynamicResource ValueInfoBadgeStyle}"
+                                                Visibility="{Binding UdtName, Converter={StaticResource NullToVisibilityConverter}}"
+                                                Value="{Binding UdtName}" />
+                                        </StackPanel>
 
-                                            <!--  变量名  -->
-                                            <StackPanel
-                                                Grid.Column="1"
-                                                VerticalAlignment="Center"
-                                                Orientation="Horizontal">
-                                                <ui:TextBlock FontTypography="Body" FontWeight="SemiBold" Text="{Binding Name}" />
-                                                <ui:InfoBadge
-                                                    Margin="6,0,0,0"
-                                                    Padding="6,0"
-                                                    Severity="Informational"
-                                                    Style="{DynamicResource ValueInfoBadgeStyle}"
-                                                    Value="{Binding UdtName}"
-                                                    Visibility="{Binding UdtName, Converter={StaticResource NullToVisibilityConverter}}" />
+                                        <!--  数据处理  -->
+                                        <StackPanel
+                                            Grid.Column="2"
+                                            Margin="0,0,6,0"
+                                            Orientation="Horizontal">
+
+                                            <!--  BOOL 操作按钮  -->
+                                            <StackPanel Orientation="Horizontal" Visibility="{Binding BoolVis}">
+                                                <ui:Button
+                                                    Margin="0,0,6,0"
+                                                    Appearance="Primary"
+                                                    Content="按1松0"
+                                                    MouseLeave="OnBitPressLeave"
+                                                    PreviewMouseLeftButtonDown="OnBitPressDown"
+                                                    PreviewMouseLeftButtonUp="OnBitPressUp" />
+                                                <ui:Button
+                                                    Appearance="Caution"
+                                                    Content="取反"
+                                                    PreviewMouseLeftButtonDown="OnBitToggle" />
                                             </StackPanel>
 
-                                            <!--  数据处理  -->
-                                            <StackPanel
-                                                Grid.Column="2"
-                                                Margin="0,0,6,0"
-                                                Orientation="Horizontal">
-
-                                                <!--  BOOL 操作按钮  -->
-                                                <StackPanel Orientation="Horizontal" Visibility="{Binding BoolVis}">
-                                                    <ui:Button
-                                                        Margin="0,0,6,0"
-                                                        Appearance="Primary"
-                                                        Content="按1松0"
-                                                        MouseLeave="OnBitPressLeave"
-                                                        PreviewMouseLeftButtonDown="OnBitPressDown"
-                                                        PreviewMouseLeftButtonUp="OnBitPressUp" />
-                                                    <ui:Button
-                                                        Appearance="Caution"
-                                                        Content="取反"
-                                                        PreviewMouseLeftButtonDown="OnBitToggle" />
-                                                </StackPanel>
-
-                                                <!--  数值编辑  -->
-                                                <StackPanel Orientation="Horizontal" Visibility="{Binding EditVis}">
-                                                    <TextBox
-                                                        MinWidth="70"
-                                                        Width="Auto"
-                                                        Margin="0,0,6,0"
-                                                        VerticalAlignment="Center"
-                                                        Text="{Binding InputValue, UpdateSourceTrigger=PropertyChanged}" />
-                                                    <ui:Button
-                                                        Appearance="Success"
-                                                        Click="OnValueEdit"
-                                                        Content="改动" />
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <!--  数据类型  -->
-                                            <ui:TextBlock
-                                                Grid.Column="3"
-                                                VerticalAlignment="Center"
-                                                FontTypography="Caption"
-                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                Text="{Binding DataType}" />
-
-                                            <!--  大小  -->
-                                            <ui:TextBlock
-                                                Grid.Column="4"
-                                                VerticalAlignment="Center"
-                                                FontTypography="Caption"
-                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                Text="{Binding Size, StringFormat='{}{0}B'}" />
-
-                                            <!--  值  -->
-                                            <Border
-                                                Grid.Column="5"
-                                                Height="28"
-                                                Padding="8,3"
-                                                MinWidth="60"
-                                                VerticalAlignment="Center"
-                                                Background="{DynamicResource TextBoxBackground}"
-                                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                                                BorderThickness="1"
-                                                CornerRadius="4">
-                                                <ui:TextBlock
+                                            <!--  数值编辑  -->
+                                            <StackPanel Orientation="Horizontal" Visibility="{Binding EditVis}">
+                                                <TextBox
+                                                    Width="Auto"
+                                                    MinWidth="70"
+                                                    Margin="0,0,6,0"
                                                     VerticalAlignment="Center"
-                                                    FontTypography="Body" 
-                                                    FontWeight="SemiBold"
-                                                    Text="{Binding Value}"
-                                                    TextTrimming="CharacterEllipsis" />
-                                            </Border>
+                                                    Text="{Binding InputValue, UpdateSourceTrigger=PropertyChanged}" />
+                                                <ui:Button
+                                                    Appearance="Success"
+                                                    Click="OnValueEdit"
+                                                    Content="改动" />
+                                            </StackPanel>
+                                        </StackPanel>
 
-                                            <!--  注释  -->
+                                        <!--  数据类型  -->
+                                        <ui:TextBlock
+                                            Grid.Column="3"
+                                            VerticalAlignment="Center"
+                                            FontTypography="Caption"
+                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                            Text="{Binding DataType}" />
+
+                                        <!--  大小  -->
+                                        <ui:TextBlock
+                                            Grid.Column="4"
+                                            VerticalAlignment="Center"
+                                            FontTypography="Caption"
+                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                            Text="{Binding Size, StringFormat='{}{0}B'}" />
+
+                                        <!--  值  -->
+                                        <Border
+                                            Grid.Column="5"
+                                            Height="28"
+                                            MinWidth="60"
+                                            Padding="8,3"
+                                            VerticalAlignment="Center"
+                                            Background="{DynamicResource TextBoxBackground}"
+                                            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4">
                                             <ui:TextBlock
-                                                Grid.Column="6"
-                                                Margin="8,0,0,0"
                                                 VerticalAlignment="Center"
-                                                FontTypography="Caption"
-                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                Text="{Binding Comment}"
+                                                FontTypography="Body"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding Value}"
                                                 TextTrimming="CharacterEllipsis" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
+                                        </Border>
 
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
+                                        <!--  注释  -->
+                                        <ui:TextBlock
+                                            Grid.Column="6"
+                                            Margin="8,0,0,0"
+                                            VerticalAlignment="Center"
+                                            FontTypography="Caption"
+                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                            Text="{Binding Comment}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
 
-                        <!--  空状态  -->
-                        <Border
-                            x:Name="emptyState"
-                            Height="200"
-                            Background="Transparent"
-                            Visibility="Visible">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <ui:TextBlock
-                                    HorizontalAlignment="Center"
-                                    FontTypography="TitleLarge"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="📄" />
-                                <ui:TextBlock
-                                    Margin="0,8,0,0"
-                                    HorizontalAlignment="Center"
-                                    FontTypography="Body"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="请导入 .db 文件并点击读取" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <!--  空状态  -->
+                    <Border
+                        x:Name="emptyState"
+                        Height="200"
+                        Background="Transparent"
+                        Visibility="Visible">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ui:TextBlock
+                                HorizontalAlignment="Center"
+                                FontTypography="TitleLarge"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="📄" />
+                            <ui:TextBlock
+                                Margin="0,8,0,0"
+                                HorizontalAlignment="Center"
+                                FontTypography="Body"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="请导入 .db 文件并点击读取" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
         </Border>
 

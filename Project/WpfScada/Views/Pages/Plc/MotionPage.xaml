@@ -1,4 +1,4 @@
-<Page
+﻿<Page
     x:Class="WpfScada.Views.Pages.Plc.MotionPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -116,7 +116,7 @@
                         FontSize="18"
                         FontWeight="Bold">
                         <ui:Button.Icon>
-                            <ui:SymbolIcon Symbol="Alert24" Foreground="White" />
+                            <ui:SymbolIcon Foreground="White" Symbol="Alert24" />
                         </ui:Button.Icon>
                         急停
                     </ui:Button>
@@ -156,9 +156,7 @@
                         FontTypography="Caption"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                         Text="数字量输入" />
-                    <ItemsControl
-                        Margin="0,4,0,8"
-                        ItemsSource="{Binding DiPoints}">
+                    <ItemsControl Margin="0,4,0,8" ItemsSource="{Binding DiPoints}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel />
@@ -180,9 +178,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <ui:TextBlock
-                                        FontTypography="Caption"
-                                        Text="{Binding Label}" />
+                                    <ui:TextBlock FontTypography="Caption" Text="{Binding Label}" />
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -192,9 +188,7 @@
                         FontTypography="Caption"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                         Text="数字量输出" />
-                    <ItemsControl
-                        Margin="0,4,0,0"
-                        ItemsSource="{Binding DoPoints}">
+                    <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding DoPoints}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel />
@@ -216,9 +210,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <ui:TextBlock
-                                        FontTypography="Caption"
-                                        Text="{Binding Label}" />
+                                    <ui:TextBlock FontTypography="Caption" Text="{Binding Label}" />
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

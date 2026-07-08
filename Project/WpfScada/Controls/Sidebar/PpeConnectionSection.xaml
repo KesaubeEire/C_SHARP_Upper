@@ -4,9 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:WpfScada.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:input="clr-namespace:WpfScada.Controls.Input"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:plc="clr-namespace:WpfScada.Controls.Plc"
-    xmlns:input="clr-namespace:WpfScada.Controls.Input"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Padding="12"
     d:DesignHeight="655.988"
@@ -23,7 +23,10 @@
         <controls:ControlExample Margin="0,0,0,8" HeaderText="连接模式">
             <StackPanel>
                 <RadioButton Content="S7 直连" IsChecked="{Binding UseVplcHttp, Converter={StaticResource InverseBoolConverter}}" />
-                <RadioButton Margin="0,4,0,0" Content="vPLC (HTTP)" IsChecked="{Binding UseVplcHttp}" />
+                <RadioButton
+                    Margin="0,4,0,0"
+                    Content="vPLC (HTTP)"
+                    IsChecked="{Binding UseVplcHttp}" />
             </StackPanel>
         </controls:ControlExample>
 
@@ -61,8 +64,8 @@
                         Margin="0,2"
                         HistoryKey="plc_ip"
                         HistoryService="{Binding HistoryService}"
-                        Text="{Binding IpAddress, UpdateSourceTrigger=PropertyChanged}"
-                        PlaceholderText="192.168.0.1" />
+                        PlaceholderText="192.168.0.1"
+                        Text="{Binding IpAddress, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
@@ -75,8 +78,8 @@
                         Margin="0,2"
                         HistoryKey="plc_port"
                         HistoryService="{Binding HistoryService}"
-                        Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"
-                        PlaceholderText="102" />
+                        PlaceholderText="102"
+                        Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="2"
                         Grid.Column="0"
@@ -89,8 +92,8 @@
                         Margin="0,2"
                         HistoryKey="plc_rack"
                         HistoryService="{Binding HistoryService}"
-                        Text="{Binding Rack, UpdateSourceTrigger=PropertyChanged}"
-                        PlaceholderText="0" />
+                        PlaceholderText="0"
+                        Text="{Binding Rack, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="3"
                         Grid.Column="0"
@@ -103,8 +106,8 @@
                         Margin="0,2"
                         HistoryKey="plc_slot"
                         HistoryService="{Binding HistoryService}"
-                        Text="{Binding Slot, UpdateSourceTrigger=PropertyChanged}"
-                        PlaceholderText="1" />
+                        PlaceholderText="1"
+                        Text="{Binding Slot, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>
 
                 <Grid Margin="0,8,0,0">
@@ -183,8 +186,8 @@
                         Margin="0,2"
                         HistoryKey="plc_poll_interval"
                         HistoryService="{Binding HistoryService}"
-                        Text="{Binding PollInterval, UpdateSourceTrigger=PropertyChanged}"
-                        PlaceholderText="500" />
+                        PlaceholderText="500"
+                        Text="{Binding PollInterval, UpdateSourceTrigger=PropertyChanged}" />
                     <ui:TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
@@ -241,9 +244,7 @@
                             Margin="0,0,8,0"
                             VerticalAlignment="Center"
                             Quality="{Binding Store.Quality}" />
-                        <ui:TextBlock
-                            FontTypography="Caption"
-                            Text="{Binding Store.StatusText}" />
+                        <ui:TextBlock FontTypography="Caption" Text="{Binding Store.StatusText}" />
                     </StackPanel>
                 </Border>
             </StackPanel>

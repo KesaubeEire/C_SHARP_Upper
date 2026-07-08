@@ -35,9 +35,9 @@
                     Height="12"
                     Margin="0,0,8,0"
                     VerticalAlignment="Center"
+                    LedColor="{Binding AreaColor, ElementName=root}"
                     Quality="Info"
-                    ToolTipText="{Binding AreaLabel, ElementName=root}"
-                    LedColor="{Binding AreaColor, ElementName=root}" />
+                    ToolTipText="{Binding AreaLabel, ElementName=root}" />
                 <ui:TextBlock
                     Grid.Column="1"
                     VerticalAlignment="Center"

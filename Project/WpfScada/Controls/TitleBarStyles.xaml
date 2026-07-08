@@ -1,9 +1,9 @@
-<!--
+﻿<!--
     This Source Code Form is subject to the terms of the MIT License.
     If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
     Copyright (C) Leszek Pomianowski and WPF UI Contributors.
     All Rights Reserved.
-
+    
     Override of TitleBar default style:
     TrailingContent is moved from inner Grid column 2 into the system buttons
     sub-Grid column 0, so it sits inline with minimize/maximize/close.
@@ -103,9 +103,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!--  TrailingContent moved into system button row  -->
-                                <ContentPresenter
-                                    Grid.Column="0"
-                                    Content="{TemplateBinding TrailingContent}" />
+                                <ContentPresenter Grid.Column="0" Content="{TemplateBinding TrailingContent}" />
 
                                 <controls:TitleBarButton
                                     x:Name="PART_HelpButton"

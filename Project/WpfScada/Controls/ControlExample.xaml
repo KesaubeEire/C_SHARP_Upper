@@ -66,9 +66,7 @@
                                         Background="Transparent"
                                         BorderBrush="Transparent"
                                         BorderThickness="0">
-                                        <ui:TextBlock
-                                            FontFamily="Consolas"
-                                            Text="{TemplateBinding XamlCode}" />
+                                        <ui:TextBlock FontFamily="Consolas" Text="{TemplateBinding XamlCode}" />
                                     </Border>
                                 </StackPanel>
 
@@ -90,9 +88,7 @@
                                         Background="Transparent"
                                         BorderBrush="Transparent"
                                         BorderThickness="0">
-                                        <ui:TextBlock
-                                            FontFamily="Consolas"
-                                            Text="{TemplateBinding CsharpCode}" />
+                                        <ui:TextBlock FontFamily="Consolas" Text="{TemplateBinding CsharpCode}" />
                                     </Border>
                                 </StackPanel>
                             </StackPanel>

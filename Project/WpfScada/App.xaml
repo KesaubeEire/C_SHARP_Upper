@@ -22,10 +22,10 @@
                 <ResourceDictionary Source="Controls/TypographyControl.xaml" />
                 <ResourceDictionary Source="Controls/PageControlDocumentation.xaml" />
 
-                <!-- Multi-level NavigationViewItem template override -->
+                <!--  Multi-level NavigationViewItem template override  -->
                 <ResourceDictionary Source="Controls/NavigationViewMultiLevel.xaml" />
 
-                <!-- HistorySuggestBox 控件样式 -->
+                <!--  HistorySuggestBox 控件样式  -->
                 <ResourceDictionary Source="Controls/Input/HistorySuggestBox.xaml" />
             </ResourceDictionary.MergedDictionaries>
 

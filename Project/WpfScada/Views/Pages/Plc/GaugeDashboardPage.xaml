@@ -24,51 +24,71 @@
             </Grid.ColumnDefinitions>
 
             <!--  ===== 伺服 1 =====  -->
-            <controls:ControlExample Grid.Column="0" Margin="4" HeaderText="伺服 1">
+            <controls:ControlExample
+                Grid.Column="0"
+                Margin="4"
+                HeaderText="伺服 1">
                 <plc:ServoGauge
                     x:Name="servo1"
-                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    GreenMax="96"
                     LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    RedMax="200"
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenMax="96" YellowMax="160" RedMax="200" />
+                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    YellowMax="160" />
             </controls:ControlExample>
 
             <!--  ===== 伺服 2 =====  -->
-            <controls:ControlExample Grid.Column="1" Margin="4" HeaderText="伺服 2">
+            <controls:ControlExample
+                Grid.Column="1"
+                Margin="4"
+                HeaderText="伺服 2">
                 <plc:ServoGauge
                     x:Name="servo2"
-                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    GreenMax="108"
                     LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    RedMax="200"
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenMax="108" YellowMax="180" RedMax="200" />
+                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    YellowMax="180" />
             </controls:ControlExample>
 
             <!--  ===== 伺服 3 =====  -->
-            <controls:ControlExample Grid.Column="2" Margin="4" HeaderText="伺服 3">
+            <controls:ControlExample
+                Grid.Column="2"
+                Margin="4"
+                HeaderText="伺服 3">
                 <plc:ServoGauge
                     x:Name="servo3"
-                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    GreenMax="96"
                     LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    RedMax="200"
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenMax="96" YellowMax="160" RedMax="200" />
+                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    YellowMax="160" />
             </controls:ControlExample>
 
             <!--  ===== 伺服 4 =====  -->
-            <controls:ControlExample Grid.Column="3" Margin="4" HeaderText="伺服 4">
+            <controls:ControlExample
+                Grid.Column="3"
+                Margin="4"
+                HeaderText="伺服 4">
                 <plc:ServoGauge
                     x:Name="servo4"
-                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    GreenMax="108"
                     LabelBrush="{DynamicResource TextFillColorSecondaryBrush}"
+                    NeedleBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    RedMax="200"
                     TickBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     UnitBrush="{DynamicResource TextFillColorSecondaryBrush}"
-                    GreenMax="108" YellowMax="180" RedMax="200" />
+                    ValueBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    YellowMax="180" />
             </controls:ControlExample>
 
         </Grid>

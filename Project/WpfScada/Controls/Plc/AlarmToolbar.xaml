@@ -23,7 +23,7 @@
                         <ui:SymbolIcon Symbol="Play24" />
                     </ui:Button.Icon>
                     <ui:Button.Style>
-                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                        <Style BasedOn="{StaticResource {x:Type ui:Button}}" TargetType="ui:Button">
                             <Setter Property="Appearance" Value="Success" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsSubscribed}" Value="True">
@@ -42,7 +42,7 @@
                         <ui:SymbolIcon Symbol="Stop24" />
                     </ui:Button.Icon>
                     <ui:Button.Style>
-                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                        <Style BasedOn="{StaticResource {x:Type ui:Button}}" TargetType="ui:Button">
                             <Setter Property="Appearance" Value="Secondary" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsSubscribed}" Value="True">
@@ -68,15 +68,13 @@
                         <ui:SymbolIcon Symbol="CheckmarkCircle24" />
                     </ui:Button.Icon>
                 </ui:Button>
-                <ui:Flyout
-                    IsOpen="{Binding IsAckAllFlyoutOpen}"
-                    Placement="Bottom">
+                <ui:Flyout IsOpen="{Binding IsAckAllFlyoutOpen}" Placement="Bottom">
                     <StackPanel>
                         <TextBlock
                             Margin="0,0,0,6"
                             FontWeight="SemiBold"
                             Text="确认全部报警？" />
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                             <ui:Button
                                 Margin="0,0,6,0"
                                 Click="OnCloseAckAllFlyout"
@@ -99,15 +97,13 @@
                         <ui:SymbolIcon Symbol="EyeOff24" />
                     </ui:Button.Icon>
                 </ui:Button>
-                <ui:Flyout
-                    IsOpen="{Binding IsShelveAllFlyoutOpen}"
-                    Placement="Bottom">
+                <ui:Flyout IsOpen="{Binding IsShelveAllFlyoutOpen}" Placement="Bottom">
                     <StackPanel>
                         <TextBlock
                             Margin="0,0,0,6"
                             FontWeight="SemiBold"
                             Text="搁置全部未确认报警（1 小时）？" />
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                             <ui:Button
                                 Margin="0,0,6,0"
                                 Click="OnCloseShelveAllFlyout"

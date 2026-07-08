@@ -32,59 +32,119 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- 活动报警 -->
-            <Border Grid.Column="0" Style="{StaticResource StatCardStyle}" BorderBrush="{DynamicResource SystemFillColorCriticalBrush}">
+            <!--  活动报警  -->
+            <Border
+                Grid.Column="0"
+                BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+                Style="{StaticResource StatCardStyle}">
                 <StackPanel>
-                    <ui:TextBlock FontTypography="Caption" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="活动报警" />
-                    <ui:TextBlock FontTypography="Title" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Text="{Binding ActiveCount}" />
+                    <ui:TextBlock
+                        FontTypography="Caption"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="活动报警" />
+                    <ui:TextBlock
+                        FontTypography="Title"
+                        Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                        Text="{Binding ActiveCount}" />
                 </StackPanel>
             </Border>
 
-            <Rectangle Grid.Column="1" Width="1" Margin="12,4" Fill="{DynamicResource ControlElevationBorderBrush}" />
+            <Rectangle
+                Grid.Column="1"
+                Width="1"
+                Margin="12,4"
+                Fill="{DynamicResource ControlElevationBorderBrush}" />
 
-            <!-- 未确认 -->
-            <Border Grid.Column="2" Style="{StaticResource StatCardStyle}" BorderBrush="{DynamicResource SystemFillColorCautionBrush}">
+            <!--  未确认  -->
+            <Border
+                Grid.Column="2"
+                BorderBrush="{DynamicResource SystemFillColorCautionBrush}"
+                Style="{StaticResource StatCardStyle}">
                 <StackPanel>
-                    <ui:TextBlock FontTypography="Caption" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="未确认" />
-                    <ui:TextBlock FontTypography="Title" Foreground="{DynamicResource SystemFillColorCautionBrush}" Text="{Binding UnacknowledgedCount}" />
+                    <ui:TextBlock
+                        FontTypography="Caption"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="未确认" />
+                    <ui:TextBlock
+                        FontTypography="Title"
+                        Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                        Text="{Binding UnacknowledgedCount}" />
                 </StackPanel>
             </Border>
 
-            <Rectangle Grid.Column="3" Width="1" Margin="12,4" Fill="{DynamicResource ControlElevationBorderBrush}" />
+            <Rectangle
+                Grid.Column="3"
+                Width="1"
+                Margin="12,4"
+                Fill="{DynamicResource ControlElevationBorderBrush}" />
 
-            <!-- 今日 -->
+            <!--  今日  -->
             <Border Grid.Column="4" Style="{StaticResource StatCardStyle}">
                 <StackPanel>
-                    <ui:TextBlock FontTypography="Caption" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="今日报警" />
-                    <ui:TextBlock FontTypography="Title" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding TodayCount}" />
+                    <ui:TextBlock
+                        FontTypography="Caption"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="今日报警" />
+                    <ui:TextBlock
+                        FontTypography="Title"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        Text="{Binding TodayCount}" />
                 </StackPanel>
             </Border>
 
-            <Rectangle Grid.Column="5" Width="1" Margin="12,4" Fill="{DynamicResource ControlElevationBorderBrush}" />
+            <Rectangle
+                Grid.Column="5"
+                Width="1"
+                Margin="12,4"
+                Fill="{DynamicResource ControlElevationBorderBrush}" />
 
-            <!-- 搁置 + 紧急/严重 -->
+            <!--  搁置 + 紧急/严重  -->
             <Border Grid.Column="6" Style="{StaticResource StatCardStyle}">
                 <StackPanel Orientation="Horizontal">
                     <StackPanel Margin="0,0,20,0">
-                        <ui:TextBlock FontTypography="Caption" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="搁置" />
-                        <ui:TextBlock FontTypography="Title" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding ShelvedCount}" />
+                        <ui:TextBlock
+                            FontTypography="Caption"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="搁置" />
+                        <ui:TextBlock
+                            FontTypography="Title"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="{Binding ShelvedCount}" />
                     </StackPanel>
                     <StackPanel Margin="0,0,20,0">
-                        <ui:TextBlock FontTypography="Caption" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="本时" />
-                        <ui:TextBlock FontTypography="Title" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding ThisHourCount}" />
+                        <ui:TextBlock
+                            FontTypography="Caption"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="本时" />
+                        <ui:TextBlock
+                            FontTypography="Title"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="{Binding ThisHourCount}" />
                     </StackPanel>
                     <StackPanel Margin="0,0,20,0">
-                        <ui:TextBlock FontTypography="Caption" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="紧急" />
-                        <ui:TextBlock FontTypography="Title" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Text="{Binding EmergencyCount}" />
+                        <ui:TextBlock
+                            FontTypography="Caption"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="紧急" />
+                        <ui:TextBlock
+                            FontTypography="Title"
+                            Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                            Text="{Binding EmergencyCount}" />
                     </StackPanel>
                     <StackPanel>
-                        <ui:TextBlock FontTypography="Caption" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="严重" />
-                        <ui:TextBlock FontTypography="Title" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Text="{Binding CriticalCount}" />
+                        <ui:TextBlock
+                            FontTypography="Caption"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="严重" />
+                        <ui:TextBlock
+                            FontTypography="Title"
+                            Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                            Text="{Binding CriticalCount}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
 
-            <!-- 刷新按钮 -->
+            <!--  刷新按钮  -->
             <ui:Button
                 Grid.Column="7"
                 Margin="8,0,0,0"
