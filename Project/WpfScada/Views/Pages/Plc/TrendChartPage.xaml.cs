@@ -34,6 +34,7 @@ public partial class TrendChartPage : Page
     {
         public string Key = "", Label = "", Unit = "";
         public int DbNumber, ByteOffset;
+        public string DataType = "REAL";
         public SKColor Color;
         public double Min, Max;
     }
@@ -299,7 +300,7 @@ public partial class TrendChartPage : Page
                 Label = ch.Label,
                 DbNumber = ch.DbNumber,
                 Offset = ch.ByteOffset,
-                DataType = "REAL",
+                DataType = ch.DataType,
                 IntervalMs = 100,
             };
             monitor.SampleGenerated += OnSample;

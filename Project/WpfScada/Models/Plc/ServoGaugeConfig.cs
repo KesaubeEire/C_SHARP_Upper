@@ -1,4 +1,6 @@
-﻿namespace WpfScada.Models.Plc;
+﻿using WpfScada.Services.Plc;
+
+namespace WpfScada.Models.Plc;
 
 /// <summary>
 /// 伺服速度仪表的数据源配置。
@@ -15,20 +17,12 @@ public class ServoGaugeConfig
     /// <summary>字节偏移</summary>
     public int Offset { get; init; }
 
-    /// <summary>数据类型：REAL / INT / DINT / WORD / BYTE</summary>
+    /// <summary>数据类型：REAL / LREAL / INT / DINT / WORD / BYTE</summary>
     public string DataType { get; init; } = "REAL";
 
     /// <summary>危险速度阈值 (mm/s)</summary>
     public double DangerThreshold { get; init; } = 160;
 
-    /// <summary>数据类型对应的字节长度</summary>
-    public int DataSize => DataType.ToUpperInvariant() switch
-    {
-        "REAL" => 4,
-        "DINT" => 4,
-        "INT" => 2,
-        "WORD" => 2,
-        "BYTE" => 1,
-        _ => 4,
-    };
+    /// <summary>数据类型对应的字节长度（委托给 S7Service）</summary>
+    public int DataSize => S7Service.GetDataTypeSize(DataType);
 }

@@ -30,20 +30,33 @@ public static class UdtFileParser
             var match = Regex.Match(line, @"""?([^""\s:=]+)""?\s*:\s*(\S[^:=]*?)(?:\s*:=\s*([^;]+))?(?:\s*;//\s*(.+))?$");
             if (!match.Success) continue;
 
-            string varName = match.Groups[1].Value.Trim();
+            string varName = match.Groups[1].Value.Trim().Trim('"');
             string rawType = match.Groups[2].Value.Trim().TrimEnd(';');
             string comment = match.Groups[4].Success ? match.Groups[4].Value.Trim() : "";
 
-            if (SiemensDataTypes.TryResolve(rawType, out int size, out int alignment))
+            // Normalize known types to uppercase canonical form
+            string upper = rawType.ToUpperInvariant();
+            if (SiemensDataTypes.Known.ContainsKey(upper))
+                rawType = upper;
+
+            if (rawType == "BOOL")
             {
-                if (alignment > 1 && currentOffset % alignment != 0)
-                    currentOffset += alignment - (currentOffset % alignment);
+                if (bitOffset >= 16) { currentOffset += 2; bitOffset = 0; }
+                result.Variables.Add(new DbVariable(currentOffset, varName, "BOOL", 1, null, comment));
+                bitOffset++;
+            }
+            else if (SiemensDataTypes.TryResolve(rawType, out int size, out int _))
+            {
+                // BOOL 组结束 → 推进到下一个 WORD 边界
+                if (bitOffset > 0) { currentOffset += 2; bitOffset = 0; }
 
                 result.Variables.Add(new DbVariable(currentOffset, varName, rawType, size, null, comment));
                 currentOffset += size;
             }
             else
             {
+                // Unknown type — 占位
+                if (bitOffset > 0) { currentOffset += 2; bitOffset = 0; }
                 result.Variables.Add(new DbVariable(currentOffset, varName, rawType, 4, null, comment));
                 currentOffset += 4;
                 result.HasUnknownType = true;

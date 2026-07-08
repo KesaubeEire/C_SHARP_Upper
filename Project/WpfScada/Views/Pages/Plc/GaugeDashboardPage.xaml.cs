@@ -1,4 +1,4 @@
-﻿using System.Windows.Controls;
+using System.Windows.Controls;
 using WpfScada.Controls.Plc;
 using WpfScada.Models.Plc;
 using WpfScada.Services.Plc;
@@ -41,7 +41,7 @@ public partial class GaugeDashboardPage : Page
             byte[]? buf = _s7.ReadBytesRaw(S7Service.AreaDB, cfg.Offset, cfg.DataSize, cfg.DbNumber);
             if (buf == null) continue;
 
-            double val = DecodeValue(buf, cfg.DataType);
+            double val = S7Service.DecodeValue(buf, cfg.DataType);
             UpdateServoValue(i, val);
         }
     }
@@ -55,19 +55,5 @@ public partial class GaugeDashboardPage : Page
         {
             _gauges[index].UpdateValue(value);
         });
-    }
-
-    /// <summary>根据数据类型解码字节数组为 double</summary>
-    private static double DecodeValue(byte[] buf, string dataType)
-    {
-        return dataType.ToUpperInvariant() switch
-        {
-            "REAL" => Sharp7.S7.GetRealAt(buf, 0),
-            "DINT" => Sharp7.S7.GetDIntAt(buf, 0),
-            "INT" => Sharp7.S7.GetIntAt(buf, 0),
-            "WORD" => Sharp7.S7.GetWordAt(buf, 0),
-            "BYTE" => buf[0],
-            _ => Sharp7.S7.GetRealAt(buf, 0),
-        };
     }
 }

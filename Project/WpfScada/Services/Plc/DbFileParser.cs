@@ -41,10 +41,15 @@ public static class DbFileParser
             var match = Regex.Match(line, @"""?([^""\s:=]+)""?\s*:\s*(\S[^:=]*?)(?:\s*:=\s*([^;]+))?(?:\s*;//\s*(.+))?$");
             if (!match.Success) continue;
 
-            string varName = match.Groups[1].Value.Trim();
-            string rawType = match.Groups[2].Value.Trim().TrimEnd(';');
+            string varName = match.Groups[1].Value.Trim().Trim('"');
+            string rawType = match.Groups[2].Value.Trim().TrimEnd(';').Trim('"');
             string initVal = match.Groups[3].Success ? match.Groups[3].Value.Trim().TrimEnd(';') : "";
             string comment = match.Groups[4].Success ? match.Groups[4].Value.Trim() : "";
+
+            // Normalize known types to uppercase canonical form
+            string upper = rawType.ToUpperInvariant();
+            if (SiemensDataTypes.Known.ContainsKey(upper))
+                rawType = upper;
 
             // Handle multi-word types with spaces
             foreach (var known in SiemensDataTypes.Known.Keys.OrderByDescending(k => k.Length))
@@ -58,22 +63,17 @@ public static class DbFileParser
 
             if (SiemensDataTypes.TryResolve(rawType, out int size, out int alignment))
             {
-                // Align offset
-                if (alignment > 1 && currentOffset % alignment != 0)
-                    currentOffset += alignment - (currentOffset % alignment);
-
                 if (rawType == "BOOL")
                 {
-                    result.Variables.Add(new DbVariable(currentOffset, varName, "BOOL", 1, initVal, comment)
-                    {
-                        // Bit offset will be set during expansion
-                    });
+                    // BOOL 连续位按 WORD（2 字节）打包
+                    if (currentBitOffset >= 16) { currentOffset += 2; currentBitOffset = 0; }
+                    result.Variables.Add(new DbVariable(currentOffset, varName, "BOOL", 1, initVal, comment));
                     currentBitOffset++;
-                    if (currentBitOffset >= 8) { currentBitOffset = 0; currentOffset++; }
                 }
                 else
                 {
-                    if (currentBitOffset > 0) { currentOffset++; currentBitOffset = 0; }
+                    // BOOL 组结束 → 推进到下一个 WORD 边界（2 字节）
+                    if (currentBitOffset > 0) { currentOffset += 2; currentBitOffset = 0; }
                     result.Variables.Add(new DbVariable(currentOffset, varName, rawType, size, initVal, comment));
                     currentOffset += size;
                 }
@@ -81,7 +81,7 @@ public static class DbFileParser
             else
             {
                 // Unknown type - placeholder
-                if (currentBitOffset > 0) { currentOffset++; currentBitOffset = 0; }
+                if (currentBitOffset > 0) { currentOffset += 2; currentBitOffset = 0; }
                 result.Variables.Add(new DbVariable(currentOffset, varName, rawType, 4, initVal, comment));
                 currentOffset += 4;
                 result.HasUnknownType = true;

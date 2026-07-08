@@ -41,33 +41,52 @@ public record ImportedUdtInfo
 
 public static class SiemensDataTypes
 {
+    /// <summary>参考 TIA Portal V18 和 WebScada/dbParser.ts TYPE_SIZES。</summary>
     public static readonly Dictionary<string, DataTypeInfo> Known = new()
     {
+        // 1 字节
         ["BOOL"] = new("BOOL", 1, 1),
         ["BYTE"] = new("BYTE", 1, 1),
         ["CHAR"] = new("CHAR", 1, 1),
-        ["INT"] = new("INT", 2, 2),
-        ["DINT"] = new("DINT", 4, 4),
-        ["REAL"] = new("REAL", 4, 4),
-        ["LREAL"] = new("LREAL", 8, 8),
-        ["TIME"] = new("TIME", 4, 4),
-        ["S5TIME"] = new("S5TIME", 4, 2),
-        ["DATE"] = new("DATE", 4, 4),
-        ["TIME_OF_DAY"] = new("TIME_OF_DAY", 4, 4),
-        ["TOD"] = new("TOD", 4, 4),
-        ["DATE_AND_TIME"] = new("DATE_AND_TIME", 8, 8),
-        ["DT"] = new("DT", 8, 8),
-        ["DTL"] = new("DTL", 12, 4),
-        ["STRING"] = new("STRING", 256, 1),
-        ["WORD"] = new("WORD", 2, 2),
-        ["DWORD"] = new("DWORD", 4, 4),
-        ["LWORD"] = new("LWORD", 8, 2),
-        ["LINT"] = new("LINT", 8, 2),
-        ["ULINT"] = new("ULINT", 8, 2),
         ["SINT"] = new("SINT", 1, 1),
         ["USINT"] = new("USINT", 1, 1),
+        // 2 字节
+        ["INT"] = new("INT", 2, 2),
         ["UINT"] = new("UINT", 2, 2),
+        ["WORD"] = new("WORD", 2, 2),
+        ["WCHAR"] = new("WCHAR", 2, 2),
+        ["DATE"] = new("DATE", 2, 2),
+        // 4 字节
+        ["DINT"] = new("DINT", 4, 4),
         ["UDINT"] = new("UDINT", 4, 4),
+        ["DWORD"] = new("DWORD", 4, 4),
+        ["REAL"] = new("REAL", 4, 4),
+        ["TIME"] = new("TIME", 4, 4),
+        ["TOD"] = new("TOD", 4, 4),
+        ["TIME_OF_DAY"] = new("TIME_OF_DAY", 4, 4),
+        ["S5TIME"] = new("S5TIME", 4, 2),
+        // 8 字节
+        ["LREAL"] = new("LREAL", 8, 8),
+        ["LINT"] = new("LINT", 8, 8),
+        ["ULINT"] = new("ULINT", 8, 8),
+        ["LWORD"] = new("LWORD", 8, 8),
+        ["DT"] = new("DT", 8, 8),
+        ["DATE_AND_TIME"] = new("DATE_AND_TIME", 8, 8),
+        // 12 字节
+        ["DTL"] = new("DTL", 12, 4),
+        // 16 字节
+        ["IEC_TIMER"] = new("IEC_TIMER", 16, 4),
+        ["IEC_SCOUNTER"] = new("IEC_SCOUNTER", 16, 4),
+        ["IEC_COUNTER"] = new("IEC_COUNTER", 16, 4),
+        ["IEC_DCOUNTER"] = new("IEC_DCOUNTER", 16, 4),
+        // 20 字节
+        ["IEC_LTIMER"] = new("IEC_LTIMER", 20, 4),
+        // 22 字节
+        ["IEC_SSCOUNTER"] = new("IEC_SSCOUNTER", 22, 4),
+        // 24 字节
+        ["IEC_LCOUNTER"] = new("IEC_LCOUNTER", 24, 4),
+        // 可变长
+        ["STRING"] = new("STRING", 256, 1),
     };
 
     public static bool TryResolve(string rawType, out int size, out int alignment)
@@ -76,6 +95,15 @@ public static class SiemensDataTypes
         rawType = rawType.Trim();
 
         if (Known.TryGetValue(rawType, out var info))
+        {
+            size = info.Size;
+            alignment = info.Alignment;
+            return true;
+        }
+
+        // Other known variants
+        var upper = rawType.ToUpperInvariant();
+        if (Known.TryGetValue(upper, out info))
         {
             size = info.Size;
             alignment = info.Alignment;

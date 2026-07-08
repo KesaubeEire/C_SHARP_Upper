@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Reflection;
 using Sharp7;
+using WpfScada.Models.Plc;
 
 namespace WpfScada.Services.Plc;
 
@@ -269,4 +270,74 @@ public sealed class S7Service : IPlcClient, IDisposable
     }
 
     public void Dispose() { lock (_clientLock) Disconnect(); }
+
+    // ======================================================================
+    // 类型工具 — 所有 PLC 数据类型解码统一入口
+    // ======================================================================
+
+    /// <summary>获取 Siemens S7 PLC 数据类型对应的字节长度。委托给 SiemensDataTypes。</summary>
+    public static int GetDataTypeSize(string dataType)
+    {
+        if (SiemensDataTypes.Known.TryGetValue(dataType.ToUpperInvariant(), out var info))
+            return info.Size;
+
+        if (dataType.StartsWith("STRING", StringComparison.OrdinalIgnoreCase))
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(dataType, @"STRING\s*\[(\d+)\]", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success && int.TryParse(m.Groups[1].Value, out int maxLen))
+                return maxLen + 2;
+        }
+
+        return 4;
+    }
+
+    /// <summary>将字节数组按 PLC 数据类型解码为 double（数值型）。</summary>
+    public static double DecodeValue(byte[] buf, string dataType)
+    {
+        ArgumentNullException.ThrowIfNull(buf);
+
+        return dataType.ToUpperInvariant() switch
+        {
+            "BOOL" => (buf[0] & 1),
+            "BYTE" or "USINT" => buf[0],
+            "SINT" => (sbyte)buf[0],
+            "CHAR" => buf[0],
+            "INT" => S7.GetIntAt(buf, 0),
+            "UINT" or "WORD" => S7.GetWordAt(buf, 0),
+            "DATE" => S7.GetIntAt(buf, 0),
+            "DINT" => S7.GetDIntAt(buf, 0),
+            "UDINT" or "DWORD" => S7.GetDWordAt(buf, 0),
+            "REAL" or "TIME" or "TOD" or "S5TIME" => S7.GetRealAt(buf, 0),
+            "LREAL" => DecodeLReal(buf),
+            "LINT" or "LWORD" or "ULINT" => DecodeInt64(buf, dataType),
+            _ => S7.GetRealAt(buf, 0),
+        };
+    }
+
+    /// <summary>大端 8 字节 IEEE 754 双精度浮点解码（LReal）。</summary>
+    private static double DecodeLReal(byte[] buf)
+    {
+        if (buf.Length < 8) return 0;
+        if (BitConverter.IsLittleEndian)
+            return BitConverter.ToDouble([buf[7], buf[6], buf[5], buf[4], buf[3], buf[2], buf[1], buf[0]], 0);
+        return BitConverter.ToDouble(buf, 0);
+    }
+
+    /// <summary>大端 8 字节整数解码。LINT/LWORD 走有符号，ULINT 走无符号（最高位会丢）。</summary>
+    private static double DecodeInt64(byte[] buf, string dataType)
+    {
+        if (buf.Length < 8) return 0;
+        long raw;
+        if (BitConverter.IsLittleEndian)
+            raw = ((long)buf[0] << 56) | ((long)buf[1] << 48) | ((long)buf[2] << 40) | ((long)buf[3] << 32)
+                | ((long)buf[4] << 24) | ((long)buf[5] << 16) | ((long)buf[6] << 8) | (long)buf[7];
+        else
+            raw = BitConverter.ToInt64(buf, 0);
+
+        return dataType.ToUpperInvariant() switch
+        {
+            "ULINT" => (double)(ulong)raw,
+            _ => raw,
+        };
+    }
 }

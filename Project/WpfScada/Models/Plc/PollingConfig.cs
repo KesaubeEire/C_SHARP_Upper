@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
+using WpfScada.Services.Plc;
+
 namespace WpfScada.Models.Plc;
 
 public class FastPathConfig
@@ -53,14 +55,11 @@ public class DbPollItem : INotifyPropertyChanged
     public string Status { get => _status; set { _status = value; OnPropertyChanged(); } }
     public string? Label { get => _label; set { _label = value; OnPropertyChanged(); } }
 
-    /// <summary>根据 DataType 返回需要的字节数（0 = 不由 DataType 决定）。</summary>
+    /// <summary>根据 DataType 返回需要的字节数（0 = 不由 DataType 决定，回退到 Length）。</summary>
     internal int DataTypeByteCount => DataType.ToUpperInvariant() switch
     {
-        "BYTE" => 0,          // 0 = 使用 Length
-        "WORD" or "INT" => 2,
-        "DINT" or "REAL" => 4,
-        "LREAL" => 8,                 // LReal = 64-bit 双精度浮点
-        _ => 0,
+        "BYTE" => 0,
+        _ => S7Service.GetDataTypeSize(DataType),
     };
 
     public event PropertyChangedEventHandler? PropertyChanged;

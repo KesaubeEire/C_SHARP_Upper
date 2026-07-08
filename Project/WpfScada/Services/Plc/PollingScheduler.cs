@@ -340,36 +340,10 @@ public class PollingScheduler : IDisposable
         return bv;
     }
 
-    /// <summary>
-    /// 将原始字节数组按 DataType 解码为 double。
-    /// 支持: REAL(4) → S7.GetRealAt, LREAL(8) → BitConverter (大端),
-    ///       DINT(4) → S7.GetDIntAt, INT(2) → S7.GetIntAt,
-    ///       WORD(2) → S7.GetWordAt, BYTE(1) → buf[0]。
-    /// </summary>
+    /// <summary>将原始字节数组按 DataType 解码为 double。委托给 S7Service 统一入口。</summary>
     private static double DecodeTypedValue(byte[] buf, string dataType)
     {
-        return dataType.ToUpperInvariant() switch
-        {
-            "REAL" => S7.GetRealAt(buf, 0),
-            "LREAL" => DecodeLReal(buf),
-            "DINT" => S7.GetDIntAt(buf, 0),
-            "INT" => S7.GetIntAt(buf, 0),
-            "WORD" => S7.GetWordAt(buf, 0),
-            _ => buf[0],
-        };
-    }
-
-    /// <summary>
-    /// 解码 8 字节 LReal (IEEE 754 double，大端序)。
-    /// Sharp7 没有内置 LReal 解码，用 BitConverter 手动转换。
-    /// </summary>
-    private static double DecodeLReal(byte[] buf)
-    {
-        if (buf.Length < 8) return 0;
-        // Siemens 是大端，如果 BitConverter 是小端需要翻转
-        if (BitConverter.IsLittleEndian)
-            return BitConverter.ToDouble([buf[7], buf[6], buf[5], buf[4], buf[3], buf[2], buf[1], buf[0]], 0);
-        return BitConverter.ToDouble(buf, 0);
+        return S7Service.DecodeValue(buf, dataType);
     }
 
     public void Dispose()

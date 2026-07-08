@@ -1,4 +1,4 @@
-﻿using System.Timers;
+using System.Timers;
 using Microsoft.Extensions.Logging;
 using Sharp7;
 using Timer = System.Timers.Timer;
@@ -22,7 +22,7 @@ public class VariableMonitor : IDisposable
     public bool IsRunning => _timer?.Enabled ?? false;
     public double LastValue { get; private set; }
 
-    // ── 诊断 ──
+    // 诊断
     public string? LastError { get; private set; }
     public long TotalTicks { get; private set; }
     public long LongCycleCount { get; private set; }
@@ -43,14 +43,18 @@ public class VariableMonitor : IDisposable
     public void Start()
     {
         Stop();
-        _timer = new Timer(IntervalMs);
+        _disposed = false;
+        _timer = new Timer(IntervalMs)
+        {
+            AutoReset = false,
+        };
         _timer.Elapsed += OnTick;
-        _timer.AutoReset = false;
         _timer.Start();
     }
 
     public void Stop()
     {
+        _disposed = true;
         _timer?.Stop();
         _timer?.Dispose();
         _timer = null;
@@ -65,38 +69,38 @@ public class VariableMonitor : IDisposable
 
         try
         {
-            byte[]? buf = _s7.ReadBytesRaw(S7Service.AreaDB, Offset, GetDataTypeSize(), DbNumber);
+            byte[]? buf = _s7.ReadBytesRaw(S7Service.AreaDB, Offset, S7Service.GetDataTypeSize(DataType), DbNumber);
             if (buf == null)
             {
                 ConsecutiveFailures++;
                 LastError = "ReadBytesRaw 返回 null";
-                _logger.LogWarning("VariableMonitor[{Key}] 读取失败（连续 {Count} 次）",
-                    Key, ConsecutiveFailures);
+                SafeLog(() => _logger.LogWarning("VariableMonitor[{Key}] 读取失败（连续 {Count} 次）", Key, ConsecutiveFailures));
                 return;
             }
 
-            double val = DecodeValue(buf, DataType);
+            double val = S7Service.DecodeValue(buf, DataType);
             LastValue = val;
             SampleGenerated?.Invoke(Key, val, DateTime.Now);
 
-            // 恢复
-            if (ConsecutiveFailures > 0)
+            if (ConsecutiveFailures > 0 && !_disposed)
             {
-#pragma warning disable CA1873 // 恢复日志参数是简单值类型，开销可忽略
-                _logger.LogInformation("VariableMonitor[{Key}] 已恢复，此前连续失败 {Count} 次",
-                    Key, ConsecutiveFailures);
+#pragma warning disable CA1873
+                SafeLog(() => _logger.LogInformation("VariableMonitor[{Key}] 已恢复，此前连续失败 {Count} 次", Key, ConsecutiveFailures));
 #pragma warning restore CA1873
             }
             ConsecutiveFailures = 0;
             LastError = null;
             LastSuccessAt = DateTime.Now;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!_disposed)
         {
             ConsecutiveFailures++;
             LastError = ex.Message;
-            _logger.LogWarning(ex, "VariableMonitor[{Key}] 异常（连续 {Count} 次失败）",
-                Key, ConsecutiveFailures);
+            SafeLog(() => _logger.LogWarning(ex, "VariableMonitor[{Key}] 异常（连续 {Count} 次失败）", Key, ConsecutiveFailures));
+        }
+        catch
+        {
+            // 关闭时 _logger 已被释放，什么都做不了，安静退出
         }
         finally
         {
@@ -105,44 +109,32 @@ public class VariableMonitor : IDisposable
             LastDurationMs = sw.ElapsedMilliseconds;
             LastCompletedAt = DateTime.Now;
 
-            // 长周期告警
             long threshold = IntervalMs * 2;
-            if (sw.ElapsedMilliseconds > threshold)
+            if (!_disposed && sw.ElapsedMilliseconds > threshold)
             {
                 LongCycleCount++;
-#pragma warning disable CA1873 // 长周期告警参数是简单值类型
-                _logger.LogWarning("VariableMonitor[{Key}] 周期过长：{Duration}ms，超阈值 {Threshold}ms，累计 {Count} 次",
-                    Key, sw.ElapsedMilliseconds, threshold, LongCycleCount);
+#pragma warning disable CA1873
+                SafeLog(() => _logger.LogWarning("VariableMonitor[{Key}] 周期过长：{Duration}ms，超阈值 {Threshold}ms，累计 {Count} 次",
+                    Key, sw.ElapsedMilliseconds, threshold, LongCycleCount));
 #pragma warning restore CA1873
             }
 
             _busy = false;
             if (_timer != null && !_disposed)
             {
-                try { _timer.Start(); } catch (Exception ex) { _logger.LogWarning(ex, "VariableMonitor[{Key}] Timer 重启失败", Key); }
+                try { _timer.Start(); }
+                catch { /* 关闭时忽略 */ }
             }
         }
     }
 
-    private int GetDataTypeSize() => DataType switch
+    /// <summary>关闭时 logger 可能已被 DI 释放，吞掉所有日志异常。</summary>
+    private void SafeLog(Action logAction)
     {
-        "REAL" => 4,
-        "INT" => 2,
-        "DINT" => 4,
-        "WORD" => 2,
-        "BYTE" => 1,
-        _ => 4
-    };
-
-    private static double DecodeValue(byte[] buf, string type) => type switch
-    {
-        "REAL" => S7.GetRealAt(buf, 0),
-        "INT" => S7.GetIntAt(buf, 0),
-        "DINT" => S7.GetDIntAt(buf, 0),
-        "WORD" => S7.GetWordAt(buf, 0),
-        "BYTE" => buf[0],
-        _ => S7.GetRealAt(buf, 0)
-    };
+        if (_disposed) return;
+        try { logAction(); }
+        catch { /* 关闭时 logger 可能已释放，不抛 */ }
+    }
 
     public void Dispose()
     {

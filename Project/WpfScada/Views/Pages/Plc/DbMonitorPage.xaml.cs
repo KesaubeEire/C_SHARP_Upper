@@ -386,9 +386,8 @@ public partial class DbMonitorPage : Page
             var udt = FindMatchingUdt(rawType);
             if (udt != null)
             {
-                // UDT 展开 — 对齐到 2 字节边界
-                if (bitOffset > 0) { byteOffset++; bitOffset = 0; }
-                if (byteOffset % 2 != 0) byteOffset++;
+            // UDT 展开 — BOOL 组结束推进到 WORD 边界
+                if (bitOffset > 0) { byteOffset += 2; bitOffset = 0; }
 
                 int udtBaseOffset = byteOffset;
                 int udtBitOffset = 0;
@@ -411,12 +410,11 @@ public partial class DbMonitorPage : Page
                             UdtName = udt.UdtName,
                         });
                         udtBitOffset++;
-                        if (udtBitOffset > 7) { udtBaseOffset++; udtBitOffset = 0; }
+                        if (udtBitOffset >= 16) { udtBaseOffset += 2; udtBitOffset = 0; }
                     }
                     else
                     {
-                        if (udtBitOffset > 0) { udtBaseOffset++; udtBitOffset = 0; }
-                        if (udtBaseOffset % 2 != 0) udtBaseOffset++;
+                        if (udtBitOffset > 0) { udtBaseOffset += 2; udtBitOffset = 0; }
 
                         result.Add(new DbVariableDisplay
                         {
@@ -455,12 +453,11 @@ public partial class DbMonitorPage : Page
                         Comment = v.Comment,
                     });
                     bitOffset++;
-                    if (bitOffset > 7) { byteOffset++; bitOffset = 0; }
+                    if (bitOffset >= 16) { byteOffset += 2; bitOffset = 0; }
                 }
                 else
                 {
-                    if (bitOffset > 0) { byteOffset++; bitOffset = 0; }
-                    if (byteOffset % 2 != 0) byteOffset++;
+                    if (bitOffset > 0) { byteOffset += 2; bitOffset = 0; }
 
                     result.Add(new DbVariableDisplay
                     {
