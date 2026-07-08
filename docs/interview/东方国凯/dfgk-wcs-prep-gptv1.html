@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WCS 开发工程师面试准备 - 魏先</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --text: #1d2430;
+      --muted: #627084;
+      --line: #d9dee7;
+      --accent: #0f766e;
+      --accent-soft: #e6f4f1;
+      --warn: #a16207;
+      --warn-soft: #fff7d6;
+      --danger: #b42318;
+      --danger-soft: #fff1f0;
+      --code: #f0f3f7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+      line-height: 1.72;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 40px));
+      margin: 28px auto 56px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(29, 36, 48, 0.08);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 34px 42px 28px;
+      background: linear-gradient(135deg, #173d3a, #2b4b5d);
+      color: #fff;
+    }
+
+    header h1 {
+      margin: 0 0 12px;
+      font-size: 30px;
+      letter-spacing: 0;
+      line-height: 1.25;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 860px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 16px;
+    }
+
+    section {
+      padding: 28px 42px;
+      border-top: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      line-height: 1.35;
+    }
+
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 17px;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul,
+    ol {
+      margin: 8px 0 0;
+      padding-left: 24px;
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px 18px;
+      background: #fff;
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .note {
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      border: 1px solid #b9ddd6;
+    }
+
+    .warning {
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: var(--warn-soft);
+      border: 1px solid #f2d784;
+      color: #4b3600;
+    }
+
+    .danger {
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: var(--danger-soft);
+      border: 1px solid #ffd0cc;
+      color: var(--danger);
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eef2f6;
+      font-weight: 700;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--code);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.94em;
+    }
+
+    .script {
+      border-left: 4px solid var(--accent);
+      padding: 12px 16px;
+      background: #f8fbfb;
+      border-radius: 0 8px 8px 0;
+      margin-top: 12px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .checklist li::marker {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    @media (max-width: 780px) {
+      main {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+      }
+
+      header,
+      section {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      main {
+        width: 100%;
+        margin: 0;
+        border: 0;
+        box-shadow: none;
+      }
+
+      section {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>WCS 开发工程师面试准备</h1>
+      <p>目标岗位：北京东方国凯工业装备有限公司 WCS 开发工程师。面试时间：2026-07-09 15:00。候选人定位：前端/全栈背景转上位机，具备 C#、WPF、PLC 通讯、S7/Modbus、现场联调基础。</p>
+      <div class="tagline">
+        <span class="tag">C# / Task</span>
+        <span class="tag">ASP.NET Core WebAPI</span>
+        <span class="tag">Vue</span>
+        <span class="tag">S7-1200 / S7-1500</span>
+        <span class="tag">WCS / 智能立体库</span>
+        <span class="tag">堆垛机 / 提升机</span>
+      </div>
+    </header>
+
+    <section>
+      <h2>一、核心结论</h2>
+      <div class="note">
+        <p>这个岗位不是普通 C# 后端，而是设备控制层开发：上接 WMS/MES/业务系统，下接 PLC、堆垛机、提升机、输送线、扫码枪、称重、视觉、传感器等设备。</p>
+        <p>你的优势是编程经验、上位机项目、S7/Modbus 通讯意识、现场调试意愿。短板是完整 WCS 业务域、ASP.NET Core WebAPI、Vue、C# Task 并发细节，需要在面试前补到能讲清楚。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>二、公司与岗位尽调</h2>
+      <div class="danger">
+        <p>公开搜索没有找到“北京东方国凯工业装备有限公司”的稳定可核验资料。面试时要反向确认公司主体、办公地址、项目真实性、出差强度、薪资结算和试用期规则。</p>
+      </div>
+
+      <h3>你需要拿到的信息</h3>
+      <ol class="checklist">
+        <li>公司主体：营业执照全称、成立时间、办公地址、社保人数。</li>
+        <li>业务模式：自研 WCS 产品、项目制二开，还是人力外包/驻场。</li>
+        <li>客户行业：新能源、汽车、医药、冷链、制造、物流园。</li>
+        <li>项目阶段：新项目开发、老系统维护、现场调试、售后支持各占多少。</li>
+        <li>技术栈：ASP.NET Core 版本、Vue2/Vue3、数据库、通讯库、部署方式。</li>
+        <li>设备范围：PLC、堆垛机、提升机、输送线、RGV/AGV、扫码、称重、视觉。</li>
+        <li>出差规则：每月天数、驻场周期、补贴、住宿、调休、紧急售后响应。</li>
+        <li>岗位边界：是否需要改 PLC 程序、接线排故、电气图纸、现场验收。</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>三、明天前恶补重点</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="pill">1</span> C# Task / 并发</h3>
+          <ul>
+            <li><code>async/await</code>、<code>Task.Run</code>、<code>Task.WhenAll</code>。</li>
+            <li><code>CancellationToken</code> 做后台任务停止。</li>
+            <li><code>SemaphoreSlim</code> 或锁保护单个 PLC 连接。</li>
+            <li>超时、重试、异常隔离，避免后台任务静默死亡。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="pill">2</span> ASP.NET Core WebAPI</h3>
+          <ul>
+            <li>Controller、DTO、依赖注入、Swagger。</li>
+            <li>全局异常、日志、接口鉴权、数据库事务。</li>
+            <li>WMS 下发任务、WCS 回传状态、设备状态接口。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="pill">3</span> S7 通讯</h3>
+          <ul>
+            <li>S7 ISO-on-TCP，端口 102，Rack/Slot。</li>
+            <li>I/Q/M/DB 区域，BOOL 位偏移，REAL/INT/DINT 字节序。</li>
+            <li>轮询周期、断线重连、连续地址合并读取。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="pill">4</span> WCS 业务</h3>
+          <ul>
+            <li>WMS 管库存和策略，WCS 管设备执行。</li>
+            <li>入库、出库、移库、盘点、异常人工干预。</li>
+            <li>任务状态机：创建、下发、运行、完成、失败、取消。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>四、结合 WpfScada 项目的讲法</h2>
+      <div class="script">
+        <p>“我这个 WPF SCADA 项目主要验证了 WCS 底层会用到的能力：PLC 通讯、轮询调度、DB 变量解析、报警、配方参数下发、Modbus 设备接入。虽然它不是完整立体库 WCS，但很多底层问题是一致的，比如 PLC 连接串行化、状态轮询、异常恢复、报警生命周期和设备参数写入。”</p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>项目能力</th>
+            <th>你要怎么讲</th>
+            <th>对应代码</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>S7 通讯</td>
+            <td>Sharp7 封装、线程锁保护、I/Q/M/DB 读写、本地网卡绑定、PDU 协商。</td>
+            <td><code>Services/Plc/S7Service.cs</code></td>
+          </tr>
+          <tr>
+            <td>轮询调度</td>
+            <td>I/Q/M 快速区、DB 轮转读取、连续地址合并、长周期告警、失败退避。</td>
+            <td><code>Services/Plc/PollingScheduler.cs</code></td>
+          </tr>
+          <tr>
+            <td>报警系统</td>
+            <td>规则、阈值、死区、延时、确认、搁置、恢复、CSV 导出。</td>
+            <td><code>Services/Plc/AlarmService.cs</code></td>
+          </tr>
+          <tr>
+            <td>配方上下传</td>
+            <td>参数版本、CSV 导入导出、PLC DB 写入/读取、大小端编码。</td>
+            <td><code>Services/Plc/RecipeService.cs</code></td>
+          </tr>
+          <tr>
+            <td>Modbus 接入</td>
+            <td>RTU/TCP 帧、CRC、队列消费、后台 Task 轮询、设备在线状态。</td>
+            <td><code>Services/Plc/Modbus/*</code></td>
+          </tr>
+          <tr>
+            <td>WPF 工程结构</td>
+            <td>MVVM、依赖注入、服务注册、页面拆分、配置持久化。</td>
+            <td><code>App.xaml.cs</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>五、面试高频问题与回答</h2>
+      <h3>1. 为什么 PLC 通讯要串行化？</h3>
+      <p>单个 S7 连接通常不适合多个线程同时读写。并发访问可能导致响应错乱、超时或连接异常。所以我会对底层 PLC 客户端加锁，或者使用队列统一调度读写；高频采集和低频写入也可以拆独立连接，但要避免命令互相覆盖。</p>
+
+      <h3>2. 如何减少 PLC 读取压力？</h3>
+      <p>按区域批量读取，合并连续地址；DB 大变量分时轮转；设置合理轮询周期；失败后退避；只把变化项通知 UI、报警和历史记录模块。</p>
+
+      <h3>3. BOOL / REAL / DINT 怎么解析？</h3>
+      <p>S7 数据按大端组织，BOOL 要处理字节偏移和 bit 偏移，REAL 是 IEEE754 浮点，DINT 是 4 字节有符号整数。PC 端通常是小端，需要做字节序转换。</p>
+
+      <h3>4. WCS 和 WMS 的区别？</h3>
+      <p>WMS 负责库存、订单、库位策略和业务规则；WCS 负责设备执行，把 WMS 的任务拆成输送线、提升机、堆垛机等设备动作，并实时采集状态、处理异常、回传结果。</p>
+
+      <h3>5. 出库任务异常怎么办？</h3>
+      <p>任务要落库并有状态机。设备故障、条码不符、库位占用、超时都要记录错误码、报警、允许人工干预。恢复后要能续跑、重试、取消或重新下发，不能只靠内存状态。</p>
+
+      <h3>6. ASP.NET Core 和 Vue 不是你的强项怎么办？</h3>
+      <p>可以这样回答：Vue 我有 React/TypeScript 基础，上手页面开发问题不大；ASP.NET Core 我需要补框架细节，但我理解 WebAPI、数据库、接口协议、异步任务和工程化。我的优势是能把软件接口和现场 PLC/设备联调结合起来。</p>
+    </section>
+
+    <section>
+      <h2>六、WCS 流程话术</h2>
+      <div class="script">
+        <p>“以入库为例，WMS 下发入库任务，WCS 先校验托盘号、物料、目标库位和设备可用状态，然后把任务拆成输送线动作、提升机动作、堆垛机取放货动作。WCS 通过 PLC 命令区写入任务号、目标地址和动作码，同时轮询 PLC 状态区。设备完成后，WCS 更新任务状态、落库并回传 WMS。如果扫码不一致、库位占用、设备故障或超时，就进入异常状态，报警并等待人工处理。”</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>七、提问环节</h2>
+      <ol class="checklist">
+        <li>贵公司的 WCS 是标准产品二开，还是每个项目定制开发？</li>
+        <li>WCS 和 WMS/MES 的接口通常是 HTTP、WebService、数据库中间表，还是消息队列？</li>
+        <li>PLC 侧有没有统一 DB 通讯规范，例如命令区、状态区、心跳、任务号、错误码？</li>
+        <li>堆垛机和提升机是通过 PLC 间接控制，还是厂家提供 TCP/Modbus/专有协议？</li>
+        <li>现场调试时，软件工程师是否需要改 PLC 程序，还是主要负责上位机和接口？</li>
+        <li>一个项目从进场、单机调试、联机联调到验收通常多久？</li>
+        <li>目前团队里 WCS、PLC、电气、机械分别有多少人？</li>
+        <li>如果出现条码不一致、库位占用、堆垛机故障，系统现在怎么做人工干预和恢复？</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>八、你的临场定位</h2>
+      <div class="warning">
+        <p>不要把自己包装成资深 WCS 工程师。更稳的定位是：前端/全栈背景转上位机方向，具备 C#、WPF、PLC 通讯、S7/Modbus、现场调试基础，适合 WCS 开发里偏软件接口、设备通讯、监控报警、现场联调的工作。</p>
+      </div>
+      <div class="script">
+        <p>“我是前端/全栈背景转上位机方向，C#、WPF、PLC 通讯、S7/Modbus、现场调试基础都已经打过一轮。我现在最适合的是 WCS 开发里偏软件接口、设备通讯、监控报警、现场联调的工作。ASP.NET Core 和 Vue 我能快速补齐，PLC 和设备对接我也愿意下现场长期积累。”</p>
+      </div>
+      <p class="small">最后检查简历：修正断句、错字和缺失词，尤其是 Modbus RTU/TCP、S7-1200、WPF MVVM、PLC 数据区结构、TIA/博途导入解析等描述。</p>
+    </section>
+  </main>
+</body>
+</html>
