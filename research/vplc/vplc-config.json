@@ -2,11 +2,228 @@
   "port": 1200,
   "host": "0.0.0.0",
   "dbs": {
-    "1": 64,
-    "6": 64
+    "1": 12,
+    "6": 46,
+    "7": 46,
+    "50": 8,
+    "88": 10
   },
-  "udts": {},
-  "imported": {},
+  "udts": {
+    "轴控制": [
+      {
+        "name": "使能",
+        "type": "bool",
+        "bit": 0
+      },
+      {
+        "name": "复位",
+        "type": "bool",
+        "bit": 1
+      },
+      {
+        "name": "暂停",
+        "type": "bool",
+        "bit": 2
+      },
+      {
+        "name": "回原",
+        "type": "bool",
+        "bit": 3
+      },
+      {
+        "name": "点动＋",
+        "type": "bool",
+        "bit": 4
+      },
+      {
+        "name": "\"点动-\"",
+        "type": "bool",
+        "bit": 5
+      },
+      {
+        "name": "点动速度",
+        "type": "real"
+      },
+      {
+        "name": "\"寸动+\"",
+        "type": "bool",
+        "bit": 0
+      },
+      {
+        "name": "\"寸动-\"",
+        "type": "bool",
+        "bit": 1
+      },
+      {
+        "name": "寸动距离",
+        "type": "real"
+      },
+      {
+        "name": "寸动速度",
+        "type": "real"
+      },
+      {
+        "name": "相对定位",
+        "type": "bool",
+        "bit": 0
+      },
+      {
+        "name": "相对距离",
+        "type": "real"
+      },
+      {
+        "name": "相对速度",
+        "type": "real"
+      },
+      {
+        "name": "绝对定位",
+        "type": "bool",
+        "bit": 0
+      },
+      {
+        "name": "绝对位置",
+        "type": "real"
+      },
+      {
+        "name": "绝对速度",
+        "type": "real"
+      },
+      {
+        "name": "轴使能中",
+        "type": "bool",
+        "bit": 0
+      },
+      {
+        "name": "轴暂停中",
+        "type": "bool",
+        "bit": 1
+      },
+      {
+        "name": "轴忙碌",
+        "type": "bool",
+        "bit": 2
+      },
+      {
+        "name": "回原完成",
+        "type": "bool",
+        "bit": 3
+      },
+      {
+        "name": "绝对定位完成",
+        "type": "bool",
+        "bit": 4
+      },
+      {
+        "name": "绝对定位中",
+        "type": "bool",
+        "bit": 5
+      },
+      {
+        "name": "当前位置",
+        "type": "real"
+      },
+      {
+        "name": "当前速度",
+        "type": "real"
+      }
+    ]
+  },
+  "imported": {
+    "1_A": {
+      "key": "1_A",
+      "dbNumber": 1,
+      "dbName": "A",
+      "variableCount": 14,
+      "variables": [
+        {
+          "name": "按钮_正转",
+          "type": "bool",
+          "offset": 0,
+          "bit": 0
+        },
+        {
+          "name": "按钮_反转",
+          "type": "bool",
+          "offset": 0,
+          "bit": 1
+        },
+        {
+          "name": "按钮_停止",
+          "type": "bool",
+          "offset": 0,
+          "bit": 2
+        },
+        {
+          "name": "状态_正转",
+          "type": "bool",
+          "offset": 0,
+          "bit": 3
+        },
+        {
+          "name": "状态_反转",
+          "type": "bool",
+          "offset": 0,
+          "bit": 4
+        },
+        {
+          "name": "状态_停止",
+          "type": "bool",
+          "offset": 0,
+          "bit": 5
+        },
+        {
+          "name": "状态_故障",
+          "type": "bool",
+          "offset": 0,
+          "bit": 6
+        },
+        {
+          "name": "设定频率",
+          "type": "real",
+          "offset": 2
+        },
+        {
+          "name": "VDF_频率",
+          "type": "real",
+          "offset": 6
+        },
+        {
+          "name": "VDF_运行",
+          "type": "bool",
+          "offset": 10,
+          "bit": 0
+        },
+        {
+          "name": "VDF_故障",
+          "type": "bool",
+          "offset": 10,
+          "bit": 1
+        },
+        {
+          "name": "故障_启动超时",
+          "type": "bool",
+          "offset": 10,
+          "bit": 2
+        },
+        {
+          "name": "按钮_故障复位",
+          "type": "bool",
+          "offset": 10,
+          "bit": 3
+        },
+        {
+          "name": "按钮_暂停",
+          "type": "bool",
+          "offset": 10,
+          "bit": 4
+        }
+      ],
+      "byteSize": 11,
+      "rawContent": "DATA_BLOCK \"A\"\r\n{ S7_Optimized_Access := 'FALSE' }\r\nVERSION : 0.1\r\nNON_RETAIN\r\n   STRUCT \r\n      按钮_正转 : Bool;\r\n      按钮_反转 : Bool;\r\n      按钮_停止 : Bool;\r\n      状态_正转 : Bool;\r\n      状态_反转 : Bool;\r\n      状态_停止 : Bool;\r\n      状态_故障 : Bool;\r\n      设定频率 : Real;\r\n      VDF_频率 : Real;\r\n      VDF_运行 : Bool;\r\n      VDF_故障 : Bool;\r\n      故障_启动超时 : Bool;\r\n      按钮_故障复位 : Bool;\r\n      按钮_暂停 : Bool;\r\n   END_STRUCT;\r\n\r\n\r\nBEGIN\r\n\r\nEND_DATA_BLOCK\r\n\r\n",
+      "createdAt": 1783315382499,
+      "updatedAt": 1783315382499
+    }
+  },
   "scripts": [
     {
       "name": "inc_pos",
@@ -26,5 +243,388 @@
       "obNumber": 1,
       "enabled": false
     }
-  ]
+  ],
+  "dbEditors": {
+    "1_A": {
+      "key": "1_A",
+      "dbNumber": 1,
+      "dbName": "A",
+      "fields": [
+        {
+          "name": "按钮_正转",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "按钮_反转",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "按钮_停止",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "状态_正转",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "状态_反转",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "状态_停止",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "状态_故障",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "设定频率",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "VDF_频率",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "VDF_运行",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "VDF_故障",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "故障_启动超时",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "按钮_故障复位",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "按钮_暂停",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        }
+      ],
+      "createdAt": 1783315100246,
+      "updatedAt": 1783315185863
+    },
+    "6_F": {
+      "key": "6_F",
+      "dbNumber": 6,
+      "dbName": "F",
+      "fields": [
+        {
+          "name": "轴使能",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "轴复位",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "点动负",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "点动正",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "点动速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "回原点",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "轴暂停",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "相对定位执行",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "相对定位距离",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "相对定位速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "\"寸动+\"",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "\"寸动-\"",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "寸动距离",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "寸动速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "绝对定位执行",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "绝对定位位置",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "绝对定位速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "回原完成",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "位置当前值",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "速度当前值",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        }
+      ],
+      "createdAt": 1783315203320,
+      "updatedAt": 1783315203320
+    },
+    "7_G": {
+      "key": "7_G",
+      "dbNumber": 7,
+      "dbName": "G",
+      "fields": [
+        {
+          "name": "圆盘_使能",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_复位",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_暂停",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_回原",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_点动＋",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_\"点动-\"",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_点动速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_\"寸动+\"",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_\"寸动-\"",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_寸动距离",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_寸动速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_相对定位",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_相对距离",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_相对速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_绝对定位",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_绝对位置",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_绝对速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_轴使能中",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_轴暂停中",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_轴忙碌",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_回原完成",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_绝对定位完成",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_绝对定位中",
+          "type": "Bool",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_当前位置",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        },
+        {
+          "name": "圆盘_当前速度",
+          "type": "Real",
+          "startValue": "",
+          "comment": ""
+        }
+      ],
+      "createdAt": 1783315217711,
+      "updatedAt": 1783315217711
+    }
+  }
 }
