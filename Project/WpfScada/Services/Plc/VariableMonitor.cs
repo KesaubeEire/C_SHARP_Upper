@@ -10,6 +10,7 @@ public class VariableMonitor : IDisposable
     private readonly ILogger<VariableMonitor> _logger;
     private Timer? _timer;
     private volatile bool _busy;
+    private volatile bool _disposed;
     private readonly S7Service _s7;
 
     public int DbNumber { get; set; }
@@ -57,7 +58,7 @@ public class VariableMonitor : IDisposable
 
     private void OnTick(object? sender, ElapsedEventArgs e)
     {
-        if (_busy) return;
+        if (_busy || _disposed) return;
         _busy = true;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         LastStartedAt = DateTime.Now;
@@ -116,7 +117,7 @@ public class VariableMonitor : IDisposable
             }
 
             _busy = false;
-            if (_timer != null)
+            if (_timer != null && !_disposed)
             {
                 try { _timer.Start(); } catch (Exception ex) { _logger.LogWarning(ex, "VariableMonitor[{Key}] Timer 重启失败", Key); }
             }
@@ -145,6 +146,7 @@ public class VariableMonitor : IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
         Stop();
     }
 }
