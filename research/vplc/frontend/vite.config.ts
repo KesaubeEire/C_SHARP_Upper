@@ -29,10 +29,14 @@ function resolveWebApiPort(): number {
 
 const target = `http://localhost:${resolveWebApiPort()}`
 
+const PREFERRED_PORT = 1520
+
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 1420, // Vite 端口避开 vPLC 默认范围 1200-1210
+    host: '127.0.0.1',
+    port: PREFERRED_PORT,
+    strictPort: false, // 端口被占自动回退
     proxy: {
       '/api/vplc': { target, changeOrigin: true },
     },

@@ -8,126 +8,7 @@
     "50": 8,
     "88": 10
   },
-  "udts": {
-    "轴控制": [
-      {
-        "name": "使能",
-        "type": "bool",
-        "bit": 0
-      },
-      {
-        "name": "复位",
-        "type": "bool",
-        "bit": 1
-      },
-      {
-        "name": "暂停",
-        "type": "bool",
-        "bit": 2
-      },
-      {
-        "name": "回原",
-        "type": "bool",
-        "bit": 3
-      },
-      {
-        "name": "点动＋",
-        "type": "bool",
-        "bit": 4
-      },
-      {
-        "name": "\"点动-\"",
-        "type": "bool",
-        "bit": 5
-      },
-      {
-        "name": "点动速度",
-        "type": "real"
-      },
-      {
-        "name": "\"寸动+\"",
-        "type": "bool",
-        "bit": 0
-      },
-      {
-        "name": "\"寸动-\"",
-        "type": "bool",
-        "bit": 1
-      },
-      {
-        "name": "寸动距离",
-        "type": "real"
-      },
-      {
-        "name": "寸动速度",
-        "type": "real"
-      },
-      {
-        "name": "相对定位",
-        "type": "bool",
-        "bit": 0
-      },
-      {
-        "name": "相对距离",
-        "type": "real"
-      },
-      {
-        "name": "相对速度",
-        "type": "real"
-      },
-      {
-        "name": "绝对定位",
-        "type": "bool",
-        "bit": 0
-      },
-      {
-        "name": "绝对位置",
-        "type": "real"
-      },
-      {
-        "name": "绝对速度",
-        "type": "real"
-      },
-      {
-        "name": "轴使能中",
-        "type": "bool",
-        "bit": 0
-      },
-      {
-        "name": "轴暂停中",
-        "type": "bool",
-        "bit": 1
-      },
-      {
-        "name": "轴忙碌",
-        "type": "bool",
-        "bit": 2
-      },
-      {
-        "name": "回原完成",
-        "type": "bool",
-        "bit": 3
-      },
-      {
-        "name": "绝对定位完成",
-        "type": "bool",
-        "bit": 4
-      },
-      {
-        "name": "绝对定位中",
-        "type": "bool",
-        "bit": 5
-      },
-      {
-        "name": "当前位置",
-        "type": "real"
-      },
-      {
-        "name": "当前速度",
-        "type": "real"
-      }
-    ]
-  },
+  "udts": {},
   "imported": {
     "1_A": {
       "key": "1_A",
@@ -335,8 +216,8 @@
           "comment": ""
         }
       ],
-      "createdAt": 1783315100246,
-      "updatedAt": 1783315185863
+      "createdAt": 1783581206147,
+      "updatedAt": 1783581206147
     },
     "6_F": {
       "key": "6_F",
@@ -356,13 +237,13 @@
           "comment": ""
         },
         {
-          "name": "点动负",
+          "name": "\"点动+\"",
           "type": "Bool",
           "startValue": "",
           "comment": ""
         },
         {
-          "name": "点动正",
+          "name": "\"点动-\"",
           "type": "Bool",
           "startValue": "",
           "comment": ""
@@ -464,167 +345,8 @@
           "comment": ""
         }
       ],
-      "createdAt": 1783315203320,
-      "updatedAt": 1783315203320
-    },
-    "7_G": {
-      "key": "7_G",
-      "dbNumber": 7,
-      "dbName": "G",
-      "fields": [
-        {
-          "name": "圆盘_使能",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_复位",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_暂停",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_回原",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_点动＋",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_\"点动-\"",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_点动速度",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_\"寸动+\"",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_\"寸动-\"",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_寸动距离",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_寸动速度",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_相对定位",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_相对距离",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_相对速度",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_绝对定位",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_绝对位置",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_绝对速度",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_轴使能中",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_轴暂停中",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_轴忙碌",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_回原完成",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_绝对定位完成",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_绝对定位中",
-          "type": "Bool",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_当前位置",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        },
-        {
-          "name": "圆盘_当前速度",
-          "type": "Real",
-          "startValue": "",
-          "comment": ""
-        }
-      ],
-      "createdAt": 1783315217711,
-      "updatedAt": 1783315217711
+      "createdAt": 1783581210877,
+      "updatedAt": 1783581210877
     }
   }
 }
