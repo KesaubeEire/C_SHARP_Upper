@@ -1,0 +1,1635 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WCS 面试概念速查词典</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --paper: #ffffff;
+      --ink: #17202a;
+      --muted: #5f6c7b;
+      --line: #d9e1ea;
+      --blue: #155e75;
+      --green: #0f766e;
+      --amber: #9a5b00;
+      --red: #b42318;
+      --soft-blue: #e8f4f8;
+      --soft-green: #e7f6f2;
+      --soft-amber: #fff6df;
+      --soft-red: #fff0ee;
+      --code: #eef2f7;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+      line-height: 1.78;
+    }
+    .page {
+      width: min(1200px, calc(100% - 36px));
+      margin: 28px auto 56px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 16px 36px rgba(23, 32, 42, .08);
+      overflow: hidden;
+    }
+    header {
+      padding: 36px 44px 30px;
+      color: #fff;
+      background: linear-gradient(135deg, #153c45, #23536a);
+    }
+    header h1 {
+      margin: 0 0 10px;
+      font-size: 31px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    header p {
+      margin: 0;
+      max-width: 930px;
+      color: rgba(255,255,255,.87);
+    }
+    nav {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+    nav a {
+      display: block;
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      font-size: 14px;
+    }
+    section {
+      padding: 30px 44px;
+      border-top: 1px solid var(--line);
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-size: 23px;
+      line-height: 1.35;
+    }
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 18px;
+      line-height: 1.42;
+      color: #123342;
+    }
+    h4 {
+      margin: 14px 0 6px;
+      font-size: 15px;
+    }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 8px 0 0; padding-left: 24px; }
+    li { margin: 7px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #eef3f8;
+      font-weight: 700;
+    }
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--code);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: .94em;
+    }
+    pre {
+      margin: 12px 0;
+      padding: 14px 16px;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: #111827;
+      color: #eef2ff;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    .concept {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 14px 0;
+      background: #fff;
+    }
+    .concept h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .note, .why, .pitfall, .talk {
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 10px 0;
+    }
+    .note { background: var(--soft-blue); border: 1px solid #c4dfe9; }
+    .why { background: var(--soft-green); border: 1px solid #b9ded6; }
+    .pitfall { background: var(--soft-red); border: 1px solid #ffd0cc; color: var(--red); }
+    .talk {
+      background: #f8fbfc;
+      border-left: 4px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+    }
+    .small { color: var(--muted); font-size: 14px; }
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .mini {
+      border: 1px dashed #b8c5d2;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 14px;
+    }
+    .flow {
+      margin: 10px 0;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px dashed #b8c5d2;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 14px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    @media (max-width: 880px) {
+      .page {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+      }
+      header, section { padding-left: 22px; padding-right: 22px; }
+      nav, .grid2 { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; margin: 0; border: 0; box-shadow: none; }
+      nav { display: none; }
+      section, .concept { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>WCS 面试概念速查词典</h1>
+      <p>这份文档专门补“概念忘了”的问题。每个概念都按四件事讲：白话解释、岗位里为什么用、最小例子、面试怎么说。先粗读一遍，再重点背“面试说法”。</p>
+      <nav>
+        <a href="#dotnet">.NET / C# 基础</a>
+        <a href="#web">WebAPI / 后端</a>
+        <a href="#frontend">Vue / 前端</a>
+        <a href="#industrial">PLC / 工控通讯</a>
+        <a href="#wcs">WCS / 仓储业务</a>
+        <a href="#wpf">WPF / 上位机</a>
+        <a href="#data">数据库 / 持久化</a>
+        <a href="#interview">面试速记</a>
+      </nav>
+    </header>
+
+    <section id="howto">
+      <h2>怎么用这份文档</h2>
+      <div class="note">
+        <p><strong>先别追求全懂。</strong>面试前最重要的是能把概念讲成人话，知道它在 WCS 项目里解决什么问题。</p>
+        <p>建议顺序：先看 <strong>依赖注入、中间件、Task、BackgroundService、S7、DB 区、WCS 任务状态机</strong>。这些命中率最高。</p>
+      </div>
+      <table>
+        <thead>
+          <tr><th>如果只剩时间</th><th>优先背这些</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>30 分钟</td><td>依赖注入、中间件、Task、CancellationToken、S7 DB、WCS/WMS 区别。</td></tr>
+          <tr><td>1 小时</td><td>再加 Controller、DTO、BackgroundService、SignalR、PLC 心跳、任务状态机。</td></tr>
+          <tr><td>2 小时</td><td>再加 JWT、EF Core/Dapper、Modbus、OPC UA、MVVM、报警死区。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="dotnet">
+      <h2>一、.NET / C# 基础概念</h2>
+
+      <article class="concept">
+        <h3>依赖注入 DI <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>依赖注入就是“不要自己到处 new 对象，让框架统一创建并传给你”。</p>
+        <p>比如 Controller 要用 <code>TaskService</code>，你不在 Controller 里写 <code>new TaskService()</code>，而是在启动时注册服务，框架自动传进来。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>PLC 连接、任务调度器、报警服务、数据库服务都要被多个模块使用。用 DI 可以统一管理生命周期，也方便测试和替换实现。</p>
+        </div>
+        <pre><code>// Program.cs
+builder.Services.AddSingleton&lt;PlcService&gt;();
+builder.Services.AddScoped&lt;TaskService&gt;();
+
+// Controller
+public class TasksController : ControllerBase
+{
+    private readonly TaskService _taskService;
+
+    public TasksController(TaskService taskService)
+    {
+        _taskService = taskService;
+    }
+}</code></pre>
+        <table>
+          <thead><tr><th>生命周期</th><th>意思</th><th>WCS 例子</th></tr></thead>
+          <tbody>
+            <tr><td>Singleton</td><td>整个程序只有一个实例。</td><td>PLC 连接管理、任务调度器、配置服务。</td></tr>
+            <tr><td>Scoped</td><td>一次 HTTP 请求一个实例。</td><td>业务服务、数据库上下文。</td></tr>
+            <tr><td>Transient</td><td>每次用都创建新实例。</td><td>轻量工具类、格式转换器。</td></tr>
+          </tbody>
+        </table>
+        <div class="pitfall">
+          <p><strong>坑：</strong>不要把数据库上下文做成 Singleton；不要在 Singleton 里直接长期持有 Scoped 服务。</p>
+        </div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>依赖注入让服务创建和生命周期由容器统一管理。WCS 里 PLC 通讯服务、报警服务、调度服务都适合注册到 DI，Controller 或后台任务只依赖接口，不直接 new 实现。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>接口 Interface</h3>
+        <p><strong>白话解释：</strong>接口是一份“能力合同”。它只说你必须会什么，不关心你怎么实现。</p>
+        <pre><code>public interface IPlcClient
+{
+    Task&lt;byte[]&gt; ReadDbAsync(int db, int start, int length);
+    Task WriteDbAsync(int db, int start, byte[] data);
+}</code></pre>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>今天用 Sharp7，明天可能换 S7.NetPlus 或 OPC UA。业务层依赖 <code>IPlcClient</code>，底层实现可以替换。</p>
+        </div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>我会把 PLC 读写抽象成接口，业务层只关心读写 DB 或设备状态，不绑定具体通讯库，这样方便测试、Mock 和后续替换协议。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>Task</h3>
+        <p><strong>白话解释：</strong><code>Task</code> 表示一个正在执行或将来完成的工作。它不等于线程，而是“异步工作的抽象”。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>PLC 轮询、WMS 接口调用、数据库保存、报警推送都可能耗时，不能把主线程卡住。</p>
+        </div>
+        <pre><code>public async Task&lt;DeviceStatus&gt; GetStatusAsync()
+{
+    var bytes = await _plc.ReadDbAsync(1, 0, 20);
+    return DecodeStatus(bytes);
+}</code></pre>
+        <div class="talk">
+          <p><strong>面试说法：</strong>Task 用来表达异步操作，尤其适合 IO 等待。WCS 里大量设备通讯和接口请求都应该异步化，避免线程被等待浪费。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>async / await <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong><code>async</code> 表示这个方法里可以异步等待；<code>await</code> 表示“等它完成，但不要傻站着占住线程”。</p>
+        <pre><code>public async Task SaveAlarmAsync(Alarm alarm)
+{
+    await _repository.InsertAsync(alarm);
+    await _hub.Clients.All.SendAsync("AlarmRaised", alarm);
+}</code></pre>
+        <div class="pitfall">
+          <p><strong>坑：</strong>不要随便用 <code>.Result</code> 或 <code>.Wait()</code> 阻塞等待，可能造成死锁或线程池耗尽。</p>
+        </div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>await 会把后续逻辑挂起，等异步操作完成后继续，不会像同步等待那样占住线程。WebAPI 和设备通讯里可以提升并发能力。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>CancellationToken <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>它是一个“停止信号”。后台任务不要被强杀，而是收到信号后自己退出。</p>
+        <pre><code>while (!token.IsCancellationRequested)
+{
+    await ReadPlcOnceAsync(token);
+    await Task.Delay(200, token);
+}</code></pre>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>停止轮询、切换 PLC、关闭程序、重启服务时，都要让后台任务安全退出。</p>
+        </div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>后台轮询必须支持 CancellationToken，否则停止监控或程序退出时可能残留任务，导致重复读写 PLC 或资源泄漏。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>SemaphoreSlim / lock <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>它们都是“排队工具”。同一时间只允许一个人进入关键区域。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>单个 PLC 连接通常不能让多个线程同时读写，否则可能响应错乱或连接异常。</p>
+        </div>
+        <pre><code>private readonly SemaphoreSlim _plcLock = new(1, 1);
+
+public async Task&lt;byte[]&gt; ReadAsync()
+{
+    await _plcLock.WaitAsync();
+    try
+    {
+        return await _plc.ReadAsync();
+    }
+    finally
+    {
+        _plcLock.Release();
+    }
+}</code></pre>
+        <div class="talk">
+          <p><strong>面试说法：</strong>我会把同一个 PLC 连接上的读写串行化。高频采集和命令写入可以走统一队列或锁，避免并发冲突。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>线程池 ThreadPool</h3>
+        <p><strong>白话解释：</strong>.NET 维护的一组可复用工作线程。你丢一个短任务进去，它找空闲线程执行，不用每次创建新线程。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong><code>Task.Run</code>、WebAPI 请求处理、很多后台工作都会用线程池。</p>
+        </div>
+        <h4>最小例子</h4>
+        <pre><code>// 把一段后台计算丢给线程池执行
+await Task.Run(() =>
+{
+    // 例如解析一大段 PLC 导出的 DB 文件
+    ParseLargeDbFile();
+});</code></pre>
+        <div class="flow">请求进入 ASP.NET Core
+  ↓
+框架从线程池取一个工作线程
+  ↓
+执行 Controller / 业务代码
+  ↓
+请求完成，线程归还线程池</div>
+        <div class="pitfall">
+          <p><strong>坑：</strong>不要把大量长时间阻塞操作塞进线程池，比如大量 <code>.Wait()</code>、同步 Socket 阻塞，否则请求会变慢。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>并发、并行、异步</h3>
+        <table>
+          <thead><tr><th>概念</th><th>白话解释</th><th>例子</th></tr></thead>
+          <tbody>
+            <tr><td>并发</td><td>同时处理多件事，不一定真的同时执行。</td><td>WebAPI 同时接多个请求。</td></tr>
+            <tr><td>并行</td><td>真的多个 CPU 核心同时执行。</td><td>多线程同时计算大量数据。</td></tr>
+            <tr><td>异步</td><td>等待 IO 时先让出线程，完成后继续。</td><td>等待 PLC/数据库/HTTP 返回。</td></tr>
+          </tbody>
+        </table>
+        <h4>流程图例子</h4>
+        <div class="flow">并发：一个人同时处理多个窗口
+窗口 A 等 PLC 返回时，先处理窗口 B 的请求
+
+并行：多个人真的同时干活
+CPU 核心 1 解析 DB 文件，CPU 核心 2 计算报表
+
+异步：发出请求后不傻等
+发起 PLC 读取 → 释放线程 → PLC 返回 → 继续处理数据</div>
+      </article>
+    </section>
+
+    <section id="web">
+      <h2>二、WebAPI / 后端概念</h2>
+
+      <article class="concept">
+        <h3>ASP.NET Core</h3>
+        <p><strong>白话解释：</strong>微软的 Web 后端框架，用来写 HTTP 接口、网站、后台服务。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>WMS/MES 要调用 WCS 接口，Vue 页面要获取任务、设备、报警数据，ASP.NET Core 就是服务端入口。</p>
+        </div>
+        <h4>最小项目结构例子</h4>
+        <pre><code>Wcs.Api/
+  Program.cs              // 启动入口，注册服务和中间件
+  Controllers/
+    TasksController.cs    // 任务接口
+    DevicesController.cs  // 设备接口
+  Services/
+    TaskService.cs        // 任务业务逻辑
+    PlcPollingWorker.cs   // PLC 后台轮询
+  Models/
+    TaskDto.cs            // 接口数据结构</code></pre>
+        <div class="flow">Vue 看板 / WMS
+  ↓ HTTP
+ASP.NET Core WebAPI
+  ↓
+任务服务 / PLC 服务 / 数据库
+  ↓
+返回任务状态、设备状态、报警信息</div>
+      </article>
+
+      <article class="concept">
+        <h3>WebAPI <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>WebAPI 就是“通过 HTTP 暴露出来的功能入口”。别人发请求，你返回数据或执行动作。</p>
+        <div class="mini">POST /api/tasks/inbound  →  WMS 下发入库任务</div>
+        <div class="mini">GET /api/devices  →  前端查询设备状态</div>
+        <h4>请求流程例子</h4>
+        <div class="flow">WMS 发 POST /api/tasks/inbound
+  ↓
+TasksController 接收 CreateInboundTaskDto
+  ↓
+TaskService 校验托盘、物料、库位
+  ↓
+写入数据库，生成 WCS 任务
+  ↓
+后台调度器下发 PLC
+  ↓
+返回 taskId 给 WMS</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>WCS 的 WebAPI 主要用于接收 WMS 任务、回传任务状态、提供设备状态和报警数据。接口要考虑幂等、日志、异常和权限。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>HTTP</h3>
+        <p><strong>白话解释：</strong>浏览器、前端、系统之间通信的一种协议。常见动作有 GET、POST、PUT、DELETE。</p>
+        <table>
+          <thead><tr><th>方法</th><th>含义</th><th>WCS 例子</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td>查询数据。</td><td>查询任务状态。</td></tr>
+            <tr><td>POST</td><td>创建或触发动作。</td><td>下发入库任务。</td></tr>
+            <tr><td>PUT</td><td>整体更新。</td><td>修改设备配置。</td></tr>
+            <tr><td>DELETE</td><td>删除。</td><td>删除测试任务。</td></tr>
+          </tbody>
+        </table>
+        <h4>原始 HTTP 请求长什么样</h4>
+        <pre><code>POST /api/tasks/inbound HTTP/1.1
+Host: wcs.example.com
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOi...
+
+{
+  "palletCode": "P20260709001",
+  "materialCode": "M001",
+  "targetLocation": "A01-02-03"
+}</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>Controller</h3>
+        <p><strong>白话解释：</strong>Controller 是接口的入口类。URL 匹配到某个方法后，就由这个方法处理请求。</p>
+        <pre><code>[ApiController]
+[Route("api/devices")]
+public class DevicesController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult GetDevices()
+    {
+        return Ok(_deviceService.GetAll());
+    }
+}</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>DTO</h3>
+        <p><strong>白话解释：</strong>DTO 是接口收发的数据包。它只服务于接口，不一定等于数据库表。</p>
+        <pre><code>public class DeviceStatusDto
+{
+    public string DeviceCode { get; set; } = "";
+    public string Status { get; set; } = "";
+    public int ErrorCode { get; set; }
+}</code></pre>
+        <div class="talk">
+          <p><strong>面试说法：</strong>接口层我会用 DTO 隔离外部协议和内部数据库模型，避免数据库结构变化直接影响 WMS 或前端。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>中间件 Middleware <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>中间件是 HTTP 请求经过的一条流水线。每个中间件处理一件事，比如日志、异常、鉴权、路由。</p>
+        <div class="mini">请求 → 异常处理 → 日志 → 鉴权 → 路由 → Controller → 响应</div>
+        <pre><code>app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();</code></pre>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>所有接口都需要统一日志、异常返回、权限控制。否则每个 Controller 都手写一遍，容易乱。</p>
+        </div>
+        <h4>它到底“中”在哪里</h4>
+        <p>浏览器、WMS 或 Vue 前端访问后端时，请求不会直接冲进 Controller。它会先经过一串处理环节，这串环节就叫中间件管道。每个中间件可以在请求进入 Controller 前做事，也可以在 Controller 返回后做事。</p>
+        <div class="mini">客户端请求 → 中间件 A → 中间件 B → 中间件 C → Controller → 中间件 C → 中间件 B → 中间件 A → 客户端响应</div>
+
+        <h4>用保安/前台类比</h4>
+        <p>Controller 像办公室里的业务人员，中间件像大楼门口的一层层关卡：</p>
+        <ul>
+          <li>门口保安：检查有没有证件，对应认证鉴权。</li>
+          <li>前台登记：记录谁来过、几点来的，对应访问日志。</li>
+          <li>安检：发现危险请求直接拦截，对应限流、黑名单、参数检查。</li>
+          <li>事故处理员：业务人员出错时统一处理，对应全局异常处理。</li>
+        </ul>
+
+        <h4>中间件一般有什么作用</h4>
+        <table>
+          <thead>
+            <tr><th>作用</th><th>白话解释</th><th>WCS 例子</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>异常处理</td><td>代码出错时统一返回错误格式。</td><td>WMS 调接口失败时返回错误码和错误消息，而不是一堆堆栈。</td></tr>
+            <tr><td>请求日志</td><td>记录谁在什么时候调用了哪个接口。</td><td>记录 WMS 下发任务、取消任务、人工确认报警的请求。</td></tr>
+            <tr><td>认证 Authentication</td><td>判断“你是谁”。</td><td>根据 JWT token 识别当前用户或外部系统。</td></tr>
+            <tr><td>授权 Authorization</td><td>判断“你有没有权限做这件事”。</td><td>操作员不能修改 PLC 配置，工程师可以。</td></tr>
+            <tr><td>跨域 CORS</td><td>允许指定前端域名访问后端接口。</td><td>Vue 开发服务器访问 ASP.NET Core 后端。</td></tr>
+            <tr><td>静态文件</td><td>直接返回 HTML/CSS/JS/图片。</td><td>部署时后端顺带托管前端打包文件。</td></tr>
+            <tr><td>路由</td><td>把 URL 分发到对应 Controller。</td><td><code>/api/tasks/T001</code> 进入任务查询接口。</td></tr>
+            <tr><td>限流</td><td>限制接口访问频率。</td><td>防止外部系统高频重复查询压垮 WCS。</td></tr>
+            <tr><td>请求体解析</td><td>把 JSON 请求体转成 C# 对象。</td><td>把 WMS 的入库任务 JSON 转成 DTO。</td></tr>
+            <tr><td>响应压缩</td><td>减少传输数据大小。</td><td>设备状态列表很大时降低网络传输量。</td></tr>
+          </tbody>
+        </table>
+
+        <h4>常见中间件顺序</h4>
+        <p>中间件顺序很重要。放错顺序，可能导致鉴权不生效、异常抓不到、跨域失败。</p>
+        <pre><code>var app = builder.Build();
+
+// 1. 最外层：异常处理，尽量放前面，方便兜住后面错误
+app.UseExceptionHandler();
+
+// 2. HTTPS、静态文件、跨域等基础能力
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseCors("DefaultCors");
+
+// 3. 认证和授权：先认证你是谁，再判断你能做什么
+app.UseAuthentication();
+app.UseAuthorization();
+
+// 4. 最后映射 Controller
+app.MapControllers();
+
+app.Run();</code></pre>
+
+        <h4>一个最小自定义中间件</h4>
+        <p>下面这个中间件会记录每个请求耗时。它先记开始时间，再调用 <code>next()</code> 让请求继续往后走，等后面的 Controller 执行完，再记录耗时。</p>
+        <pre><code>app.Use(async (context, next) =>
+{
+    var start = DateTime.UtcNow;
+
+    await next(); // 放行给下一个中间件或 Controller
+
+    var elapsed = DateTime.UtcNow - start;
+    Console.WriteLine($"{context.Request.Path} took {elapsed.TotalMilliseconds}ms");
+});</code></pre>
+        <div class="why">
+          <p><strong>关键点：</strong><code>await next()</code> 前面的代码是在 Controller 之前执行，后面的代码是在 Controller 之后执行。如果不调用 <code>next()</code>，请求就会被这个中间件拦住，不再进入后面的 Controller。</p>
+        </div>
+
+        <h4>WCS 里最值得做的中间件</h4>
+        <ul>
+          <li><strong>统一异常中间件：</strong>所有接口统一返回 <code>{ code, message, traceId }</code>，方便 WMS/MES 联调。</li>
+          <li><strong>请求日志中间件：</strong>记录任务下发、取消、确认报警、修改配置等关键操作。</li>
+          <li><strong>鉴权中间件：</strong>区分管理员、工程师、操作员、外部系统调用方。</li>
+          <li><strong>TraceId 中间件：</strong>给每个请求生成唯一 ID，日志排查时能串起来。</li>
+          <li><strong>限流中间件：</strong>防止外部系统异常重试，把 WCS 接口打爆。</li>
+        </ul>
+
+        <h4>可能被问到的面试题</h4>
+        <table>
+          <thead>
+            <tr><th>面试问题</th><th>推荐回答</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>中间件是什么？</td>
+              <td>中间件是 ASP.NET Core 处理 HTTP 请求的管道组件。请求进入 Controller 前会经过一系列中间件，响应返回时也会反向经过它们。</td>
+            </tr>
+            <tr>
+              <td>中间件有什么作用？</td>
+              <td>常见作用包括异常处理、日志、认证、授权、跨域、静态文件、路由、限流、响应压缩等。</td>
+            </tr>
+            <tr>
+              <td>中间件顺序重要吗？</td>
+              <td>重要。比如认证要在授权前面；异常处理中间件要尽量靠前；CORS 要在接口映射前配置，否则可能不生效。</td>
+            </tr>
+            <tr>
+              <td><code>UseAuthentication</code> 和 <code>UseAuthorization</code> 有什么区别？</td>
+              <td>Authentication 判断你是谁，Authorization 判断你有没有权限。顺序通常是先认证再授权。</td>
+            </tr>
+            <tr>
+              <td>如果中间件里不调用 <code>next()</code> 会怎样？</td>
+              <td>请求会被短路，后面的中间件和 Controller 都不会执行。可以用来拦截非法请求或直接返回缓存响应。</td>
+            </tr>
+            <tr>
+              <td>WCS 项目你会用中间件做什么？</td>
+              <td>我会做统一异常、请求日志、TraceId、认证授权和限流。任务下发、取消、报警确认这类关键接口必须可追踪。</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="talk">
+          <p><strong>面试说法：</strong>中间件是 ASP.NET Core 的请求处理管道。WCS 接口会统一做异常处理、访问日志、认证授权和路由分发。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>路由 Route</h3>
+        <p><strong>白话解释：</strong>路由就是“URL 和代码方法的对应关系”。</p>
+        <pre><code>[Route("api/tasks")]
+public class TasksController : ControllerBase
+{
+    [HttpGet("{id}")]
+    public IActionResult GetTask(string id) { ... }
+}</code></pre>
+        <p>请求 <code>GET /api/tasks/T001</code> 就会进入 <code>GetTask("T001")</code>。</p>
+      </article>
+
+      <article class="concept">
+        <h3>JWT</h3>
+        <p><strong>白话解释：</strong>JWT 是一种登录令牌。用户登录后，服务端发一个 token；后续请求带着 token，服务端验证你是谁。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>不同角色权限不同：操作员只能看和确认报警，工程师可以改配置，管理员可以管理用户。</p>
+        </div>
+        <h4>调用接口时怎么带 JWT</h4>
+        <pre><code>GET /api/alarms HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI...</code></pre>
+        <div class="flow">用户登录
+  ↓
+后端校验账号密码
+  ↓
+后端签发 JWT
+  ↓
+前端保存 token
+  ↓
+后续请求在 Authorization 头里带 token
+  ↓
+后端认证中间件解析 token，识别用户身份</div>
+        <div class="pitfall">
+          <p><strong>坑：</strong>JWT 不是加密保险箱，敏感信息不要直接放进去；要设置过期时间。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>Swagger / OpenAPI</h3>
+        <p><strong>白话解释：</strong>自动生成接口文档和调试页面。你写好 WebAPI 后，可以在网页上看到有哪些接口、参数是什么、返回什么。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>和 WMS/MES/第三方系统对接时，接口文档非常重要。Swagger 能帮助联调。</p>
+        </div>
+        <h4>配置例子</h4>
+        <pre><code>builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+app.UseSwagger();
+app.UseSwaggerUI();</code></pre>
+        <div class="flow">开发人员写 Controller
+  ↓
+Swagger 扫描接口和 DTO
+  ↓
+生成网页文档
+  ↓
+WMS/MES 对接人员按文档联调</div>
+      </article>
+
+      <article class="concept">
+        <h3>BackgroundService <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>ASP.NET Core 里的后台常驻任务。WebAPI 接口负责“别人来找我”，BackgroundService 负责“我自己一直干活”。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>PLC 轮询、任务调度、心跳检查、报警扫描都适合后台服务。</p>
+        </div>
+        <pre><code>public class PlcPollingWorker : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await _plc.ReadStatusAsync(token);
+            await Task.Delay(200, token);
+        }
+    }
+}</code></pre>
+        <div class="talk">
+          <p><strong>面试说法：</strong>WCS 后端不仅提供 WebAPI，还需要后台服务持续轮询 PLC、扫描任务状态和报警。BackgroundService 适合承载这些长期运行任务。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>SignalR</h3>
+        <p><strong>白话解释：</strong>SignalR 是 .NET 的实时推送技术。普通 HTTP 是前端问一次后端答一次；SignalR 可以让后端主动推消息给前端。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>设备状态、任务进度、报警变化需要实时展示。如果前端一直轮询会浪费资源，SignalR 更合适。</p>
+        </div>
+        <h4>推送例子</h4>
+        <pre><code>public class DeviceHub : Hub { }
+
+// 后台服务读到设备状态变化后推送给前端
+await _hubContext.Clients.All.SendAsync(
+    "DeviceStatusChanged",
+    new { deviceCode = "Stacker01", status = "Fault" });</code></pre>
+        <div class="flow">PLC 状态变化
+  ↓
+后台轮询服务检测到变化
+  ↓
+SignalR Hub 推送 DeviceStatusChanged
+  ↓
+Vue 看板立即更新设备状态</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>设备状态和报警适合用 SignalR 推送到 Vue 看板，避免前端高频刷新，提高实时性。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>幂等 Idempotency <span class="tag">重要</span></h3>
+        <p><strong>白话解释：</strong>同一个请求执行一次和执行多次，结果应该一样，不应该造成重复副作用。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>WMS 可能因为网络超时重复下发同一个任务。WCS 必须识别外部任务号，不能重复创建、重复下发 PLC。</p>
+        </div>
+        <h4>代码思路例子</h4>
+        <pre><code>public async Task&lt;TaskResult&gt; CreateInboundTaskAsync(CreateTaskDto dto)
+{
+    var existing = await _repository.FindByExternalTaskIdAsync(dto.ExternalTaskId);
+    if (existing != null)
+    {
+        return TaskResult.FromExisting(existing);
+    }
+
+    var task = CreateNewTask(dto);
+    await _repository.InsertAsync(task);
+    return TaskResult.FromNew(task);
+}</code></pre>
+        <div class="flow">WMS 第一次下发 ExternalTaskId = WMS001
+  ↓
+WCS 查不到 → 创建任务 T001
+
+WMS 超时后重复下发 ExternalTaskId = WMS001
+  ↓
+WCS 查到已有任务 T001
+  ↓
+返回 T001 当前状态，不重复创建</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>任务下发接口要按外部任务号做幂等。重复请求时返回已有任务状态，而不是再创建一条任务。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>全局异常处理</h3>
+        <p><strong>白话解释：</strong>程序出错时，不要把一堆堆栈直接丢给调用方，而是统一记录日志、返回标准错误格式。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>现场联调时，错误必须可追踪。调用方也需要稳定错误码，不想看到乱码堆栈。</p>
+        </div>
+        <h4>返回格式例子</h4>
+        <pre><code>{
+  "code": "PLC_TIMEOUT",
+  "message": "PLC 读取超时",
+  "traceId": "00-a1b2c3..."
+}</code></pre>
+        <div class="flow">Controller 抛异常
+  ↓
+全局异常中间件捕获
+  ↓
+写日志：异常堆栈 + TraceId
+  ↓
+返回统一 JSON 错误给 WMS 或前端</div>
+      </article>
+    </section>
+
+    <section id="frontend">
+      <h2>三、Vue / 前端概念</h2>
+
+      <article class="concept">
+        <h3>Vue</h3>
+        <p><strong>白话解释：</strong>Vue 是做网页界面的前端框架，适合做后台管理、看板、配置页。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>任务列表、设备看板、报警页面、配置管理都可以用 Vue 做。</p>
+        </div>
+        <h4>WCS 页面结构例子</h4>
+        <div class="flow">WcsDashboard.vue
+  ├─ TaskTable.vue        // 任务列表
+  ├─ DeviceCard.vue       // 设备状态卡片
+  ├─ AlarmPanel.vue       // 报警面板
+  └─ PlcConfigForm.vue    // PLC 配置表单</div>
+      </article>
+
+      <article class="concept">
+        <h3>组件 Component</h3>
+        <p><strong>白话解释：</strong>组件就是页面上的一个小模块，可以复用。</p>
+        <div class="mini">设备状态卡片、报警表格、任务详情弹窗、库位格子</div>
+        <h4>设备卡片组件例子</h4>
+        <pre><code>&lt;template&gt;
+  &lt;div class="device-card"&gt;
+    &lt;h3&gt;{{ device.name }}&lt;/h3&gt;
+    &lt;p&gt;状态：{{ device.status }}&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>响应式 Reactive</h3>
+        <p><strong>白话解释：</strong>数据变了，页面自动跟着变。</p>
+        <pre><code>const status = ref("Running");
+status.value = "Fault"; // 页面自动更新</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>props / emit</h3>
+        <p><strong>白话解释：</strong><code>props</code> 是父组件传给子组件的数据；<code>emit</code> 是子组件通知父组件发生了事件。</p>
+        <div class="mini">父页面把 device 传给设备卡片；设备卡片点击“复位”后 emit 给父页面。</div>
+        <h4>代码例子</h4>
+        <pre><code>&lt;script setup&gt;
+const props = defineProps({
+  device: Object
+});
+
+const emit = defineEmits(["reset"]);
+
+function resetDevice() {
+  emit("reset", props.device.id);
+}
+&lt;/script&gt;</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>Axios / fetch</h3>
+        <p><strong>白话解释：</strong>前端调用后端接口的工具。</p>
+        <pre><code>const res = await fetch("/api/devices");
+const devices = await res.json();</code></pre>
+      </article>
+    </section>
+
+    <section id="industrial">
+      <h2>四、PLC / 工控通讯概念</h2>
+
+      <article class="concept">
+        <h3>PLC <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>PLC 是工业现场的控制器，可以理解成设备的大脑。它负责控制电机、气缸、传感器、输送线、堆垛机动作。</p>
+        <div class="mini">WCS 软件 → PLC → 电机/传感器/伺服/变频器</div>
+        <h4>现场控制流程图</h4>
+        <div class="flow">传感器检测到托盘到位
+  ↓ 输入信号进入 PLC 的 I 区
+PLC 程序判断条件满足
+  ↓ 输出信号写入 Q 区
+变频器/接触器/伺服驱动动作
+  ↓
+输送线或堆垛机执行动作
+  ↓
+PLC 把状态写入 DB 状态区
+  ↓
+WCS 读取状态并更新任务</div>
+      </article>
+
+      <article class="concept">
+        <h3>上位机</h3>
+        <p><strong>白话解释：</strong>上位机是运行在 PC 上的软件，用来监控设备、采集数据、下发参数、显示报警。</p>
+        <div class="why">
+          <p><strong>和 WCS 的关系：</strong>WCS 可以看作更偏业务和调度的上位系统；普通上位机更偏单机设备监控。</p>
+        </div>
+        <h4>上位机数据流例子</h4>
+        <div class="flow">PLC / 仪表 / 相机
+  ↓ S7 / Modbus / SDK
+上位机采集服务
+  ↓
+界面显示实时状态
+  ↓
+报警、趋势、历史记录、参数下发</div>
+      </article>
+
+      <article class="concept">
+        <h3>S7 协议</h3>
+        <p><strong>白话解释：</strong>西门子 PLC 常用的通讯协议。S7-1200/1500 通常通过以太网的 ISO-on-TCP 通讯，默认端口 102。</p>
+        <h4>连接和读写流程</h4>
+        <div class="flow">WCS 配置 PLC IP、Rack、Slot
+  ↓
+TCP 连接 PLC:102
+  ↓
+S7 ISO 握手 / PDU 协商
+  ↓
+DBRead / ReadArea 读取状态
+  ↓
+DBWrite / WriteArea 写入命令
+  ↓
+断线后重连并恢复轮询</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>S7 通讯里我重点关注连接参数、DB/I/Q/M 区读写、数据类型解析、断线重连和读写串行化。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>Rack / Slot</h3>
+        <p><strong>白话解释：</strong>连接西门子 PLC 时需要的机架号和槽号。S7-1200/1500 常见配置是 Rack 0、Slot 1，但要以实际 PLC 配置为准。</p>
+        <h4>连接参数例子</h4>
+        <pre><code>PLC IP   : 192.168.1.10
+Port     : 102
+Rack     : 0
+Slot     : 1
+Protocol : S7 ISO-on-TCP</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>I / Q / M / DB 区 <span class="tag">必会</span></h3>
+        <table>
+          <thead><tr><th>区域</th><th>含义</th><th>例子</th></tr></thead>
+          <tbody>
+            <tr><td>I</td><td>输入区。</td><td>传感器到位、光电信号、按钮。</td></tr>
+            <tr><td>Q</td><td>输出区。</td><td>启动电机、控制指示灯。</td></tr>
+            <tr><td>M</td><td>中间存储区。</td><td>PLC 内部标志位、临时状态。</td></tr>
+            <tr><td>DB</td><td>数据块。</td><td>任务号、命令码、目标库位、报警码。</td></tr>
+          </tbody>
+        </table>
+        <h4>地址例子</h4>
+        <pre><code>I0.0       // 输入区第 0 字节第 0 位，例如光电到位
+Q0.1       // 输出区第 0 字节第 1 位，例如电机启动
+M10.0      // 中间区第 10 字节第 0 位，例如内部状态
+DB1.DBW0   // DB1 第 0 字节开始的 WORD/INT
+DB1.DBD4   // DB1 第 4 字节开始的 DINT/REAL</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>DB 命令区 / 状态区</h3>
+        <p><strong>白话解释：</strong>WCS 和 PLC 约定一块 DB，WCS 写命令，PLC 写状态。</p>
+        <table>
+          <thead><tr><th>字段</th><th>谁写</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td>TaskId</td><td>WCS</td><td>任务号，防重复。</td></tr>
+            <tr><td>CommandCode</td><td>WCS</td><td>动作码，比如入库/出库/取货/放货。</td></tr>
+            <tr><td>CommandTrigger</td><td>WCS</td><td>触发位，表示新命令。</td></tr>
+            <tr><td>CommandAck</td><td>PLC</td><td>确认收到命令。</td></tr>
+            <tr><td>Done</td><td>PLC</td><td>动作完成。</td></tr>
+            <tr><td>ErrorCode</td><td>PLC</td><td>设备故障码。</td></tr>
+          </tbody>
+        </table>
+        <h4>WCS 和 PLC 握手流程</h4>
+        <div class="flow">WCS 写 TaskId / CommandCode / TargetLocation
+  ↓
+WCS 置位 CommandTrigger = true
+  ↓
+PLC 看到触发位，复制命令并置位 CommandAck = true
+  ↓
+WCS 看到 Ack，清除 CommandTrigger
+  ↓
+PLC 执行动作
+  ↓
+PLC 置位 Done 或写 ErrorCode
+  ↓
+WCS 更新任务状态并回传 WMS</div>
+      </article>
+
+      <article class="concept">
+        <h3>BOOL / INT / DINT / REAL</h3>
+        <p><strong>白话解释：</strong>PLC 数据类型。</p>
+        <table>
+          <thead><tr><th>类型</th><th>含义</th><th>字节</th><th>例子</th></tr></thead>
+          <tbody>
+            <tr><td>BOOL</td><td>真假值。</td><td>1 bit</td><td>到位信号、触发位。</td></tr>
+            <tr><td>INT</td><td>16 位整数。</td><td>2</td><td>状态码。</td></tr>
+            <tr><td>DINT</td><td>32 位整数。</td><td>4</td><td>任务号、计数。</td></tr>
+            <tr><td>REAL</td><td>浮点数。</td><td>4</td><td>速度、重量、温度。</td></tr>
+          </tbody>
+        </table>
+        <h4>DB 字节布局例子</h4>
+        <pre><code>DB1.DBB0       BYTE   设备状态码
+DB1.DBX1.0     BOOL   命令触发位
+DB1.DBX1.1     BOOL   命令确认位
+DB1.DBW2       INT    错误码
+DB1.DBD4       DINT   任务号
+DB1.DBD8       REAL   当前重量</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>C# 和西门子常见数据类型字节数对比 <span class="tag">必会</span></h3>
+        <p><strong>先记结论：</strong>C# 和西门子的类型名字有些相似，但不能直接等同。尤其是 <code>bool</code> / <code>BOOL</code>、<code>char</code> / <code>CHAR</code>、字符串、时间类型、字节序，都是面试和现场调试容易出错的点。</p>
+
+        <h4>C# 常见类型大小</h4>
+        <table>
+          <thead>
+            <tr><th>C# 类型</th><th>字节数</th><th>说明</th><th>大致对应 PLC 类型</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>bool</code></td><td>通常按 1 字节理解</td><td>C# 逻辑布尔值；对象/数组/封送布局另算。</td><td><code>BOOL</code>，但 PLC BOOL 是 1 bit，不是 1 byte。</td></tr>
+            <tr><td><code>byte</code></td><td>1</td><td>0 到 255。</td><td><code>BYTE</code> / <code>USINT</code></td></tr>
+            <tr><td><code>sbyte</code></td><td>1</td><td>-128 到 127。</td><td><code>SINT</code></td></tr>
+            <tr><td><code>short</code></td><td>2</td><td>16 位有符号整数。</td><td><code>INT</code></td></tr>
+            <tr><td><code>ushort</code></td><td>2</td><td>16 位无符号整数。</td><td><code>UINT</code> / <code>WORD</code></td></tr>
+            <tr><td><code>int</code></td><td>4</td><td>32 位有符号整数。</td><td><code>DINT</code></td></tr>
+            <tr><td><code>uint</code></td><td>4</td><td>32 位无符号整数。</td><td><code>UDINT</code> / <code>DWORD</code></td></tr>
+            <tr><td><code>long</code></td><td>8</td><td>64 位有符号整数。</td><td><code>LINT</code></td></tr>
+            <tr><td><code>ulong</code></td><td>8</td><td>64 位无符号整数。</td><td><code>ULINT</code> / <code>LWORD</code></td></tr>
+            <tr><td><code>float</code></td><td>4</td><td>单精度浮点数。</td><td><code>REAL</code></td></tr>
+            <tr><td><code>double</code></td><td>8</td><td>双精度浮点数。</td><td><code>LREAL</code></td></tr>
+            <tr><td><code>decimal</code></td><td>16</td><td>高精度十进制，常用于金额；PLC 通常没有直接等价基础类型。</td><td>通常不用直接映射。</td></tr>
+            <tr><td><code>char</code></td><td>2</td><td>.NET 字符是 UTF-16。</td><td><code>WCHAR</code> 更接近；PLC <code>CHAR</code> 通常是 1 字节。</td></tr>
+            <tr><td><code>DateTime</code></td><td>8</td><td>内部主要是 ticks；不等于 PLC 日期时间格式。</td><td><code>DATE_AND_TIME</code> / <code>DTL</code> 需要专门转换。</td></tr>
+            <tr><td><code>string</code></td><td>不固定</td><td>.NET 字符串是引用类型，字符通常 UTF-16；还有对象开销。</td><td><code>STRING[n]</code> / <code>WSTRING[n]</code>，格式不同。</td></tr>
+          </tbody>
+        </table>
+
+        <h4>西门子 S7 常见类型大小</h4>
+        <table>
+          <thead>
+            <tr><th>西门子类型</th><th>字节数</th><th>说明</th><th>C# 常用承接类型</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>BOOL</code></td><td>1 bit</td><td>布尔位，常见地址如 <code>DBX0.0</code>。</td><td><code>bool</code>，但读写时要按 bit 操作。</td></tr>
+            <tr><td><code>BYTE</code></td><td>1</td><td>8 位无符号。</td><td><code>byte</code></td></tr>
+            <tr><td><code>SINT</code></td><td>1</td><td>8 位有符号。</td><td><code>sbyte</code></td></tr>
+            <tr><td><code>USINT</code></td><td>1</td><td>8 位无符号。</td><td><code>byte</code></td></tr>
+            <tr><td><code>CHAR</code></td><td>1</td><td>单字节字符。</td><td><code>byte</code> 或按编码转 <code>char</code></td></tr>
+            <tr><td><code>WCHAR</code></td><td>2</td><td>宽字符。</td><td><code>char</code></td></tr>
+            <tr><td><code>WORD</code></td><td>2</td><td>16 位无符号位串。</td><td><code>ushort</code></td></tr>
+            <tr><td><code>INT</code></td><td>2</td><td>16 位有符号整数。</td><td><code>short</code></td></tr>
+            <tr><td><code>UINT</code></td><td>2</td><td>16 位无符号整数。</td><td><code>ushort</code></td></tr>
+            <tr><td><code>DWORD</code></td><td>4</td><td>32 位无符号位串。</td><td><code>uint</code></td></tr>
+            <tr><td><code>DINT</code></td><td>4</td><td>32 位有符号整数。</td><td><code>int</code></td></tr>
+            <tr><td><code>UDINT</code></td><td>4</td><td>32 位无符号整数。</td><td><code>uint</code></td></tr>
+            <tr><td><code>REAL</code></td><td>4</td><td>IEEE 754 单精度浮点数。</td><td><code>float</code></td></tr>
+            <tr><td><code>LWORD</code></td><td>8</td><td>64 位无符号位串。</td><td><code>ulong</code></td></tr>
+            <tr><td><code>LINT</code></td><td>8</td><td>64 位有符号整数。</td><td><code>long</code></td></tr>
+            <tr><td><code>ULINT</code></td><td>8</td><td>64 位无符号整数。</td><td><code>ulong</code></td></tr>
+            <tr><td><code>LREAL</code></td><td>8</td><td>IEEE 754 双精度浮点数。</td><td><code>double</code></td></tr>
+            <tr><td><code>S5TIME</code></td><td>2</td><td>S5 格式时间。</td><td>通常转 <code>TimeSpan</code> 或整数。</td></tr>
+            <tr><td><code>DATE</code></td><td>2</td><td>日期。</td><td><code>DateTime</code>，需转换。</td></tr>
+            <tr><td><code>TIME</code></td><td>4</td><td>通常是毫秒数，底层类似 DINT。</td><td><code>TimeSpan</code> 或 <code>int</code></td></tr>
+            <tr><td><code>TOD</code> / <code>TIME_OF_DAY</code></td><td>4</td><td>一天内的时间，通常按毫秒计。</td><td><code>TimeSpan</code> 或 <code>uint</code></td></tr>
+            <tr><td><code>DT</code> / <code>DATE_AND_TIME</code></td><td>8</td><td>老式日期时间格式，BCD 编码。</td><td><code>DateTime</code>，需专门解析。</td></tr>
+            <tr><td><code>DTL</code></td><td>12</td><td>S7-1200/1500 常见日期时间结构。</td><td><code>DateTime</code>，需按结构解析。</td></tr>
+            <tr><td><code>STRING[n]</code></td><td>n + 2</td><td>经典字符串：最大长度 1 字节 + 当前长度 1 字节 + 内容 n 字节。</td><td><code>string</code>，需按 PLC 字符串格式解析。</td></tr>
+            <tr><td><code>WSTRING[n]</code></td><td>2n + 4</td><td>宽字符串：最大长度/当前长度各 2 字节 + 内容。</td><td><code>string</code>，需按宽字符解析。</td></tr>
+          </tbody>
+        </table>
+
+        <h4>最容易混淆的点</h4>
+        <ul>
+          <li><strong>C# <code>bool</code> vs PLC <code>BOOL</code>：</strong>C# 通常按 1 字节理解；PLC <code>BOOL</code> 是 1 bit，8 个 BOOL 可以挤在 1 个字节里。</li>
+          <li><strong>C# <code>char</code> vs PLC <code>CHAR</code>：</strong>C# <code>char</code> 是 2 字节 UTF-16；PLC <code>CHAR</code> 通常是 1 字节。</li>
+          <li><strong>C# <code>string</code> vs PLC <code>STRING[n]</code>：</strong>C# 字符串是引用类型且长度不固定；PLC 字符串有固定最大长度，前两个字节保存最大长度和当前长度。</li>
+          <li><strong>时间类型：</strong>不要把 PLC <code>TIME</code> 当 <code>REAL</code>，它通常是 4 字节毫秒数，更适合转成 <code>TimeSpan</code>。</li>
+          <li><strong>字节序：</strong>C# 在 Windows/x86/x64 上通常小端；西门子 S7 多字节数值通常大端。读 <code>INT</code>、<code>DINT</code>、<code>REAL</code> 时要转换。</li>
+          <li><strong>优化 DB：</strong>S7-1200/1500 如果 DB 开了优化访问，绝对偏移可能不稳定；上位机按地址读写时通常要使用非优化 DB 或明确符号访问方案。</li>
+        </ul>
+
+        <h4>面试推荐说法</h4>
+        <div class="talk">
+          <p>“C# 类型和 PLC 类型不能只看名字对应。比如 C# bool 通常按字节处理，但西门子 BOOL 是 bit；C# char 是 2 字节，而 PLC CHAR 是 1 字节；PLC STRING[n] 前两个字节是最大长度和当前长度。S7 多字节数据通常按大端存储，所以读 INT、DINT、REAL 时要做字节序转换。我会把这些转换集中封装，避免业务代码里到处手写解析。”</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>字节序 Endianness</h3>
+        <p><strong>白话解释：</strong>多字节数字在内存里先放高位还是低位。西门子 S7 多字节数据通常是大端，PC 常见是小端，所以转换时要注意。</p>
+        <h4>DINT 字节序示意</h4>
+        <div class="flow">数值：0x12 34 56 78
+
+S7 大端存储：
+地址 +0 = 0x12
+地址 +1 = 0x34
+地址 +2 = 0x56
+地址 +3 = 0x78
+
+C# BitConverter 在常见 Windows PC 上通常按小端解释：
+需要调整字节顺序后再转 int / float</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>S7 读 REAL、DINT、INT 时要注意大端字节序，BOOL 还要处理 byte.bit 偏移。我会把解码逻辑集中封装，避免页面里重复转换。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>轮询 Polling</h3>
+        <p><strong>白话解释：</strong>程序定时去问设备：“你现在什么状态？”</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>PLC 通常不会主动把所有状态推给 WCS，所以 WCS 要定时读取状态区。</p>
+        </div>
+        <div class="pitfall">
+          <p><strong>坑：</strong>轮询太快会压垮 PLC 或网络；太慢状态不实时。要按高频/低频分层。</p>
+        </div>
+        <h4>轮询循环例子</h4>
+        <div class="flow">每 200ms：
+  1. 读取 I/Q/M 快速状态
+  2. 读取一部分 DB 变量
+  3. 解码 BOOL / INT / REAL
+  4. 更新内存缓存
+  5. 触发 UI / 报警 / 任务状态更新
+  6. 如果失败，记录错误并退避</div>
+      </article>
+
+      <article class="concept">
+        <h3>心跳 Heartbeat</h3>
+        <p><strong>白话解释：</strong>双方定时发一个变化的信号，证明“我还活着”。</p>
+        <div class="mini">WCS 每秒翻转 Heartbeat；PLC 如果 5 秒没看到变化，就认为通讯异常。</div>
+        <h4>心跳流程</h4>
+        <div class="flow">WCS 每 1 秒写 Heartbeat = 0/1 翻转
+  ↓
+PLC 检测 Heartbeat 是否持续变化
+  ↓
+PLC 写 PlcAliveCounter 递增
+  ↓
+WCS 检测 PlcAliveCounter 是否持续变化
+  ↓
+任一方向超时 → 报警 + 停止下发新任务</div>
+      </article>
+
+      <article class="concept">
+        <h3>OPC UA</h3>
+        <p><strong>白话解释：</strong>一种工业通讯标准。相比直接 S7 读地址，OPC UA 更像“按变量名订阅数据”。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>跨品牌、标准化、订阅推送更方便，但实时控制场景可能仍用 S7/Modbus/厂家协议。</p>
+        </div>
+        <h4>订阅流程图</h4>
+        <div class="flow">OPC UA Client
+  ↓ 连接
+OPC UA Server（PLC 或网关）
+  ↓ 浏览节点
+选择变量 ns=2;s=Device.Stacker.Status
+  ↓ 订阅
+变量变化时 Server 主动推送给 Client</div>
+      </article>
+
+      <article class="concept">
+        <h3>Modbus RTU / TCP</h3>
+        <p><strong>白话解释：</strong>Modbus 是很常见的工业协议。RTU 走串口，TCP 走以太网。</p>
+        <table>
+          <thead><tr><th>类型</th><th>介质</th><th>特点</th></tr></thead>
+          <tbody>
+            <tr><td>Modbus RTU</td><td>RS485/串口</td><td>有 CRC 校验，速度相对慢。</td></tr>
+            <tr><td>Modbus TCP</td><td>以太网</td><td>有 MBAP 头，通常端口 502。</td></tr>
+          </tbody>
+        </table>
+        <h4>读保持寄存器例子</h4>
+        <pre><code>// 功能码 03：Read Holding Registers
+站号: 1
+功能码: 03
+起始地址: 0
+数量: 10
+
+请求含义：读取 1 号设备从 0 开始的 10 个保持寄存器</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>CRC</h3>
+        <p><strong>白话解释：</strong>CRC 是校验码，用来判断一帧串口数据传输过程中有没有出错。</p>
+        <div class="why">
+          <p><strong>Modbus RTU 里为什么用：</strong>主站收到响应后会计算 CRC，和帧尾 CRC 比较，不一致就说明数据可能坏了。</p>
+        </div>
+        <h4>RTU 帧结构</h4>
+        <div class="flow">[站号][功能码][数据...][CRC低字节][CRC高字节]
+
+接收方：
+  1. 取出前面的站号 / 功能码 / 数据
+  2. 重新计算 CRC
+  3. 和帧尾 CRC 比较
+  4. 不一致就丢弃这一帧</div>
+      </article>
+
+      <article class="concept">
+        <h3>Profinet</h3>
+        <p><strong>白话解释：</strong>西门子常用的工业以太网现场总线，用于 PLC、IO、伺服、变频器之间实时通讯。</p>
+        <p>WCS 通常不直接控制 Profinet 设备，而是通过 PLC 间接获取状态和下发命令。</p>
+        <h4>典型关系</h4>
+        <div class="flow">WCS
+  ↓ S7 / OPC UA
+PLC
+  ↓ Profinet
+远程 IO / V90 伺服 / G120 变频器 / 触摸屏</div>
+      </article>
+
+      <article class="concept">
+        <h3>伺服 / 变频器</h3>
+        <table>
+          <thead><tr><th>概念</th><th>白话解释</th><th>例子</th></tr></thead>
+          <tbody>
+            <tr><td>伺服</td><td>高精度控制位置、速度、扭矩。</td><td>堆垛机定位、机械轴运动。</td></tr>
+            <tr><td>变频器</td><td>控制普通电机速度。</td><td>输送线电机调速。</td></tr>
+          </tbody>
+        </table>
+        <h4>控制链路例子</h4>
+        <div class="flow">WCS 下发目标库位
+  ↓
+PLC 判断动作条件并发送运动命令
+  ↓
+伺服驱动控制堆垛机定位
+  ↓
+变频器控制输送线速度
+  ↓
+传感器反馈到位信号给 PLC
+  ↓
+PLC 把完成状态写给 WCS</div>
+      </article>
+    </section>
+
+    <section id="wcs">
+      <h2>五、WCS / 仓储业务概念</h2>
+
+      <article class="concept">
+        <h3>WMS</h3>
+        <p><strong>白话解释：</strong>仓库管理系统，管库存、订单、库位策略、批次、账务。</p>
+        <h4>WMS 视角例子</h4>
+        <div class="flow">销售订单需要出库 10 箱物料 A
+  ↓
+WMS 查询库存和批次
+  ↓
+WMS 选择库位 A01-02-03 的托盘
+  ↓
+WMS 下发出库任务给 WCS
+  ↓
+WMS 等待 WCS 回传完成结果
+  ↓
+WMS 扣减库存并更新账务</div>
+      </article>
+
+      <article class="concept">
+        <h3>WCS <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>仓库控制系统，管设备执行。它把 WMS 的业务任务拆成输送线、提升机、堆垛机、AGV/RGV、PLC 能执行的动作。</p>
+        <div class="mini">WMS：我要出 A 物料 → WCS：让堆垛机去 A01 取托盘，再送到出库口</div>
+        <h4>WCS 拆任务例子</h4>
+        <div class="flow">WMS 出库任务：托盘 P001 从 A01 到 出库口 1
+  ↓
+WCS 生成设备子任务：
+  1. 输送线入口准备
+  2. 堆垛机移动到 A01
+  3. 堆垛机取货
+  4. 堆垛机放到输送线
+  5. 输送线送到出库口 1
+  6. 扫码复核并回传 WMS</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>WMS 管业务和库存，WCS 管设备执行和调度，PLC 管具体动作。WCS 是业务系统和现场设备之间的桥。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>MES / ERP</h3>
+        <p><strong>MES：</strong>制造执行系统，关注生产过程、工单、工序、产线执行。</p>
+        <p><strong>ERP：</strong>企业资源计划系统，关注采购、销售、财务、库存总账等企业管理。</p>
+        <p>WCS 可能需要和 WMS/MES/ERP 中的一个或多个系统对接。</p>
+        <h4>系统关系例子</h4>
+        <div class="flow">ERP：采购/销售/财务计划
+  ↓
+MES：生产工单、产线投料需求
+  ↓
+WMS：库存、批次、库位策略
+  ↓
+WCS：调度设备搬运物料
+  ↓
+PLC：执行具体动作</div>
+      </article>
+
+      <article class="concept">
+        <h3>立体库</h3>
+        <p><strong>白话解释：</strong>高层货架 + 堆垛机/穿梭车 + 输送线 + 软件系统组成的自动化仓库。</p>
+        <h4>组成结构图</h4>
+        <div class="flow">自动化立体库
+  ├─ 货架 / 库位
+  ├─ 堆垛机 / 穿梭车
+  ├─ 输送线 / 提升机
+  ├─ 扫码 / 称重 / 外形检测
+  ├─ PLC / 电控系统
+  └─ WMS / WCS 软件系统</div>
+      </article>
+
+      <article class="concept">
+        <h3>堆垛机 / 提升机 / 输送线</h3>
+        <table>
+          <thead><tr><th>设备</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>堆垛机</td><td>在巷道里横向/纵向移动，把货物放入或取出货架库位。</td></tr>
+            <tr><td>提升机</td><td>把托盘或料箱在不同高度之间搬运。</td></tr>
+            <tr><td>输送线</td><td>用滚筒、皮带、链条把货物从一个点输送到另一个点。</td></tr>
+          </tbody>
+        </table>
+        <h4>一次入库里的设备协作</h4>
+        <div class="flow">托盘到入库口
+  ↓
+输送线把托盘送到提升机
+  ↓
+提升机把托盘送到目标层
+  ↓
+堆垛机进入巷道并取货
+  ↓
+堆垛机把托盘放入目标库位
+  ↓
+PLC 返回完成信号给 WCS</div>
+      </article>
+
+      <article class="concept">
+        <h3>入库 / 出库 / 移库 / 盘点</h3>
+        <table>
+          <thead><tr><th>业务</th><th>白话解释</th></tr></thead>
+          <tbody>
+            <tr><td>入库</td><td>货物进入仓库，系统分配库位，设备搬到目标位置。</td></tr>
+            <tr><td>出库</td><td>根据订单把货物从库位取出，送到出库口。</td></tr>
+            <tr><td>移库</td><td>把货物从一个库位移动到另一个库位。</td></tr>
+            <tr><td>盘点</td><td>核对系统库存和实际库存是否一致。</td></tr>
+          </tbody>
+        </table>
+        <h4>四类业务怎么流转</h4>
+        <div class="flow">入库：入口扫码 → 分配库位 → 设备搬运 → 入库完成
+出库：订单需求 → 锁定库存 → 设备取货 → 出库复核
+移库：源库位 → 目标库位 → 搬运完成 → 更新库存位置
+盘点：系统库位 → 现场核对 → 差异确认 → 更新库存</div>
+      </article>
+
+      <article class="concept">
+        <h3>任务状态机 <span class="tag">必会</span></h3>
+        <p><strong>白话解释：</strong>任务从开始到结束要经历一组明确状态，不能靠几个乱七八糟的 bool 判断。</p>
+        <div class="mini">Created → Checked → Dispatched → Running → Completed</div>
+        <div class="mini">Running → Failed → ManualHandling → Retry / Cancel</div>
+        <h4>状态流转例子</h4>
+        <div class="flow">Created        已收到 WMS 任务
+  ↓
+Checked        校验托盘、库位、设备状态通过
+  ↓
+Dispatched     已写入 PLC 命令区
+  ↓
+Running        PLC/设备正在执行
+  ↓
+Completed      PLC 返回完成，WCS 回传 WMS
+
+异常分支：
+Running → Failed → ManualHandling → Retry / Cancel</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>WCS 任务必须有状态机并落库。系统重启后能恢复未完成任务，异常后能人工干预、重试或取消。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>断点续传 / 断点恢复</h3>
+        <p><strong>白话解释：</strong>系统或设备中断后，能知道任务执行到哪一步，并从合理位置继续或人工处理。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么重要：</strong>货物搬到一半不能简单重发任务，否则可能撞车、重复搬运或库存错乱。</p>
+        </div>
+        <h4>恢复流程例子</h4>
+        <div class="flow">WCS 服务重启
+  ↓
+从数据库读取未完成任务
+  ↓
+读取 PLC 当前任务号、设备位置、完成位、错误码
+  ↓
+比对数据库任务和 PLC 状态
+  ↓
+判断：继续执行 / 重试 / 取消 / 人工接管
+  ↓
+写操作日志并恢复调度</div>
+      </article>
+
+      <article class="concept">
+        <h3>人工干预</h3>
+        <p><strong>白话解释：</strong>自动流程处理不了时，让操作员或工程师确认下一步。</p>
+        <p>比如条码不符、库位占用、设备故障、托盘歪斜，都可能需要人工选择“重试、取消、改库位、强制完成”。</p>
+        <h4>人工干预流程</h4>
+        <div class="flow">系统发现异常：条码不一致
+  ↓
+任务进入 ManualHandling
+  ↓
+报警弹窗 + 记录日志
+  ↓
+操作员确认实际托盘
+  ↓
+选择：退回 / 放行 / 改任务 / 取消
+  ↓
+WCS 按选择恢复任务状态</div>
+      </article>
+
+      <article class="concept">
+        <h3>报警死区 / OnDelay / OffDelay</h3>
+        <table>
+          <thead><tr><th>概念</th><th>白话解释</th></tr></thead>
+          <tbody>
+            <tr><td>死区</td><td>数值在阈值附近抖动时，不要反复报警和恢复。</td></tr>
+            <tr><td>OnDelay</td><td>异常持续一段时间才报警，避免瞬时毛刺。</td></tr>
+            <tr><td>OffDelay</td><td>恢复持续一段时间才清除报警，避免刚恢复又故障。</td></tr>
+          </tbody>
+        </table>
+        <h4>温度报警例子</h4>
+        <div class="flow">规则：温度 > 80℃ 报警，死区 2℃，OnDelay 3 秒，OffDelay 5 秒
+
+触发：
+温度连续 3 秒 > 80℃ → 产生报警
+
+恢复：
+报警后温度需要降到 78℃ 以下，并持续 5 秒 → 清除报警
+
+好处：
+温度在 79.9℃ 和 80.1℃ 之间抖动时，不会疯狂报警/恢复</div>
+      </article>
+    </section>
+
+    <section id="wpf">
+      <h2>六、WPF / 上位机概念</h2>
+
+      <article class="concept">
+        <h3>WPF</h3>
+        <p><strong>白话解释：</strong>微软的 Windows 桌面 UI 框架，适合做上位机、监控软件、配置工具。</p>
+        <h4>上位机页面例子</h4>
+        <div class="flow">WPF 主窗口
+  ├─ PLC 连接面板
+  ├─ I/Q/M 状态监控
+  ├─ DB 变量表格
+  ├─ 趋势曲线
+  ├─ 报警列表
+  └─ 配方参数页面</div>
+      </article>
+
+      <article class="concept">
+        <h3>XAML</h3>
+        <p><strong>白话解释：</strong>WPF 用来描述界面的 XML 语言。按钮、表格、布局、绑定都可以写在 XAML 里。</p>
+        <h4>XAML 最小例子</h4>
+        <pre><code>&lt;StackPanel&gt;
+  &lt;TextBlock Text="{Binding PlcStatus}" /&gt;
+  &lt;Button Content="连接 PLC"
+          Command="{Binding ConnectCommand}" /&gt;
+&lt;/StackPanel&gt;</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>MVVM</h3>
+        <p><strong>白话解释：</strong>一种 WPF 常用架构，把界面、状态和业务分开。</p>
+        <table>
+          <thead><tr><th>层</th><th>职责</th></tr></thead>
+          <tbody>
+            <tr><td>Model</td><td>数据模型，比如报警、设备、任务。</td></tr>
+            <tr><td>View</td><td>界面 XAML。</td></tr>
+            <tr><td>ViewModel</td><td>给界面提供数据和命令。</td></tr>
+          </tbody>
+        </table>
+        <h4>MVVM 数据流</h4>
+        <div class="flow">View(XAML)
+  ↓ Binding / Command
+ViewModel
+  ↓ 调用
+Service（PLC、报警、配方）
+  ↓
+Model（设备状态、报警项、任务数据）</div>
+        <div class="talk">
+          <p><strong>面试说法：</strong>MVVM 可以减少界面代码和业务逻辑耦合，设备状态、报警列表、命令按钮都可以通过绑定和命令驱动。</p>
+        </div>
+      </article>
+
+      <article class="concept">
+        <h3>数据绑定 Binding</h3>
+        <p><strong>白话解释：</strong>把界面元素和 ViewModel 属性连起来。属性变了，界面跟着变。</p>
+        <h4>绑定例子</h4>
+        <pre><code>// ViewModel
+public string PlcStatus { get; set; } = "未连接";
+
+// XAML
+&lt;TextBlock Text="{Binding PlcStatus}" /&gt;</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>ICommand / RelayCommand</h3>
+        <p><strong>白话解释：</strong>按钮点击后执行 ViewModel 里的命令，而不是直接在界面代码里写业务。</p>
+        <h4>命令例子</h4>
+        <pre><code>[RelayCommand]
+private async Task ConnectAsync()
+{
+    await _plcService.ConnectAsync();
+}</code></pre>
+        <div class="flow">用户点击“连接 PLC”
+  ↓
+Button 触发 ConnectCommand
+  ↓
+ViewModel 调用 PlcService
+  ↓
+连接结果更新到界面</div>
+      </article>
+
+      <article class="concept">
+        <h3>Dispatcher</h3>
+        <p><strong>白话解释：</strong>WPF UI 只能在 UI 线程更新。后台线程读到 PLC 数据后，要通过 Dispatcher 切回 UI 线程更新界面。</p>
+        <h4>代码例子</h4>
+        <pre><code>Application.Current.Dispatcher.Invoke(() =>
+{
+    AlarmItems.Add(newAlarm);
+});</code></pre>
+        <div class="pitfall">
+          <p><strong>坑：</strong>后台线程直接改 ObservableCollection 可能报错，因为它属于 UI 线程。</p>
+        </div>
+      </article>
+    </section>
+
+    <section id="data">
+      <h2>七、数据库 / 持久化概念</h2>
+
+      <article class="concept">
+        <h3>数据库持久化</h3>
+        <p><strong>白话解释：</strong>把数据保存到硬盘里的数据库或文件，程序重启后还能找回来。</p>
+        <div class="why">
+          <p><strong>WCS 里为什么用：</strong>任务、报警、操作日志、库存变化不能只放内存，否则程序崩了就丢。</p>
+        </div>
+        <h4>持久化流程</h4>
+        <div class="flow">WMS 下发任务
+  ↓
+WCS 写入数据库：TaskId、状态、库位、托盘号
+  ↓
+WCS 下发 PLC
+  ↓
+PLC 返回完成
+  ↓
+WCS 更新数据库状态为 Completed
+  ↓
+系统重启后仍能查询任务历史</div>
+      </article>
+
+      <article class="concept">
+        <h3>事务 Transaction</h3>
+        <p><strong>白话解释：</strong>一组数据库操作要么全部成功，要么全部失败。</p>
+        <div class="mini">创建出库任务 + 锁定库存 + 写任务日志：三件事要一起成功。</div>
+        <h4>事务代码例子</h4>
+        <pre><code>using var tx = await db.Database.BeginTransactionAsync();
+
+CreateOutboundTask(task);
+LockInventory(location);
+WriteOperationLog(task.Id, "Created");
+
+await db.SaveChangesAsync();
+await tx.CommitAsync();</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>EF Core</h3>
+        <p><strong>白话解释：</strong>.NET 的 ORM 框架，可以用 C# 对象操作数据库，少写 SQL。</p>
+        <h4>查询例子</h4>
+        <pre><code>var runningTasks = await db.Tasks
+    .Where(t => t.Status == TaskStatus.Running)
+    .OrderBy(t => t.CreatedAt)
+    .ToListAsync();</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>Dapper</h3>
+        <p><strong>白话解释：</strong>轻量 ORM。你自己写 SQL，Dapper 帮你把查询结果转成 C# 对象。性能好、可控。</p>
+        <h4>查询例子</h4>
+        <pre><code>var tasks = await connection.QueryAsync&lt;TaskRecord&gt;(
+    "select * from WcsTask where Status = @Status",
+    new { Status = "Running" });</code></pre>
+      </article>
+
+      <article class="concept">
+        <h3>日志 Logging</h3>
+        <p><strong>白话解释：</strong>记录系统发生了什么。现场问题复盘时，日志比口头描述可靠。</p>
+        <p>WCS 至少要记录：接口请求、任务状态变化、PLC 读写异常、报警产生/确认/恢复、人工操作。</p>
+        <h4>日志例子</h4>
+        <pre><code>logger.LogInformation(
+    "Task {TaskId} dispatched to PLC. Device={DeviceCode}, Target={Target}",
+    task.Id,
+    "Stacker01",
+    task.TargetLocation);</code></pre>
+        <div class="flow">现场说“任务没执行”
+  ↓
+查接口日志：WMS 是否下发
+  ↓
+查任务日志：WCS 是否创建任务
+  ↓
+查 PLC 日志：命令是否写入
+  ↓
+查报警日志：设备是否故障
+  ↓
+定位责任点</div>
+      </article>
+    </section>
+
+    <section id="interview">
+      <h2>八、面试速记：概念串起来讲</h2>
+      <h3>1. 后端架构怎么说</h3>
+      <div class="talk">
+        <p>“我理解 WCS 后端通常由 WebAPI、后台调度服务、设备通讯服务、数据库和实时推送组成。WebAPI 负责接 WMS/MES 任务和给前端提供数据；BackgroundService 负责 PLC 轮询、任务调度和报警扫描；设备通讯服务通过 S7/Modbus/OPC UA 读写设备；数据库持久化任务、报警和日志；SignalR 推送实时状态给前端。”</p>
+      </div>
+
+      <h3>2. 依赖注入和中间件怎么说</h3>
+      <div class="talk">
+        <p>“依赖注入负责服务创建和生命周期管理，比如 PLC 服务、任务服务、报警服务都注册到容器里，Controller 通过构造函数拿到依赖。中间件是 HTTP 请求管道，用来统一处理异常、日志、认证授权和路由，这样接口层更干净。”</p>
+      </div>
+
+      <h3>3. PLC 通讯怎么说</h3>
+      <div class="talk">
+        <p>“S7 通讯主要读写 I/Q/M/DB 区。WCS 和 PLC 通常约定 DB 命令区和状态区：WCS 写任务号、命令码、目标地址和触发位；PLC 写确认位、完成位、设备状态和错误码。读写要串行化，数据要注意字节序，轮询要合并连续地址并处理断线重连。”</p>
+      </div>
+
+      <h3>4. WCS 业务怎么说</h3>
+      <div class="talk">
+        <p>“WMS 管库存和业务策略，WCS 管设备执行。比如入库任务，WCS 接到 WMS 指令后校验托盘、物料、库位和设备状态，再拆成输送线、提升机、堆垛机动作，下发 PLC，轮询执行状态，完成后回传 WMS。异常时进入报警和人工干预流程。”</p>
+      </div>
+
+      <h3>5. 如果问你不会怎么办</h3>
+      <div class="talk">
+        <p>“这个点我没有在真实项目里完整落地过，但我的理解是……我会先明确接口协议和状态机，再保证任务落库、设备通讯可追踪、异常可恢复。具体实现上我可以结合项目现有框架快速补齐。”</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

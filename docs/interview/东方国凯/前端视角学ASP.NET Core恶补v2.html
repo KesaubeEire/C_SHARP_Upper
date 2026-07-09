@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恶补 v2 · ASP.NET Core 前端友好版</title>
+<style>
+  :root {
+    --bg: #1a1d23;
+    --card: #22262e;
+    --card-hover: #282d36;
+    --accent: #5b8af7;
+    --accent-dim: #3d5fad;
+    --accent-bg: rgba(91,138,247,0.08);
+    --green: #4ade80;
+    --green-dim: #22c55e;
+    --orange: #fb923c;
+    --orange-dim: #f97316;
+    --pink: #f472b6;
+    --text: #e2e5eb;
+    --text-dim: #8b92a0;
+    --border: #2e333d;
+    --code-bg: #15181d;
+    --serif: Georgia, 'Noto Serif SC', serif;
+    --sans: -apple-system, 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    --mono: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+  }
+  *,::before,::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--sans);background:var(--bg);color:var(--text);
+    line-height:1.75;-webkit-font-smoothing:antialiased;padding:40px 24px 80px
+  }
+  .page{max-width:840px;margin:0 auto}
+  .masthead{margin-bottom:48px}
+  .masthead h1{font-family:var(--serif);font-size:2.2rem;font-weight:700;line-height:1.25;margin-bottom:8px}
+  .masthead .sub{color:var(--text-dim);font-size:.95rem}
+  .masthead .sub span{color:var(--accent)}
+  .masthead hr{border:none;border-top:1px solid var(--border);margin-top:20px}
+  .toc{background:var(--card);border:1px solid var(--border);padding:20px 24px;margin-bottom:40px}
+  .toc-title{font-family:var(--serif);font-size:.9rem;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+  .toc ol{padding-left:20px;font-size:.9rem}
+  .toc ol li{margin:4px 0}
+  .toc a{color:var(--text-dim);text-decoration:none;transition:color .15s}
+  .toc a:hover{color:var(--accent)}
+  .ch{margin-bottom:48px}
+  .ch-num{font-family:var(--serif);font-size:.85rem;color:var(--accent);margin-bottom:4px}
+  .ch-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent)}
+  .ch p{margin-bottom:14px;font-size:.93rem}
+  .sec{margin:28px 0;padding-left:2px}
+  .sec h4{font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text)}
+  .sec h5{font-size:.95rem;font-weight:600;margin:16px 0 8px;color:var(--accent)}
+  pre{
+    background:var(--code-bg);border:1px solid var(--border);
+    padding:16px 20px;font-family:var(--mono);font-size:.82rem;line-height:1.65;
+    overflow-x:auto;margin:12px 0;color:var(--text)
+  }
+  pre .kw{color:var(--accent)}pre .str{color:var(--green)}pre .cm{color:var(--text-dim);font-style:italic}
+  pre .tp{color:var(--orange)}pre .fn{color:var(--pink)}pre .num{color:var(--green-dim)}pre .op{color:var(--orange)}
+  code{font-family:var(--mono);font-size:.88em;padding:1px 5px;background:var(--code-bg);border:1px solid var(--border)}
+  pre code{padding:0;border:none;background:none;font-size:inherit}
+  .info{background:var(--accent-bg);border-left:3px solid var(--accent);padding:14px 18px;margin:16px 0;font-size:.9rem}
+  .info strong{color:var(--accent)}
+  .tip{background:rgba(74,222,128,.06);border-left:3px solid var(--green);padding:14px 18px;margin:16px 0;font-size:.9rem}
+  .tip strong{color:var(--green)}
+  .warn{background:rgba(251,146,60,.06);border-left:3px solid var(--orange);padding:14px 18px;margin:16px 0;font-size:.9rem}
+  .warn strong{color:var(--orange)}
+  .ch ul,.ch ol{margin:8px 0 14px 20px;font-size:.93rem}
+  .ch li{margin:4px 0}
+  .diagram{background:var(--code-bg);border:1px solid var(--border);padding:20px 24px;margin:16px 0;font-family:var(--mono);font-size:.8rem;line-height:1.6;white-space:pre;overflow-x:auto;color:var(--text-dim)}
+  .colophon{margin-top:56px;padding-top:24px;border-top:1px solid var(--border);text-align:center;font-size:.82rem;color:var(--text-dim)}
+  .row{display:flex;gap:0;margin:12px 0}
+  .row>div{flex:1;padding:10px 14px}
+  .row .left{border:1px solid var(--border);border-right:none;background:var(--code-bg)}
+  .row .right{border:1px solid var(--accent-dim);background:var(--accent-bg)}
+  .row .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  .row .label.l{color:var(--text-dim)}.row .label.r{color:var(--accent)}
+  .row code{font-size:.78rem;background:transparent;border:none;padding:0;line-height:1.6}
+  @media(max-width:600px){
+    body{padding:20px 14px 60px}
+    .masthead h1{font-size:1.6rem}
+    .ch-title{font-size:1.2rem}
+    .row{flex-direction:column}
+    .row>div{border:1px solid var(--border)!important}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="masthead">
+  <h1>恶补 v2 · 前端视角学 ASP.NET Core</h1>
+  <div class="sub">你有前端基础（React/Vue/TS），但后端经验不多 <span>|</span> 快速上手 C# 后端</div>
+  <hr>
+</div>
+
+<div class="toc">
+  <div class="toc-title">目录</div>
+  <ol>
+    <li><a href="#ch1">前端视角看后端——请求全程图解</a></li>
+    <li><a href="#ch2">最快的上手路径——从 dotnet new 开始</a></li>
+    <li><a href="#ch3">核心语法——Controller（你只需会写这个）</a></li>
+    <li><a href="#ch4">你的 WPF Service 层在后端怎么用</a></li>
+    <li><a href="#ch5">Program.cs —— 像 vite.config.ts 一样的东西</a></li>
+    <li><a href="#ch6">面试够用的 JWT 认证</a></li>
+    <li><a href="#ch7">WCS 场景的完整 API 示例</a></li>
+    <li><a href="#ch8">面试官问了怎么说</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch1">
+  <div class="ch-num">第一章</div>
+  <h2 class="ch-title">前端视角看后端——请求全程图解</h2>
+
+  <p>你在前端每天做的事：</p>
+  <pre>
+fetch(<span class="str">'http://localhost:5000/api/tasks'</span>, {
+  method: <span class="str">'GET'</span>,
+  headers: { <span class="str">'Authorization'</span>: <span class="str">`Bearer ${token}`</span> },
+})
+  .then(<span class="kw">res</span> => <span class="kw">res</span>.json())
+  .then(<span class="kw">data</span> => console.log(data))
+  </pre>
+
+  <p>这个 fetch 请求到 ASP.NET Core 后端之后，发生了什么：</p>
+  <div class="diagram">
+你的 Vue 页面                                 ASP.NET Core 服务器
+                              ┌──────────────┐
+fetch('/api/tasks')  ───────→│  Middleware   │  ← 像 Express 的 app.use()
+  Authorization: Bearer xxx  │  ① 认证中间件  │     一个个"关卡"过
+                              │  ② 路由匹配   │
+                              └──────┬───────┘
+                                     ▼
+                              ┌──────────────┐
+                              │  Controller   │  ← 类似 React 的"页面组件"
+                              │  TaskController│     负责一个功能模块的所有接口
+                              │               │
+                              │  [HttpGet]     │
+                              │  GetTasks()   │
+                              └──────┬───────┘
+                                     ▼
+                              ┌──────────────┐
+                              │  Service      │  ← 和你 WPF 项目里的 Service 一样
+                              │  TaskService  │     你的 S7Service 直接搬过来用
+                              │               │
+                              │  .ReadDb()    │ → 读 PLC 或查数据库
+                              └──────┬───────┘
+                                     ▼
+                              ┌──────────────┐
+    ←────── JSON 响应 ───────│  return Ok()  │  ← 像 res.json()
+  { tasks: [...] }            └──────────────┘
+  </div>
+
+  <p class="info"><strong>一句话：</strong>你的 fetch 发请求 → Controller 接 → Service 干活 → Controller 返回 JSON → 你的 .then() 收到数据。<strong>和你前端调 Node.js 后端的流程一模一样。</strong></p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch2">
+  <div class="ch-num">第二章</div>
+  <h2 class="ch-title">最快的上手路径——从 dotnet new 开始</h2>
+
+  <p>别从头搭项目，直接用模板。面试官问"你建过 ASP.NET Core 项目吗"，你说"脚手架一键生成"，谁都用过。</p>
+
+  <pre>
+<span class="cm"># 终端执行（你已经装了 dotnet 10）</span>
+dotnet new webapi -n MyWcsApi
+cd MyWcsApi
+code .
+dotnet run
+  </pre>
+
+  <p>这四条命令就起了一个可用的 WebAPI 服务器，默认端口 5000/5001。</p>
+
+  <p>生成的目录结构和前端对比：</p>
+  <div class="row">
+    <div class="left">
+      <div class="label l">你的前端项目</div>
+      <code>
+src/<br>
+├── components/<br>
+│   └── TaskBoard.tsx<br>
+├── services/<br>
+│   └── api.ts<br>
+├── App.tsx<br>
+└── vite.config.ts
+      </code>
+    </div>
+    <div class="right">
+      <div class="label r">ASP.NET Core WebAPI 项目</div>
+      <code>
+Controllers/<br>
+│   └── TaskController.cs<br>
+Services/<br>
+│   └── TaskService.cs<br>
+Program.cs<br>
+appsettings.json
+      </code>
+    </div>
+  </div>
+
+  <div class="tip"><strong>对应关系：</strong>Program.cs 相当于 vite.config.ts（启动配置），Controllers/ 是"路由层"（类似 Next.js 的 pages/），Services/ 就是你的业务逻辑（和你 WPF 项目里的 Services/ 一样）。</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch3">
+  <div class="ch-num">第三章</div>
+  <h2 class="ch-title">核心语法——Controller（你只需会写这个）</h2>
+
+  <p>Controller 就是后端的"组件"。一个 Controller 管一类资源（比如任务相关的所有 API）。</p>
+
+  <h5>最简例子：</h5>
+  <pre>
+<span class="kw">using</span> Microsoft.AspNetCore.Mvc;
+<span class="kw">using</span> MyWcsApi.Models;
+
+<span class="cm">// 这个类和它的属性标注，就决定了路由</span>
+[ApiController]                          <span class="cm">// 告诉框架"这是个 API 控制器"</span>
+[Route(<span class="str">"api/[controller]"</span>)]            <span class="cm">// [controller] 自动替换为类名(去Controller)</span>
+<span class="kw">public class</span> <span class="tp">TaskController</span> : <span class="tp">ControllerBase</span> <span class="cm">// 继承 ControllerBase</span>
+{
+    <span class="cm">/// GET /api/tasks  ← 对应前端的 fetch('/api/tasks')</span>
+    [HttpGet]
+    <span class="kw">public</span> <span class="tp">IActionResult</span> GetTasks()
+    {
+        <span class="kw">return</span> Ok(<span class="kw">new</span>[] { <span class="str">"任务1"</span>, <span class="str">"任务2"</span> });
+        <span class="cm">// OK() ≈ res.json() — 返回 200 + JSON</span>
+    }
+
+    <span class="cm">/// GET /api/tasks/5  ← 路由参数 {id}</span>
+    [HttpGet(<span class="str">"{id}"</span>)]
+    <span class="kw">public</span> <span class="tp">IActionResult</span> GetTask(<span class="kw">int</span> id)  <span class="cm">// id 自动从 URL 里的 {id} 拿到</span>
+    {
+        <span class="kw">return</span> Ok(<span class="str">$"任务 {id}"</span>);
+    }
+
+    <span class="cm">/// POST /api/tasks  ← 前端发 POST 请求</span>
+    [HttpPost]
+    <span class="kw">public</span> <span class="tp">IActionResult</span> CreateTask([FromBody] <span class="tp">TaskDto</span> dto)
+    {
+        <span class="cm">// [FromBody] = 从请求 body 的 JSON 里反序列化</span>
+        <span class="cm">// 前端发：fetch(url, { method:'POST', body: JSON.stringify({...}) })</span>
+        <span class="cm">// 后端自动把 JSON 转成 TaskDto 对象</span>
+        <span class="kw">return</span> Created(<span class="str">$"/api/tasks/{dto.Id}"</span>, dto);
+        <span class="cm">// Created() ≈ 201 状态码 + 新资源位置</span>
+    }
+}
+  </pre>
+
+  <div class="info"><strong>你只需要记住：</strong>每个方法上面贴一个标签 [HttpGet] / [HttpPost] / [HttpPut] / [HttpDelete]，加上路径，就是前端调的那个 API 端点。返回值用 Ok() / Created() / NotFound() 代替 res.json() / res.status()。</div>
+
+  <h5>对比你可能的 Express 写法：</h5>
+  <div class="row">
+    <div class="left">
+      <div class="label l">你大概知道的 Express</div>
+      <code>
+app.get(<span class="str">'/api/tasks'</span>, (req, res) => {<br>
+&nbsp;&nbsp;res.json([...])<br>
+})<br><br>
+app.post(<span class="str">'/api/tasks'</span>, (req, res) => {<br>
+&nbsp;&nbsp;<span class="kw">const</span> body = req.body<br>
+&nbsp;&nbsp;res.status(201).json(body)<br>
+})
+      </code>
+    </div>
+    <div class="right">
+      <div class="label r">ASP.NET Core</div>
+      <code>
+[HttpGet]<br>
+<span class="kw">public</span> IActionResult Get()<br>
+{ <span class="kw">return</span> Ok([...]); }<br><br>
+[HttpPost]<br>
+<span class="kw">public</span> IActionResult Create(<br>
+&nbsp;&nbsp;[FromBody] TaskDto dto<br>
+)<br>
+{ <span class="kw">return</span> Created(...); }
+      </code>
+    </div>
+  </div>
+
+  <h5>DTO —— 后端的 TypeScript interface</h5>
+  <p>你在前端写 TypeScript 定义接口：</p>
+  <pre>
+<span class="cm">// 前端 TypeScript</span>
+<span class="kw">interface</span> TaskDto {
+  id: <span class="kw">number</span>;
+  taskType: <span class="kw">string</span>;  <span class="cm">// '入库' | '出库'</span>
+  source: <span class="kw">string</span>;
+  target: <span class="kw">string</span>;
+}
+  </pre>
+  <p>C# 里写几乎一样的东西：</p>
+  <pre>
+<span class="cm">// 后端 C#</span>
+<span class="kw">public class</span> <span class="tp">TaskDto</span>
+{
+    <span class="kw">public int</span> Id { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span> TaskType { <span class="kw">get</span>; <span class="kw">set</span>; } = <span class="str">""</span>;
+    <span class="kw">public string</span> Source { <span class="kw">get</span>; <span class="kw">set</span>; } = <span class="str">""</span>;
+    <span class="kw">public string</span> Target { <span class="kw">get</span>; <span class="kw">set</span>; } = <span class="str">""</span>;
+}
+  </pre>
+  <p>区别只有：C# 用 { get; set; } 代替 TypeScript 的 field: type。然后 [FromBody] 把前端 POST 来的 JSON 自动转成这个对象——你不需要 JSON.parse()。</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch4">
+  <div class="ch-num">第四章</div>
+  <h2 class="ch-title">你的 WPF Service 层在后端怎么用</h2>
+
+  <p>你在 WPF 项目里已经写好了 S7Service、PollingScheduler、AlarmService，它们都是纯 C#，没有 UI 依赖。</p>
+
+  <p><strong>好消息：这些类可以直接搬到 ASP.NET Core 项目里用。</strong></p>
+
+  <p>在你的 WPF 项目里注册服务：</p>
+  <pre>
+<span class="cm">// App.xaml.cs（WPF）</span>
+services.AddSingleton&lt;<span class="tp">S7Service</span>&gt;();
+services.AddSingleton&lt;<span class="tp">PollingScheduler</span>&gt;();
+  </pre>
+
+  <p>在 ASP.NET Core 项目里注册服务：</p>
+  <pre>
+<span class="cm">// Program.cs（ASP.NET Core）—— 写法一样</span>
+builder.Services.AddSingleton&lt;<span class="tp">S7Service</span>&gt;();
+builder.Services.AddSingleton&lt;<span class="tp">PollingScheduler</span>&gt;();
+builder.Services.AddHostedService&lt;<span class="tp">PollingScheduler</span>&gt;(); <span class="cm">// 让后台轮询自动跑</span>
+  </pre>
+
+  <p>在你的 Controller 里用这些服务：</p>
+  <pre>
+[ApiController]
+[Route(<span class="str">"api/plc"</span>)]
+<span class="kw">public class</span> <span class="tp">PlcController</span> : <span class="tp">ControllerBase</span>
+{
+    <span class="kw">private readonly</span> <span class="tp">S7Service</span> _s7;
+
+    <span class="cm">// 构造函数注入——就像 Vue 的 inject/provide 或 React Context</span>
+    <span class="kw">public</span> PlcController(<span class="tp">S7Service</span> s7)
+    {
+        _s7 = s7;
+    }
+
+    [HttpGet(<span class="str">"db/{dbNumber}"</span>)]
+    <span class="kw">public async</span> <span class="tp">Task</span>&lt;<span class="tp">IActionResult</span>&gt; ReadDb(<span class="kw">int</span> dbNumber)
+    {
+        <span class="kw">var</span> data = <span class="kw">await</span> _s7.ReadDbAsync(dbNumber, 0, 10);
+        <span class="kw">return</span> Ok(data);
+    }
+}
+  </pre>
+
+  <div class="tip"><strong>核心理解：</strong>你的 Service 层（S7Service、AlarmService 等）在 WPF 和 ASP.NET Core 之间是<strong>完全可复用的</strong>。差别只在"入口"不同——WPF 入口是界面按钮点击，WebAPI 入口是 HTTP 请求。面试时说出这一点非常加分。</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch5">
+  <div class="ch-num">第五章</div>
+  <h2 class="ch-title">Program.cs —— 像 vite.config.ts 一样的东西</h2>
+
+  <p>Program.cs 是整个后端的入口配置文件。类比前端的配置文件：</p>
+
+  <div class="diagram">
+前端 vite.config.ts:                    后端 Program.cs:
+  defineConfig({                          var builder = WebApplication.CreateBuilder(args);
+    plugins: [vue()]                        builder.Services.AddControllers();
+    server: { port: 5173 }                  builder.Services.AddSingleton<S7Service>();
+  })                                        builder.Services.AddAuthentication()...
+                                            builder.Services.AddSwaggerGen()
+                                            var app = builder.Build();
+                                            app.UseAuthentication()
+                                            app.MapControllers()
+                                            app.Run()
+  </div>
+
+  <p>一个 WCS 项目典型的 Program.cs 长这样：</p>
+  <pre>
+<span class="kw">var</span> builder = <span class="tp">WebApplication</span>.CreateBuilder(args);
+
+<span class="cm">// ── 1. 注册服务（≈ 前端的 provide/inject） ──</span>
+builder.Services.AddControllers();
+builder.Services.AddSingleton&lt;<span class="tp">S7Service</span>&gt;();        <span class="cm">// 你的 PLC 服务</span>
+builder.Services.AddSingleton&lt;<span class="tp">WcsTaskService</span>&gt;();   <span class="cm">// WCS 任务处理</span>
+builder.Services.AddHostedService&lt;<span class="tp">PlcPollingService</span>&gt;(); <span class="cm">// 后台轮询</span>
+
+<span class="cm">// ── 2. 配置 JWT 认证 ──</span>
+builder.Services.AddAuthentication().AddJwtBearer(<span class="cm">/*...*/</span>);
+
+<span class="cm">// ── 3. 构建 app ──</span>
+<span class="kw">var</span> app = builder.Build();
+
+<span class="cm">// ── 4. 中间件管道（≈ 前端的拦截器/守卫） ──</span>
+app.UseAuthentication();        <span class="cm">// 先认证（你是谁？）</span>
+app.UseAuthorization();         <span class="cm">// 再授权（你能干啥？）</span>
+app.MapControllers();           <span class="cm">// 最后路由到 Controller</span>
+
+app.Run();
+  </pre>
+
+  <div class="info"><strong>面试话术：</strong>"Program.cs 是 ASP.NET Core 的入口，相当于前端的 vite.config.ts + router 配置。在这里注册服务、配置中间件、定义管道顺序。"</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch6">
+  <div class="ch-num">第六章</div>
+  <h2 class="ch-title">面试够用的 JWT 认证</h2>
+
+  <p>你在前端肯定调过带 token 的 API：fetch(url, { headers: { Authorization: 'Bearer xxx' } })。后端这边就是生成这个 token 和验证它。</p>
+
+  <h5>生成 Token（登录接口）：</h5>
+  <pre>
+[HttpPost(<span class="str">"login"</span>)]
+<span class="kw">public</span> <span class="tp">IActionResult</span> Login([FromBody] <span class="tp">LoginDto</span> dto)
+{
+    <span class="cm">// 校验用户名密码（省了）</span>
+
+    <span class="cm">// 生成 token</span>
+    <span class="kw">var</span> key = <span class="kw">new</span> <span class="tp">SymmetricSecurityKey</span>(
+        <span class="tp">Encoding</span>.UTF8.GetBytes(<span class="str">"你的密钥至少16个字符"</span>));
+    <span class="kw">var</span> token = <span class="kw">new</span> <span class="tp">JwtSecurityToken</span>(
+        issuer: <span class="str">"MyWcsApi"</span>,
+        audience: <span class="str">"MyWcsClient"</span>,
+        claims: <span class="kw">new</span>[] { <span class="kw">new</span> <span class="tp">Claim</span>(<span class="tp">ClaimTypes</span>.Role, dto.Role) },
+        expires: <span class="tp">DateTime</span>.Now.AddHours(8),
+        signingCredentials: <span class="kw">new</span> <span class="tp">SigningCredentials</span>(key, <span class="tp">SecurityAlgorithms</span>.HmacSha256)
+    );
+
+    <span class="kw">return</span> Ok(<span class="kw">new</span> { token = <span class="kw">new</span> <span class="tp">JwtSecurityTokenHandler</span>().WriteToken(token) });
+}
+  </pre>
+
+  <h5>保护接口（加一个标签就行）：</h5>
+  <pre>
+[ApiController]
+[Route(<span class="str">"api/tasks"</span>)]
+[Authorize(Roles = <span class="str">"工程师"</span>)]  <span class="cm">// ← 只加这一行，没有 token 或角色不对就 401</span>
+<span class="kw">public class</span> <span class="tp">TaskController</span> : <span class="tp">ControllerBase</span>
+{ ... }
+  </pre>
+
+  <div class="warn"><strong>面试够用程度：</strong>面试不会让你手写 JWT 实现，他知道你用过就会。你只需要说出"前端发请求带 Bearer Token，后端用 [Authorize] 标签保护接口，Program.cs 里配置 JWT 验证参数"就足够了。</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch7">
+  <div class="ch-num">第七章</div>
+  <h2 class="ch-title">WCS 场景的完整 API 示例</h2>
+
+  <p>这是面试官最想听到的东西——你能把后端技术和 WCS 业务结合起来说，而不是背语法。</p>
+
+  <p>一个 WCS 后端典型要做的事：</p>
+  <ul>
+    <li>从 WMS 接收任务（入库/出库/移库指令）</li>
+    <li>查询所有设备状态（堆垛机/AGV/输送线）</li>
+    <li>下发控制指令给 PLC</li>
+    <li>向前端推送实时数据</li>
+  </ul>
+
+  <pre>
+[ApiController]
+[Route(<span class="str">"api/wcs"</span>)]
+<span class="kw">public class</span> <span class="tp">WcsController</span> : <span class="tp">ControllerBase</span>
+{
+    <span class="kw">private readonly</span> <span class="tp">WcsTaskService</span> _taskSvc;
+
+    <span class="kw">public</span> WcsController(<span class="tp">WcsTaskService</span> taskSvc)
+    {
+        _taskSvc = taskSvc;  <span class="cm">// DI 注入，不要 new</span>
+    }
+
+    <span class="cm">// POST /api/wcs/tasks  -- WMS 下发任务</span>
+    [HttpPost(<span class="str">"tasks"</span>)]
+    <span class="kw">public async</span> <span class="tp">Task</span>&lt;<span class="tp">IActionResult</span>&gt; ReceiveTask([FromBody] <span class="tp">WmsTaskDto</span> task)
+    {
+        <span class="kw">await</span> _taskSvc.EnqueueAsync(task);  <span class="cm">// 入队等待调度</span>
+        <span class="kw">return</span> Accepted();  <span class="cm">// 202 表示"已接受，正在处理"</span>
+    }
+
+    <span class="cm">// GET /api/wcs/devices  -- 获取所有设备状态</span>
+    [HttpGet(<span class="str">"devices"</span>)]
+    <span class="kw">public</span> <span class="tp">IActionResult</span> GetDevices()
+    {
+        <span class="kw">var</span> status = _taskSvc.GetAllDeviceStatus();
+        <span class="kw">return</span> Ok(status);
+        <span class="cm">// 返回的 JSON 长这样：</span>
+        <span class="cm">// [{ "id": 1, "name": "堆垛机01", "status": "运行中", "position": { "x":10, "y":5 } }, ...]</span>
+    }
+
+    <span class="cm">// POST /api/wcs/devices/{id}/command  -- 手动控制设备</span>
+    [HttpPost(<span class="str">"devices/{id}/command"</span>)]
+    <span class="kw">public async</span> <span class="tp">Task</span>&lt;<span class="tp">IActionResult</span>&gt; SendCommand(
+        <span class="kw">int</span> id, [FromBody] <span class="tp">CommandDto</span> cmd)
+    {
+        <span class="kw">var</span> result = <span class="kw">await</span> _taskSvc.ExecuteCommandAsync(id, cmd);
+        <span class="kw">if</span> (result.Success) <span class="kw">return</span> Ok(result);
+        <span class="kw">return</span> StatusCode(500, result);  <span class="cm">// 执行失败</span>
+    }
+}
+  </pre>
+
+  <div class="tip"><strong>面试话术：</strong>"Controller 只负责接请求和返回响应，具体业务逻辑都在 Service 里。我把 S7Service、TaskScheduler 这些注入到 Controller 里用，和 WPF 项目里把 Service 注入到 ViewModel 里用是一样的模式。"</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="ch" id="ch8">
+  <div class="ch-num">第八章</div>
+  <h2 class="ch-title">面试官问了怎么说</h2>
+
+  <p>下面是几个面试里可能问到的问题，以及<strong>适合你（前端背景+WPF项目）</strong>的回答方式：</p>
+
+  <p class="info"><strong>Q：你用过 ASP.NET Core 吗？</strong></p>
+  <p>"我 WPF 项目的 Service 层就是纯 C#，理解 DI 和服务注入。ASP.NET Core WebAPI 的 Controller 对我来相当于前端 React 组件的逻辑层加路由，概念的对应的很清楚。虽然还没在实际项目里用过，但已经上手写过 demo，理解路由、Controller、Service 的分层、JWT 认证这些。后端对我来说就是'接 HTTP 请求 → 用我的 C# Service 处理 → 返回 JSON'。"</p>
+
+  <p class="info"><strong>Q：你的 WPF 项目和 WebAPI 项目有什么区别？</strong></p>
+  <p>"架构上最大的区别是前后端分离。WPF 里 ViewModel 既管数据又管界面状态，WebAPI 里 Controller 只管接口，前端（Vue/React）去管界面。但 Service 层是共通的——S7Service、AlarmService 这些在 WPF 里能用的，在 WebAPI 项目里直接搬过来用，只是入口从 WPF 按钮事件变成了 HTTP 请求。"</p>
+
+  <p class="warn"><strong>Q：你从没做过 WebAPI 项目，能胜任吗？</strong></p>
+  <p>"我是前端出身，理解 HTTP 协议、RESTful API、JSON 序列化这些。ASP.NET Core 对我来说是'会用 C# 写后端接口'，而不是'学一个全新的后端范式'。我的 WPF Service 层可以直接复用，再加一层 Controller 处理 HTTP 请求就可以了。而且我 Vue 也熟，如果前端也是 Vue 做的，我能前后端都看得懂。"</p>
+
+  <p class="tip"><strong>启示：</strong>你不需要撒谎说"我做过很多 WebAPI 项目"，你需要让面试官确信"你有能力快速学会"。"前端+WPF C#" 的组合恰好说明你对"后端 API"和"C# 工业服务"两个方向都已经各自有基础了，就差把这两块连起来。</p>
+
+</div>
+
+<div class="colophon">前端出身学后端 · 没那么难</div>
+
+</div>
+</body>
+</html>
